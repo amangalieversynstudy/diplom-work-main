@@ -41,7 +41,8 @@ pytest-backend:
     - cd backend
     - python manage.py migrate --noinput
   script:
-    - python -m pytest --junitxml=pytest-results.xml --cov=backend --cov-report=term --cov-report=xml:backend/coverage.xml -q
+    # we `cd backend` in before_script, so write reports to ../backend to match artifact paths
+    - python -m pytest --junitxml=../backend/pytest-results.xml --cov=backend --cov-report=term --cov-report=xml:../backend/coverage.xml -q
   coverage: '/TOTAL.*\s+(\d+\%)/'
   artifacts:
     when: always

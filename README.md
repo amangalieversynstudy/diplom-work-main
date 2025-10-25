@@ -1,5 +1,8 @@
 # RPG Learning Platform (Django + Next.js)
 
+![pipeline status](https://gitlab.com/amangalieversynstudy/diplom-work/badges/main/pipeline.svg)
+![coverage](https://gitlab.com/amangalieversynstudy/diplom-work/badges/main/coverage.svg)
+
 Проект: обучающая RPG-платформа (аналог CodeCombat), цель — вырастить пользователя до Junior Django Developer.
 
 Стек:

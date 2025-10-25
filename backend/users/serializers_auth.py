@@ -9,7 +9,6 @@ from rest_framework import serializers
 
 from .models import Profile
 
-
 User = get_user_model()
 
 

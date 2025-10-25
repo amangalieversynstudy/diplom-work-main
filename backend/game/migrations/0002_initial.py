@@ -11,18 +11,26 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('game', '0001_initial'),
+        ("game", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='progress',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='progress', to=settings.AUTH_USER_MODEL),
+            model_name="progress",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="progress",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='mission',
-            name='location',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='missions', to='game.location'),
+            model_name="mission",
+            name="location",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="missions",
+                to="game.location",
+            ),
         ),
     ]

@@ -3,11 +3,15 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+
 class User(AbstractUser):
     display_name = models.CharField(max_length=150, blank=True)
 
+
 class Profile(models.Model):
-    user = models.OneToOneField('users.User', on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(
+        "users.User", on_delete=models.CASCADE, related_name="profile"
+    )
     xp = models.IntegerField(default=0)
     level = models.IntegerField(default=1)
     bio = models.TextField(blank=True)
@@ -21,7 +25,7 @@ class Profile(models.Model):
         self.save()
 
 
-@receiver(post_save, sender='users.User')
+@receiver(post_save, sender="users.User")
 def create_user_profile(sender, instance, created, **kwargs):
     """Ensure a Profile is created for each new User."""
     if created:

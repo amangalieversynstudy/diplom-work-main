@@ -3,10 +3,10 @@ from rest_framework.routers import DefaultRouter
 from .views import LocationViewSet, MissionViewSet, ProgressViewSet
 
 router = DefaultRouter()
-router.register(r'locations', LocationViewSet)
-router.register(r'missions', MissionViewSet)
-router.register(r'progress', ProgressViewSet)
+router.register(r"locations", LocationViewSet)
+router.register(r"missions", MissionViewSet)
+router.register(r"progress", ProgressViewSet)
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", include(router.urls)),
 ]

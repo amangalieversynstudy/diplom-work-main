@@ -4,18 +4,19 @@ from .models import Profile
 
 User = get_user_model()
 
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'password')
+        fields = ("id", "username", "email", "password")
 
     def create(self, validated_data):
         user = User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data.get('email', ''),
-            password=validated_data['password']
+            username=validated_data["username"],
+            email=validated_data.get("email", ""),
+            password=validated_data["password"],
         )
         return user
 
@@ -23,7 +24,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ('xp', 'level', 'bio')
+        fields = ("xp", "level", "bio")
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
@@ -31,4 +32,4 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'profile')
+        fields = ("id", "username", "email", "profile")

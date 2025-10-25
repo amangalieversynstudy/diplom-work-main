@@ -18,17 +18,17 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         try:
-            uid = force_str(urlsafe_base64_decode(attrs['uid']))
+            uid = force_str(urlsafe_base64_decode(attrs["uid"]))
             user = User.objects.get(pk=uid)
         except Exception:
-            raise serializers.ValidationError('Invalid uid')
-        if not default_token_generator.check_token(user, attrs['token']):
-            raise serializers.ValidationError('Invalid token')
-        attrs['user'] = user
+            raise serializers.ValidationError("Invalid uid")
+        if not default_token_generator.check_token(user, attrs["token"]):
+            raise serializers.ValidationError("Invalid token")
+        attrs["user"] = user
         return attrs
 
     def save(self):
-        user = self.validated_data['user']
-        user.set_password(self.validated_data['new_password'])
+        user = self.validated_data["user"]
+        user.set_password(self.validated_data["new_password"])
         user.save()
         return user

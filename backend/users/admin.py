@@ -14,9 +14,9 @@ except Exception:
 
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
-    list_display = ('id', 'username', 'email')
+    list_display = ("id", "username", "email")
 
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'xp', 'level')
+    list_display = ("user", "xp", "level")

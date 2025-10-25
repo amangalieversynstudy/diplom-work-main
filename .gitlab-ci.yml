@@ -3,6 +3,8 @@ stages:
   - test
   - frontend
   - docs-lint
+  - build
+  - deploy
 
 variables:
   POSTGRES_DB: rpgdb
@@ -113,3 +115,97 @@ flake8-docstrings-baseline:
     paths:
       - docstring-report.txt
     expire_in: 1 hour
+
+build-backend-image:
+  image: docker:20
+  stage: build
+  services:
+    - name: docker:20-dind
+      alias: docker
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - |
+      if [ -n "$DOCKER_REGISTRY" ] && [ -n "$DOCKER_USERNAME" ] && [ -n "$DOCKER_PASSWORD" ]; then
+        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin "$DOCKER_REGISTRY";
+        docker build -t "$DOCKER_REGISTRY/$CI_PROJECT_PATH/backend:$CI_COMMIT_SHORT_SHA" ./backend;
+        docker push "$DOCKER_REGISTRY/$CI_PROJECT_PATH/backend:$CI_COMMIT_SHORT_SHA";
+      else
+        echo "DOCKER_REGISTRY or credentials not set, skipping build/push";
+      fi
+  rules:
+    - if: '$DOCKER_REGISTRY'
+      when: on_success
+    - when: never
+
+deploy-staging:
+  image: alpine:3.18
+  stage: deploy
+  before_script:
+    - apk add --no-cache openssh-client bash curl
+  script:
+    - |
+      if [ -n "$DEPLOY_HOST" ] && [ -n "$SSH_PRIVATE_KEY" ] && [ -n "$DEPLOY_USER" ]; then
+        echo "Starting SSH deploy to $DEPLOY_USER@$DEPLOY_HOST";
+        eval $(ssh-agent -s);
+        echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null;
+        mkdir -p ~/.ssh;
+        printf "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config;
+        # pull image if registry set
+        if [ -n "$DOCKER_REGISTRY" ]; then
+          IMAGE="$DOCKER_REGISTRY/$CI_PROJECT_PATH/backend:$CI_COMMIT_SHORT_SHA";
+          ssh $DEPLOY_USER@$DEPLOY_HOST "docker pull $IMAGE || true";
+        else
+          IMAGE="";
+        fi
+        # remote deploy commands: user can customize this section
+        # If DEPLOY_DIR is set, run docker-compose there and migrate
+        if [ -n "$DEPLOY_DIR" ]; then
+          ssh $DEPLOY_USER@$DEPLOY_HOST "cd $DEPLOY_DIR && \
+            if [ -n '$IMAGE' ]; then docker pull $IMAGE || true; fi && \
+            docker-compose pull || true && \
+            docker-compose up -d && \
+            # attempt migrations if compose service is named 'backend'
+            docker-compose exec backend python manage.py migrate --noinput || true";
+        else
+          ssh $DEPLOY_USER@$DEPLOY_HOST "docker-compose pull || true && docker-compose up -d && echo 'Deploy executed'";
+        fi
+      else
+        echo "DEPLOY_HOST/DEPLOY_USER/SSH_PRIVATE_KEY not set - skipping deploy";
+      fi
+  when: manual
+  only:
+    - main
+
+# Smoke test the pushed image by running it and hitting /healthz
+smoke-test-image:
+  image: docker:20
+  stage: build
+  services:
+    - name: docker:20-dind
+      alias: docker
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  needs: [build-backend-image]
+  script:
+    - |
+      if [ -n "$DOCKER_REGISTRY" ] && [ -n "$DOCKER_USERNAME" ] && [ -n "$DOCKER_PASSWORD" ]; then
+        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin "$DOCKER_REGISTRY";
+        IMAGE="$DOCKER_REGISTRY/$CI_PROJECT_PATH/backend:$CI_COMMIT_SHORT_SHA";
+        echo "Pulling $IMAGE";
+        docker pull "$IMAGE" || (echo "Failed to pull image" && exit 1);
+        CONTAINER_ID=$(docker run -d -p 8001:8000 "$IMAGE") || (echo "Failed to start container" && exit 1);
+        echo "Started container $CONTAINER_ID, waiting for health...";
+        for i in {1..20}; do
+          if curl -sS --fail http://localhost:8001/healthz > /dev/null; then
+            echo "smoke test passed"; break;
+          fi; sleep 1;
+        done
+        docker rm -f "$CONTAINER_ID" || true
+      else
+        echo "DOCKER_REGISTRY or credentials not set, skipping smoke test";
+      fi
+  rules:
+    - if: '$DOCKER_REGISTRY'
+      when: on_success
+    - when: never

@@ -272,25 +272,27 @@ deploy-local:
       artifacts: true
   variables:
     GIT_STRATEGY: none
+    # Use host Docker daemon via unix socket (runner must mount /var/run/docker.sock)
+    DOCKER_HOST: "unix:///var/run/docker.sock"
+    DOCKER_TLS_CERTDIR: ""
   script:
     - |
-      GIT_STRATEGY: none
-      # Ensure we talk to host Docker daemon via unix socket (requires runner to mount /var/run/docker.sock)
-      DOCKER_HOST: "unix:///var/run/docker.sock"
-      DOCKER_TLS_CERTDIR: ""
+      set -euo pipefail
+      echo "Checking Docker connectivity..."
+      if [ ! -S /var/run/docker.sock ]; then
+        echo "ERROR: /var/run/docker.sock is not available inside the job container.";
+        echo "Make sure your local GitLab Runner (docker executor) mounts the socket with:";
+        echo "  volumes = [\"/var/run/docker.sock:/var/run/docker.sock\"] in config.toml";
+        exit 1;
+      fi
+      docker version || (echo "ERROR: Cannot talk to Docker daemon" && exit 1)
       # deploy-local expects to run on a local runner that has docker available
       if [ -f backend_image.tar ]; then
         echo "Loading backend_image.tar";
-        echo "Checking Docker connectivity..."
-        if [ ! -S /var/run/docker.sock ]; then
-          echo "ERROR: /var/run/docker.sock is not available inside the job container.";
-          echo "Make sure your local GitLab Runner (docker executor) mounts the socket with:";
-          echo "  volumes = [\"/var/run/docker.sock:/var/run/docker.sock\"] in config.toml";
-          exit 1;
-        fi
-        docker version || (echo "ERROR: Cannot talk to Docker daemon" && exit 1)
         docker load -i backend_image.tar;
         IMAGE="backend-ci:$CI_COMMIT_SHORT_SHA";
+        echo "Stopping/removing existing ci_local_backend if present";
+        docker rm -f ci_local_backend || true;
         echo "Running $IMAGE (detached)";
         docker run -d --name ci_local_backend -p 8000:8000 "$IMAGE" || true;
         echo "Backend started locally on port 8000";

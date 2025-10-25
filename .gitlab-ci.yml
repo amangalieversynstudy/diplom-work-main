@@ -39,6 +39,16 @@ for i in range(60):
         time.sleep(1)
 else:
     raise SystemExit('postgres did not become ready')
+
+        lint:
+          image: python:3.11
+          stage: lint
+          script:
+            - python -m pip install --upgrade pip
+            - python -m pip install --no-cache-dir flake8 black
+            - python -m black --check backend || true
+            - python -m flake8 backend || true
+
 PY
     - cd backend
     - python manage.py migrate --noinput

@@ -2,6 +2,7 @@ stages:
   - lint
   - test
   - frontend
+  - docs-lint
 
 variables:
   POSTGRES_DB: rpgdb
@@ -97,3 +98,18 @@ upload-coverage-codecov:
         echo "coverage.xml not found, skipping codecov upload"
       fi
   when: always
+
+flake8-docstrings-baseline:
+  image: python:3.11
+  stage: docs-lint
+  needs: [lint-backend]
+  script:
+    - python -m pip install --upgrade pip
+    - python -m pip install --no-cache-dir flake8 flake8-docstrings
+    # run flake8 with docstring checks and save output to artifact; do not fail pipeline
+    - python -m flake8 backend --select=D100,D101,D102,D103,D104,D105,D106 --format=default | tee docstring-report.txt || true
+  artifacts:
+    when: always
+    paths:
+      - docstring-report.txt
+    expire_in: 1 hour

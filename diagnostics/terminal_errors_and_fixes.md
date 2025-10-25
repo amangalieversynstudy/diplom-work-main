@@ -143,11 +143,6 @@
 - `.gitlab-ci.yml` — CI исправления (paths, HUSKY=0, diagnostics)
 - `project_full_problems_and_fixes_report.txt` — детальная хронология и пояснения
 
----
 
-Если вы хотите, я могу:
-- Добавить в этот файл точные коммиты (hash) и строки diff, где были внесены исправления.
-- Перечислить полные логи контейнеров (`docker-compose logs backend`) и извлечь из них все строки с ERROR/Traceback в отдельный файл.
-- Сгенерировать MR-шаблон, прикрепив этот diagnostic-файл и описание изменений для ревью.
 
-Файл создан автоматически и сохранён как `diagnostics/terminal_errors_and_fixes.md`.
+

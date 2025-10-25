@@ -41,7 +41,7 @@ pytest-backend:
     - cd backend
     - python manage.py migrate --noinput
   script:
-    - python -m pytest --junitxml=pytest-results.xml --cov=backend --cov-report=term --cov-report=xml -q
+    - python -m pytest --junitxml=pytest-results.xml --cov=backend --cov-report=term --cov-report=xml:backend/coverage.xml -q
   coverage: '/TOTAL.*\s+(\d+\%)/'
   artifacts:
     when: always
@@ -80,6 +80,8 @@ upload-coverage-codecov:
     - apt-get update && apt-get install -y curl
     - |
       if [ -f backend/coverage.xml ]; then
+        echo "coverage.xml exists, uploading..."
+        ls -la backend || true
         bash <(curl -s https://codecov.io/bash) -f backend/coverage.xml || true
       else
         echo "coverage.xml not found, skipping codecov upload"

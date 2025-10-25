@@ -1,5 +1,4 @@
 import pytest
-from django.urls import reverse
 from rest_framework.test import APIClient
 
 
@@ -42,11 +41,12 @@ def test_register_and_verify_email(client):
     u = User.objects.get(username="u2")
     # by default user created may be inactive until verification
     # simulate verification by calling the verify endpoint with token
-    from django.utils.http import urlsafe_base64_encode
-    from django.utils.encoding import force_bytes
     from django.contrib.auth.tokens import default_token_generator
+    from django.utils.encoding import force_bytes
+    from django.utils.http import urlsafe_base64_encode
 
     uid = urlsafe_base64_encode(force_bytes(u.pk))
     token = default_token_generator.make_token(u)
-    resp = client.get(f"/api/auth/verify-email/?uid={uid}&token={token}")
+    verify_path = f"/api/auth/verify-email/?uid={uid}&token={token}"
+    resp = client.get(verify_path)
     assert resp.status_code == 200

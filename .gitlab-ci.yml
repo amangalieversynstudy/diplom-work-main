@@ -79,6 +79,13 @@ upload-coverage-codecov:
   script:
     - apt-get update && apt-get install -y curl
     - |
+      # safe check: print whether CODECOV_TOKEN is set and its length (do not print the token)
+      if [ -n "$CODECOV_TOKEN" ]; then
+        echo "CODECOV_TOKEN is set, length: ${#CODECOV_TOKEN}"
+      else
+        echo "CODECOV_TOKEN is not set"
+      fi
+    - |
       if [ -f backend/coverage.xml ]; then
         echo "coverage.xml exists, uploading..."
         ls -la backend || true

@@ -38,20 +38,20 @@ pytest-backend:
     # wait for postgres to accept connections
     - |
       python - <<'PY'
-import time, os
-import psycopg2
-for i in range(60):
-    try:
-        conn = psycopg2.connect(dbname=os.environ['POSTGRES_DB'], user=os.environ['POSTGRES_USER'], password=os.environ['POSTGRES_PASSWORD'], host='postgres', port=os.environ.get('POSTGRES_PORT','5432'))
-        conn.close()
-        print('postgres ready')
-        break
-    except Exception as e:
-        print('waiting for postgres...', e)
-        time.sleep(1)
-else:
-    raise SystemExit('postgres did not become ready')
-PY
+        import time, os
+        import psycopg2
+        for i in range(60):
+          try:
+            conn = psycopg2.connect(dbname=os.environ['POSTGRES_DB'], user=os.environ['POSTGRES_USER'], password=os.environ['POSTGRES_PASSWORD'], host='postgres', port=os.environ.get('POSTGRES_PORT','5432'))
+            conn.close()
+            print('postgres ready')
+            break
+          except Exception as e:
+            print('waiting for postgres...', e)
+            time.sleep(1)
+        else:
+          raise SystemExit('postgres did not become ready')
+      PY
     - cd backend
     - python manage.py migrate --noinput
   script:

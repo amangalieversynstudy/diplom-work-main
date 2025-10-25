@@ -1,10 +1,10 @@
+"""Authentication URL patterns (register, login, logout, verify)."""
+
 from django.urls import path
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-)
-from .views_auth import RegisterView, MeView
-from .views_auth import LogoutView, VerifyEmailView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+from .views_auth import LogoutView, MeView, RegisterView, VerifyEmailView
+
 
 urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="auth-register"),

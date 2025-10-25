@@ -1,6 +1,8 @@
-from pathlib import Path
+"""Base Django settings for the backend project."""
+
 import os
 from datetime import timedelta
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 

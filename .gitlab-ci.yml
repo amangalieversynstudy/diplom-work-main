@@ -85,3 +85,17 @@ frontend-ci:
     paths:
       - frontend/.next
     expire_in: 1 hour
+
+upload-coverage-codecov:
+  image: python:3.11
+  stage: test
+  needs: [pytest-backend]
+  script:
+    - apt-get update && apt-get install -y curl
+    - |
+      if [ -f backend/coverage.xml ]; then
+        bash <(curl -s https://codecov.io/bash) -f backend/coverage.xml || true
+      else
+        echo "coverage.xml not found, skipping codecov upload"
+      fi
+  when: always

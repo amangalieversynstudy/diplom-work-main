@@ -2,6 +2,7 @@
 
 ![pipeline status](https://gitlab.com/amangalieversynstudy/diplom-work/badges/main/pipeline.svg)
 ![coverage](https://gitlab.com/amangalieversynstudy/diplom-work/badges/main/coverage.svg)
+![codecov](https://codecov.io/gh/amangalieversynstudy/diplom-work/branch/main/graph/badge.svg)
 
 Run backend tests with coverage locally (using Docker Compose):
 
@@ -13,6 +14,13 @@ docker compose exec backend pytest --cov=backend --cov-report=term-missing
 ```
 
 CI stores `backend/coverage.xml` and `backend/pytest-results.xml` as job artifacts.
+
+Codecov integration
+-------------------
+
+If you want a robust coverage badge, integrate Codecov. The CI now uploads `backend/coverage.xml` to Codecov when available. To enable upload for private repos, add `CODECOV_TOKEN` to your GitLab CI/CD variables (Project Settings → CI/CD → Variables).
+
+After enabling Codecov and adding the token (if needed), add the Codecov badge URL to the README (placeholder added above).
 
 Проект: обучающая RPG-платформа (аналог CodeCombat), цель — вырастить пользователя до Junior Django Developer.
 

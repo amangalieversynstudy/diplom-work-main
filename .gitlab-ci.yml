@@ -93,7 +93,11 @@ frontend-ci:
 upload-coverage-codecov:
   image: python:3.11
   stage: test
-  needs: [pytest-backend]
+  needs:
+    - job: pytest-backend
+      artifacts: true
+  variables:
+    GIT_STRATEGY: none
   script:
     - apt-get update && apt-get install -y curl
     - |
@@ -217,6 +221,7 @@ smoke-test-image:
       alias: docker
   variables:
     DOCKER_TLS_CERTDIR: ""
+    GIT_STRATEGY: none
   needs:
     - job: build-backend-image
       artifacts: true
@@ -265,6 +270,8 @@ deploy-local:
   needs:
     - job: build-backend-image
       artifacts: true
+  variables:
+    GIT_STRATEGY: none
   script:
     - |
       set -euo pipefail

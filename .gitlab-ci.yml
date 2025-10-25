@@ -274,10 +274,21 @@ deploy-local:
     GIT_STRATEGY: none
   script:
     - |
-      set -euo pipefail
+      GIT_STRATEGY: none
+      # Ensure we talk to host Docker daemon via unix socket (requires runner to mount /var/run/docker.sock)
+      DOCKER_HOST: "unix:///var/run/docker.sock"
+      DOCKER_TLS_CERTDIR: ""
       # deploy-local expects to run on a local runner that has docker available
       if [ -f backend_image.tar ]; then
         echo "Loading backend_image.tar";
+        echo "Checking Docker connectivity..."
+        if [ ! -S /var/run/docker.sock ]; then
+          echo "ERROR: /var/run/docker.sock is not available inside the job container.";
+          echo "Make sure your local GitLab Runner (docker executor) mounts the socket with:";
+          echo "  volumes = [\"/var/run/docker.sock:/var/run/docker.sock\"] in config.toml";
+          exit 1;
+        fi
+        docker version || (echo "ERROR: Cannot talk to Docker daemon" && exit 1)
         docker load -i backend_image.tar;
         IMAGE="backend-ci:$CI_COMMIT_SHORT_SHA";
         echo "Running $IMAGE (detached)";

@@ -1,3 +1,9 @@
+"""Unit tests for health endpoint.
+
+This module contains a minimal test that verifies the `/healthz`
+endpoint returns a successful status and expected JSON payload.
+"""
+
 import pytest
 
 

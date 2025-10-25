@@ -4,7 +4,6 @@ from django.urls import path
 
 from .views_password import PasswordResetConfirmView, PasswordResetRequestView
 
-
 urlpatterns = [
     path(
         "auth/password-reset/",

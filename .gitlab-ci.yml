@@ -7,6 +7,7 @@ variables:
   POSTGRES_DB: rpgdb
   POSTGRES_USER: rpguser
   POSTGRES_PASSWORD: rpgpass
+  POSTGRES_HOST: "postgres"
   POSTGRES_PORT: "5432"
   DJANGO_SETTINGS_MODULE: core.settings.base
 

@@ -139,22 +139,26 @@ build-backend-image:
   script:
     - |
       set -euo pipefail
+      # Always build a local image and save it as artifact
+      LOCAL_IMAGE="backend-ci:$CI_COMMIT_SHORT_SHA"
+      echo "Building local image $LOCAL_IMAGE"
+      docker build -t "$LOCAL_IMAGE" ./backend
+      echo "Saving artifact backend_image.tar"
+      docker save -o backend_image.tar "$LOCAL_IMAGE" || true
+
+      # If registry credentials provided, also tag and push to remote
       if [ -n "${DOCKER_REGISTRY:-}" ] && [ -n "${DOCKER_USERNAME:-}" ] && [ -n "${DOCKER_PASSWORD:-}" ]; then
         echo "Logging into registry $DOCKER_REGISTRY";
         echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin "$DOCKER_REGISTRY";
-        IMAGE="$DOCKER_REGISTRY/$CI_PROJECT_PATH/backend:$CI_COMMIT_SHORT_SHA";
-        echo "Building $IMAGE";
-        docker build -t "$IMAGE" ./backend;
-        echo "Pushing $IMAGE";
+        REMOTE_IMAGE="$DOCKER_REGISTRY/$CI_PROJECT_PATH/backend:$CI_COMMIT_SHORT_SHA";
+        echo "Tagging $LOCAL_IMAGE as $REMOTE_IMAGE";
+        docker tag "$LOCAL_IMAGE" "$REMOTE_IMAGE";
+        echo "Pushing $REMOTE_IMAGE";
         for i in 1 2 3; do
-          docker push "$IMAGE" && break || (echo "Push failed, retrying ($i)..." && sleep 3);
+          docker push "$REMOTE_IMAGE" && break || (echo "Push failed, retrying ($i)..." && sleep 3);
         done
       else
-        echo "DOCKER_REGISTRY or credentials not set, building local image and saving artifact";
-        # Build local image and save as artifact so downstream jobs can load it
-        IMAGE_LOCAL="$CI_PROJECT_PATH/backend:$CI_COMMIT_SHORT_SHA";
-        docker build -t "$IMAGE_LOCAL" ./backend;
-        docker save -o backend_image.tar "$IMAGE_LOCAL" || true
+        echo "Registry credentials not set; skipping push"
       fi
   artifacts:
     when: always
@@ -162,9 +166,7 @@ build-backend-image:
       - backend_image.tar
     expire_in: 1 hour
   rules:
-    - if: '$DOCKER_REGISTRY'
-      when: on_success
-    - when: never
+    - when: on_success
   retry: 2
 
 deploy-staging:
@@ -215,22 +217,34 @@ smoke-test-image:
       alias: docker
   variables:
     DOCKER_TLS_CERTDIR: ""
-  needs: [build-backend-image]
+  needs:
+    - job: build-backend-image
+      artifacts: true
   script:
     - |
       set -euo pipefail
+      IMAGE=""
+      # Try remote pull if registry creds provided
       if [ -n "${DOCKER_REGISTRY:-}" ] && [ -n "${DOCKER_USERNAME:-}" ] && [ -n "${DOCKER_PASSWORD:-}" ]; then
-        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin "$DOCKER_REGISTRY";
-        IMAGE="$DOCKER_REGISTRY/$CI_PROJECT_PATH/backend:$CI_COMMIT_SHORT_SHA";
-        echo "Pulling $IMAGE";
-        docker pull "$IMAGE" || (echo "Failed to pull image" && exit 1);
-      elif [ -f backend_image.tar ]; then
-        echo "Loading image from artifact backend_image.tar";
-        docker load -i backend_image.tar || (echo "Failed to load image" && exit 1);
-        IMAGE="$CI_PROJECT_PATH/backend:$CI_COMMIT_SHORT_SHA";
-      else
-        echo "No registry credentials and no artifact found; skipping smoke test";
-        exit 0
+        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin "$DOCKER_REGISTRY" || true
+        CANDIDATE_IMAGE="$DOCKER_REGISTRY/$CI_PROJECT_PATH/backend:$CI_COMMIT_SHORT_SHA"
+        echo "Attempting to pull $CANDIDATE_IMAGE"
+        if docker pull "$CANDIDATE_IMAGE"; then
+          IMAGE="$CANDIDATE_IMAGE"
+        else
+          echo "Remote pull failed; will fallback to artifact if available"
+        fi
+      fi
+
+      if [ -z "$IMAGE" ]; then
+        if [ -f backend_image.tar ]; then
+          echo "Loading image from artifact backend_image.tar"
+          docker load -i backend_image.tar || (echo "Failed to load image" && exit 1)
+          IMAGE="backend-ci:$CI_COMMIT_SHORT_SHA"
+        else
+          echo "No remote image and no artifact found; skipping smoke test"
+          exit 0
+        fi
       fi
       CONTAINER_ID=$(docker run -d -p 8001:8000 "$IMAGE") || (echo "Failed to start container" && exit 1);
       echo "Started container $CONTAINER_ID, waiting for health...";
@@ -241,16 +255,16 @@ smoke-test-image:
       done
       docker rm -f "$CONTAINER_ID" || true
   rules:
-    - if: '$DOCKER_REGISTRY'
-      when: on_success
-    - when: never
+    - when: on_success
   retry: 2
 
 deploy-local:
   image: docker:20
   stage: deploy
   tags: [local]
-  needs: [build-backend-image]
+  needs:
+    - job: build-backend-image
+      artifacts: true
   script:
     - |
       set -euo pipefail
@@ -258,7 +272,7 @@ deploy-local:
       if [ -f backend_image.tar ]; then
         echo "Loading backend_image.tar";
         docker load -i backend_image.tar;
-        IMAGE="$CI_PROJECT_PATH/backend:$CI_COMMIT_SHORT_SHA";
+        IMAGE="backend-ci:$CI_COMMIT_SHORT_SHA";
         echo "Running $IMAGE (detached)";
         docker run -d --name ci_local_backend -p 8000:8000 "$IMAGE" || true;
         echo "Backend started locally on port 8000";

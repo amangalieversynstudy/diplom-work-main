@@ -3,6 +3,17 @@
 ![pipeline status](https://gitlab.com/amangalieversynstudy/diplom-work/badges/main/pipeline.svg)
 ![coverage](https://gitlab.com/amangalieversynstudy/diplom-work/badges/main/coverage.svg)
 
+Run backend tests with coverage locally (using Docker Compose):
+
+```bash
+# start DB and Redis
+docker compose up -d db redis
+# run tests inside backend container
+docker compose exec backend pytest --cov=backend --cov-report=term-missing
+```
+
+CI stores `backend/coverage.xml` and `backend/pytest-results.xml` as job artifacts.
+
 Проект: обучающая RPG-платформа (аналог CodeCombat), цель — вырастить пользователя до Junior Django Developer.
 
 Стек:

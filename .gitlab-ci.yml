@@ -73,7 +73,12 @@ frontend-ci:
   before_script:
     - cd frontend
   script:
-    - npm ci
+    - |
+      if [ -f package-lock.json ]; then
+        npm ci
+      else
+        npm install --no-audit --no-fund
+      fi
     - npm run lint
     - npm run build
   artifacts:

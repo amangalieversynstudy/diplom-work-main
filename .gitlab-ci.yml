@@ -16,8 +16,8 @@ lint-backend:
   script:
     - python -m pip install --upgrade pip
     - python -m pip install --no-cache-dir flake8 black
-    - python -m black --check backend || true
-    - python -m flake8 backend || true
+    - python -m black --check backend
+    - python -m flake8 backend
 
 pytest-backend:
   image: python:3.11
@@ -55,7 +55,8 @@ PY
     - cd backend
     - python manage.py migrate --noinput
   script:
-    - python -m pytest --junitxml=pytest-results.xml --cov=backend --cov-report=xml -q
+    - python -m pytest --junitxml=pytest-results.xml --cov=backend --cov-report=term --cov-report=xml -q
+  coverage: '/TOTAL.*\s+(\d+\%)/'
   artifacts:
     when: always
     reports:
@@ -73,7 +74,7 @@ frontend-ci:
     - cd frontend
   script:
     - npm ci
-    - npm run lint || true
+    - npm run lint
     - npm run build
   artifacts:
     paths:

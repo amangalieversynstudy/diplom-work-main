@@ -1,4 +1,84 @@
 stages:
+  - lint
+  - test
+  - frontend
+
+variables:
+  POSTGRES_DB: rpgdb
+  POSTGRES_USER: rpguser
+  POSTGRES_PASSWORD: rpgpass
+  POSTGRES_PORT: "5432"
+  DJANGO_SETTINGS_MODULE: core.settings.base
+
+lint-backend:
+  image: python:3.11
+  stage: lint
+  script:
+    - python -m pip install --upgrade pip
+    - python -m pip install --no-cache-dir flake8 black
+    - python -m black --check backend || true
+    - python -m flake8 backend || true
+
+pytest-backend:
+  image: python:3.11
+  stage: test
+  needs: [lint-backend]
+  services:
+    - name: postgres:15
+      alias: postgres
+    - name: redis:7
+      alias: redis
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  before_script:
+    - apt-get update && apt-get install -y build-essential libpq-dev gcc
+    - python -m pip install --upgrade pip
+    - python -m pip install --no-cache-dir -r backend/requirements.txt
+    - python -m pip install --no-cache-dir pytest pytest-django psycopg2-binary
+    # wait for postgres to accept connections
+    - |
+      python - <<'PY'
+import time, os
+import psycopg2
+for i in range(60):
+    try:
+        conn = psycopg2.connect(dbname=os.environ['POSTGRES_DB'], user=os.environ['POSTGRES_USER'], password=os.environ['POSTGRES_PASSWORD'], host='postgres', port=os.environ.get('POSTGRES_PORT','5432'))
+        conn.close()
+        print('postgres ready')
+        break
+    except Exception as e:
+        print('waiting for postgres...', e)
+        time.sleep(1)
+else:
+    raise SystemExit('postgres did not become ready')
+PY
+    - cd backend
+    - python manage.py migrate --noinput
+  script:
+    - python -m pytest --junitxml=pytest-results.xml -q
+  artifacts:
+    when: always
+    reports:
+      junit: backend/pytest-results.xml
+    paths:
+      - backend/pytest-results.xml
+      - .cache/pip
+    expire_in: 1 hour
+
+frontend-ci:
+  image: node:20
+  stage: frontend
+  before_script:
+    - cd frontend
+  script:
+    - npm ci
+    - npm run lint || true
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/.next
+    expire_in: 1 hour
+stages:
   - test
 
 variables:

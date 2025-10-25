@@ -1,3 +1,5 @@
+"""Production Django settings for deployment."""
+
 from .base import *
 
 DEBUG = False

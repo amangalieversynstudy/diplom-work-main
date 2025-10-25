@@ -1,3 +1,5 @@
+"""Authentication views for register, login, logout and email verification."""
+
 from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -12,11 +14,14 @@ User = get_user_model()
 
 
 class RegisterView(generics.CreateAPIView):
+    """Endpoint to register new users and send verification email."""
+
     queryset = User.objects.all()
     permission_classes = (permissions.AllowAny,)
     serializer_class = RegisterSerializer
 
     def perform_create(self, serializer):
+        """Create the user and attempt to send a verification email."""
         user = serializer.save()
         # send verification email (console backend in dev)
         try:
@@ -34,10 +39,13 @@ class RegisterView(generics.CreateAPIView):
 
 
 class MeView(generics.RetrieveAPIView):
+    """Return details about the currently authenticated user."""
+
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = UserDetailSerializer
 
     def get_object(self):
+        """Return the currently authenticated user."""
         return self.request.user
 
 
@@ -47,6 +55,7 @@ class LogoutView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def post(self, request):
+        """Blacklist the provided refresh token to logout the user."""
         try:
             refresh_token = request.data.get("refresh")
             if not refresh_token:
@@ -62,9 +71,12 @@ class LogoutView(APIView):
 
 
 class VerifyEmailView(APIView):
+    """Verify email using uid and token from verification link."""
+
     permission_classes = (permissions.AllowAny,)
 
     def get(self, request):
+        """Handle GET to verify a user's email address using uid and token."""
         uid = request.query_params.get("uid")
         token = request.query_params.get("token")
         if not uid or not token:

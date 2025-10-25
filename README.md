@@ -134,7 +134,7 @@ docker compose logs -f celery
 docker compose exec db pg_dump -U rpguser rpgdb > db-dump.sql
 ```
 
-Если хотите, могу сгенерировать пример Postman коллекции (JSON) или добавить конкретные curl-примеры для каждого endpoint. 
+Если хотите, могу сгенерировать пример Postman коллекции (JSON) или добавить конкретные curl-примеры для каждого endpoint.
 
 ## Branch Protection
 

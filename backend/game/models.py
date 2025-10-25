@@ -1,24 +1,34 @@
+"""Models for game entities: roles, locations, missions, and progress."""
+
 from django.db import models
 
 
 class ClassRole(models.Model):
+    """A player class or role with an optional description."""
+
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
 
     def __str__(self):
+        """Return human-readable name for ClassRole."""
         return self.name
 
 
 class Location(models.Model):
+    """A named location that contains missions."""
+
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     order = models.IntegerField(default=0)
 
     def __str__(self):
+        """Return human-readable title for Location."""
         return self.title
 
 
 class Mission(models.Model):
+    """A mission which can be completed by a user to gain XP."""
+
     location = models.ForeignKey(
         Location, on_delete=models.CASCADE, related_name="missions"
     )
@@ -29,10 +39,13 @@ class Mission(models.Model):
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
+        """Return human-readable title for Mission."""
         return self.title
 
 
 class Progress(models.Model):
+    """Tracks user progress for missions."""
+
     user = models.ForeignKey(
         "users.User", on_delete=models.CASCADE, related_name="progress"
     )

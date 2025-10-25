@@ -1,3 +1,5 @@
+"""Custom user model and profile management."""
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models.signals import post_save
@@ -5,10 +7,14 @@ from django.dispatch import receiver
 
 
 class User(AbstractUser):
+    """Custom user model with optional display name."""
+
     display_name = models.CharField(max_length=150, blank=True)
 
 
 class Profile(models.Model):
+    """Profile stores game-related user state such as XP and level."""
+
     user = models.OneToOneField(
         "users.User", on_delete=models.CASCADE, related_name="profile"
     )
@@ -17,6 +23,7 @@ class Profile(models.Model):
     bio = models.TextField(blank=True)
 
     def add_xp(self, amount):
+        """Add XP to the profile and adjust level when thresholds are crossed."""
         self.xp += amount
         # simple leveling rule: every 100 XP = level up
         new_level = self.xp // 100 + 1

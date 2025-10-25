@@ -1,6 +1,9 @@
 #!/usr/bin/env python
+"""Django management utility for administrative tasks."""
+
 import os
 import sys
+
 
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings.local")

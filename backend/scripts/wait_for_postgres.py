@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Wait for Postgres to become available using psycopg2.
+"""Utilities to wait until PostgreSQL is accepting connections.
 
-This script attempts to open a connection repeatedly for up to 60 seconds.
-It exits with non-zero status if the DB does not become available.
+This script is used by CI and container entrypoints to wait for the
+Postgres service to become available before running migrations or tests.
 """
 import os
 import time
@@ -11,6 +11,10 @@ import psycopg2
 
 
 def main():
+    """Attempt to connect to Postgres repeatedly, returning 0 on success.
+
+    Returns non-zero exit code if Postgres is not available within timeout.
+    """
     for i in range(60):
         try:
             conn = psycopg2.connect(

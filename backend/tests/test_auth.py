@@ -1,9 +1,12 @@
+"""Tests for authentication endpoints."""
+
 import pytest
 from rest_framework.test import APIClient
 
 
 @pytest.mark.django_db
 def test_register_login_logout():
+    """Register a user, obtain tokens via login, and logout (blacklist refresh)."""
     client = APIClient()
     register_url = "/api/auth/register/"
     login_url = "/api/auth/login/"
@@ -28,6 +31,7 @@ def test_register_login_logout():
 
 @pytest.mark.django_db
 def test_register_and_verify_email(client):
+    """Register and simulate email verification for the registered user."""
     # register user
     resp = client.post(
         "/api/auth/register/",

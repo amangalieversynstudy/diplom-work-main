@@ -25,3 +25,23 @@ def test_register_login_logout():
     client.credentials(HTTP_AUTHORIZATION=f"Bearer {data['access']}")
     resp = client.post(logout_url, {'refresh': refresh})
     assert resp.status_code in (205, 200)
+
+
+@pytest.mark.django_db
+def test_register_and_verify_email(client):
+    # register user
+    resp = client.post('/api/auth/register/', {'username': 'u2', 'password': 'p2', 'email': 'u2@example.com'})
+    assert resp.status_code == 201
+    # since email backend is console, we can't read it here; instead, ensure user exists and is_active flag
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    u = User.objects.get(username='u2')
+    # by default user created may be inactive until verification
+    # simulate verification by calling the verify endpoint with token
+    from django.utils.http import urlsafe_base64_encode
+    from django.utils.encoding import force_bytes
+    from django.contrib.auth.tokens import default_token_generator
+    uid = urlsafe_base64_encode(force_bytes(u.pk))
+    token = default_token_generator.make_token(u)
+    resp = client.get(f'/api/auth/verify-email/?uid={uid}&token={token}')
+    assert resp.status_code == 200

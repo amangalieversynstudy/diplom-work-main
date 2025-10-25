@@ -3,6 +3,7 @@
 Uses an in-memory SQLite database so tests can run quickly without
 requiring the Postgres service to be available during local runs.
 """
+
 from .base import *  # noqa: F401,F403
 
 # Keep secret key for tests only. Do NOT use in production.

@@ -3,6 +3,7 @@
 This exposes a lightweight endpoint used by docker / orchestrators
 to check that the application is up and can respond to HTTP requests.
 """
+
 from django.http import JsonResponse
 
 

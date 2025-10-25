@@ -2,7 +2,6 @@ from django.urls import path
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
-    TokenBlacklistView,
 )
 from .views_auth import RegisterView, MeView
 from .views_auth import LogoutView, VerifyEmailView

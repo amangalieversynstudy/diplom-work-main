@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+# Token views are imported where needed; keep imports local in views that use them
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers_auth import RegisterSerializer, UserDetailSerializer
 from django.contrib.auth import get_user_model

@@ -21,6 +21,9 @@ INSTALLED_APPS = [
     'game',
 ]
 
+# Use custom user model
+AUTH_USER_MODEL = 'users.User'
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',

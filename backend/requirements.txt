@@ -9,3 +9,7 @@ django-cors-headers
 django-environ
 django-filter
 drf-yasg
+
+# Testing
+pytest
+pytest-django

@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class User(AbstractUser):
     display_name = models.CharField(max_length=150, blank=True)
@@ -17,3 +19,10 @@ class Profile(models.Model):
         if new_level > self.level:
             self.level = new_level
         self.save()
+
+
+@receiver(post_save, sender='users.User')
+def create_user_profile(sender, instance, created, **kwargs):
+    """Ensure a Profile is created for each new User."""
+    if created:
+        Profile.objects.create(user=instance)

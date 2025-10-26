@@ -92,9 +92,7 @@ class MissionViewSet(viewsets.ModelViewSet):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                "stars": openapi.Schema(
-                    type=openapi.TYPE_INTEGER, description="0..3"
-                ),
+                "stars": openapi.Schema(type=openapi.TYPE_INTEGER, description="0..3"),
             },
             required=[],
         ),

@@ -8,6 +8,34 @@
 
 > Документация по деплою: см. `README.deploy.md` — там описаны deploy-local, deploy-staging, флаги DEMO_SEED/ALLOW_DEMO_SEED и Postman-инструкции.
 
+> Примечание: когда переходите к работе с кодом, используйте удобные make-цели и .env — см. раздел [Make команды и .env](README.deploy.md#make-команды-и-env).
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+Содержание
+
+- [Как начать с Make](#%D0%9A%D0%B0%D0%BA-%D0%BD%D0%B0%D1%87%D0%B0%D1%82%D1%8C-%D1%81-make)
+- [Быстрый старт](#%D0%91%D1%8B%D1%81%D1%82%D1%80%D1%8B%D0%B9-%D1%81%D1%82%D0%B0%D1%80%D1%82)
+- [Codecov integration](#codecov-integration)
+- [Документация по деплою](#%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%B0%D1%86%D0%B8%D1%8F-%D0%BF%D0%BE-%D0%B4%D0%B5%D0%BF%D0%BB%D0%BE%D1%8E)
+- [Manual testing (локально)](#manual-testing-%D0%BB%D0%BE%D0%BA%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE)
+- [Branch Protection](#branch-protection)
+  - [Настройка защиты веток](#%D0%9D%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0-%D0%B7%D0%B0%D1%89%D0%B8%D1%82%D1%8B-%D0%B2%D0%B5%D1%82%D0%BE%D0%BA)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## Как начать с Make
+
+Быстрый локальный запуск без захода в подробный гайд:
+
+```bash
+[ -f .env ] || cp .env.example .env   # создать .env, если его нет
+make deploy-local                      # поднять Redis+Postgres+Backend+Celery и засеять демо
+make logs                              # смотреть логи бэкенда; Ctrl+C чтобы выйти
+# make stop-local                       # остановить локальный стек (по необходимости)
+```
+
+=======
 ## Быстрый старт
 
 - Локально: [README.deploy.md#quickstart-local](README.deploy.md#quickstart-local)

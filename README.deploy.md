@@ -3,22 +3,33 @@
 Этот документ описывает, как запускать локальную демонстрационную среду (deploy-local) и как выкатывать на staging (deploy-staging) через GitLab CI, а также флаги для автозагрузки демо-данных.
 
 ## Содержание
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+Содержание
 
-- [Быстрый старт](#быстрый-старт)
-- [Локальная демонстрация (deploy-local)](#1-локальная-демонстрация-deploy-local)
-- [Staging с демо-данными](#2-staging-с-демо-данными)
-- [Обзор пайплайна](#обзор-пайплайна)
-- [DEMO флаги и защита](#demo-флаги-и-защита)
-- [Локальный деплой (deploy-local)](#локальный-деплой-deploy-local)
-- [Staging деплой (deploy-staging)](#staging-деплой-deploy-staging)
-- [Demo management-команды](#demo-management-команды)
-- [Ручное тестирование API (Postman)](#ручное-тестирование-api-postman)
-- [Частые проблемы](#частые-проблемы)
-- [Безопасность](#безопасность)
+- [Быстрый старт](#%D0%91%D1%8B%D1%81%D1%82%D1%80%D1%8B%D0%B9-%D1%81%D1%82%D0%B0%D1%80%D1%82)
+  - [1) Локальная демонстрация (deploy-local)](#1-%D0%9B%D0%BE%D0%BA%D0%B0%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F-%D0%B4%D0%B5%D0%BC%D0%BE%D0%BD%D1%81%D1%82%D1%80%D0%B0%D1%86%D0%B8%D1%8F-deploy-local)
+  - [2) Staging с демо-данными](#2-staging-%D1%81-%D0%B4%D0%B5%D0%BC%D0%BE-%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%BC%D0%B8)
+- [Обзор пайплайна](#%D0%9E%D0%B1%D0%B7%D0%BE%D1%80-%D0%BF%D0%B0%D0%B9%D0%BF%D0%BB%D0%B0%D0%B9%D0%BD%D0%B0)
+- [DEMO флаги и защита](#demo-%D1%84%D0%BB%D0%B0%D0%B3%D0%B8-%D0%B8-%D0%B7%D0%B0%D1%89%D0%B8%D1%82%D0%B0)
+- [Локальный деплой (deploy-local)](#%D0%9B%D0%BE%D0%BA%D0%B0%D0%BB%D1%8C%D0%BD%D1%8B%D0%B9-%D0%B4%D0%B5%D0%BF%D0%BB%D0%BE%D0%B9-deploy-local)
+- [Staging деплой (deploy-staging)](#staging-%D0%B4%D0%B5%D0%BF%D0%BB%D0%BE%D0%B9-deploy-staging)
+- [Demo management-команды](#demo-management-%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D1%8B)
+- [Ручное тестирование API (Postman)](#%D0%A0%D1%83%D1%87%D0%BD%D0%BE%D0%B5-%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5-api-postman)
+- [Частые проблемы](#%D0%A7%D0%B0%D1%81%D1%82%D1%8B%D0%B5-%D0%BF%D1%80%D0%BE%D0%B1%D0%BB%D0%B5%D0%BC%D1%8B)
+- [Безопасность](#%D0%91%D0%B5%D0%B7%D0%BE%D0%BF%D0%B0%D1%81%D0%BD%D0%BE%D1%81%D1%82%D1%8C)
+- [Make команды и .env](#make-%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D1%8B-%D0%B8-env)
+- [Быстрый старт](#%D0%91%D1%8B%D1%81%D1%82%D1%80%D1%8B%D0%B9-%D1%81%D1%82%D0%B0%D1%80%D1%82-1)
+  - [1) Локальная демонстрация (deploy-local)](#1-%D0%9B%D0%BE%D0%BA%D0%B0%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F-%D0%B4%D0%B5%D0%BC%D0%BE%D0%BD%D1%81%D1%82%D1%80%D0%B0%D1%86%D0%B8%D1%8F-deploy-local-1)
+  - [2) Staging с демо-данными](#2-staging-%D1%81-%D0%B4%D0%B5%D0%BC%D0%BE-%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%BC%D0%B8-1)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Быстрый старт
 
 <a id="quickstart"></a>
+
+> Примечание: как только вы завершили знакомство и переходите к работе с кодом проекта, используйте раздел [Make команды и .env](#make-команды-и-env) — это самый быстрый путь для локального запуска и повседневных операций.
 
 ### 1) Локальная демонстрация (deploy-local)
 
@@ -158,6 +169,40 @@
 ---
 Если потребуется, можно расширить deploy-staging автоматическим выводом публичного URL/cred'ов и интегрировать шаги очистки демо-данных.
 
+<<<<<<< HEAD
+## Make команды и .env
+
+Для удобства доступны цели Make (см. `Makefile`). Рекомендуется создать локальный файл `.env` на основе примера ниже — переменные будут автоматически подхвачены Makefile.
+
+Пример `.env` (скопируйте `.env.example` → `.env`):
+
+```
+POSTGRES_DB=rpgdb
+POSTGRES_USER=rpguser
+POSTGRES_PASSWORD=rpgpass
+POSTGRES_HOST=ci_local_postgres
+REDIS_URL=redis://ci_local_redis:6379/0
+
+# staging
+DEPLOY_HOST=
+DEPLOY_USER=
+DEPLOY_DIR=/srv/diplom-work
+DEMO_SEED=false
+ALLOW_DEMO_SEED=false
+```
+
+Команды:
+
+- `make deploy-local` — локальный стек: сеть/Redis/Postgres → build backend-local → migrate/collectstatic → seed-demo → run backend+celery → health.
+- `make seed-demo` — загрузить демо-данные, создать демо-админа, вывести сводку.
+- `make stop-local` — остановить/удалить локальные контейнеры.
+- `make logs` — логи бэкенда.
+- `make redeploy-local` — stop + deploy-local.
+- `make clean` — удалить локальные артефакты (контейнеры, сеть, образ backend-local).
+- `make ps` — показать контейнеры ci_local_*.
+- `make curl-health` — быстрый проверочный запрос к /healthz.
+- `make deploy-staging` — деплой на staging по SSH (docker-compose). Требуются `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_DIR`. Для демо включайте `DEMO_SEED=true` и при необходимости `ALLOW_DEMO_SEED=true`.
+=======
 ## Быстрый старт
 
 <a id="quickstart"></a>
@@ -189,3 +234,4 @@
 3. Запустите вручную `deploy-staging`.
 4. В логе увидите "Seeding demo data on staging..." и сводку `print_demo_summary`.
 5. Отключите флаги DEMO_SEED/ALLOW_DEMO_SEED после демонстрации.
+>>>>>>> origin/main

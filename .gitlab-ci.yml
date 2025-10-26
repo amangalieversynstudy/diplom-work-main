@@ -14,9 +14,34 @@ variables:
   POSTGRES_PORT: "5432"
   DJANGO_SETTINGS_MODULE: core.settings.base
 
+default:
+  tags:
+    - self-hosted
+    - mac
+
+# Save shared minutes by skipping CI when only docs/markdown or Makefile changed.
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH != ""'
+      changes:
+        - "**/*.md"
+        - "README*"
+        - "Makefile"
+      when: never
+    - when: always
+
 lint-backend:
   image: python:3.11
   stage: lint
+  rules:
+    - changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+        - backend/requirements*.txt
+      when: on_success
+    - when: never
   script:
     - python -m pip install --upgrade pip
     - python -m pip install --no-cache-dir flake8 black
@@ -26,6 +51,13 @@ pytest-backend:
   image: python:3.11
   stage: test
   needs: [lint-backend]
+  rules:
+    - changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+        - backend/requirements*.txt
+      when: on_success
+    - when: never
   services:
     - name: postgres:15
       alias: postgres
@@ -61,6 +93,12 @@ frontend-ci:
   stage: frontend
   variables:
     HUSKY: "0"
+  rules:
+    - changes:
+        - frontend/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
   before_script:
     - cd frontend
   script:
@@ -85,6 +123,13 @@ upload-coverage-codecov:
       artifacts: true
   variables:
     GIT_STRATEGY: none
+  rules:
+    - changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+        - backend/requirements*.txt
+      when: on_success
+    - when: never
   script:
     - apt-get update && apt-get install -y curl
     - |
@@ -102,12 +147,19 @@ upload-coverage-codecov:
       else
         echo "coverage.xml not found, skipping codecov upload"
       fi
-  when: always
+  # job will run only when backend changes (by rules above)
 
 flake8-docstrings-baseline:
   image: python:3.11
   stage: docs-lint
   needs: [lint-backend]
+  rules:
+    - changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+        - backend/requirements*.txt
+      when: on_success
+    - when: never
   script:
     - python -m pip install --upgrade pip
     - python -m pip install --no-cache-dir flake8 flake8-docstrings
@@ -122,6 +174,14 @@ flake8-docstrings-baseline:
 build-backend-image:
   image: docker:20
   stage: build
+  rules:
+    - changes:
+        - backend/**/*
+        - Dockerfile
+        - backend/Dockerfile
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
   services:
     - name: docker:20-dind
       alias: docker
@@ -156,8 +216,6 @@ build-backend-image:
     paths:
       - backend_image.tar
     expire_in: 1 hour
-  rules:
-    - when: on_success
   retry: 2
 
 deploy-staging:
@@ -215,6 +273,14 @@ deploy-staging:
 smoke-test-image:
   image: docker:20
   stage: build
+  rules:
+    - changes:
+        - backend/**/*
+        - Dockerfile
+        - backend/Dockerfile
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
   services:
     - name: docker:20-dind
       alias: docker
@@ -258,8 +324,6 @@ smoke-test-image:
         fi; sleep 1;
       done
       docker rm -f "$CONTAINER_ID" || true
-  rules:
-    - when: on_success
   retry: 2
 
 deploy-local:

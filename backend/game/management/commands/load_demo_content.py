@@ -1,14 +1,31 @@
+"""Management command to seed demo locations and missions.
+
+This command is intended for local/dev environments to quickly populate
+the database with two locations and three missions (including a repeatable
+one) for manual testing. In non-debug environments it requires the
+environment variable ALLOW_DEMO_SEED=true to proceed.
+"""
+
 import os
-from django.core.management.base import BaseCommand
+
 from django.conf import settings
+from django.core.management.base import BaseCommand
 from game.models import Location, Mission
 
 
 class Command(BaseCommand):
+    """Load demo locations and missions for quick manual testing."""
+
     help = "Load demo locations and missions for quick manual testing"
 
     def handle(self, *args, **options):
-        allow_env = os.getenv("ALLOW_DEMO_SEED", "").lower() in {"1", "true", "yes", "on"}
+        """Execute command: create locations, missions and prerequisites."""
+        allow_env = os.getenv("ALLOW_DEMO_SEED", "").lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
         if not settings.DEBUG and not allow_env:
             self.stdout.write(
                 self.style.WARNING(
@@ -18,8 +35,12 @@ class Command(BaseCommand):
             )
             return
         # Locations
-        world1, _ = Location.objects.get_or_create(title="World 1", defaults={"order": 1})
-        world2, _ = Location.objects.get_or_create(title="World 2", defaults={"order": 2})
+        world1, _ = Location.objects.get_or_create(
+            title="World 1", defaults={"order": 1}
+        )
+        world2, _ = Location.objects.get_or_create(
+            title="World 2", defaults={"order": 2}
+        )
 
         # Missions
         intro, _ = Mission.objects.get_or_create(

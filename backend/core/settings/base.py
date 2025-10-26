@@ -100,9 +100,11 @@ REST_FRAMEWORK = {
         if DEBUG
         else ["rest_framework.renderers.JSONRenderer"]
     ),
-    # Accept only JSON payloads by default
+    # Accept JSON and form-encoded payloads by default
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",
+        "rest_framework.parsers.FormParser",
+        "rest_framework.parsers.MultiPartParser",
     ],
 }
 
@@ -123,3 +125,6 @@ EMAIL_BACKEND = os.getenv(
     "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
 )
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@example.com")
+
+# drf-yasg: silence compat renderer deprecation
+SWAGGER_USE_COMPAT_RENDERERS = False

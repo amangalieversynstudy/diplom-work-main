@@ -127,7 +127,9 @@ def test_progress_view_returns_only_own(api_client, user, content, db):
     assert resp.json() == []
 
 
-def test_start_and_complete_forbidden_without_prereqs_or_level(api_client, user, content):
+def test_start_and_complete_forbidden_without_prereqs_or_level(
+    api_client, user, content
+):
     _, m1, m2, _ = content
     # m2 требует m1 и level>=2
     api_client.force_authenticate(user=user)

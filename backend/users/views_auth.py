@@ -34,7 +34,9 @@ class RegisterView(generics.CreateAPIView):
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
                 token = default_token_generator.make_token(user)
                 verify_link = f"/api/auth/verify-email/?uid={uid}&token={token}"
-                send_mail("Verify your email", f"Click: {verify_link}", None, [user.email])
+                send_mail(
+                    "Verify your email", f"Click: {verify_link}", None, [user.email]
+                )
         except Exception:
             # don't fail registration if email backend misconfigured
             pass

@@ -42,9 +42,9 @@ class MissionSerializer(serializers.ModelSerializer):
             # prerequisites must be completed
             if obj.prerequisites.exists():
                 completed_missions = set(
-                    Progress.objects.filter(user=request.user, completed=True).values_list(
-                        "mission_id", flat=True
-                    )
+                    Progress.objects.filter(
+                        user=request.user, completed=True
+                    ).values_list("mission_id", flat=True)
                 )
                 for pre in obj.prerequisites.all():
                     if pre.id not in completed_missions:

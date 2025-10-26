@@ -5,8 +5,8 @@ from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 from .models import Location, Mission, Progress
 from .serializers import LocationSerializer, MissionSerializer, ProgressSerializer
@@ -51,7 +51,9 @@ class MissionViewSet(viewsets.ModelViewSet):
         ),
         responses={200: ProgressSerializer},
     )
-    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    @action(
+        detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
+    )
     @transaction.atomic
     def start(self, request, pk=None):
         mission = self.get_object()
@@ -68,7 +70,9 @@ class MissionViewSet(viewsets.ModelViewSet):
                     "mission_id", flat=True
                 )
             )
-            missing = [m.id for m in mission.prerequisites.all() if m.id not in completed_ids]
+            missing = [
+                m.id for m in mission.prerequisites.all() if m.id not in completed_ids
+            ]
             if missing:
                 return Response({"detail": "Prerequisites not completed"}, status=403)
 
@@ -92,7 +96,9 @@ class MissionViewSet(viewsets.ModelViewSet):
         ),
         responses={200: ProgressSerializer},
     )
-    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
+    @action(
+        detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
+    )
     @transaction.atomic
     def complete(self, request, pk=None):
         mission = self.get_object()
@@ -108,7 +114,9 @@ class MissionViewSet(viewsets.ModelViewSet):
                     "mission_id", flat=True
                 )
             )
-            missing = [m.id for m in mission.prerequisites.all() if m.id not in completed_ids]
+            missing = [
+                m.id for m in mission.prerequisites.all() if m.id not in completed_ids
+            ]
             if missing:
                 return Response({"detail": "Prerequisites not completed"}, status=403)
 
@@ -138,7 +146,13 @@ class MissionViewSet(viewsets.ModelViewSet):
             profile.add_xp(xp_gain)
 
         data = ProgressSerializer(prog).data
-        data.update({"xp_added": xp_gain, "profile_xp": profile.xp, "profile_level": profile.level})
+        data.update(
+            {
+                "xp_added": xp_gain,
+                "profile_xp": profile.xp,
+                "profile_level": profile.level,
+            }
+        )
         return Response(data)
 
 

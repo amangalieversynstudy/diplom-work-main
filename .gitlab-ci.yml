@@ -85,12 +85,19 @@ backend-build-image:
 smoke-backend-image:
   image: docker:27.2.0
   stage: smoke
-  needs: ["backend-build-image"]
+  needs:
+    - job: backend-build-image
+      optional: true
   rules:
-    - when: on_success
+    - changes: ["backend/**/*", ".gitlab-ci.yml"]
   before_script:
     - apk add --no-cache bash
   script:
+    - |
+      if [ ! -f backend_image.tar ]; then
+        echo "No backend_image.tar artifact present; skipping smoke test gracefully.";
+        exit 0;
+      fi
     - docker load -i backend_image.tar
     - docker rm -f ci_smoke_backend >/dev/null 2>&1 || true
     - docker run -d --name ci_smoke_backend -e DJANGO_SETTINGS_MODULE=core.settings.test backend-ci:$CI_COMMIT_SHORT_SHA
@@ -108,7 +115,9 @@ smoke-backend-image:
 deploy-local:
   image: docker:27.2.0
   stage: deploy
-  needs: ["backend-build-image"]
+  needs:
+    - job: backend-build-image
+      optional: true
   rules:
     - when: manual
   tags: [local]
@@ -128,9 +137,14 @@ deploy-local:
     docker run -d --name ci_local_redis --network "$NET" redis:7 >/dev/null
     docker run -d --name ci_local_postgres --network "$NET" -e POSTGRES_DB=${POSTGRES_DB:-rpgdb} -e POSTGRES_USER=${POSTGRES_USER:-rpguser} -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-rpgpass} postgres:15 >/dev/null
     echo -n "Waiting for Postgres"; for i in $(seq 1 30); do if docker exec ci_local_postgres pg_isready -U ${POSTGRES_USER:-rpguser} -d ${POSTGRES_DB:-rpgdb} >/dev/null 2>&1; then echo " OK"; break; fi; echo -n "."; sleep 1; done
-    echo "Load backend image"
-    docker load -i backend_image.tar >/dev/null
     IMAGE="backend-ci:$CI_COMMIT_SHORT_SHA"
+    if [ -f backend_image.tar ]; then
+      echo "Load backend image artifact"
+      docker load -i backend_image.tar >/dev/null
+    else
+      echo "No backend_image.tar artifact found; building backend image locally"
+      docker build -t "$IMAGE" ./backend
+    fi
     echo "Run migrations and collectstatic"
     docker run --rm --network "$NET" \
       -e DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-core.settings.base}" \

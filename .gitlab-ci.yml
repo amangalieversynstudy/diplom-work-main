@@ -165,6 +165,9 @@ deploy-staging:
   stage: deploy
   before_script:
     - apk add --no-cache openssh-client bash curl
+  variables:
+    DEMO_SEED: "false"
+    ALLOW_DEMO_SEED: "false"
   script:
     - |
       if [ -n "$DEPLOY_HOST" ] && [ -n "$SSH_PRIVATE_KEY" ] && [ -n "$DEPLOY_USER" ]; then
@@ -188,10 +191,19 @@ deploy-staging:
             docker-compose pull || true && \
             docker-compose up -d && \
             # attempt migrations if compose service is named 'backend'
-            docker-compose exec backend python manage.py migrate --noinput || true";
+            docker-compose exec backend python manage.py migrate --noinput || true && \
+            if [ '${DEMO_SEED}' = 'true' ]; then \
+              echo 'Seeding demo data on staging...'; \
+              docker-compose exec -e ALLOW_DEMO_SEED=${ALLOW_DEMO_SEED} backend python manage.py load_demo_content || true; \
+              docker-compose exec -e ALLOW_DEMO_SEED=${ALLOW_DEMO_SEED} backend python manage.py create_demo_superuser || true; \
+              docker-compose exec backend python manage.py print_demo_summary || true; \
+            else \
+              echo 'DEMO_SEED=false -> skipping demo seeding on staging'; \
+            fi";
         else
           ssh $DEPLOY_USER@$DEPLOY_HOST "docker-compose pull || true && docker-compose up -d && echo 'Deploy executed'";
         fi
+        echo "Подробнее: см. README.deploy.md в репозитории";
       else
         echo "DEPLOY_HOST/DEPLOY_USER/SSH_PRIVATE_KEY not set - skipping deploy";
       fi
@@ -262,6 +274,13 @@ deploy-local:
     # Use host Docker daemon via unix socket (runner must mount /var/run/docker.sock)
     DOCKER_HOST: "unix:///var/run/docker.sock"
     DOCKER_TLS_CERTDIR: ""
+    # Seed demo data in local deploy
+    DEMO_SEED: "true"
+    ALLOW_DEMO_SEED: "true"
+    # Demo admin defaults (can override in CI variables)
+    DEMO_ADMIN_USERNAME: "admin"
+    DEMO_ADMIN_EMAIL: "admin@example.com"
+    DEMO_ADMIN_PASSWORD: "admin123"
   script:
     - |
       set -euo pipefail
@@ -310,6 +329,24 @@ deploy-local:
           -e REDIS_URL="redis://ci_local_redis:6379/0" \
           "$IMAGE" bash -lc "python manage.py migrate --noinput && python manage.py collectstatic --noinput" >/dev/null
 
+        if [ "${DEMO_SEED}" = "true" ]; then
+          echo "Loading demo content and creating demo superuser"
+          docker run --rm --network "$NET" \
+            -e DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-core.settings.base}" \
+            -e POSTGRES_HOST="ci_local_postgres" \
+            -e POSTGRES_DB="${POSTGRES_DB:-rpgdb}" \
+            -e POSTGRES_USER="${POSTGRES_USER:-rpguser}" \
+            -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-rpgpass}" \
+            -e REDIS_URL="redis://ci_local_redis:6379/0" \
+            -e DEMO_ADMIN_USERNAME="$DEMO_ADMIN_USERNAME" \
+            -e DEMO_ADMIN_EMAIL="$DEMO_ADMIN_EMAIL" \
+            -e DEMO_ADMIN_PASSWORD="$DEMO_ADMIN_PASSWORD" \
+            -e ALLOW_DEMO_SEED="$ALLOW_DEMO_SEED" \
+            "$IMAGE" bash -lc "python manage.py load_demo_content && python manage.py create_demo_superuser && python manage.py print_demo_summary" >/dev/null || true
+        else
+          echo "DEMO_SEED=false -> skipping demo seeding"
+        fi
+
         echo "Stopping/removing existing ci_local_backend if present";
         docker rm -f ci_local_backend >/dev/null 2>&1 || true;
         echo "Running backend $IMAGE (detached) on network $NET"
@@ -336,7 +373,9 @@ deploy-local:
         echo "Waiting for backend health on http://localhost:8000/healthz"
         for i in $(seq 1 30); do
           if curl -sS --fail http://localhost:8000/healthz >/dev/null; then echo "Backend healthy"; break; fi; sleep 1; done
-        echo "Backend started locally on port 8000";
+        echo "Backend started locally on http://localhost:8000";
+        echo "Admin login: ${DEMO_ADMIN_USERNAME}/${DEMO_ADMIN_PASSWORD} (if DEMO_SEED=true)";
+        echo "Подробнее: см. README.deploy.md в репозитории";
       else
         echo "backend_image.tar artifact not found; nothing to deploy";
       fi

@@ -30,12 +30,19 @@ class RegisterView(generics.CreateAPIView):
             from django.utils.encoding import force_bytes
             from django.utils.http import urlsafe_base64_encode
 
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
-            verify_link = f"/api/auth/verify-email/?uid={uid}&token={token}"
-            send_mail("Verify your email", f"Click: {verify_link}", None, [user.email])
+            if user.email:
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                verify_link = f"/api/auth/verify-email/?uid={uid}&token={token}"
+                send_mail("Verify your email", f"Click: {verify_link}", None, [user.email])
         except Exception:
+            # don't fail registration if email backend misconfigured
             pass
+
+    def create(self, request, *args, **kwargs):
+        """Return JSON with created user payload and 201 status."""
+        response = super().create(request, *args, **kwargs)
+        return Response(response.data, status=status.HTTP_201_CREATED)
 
 
 class MeView(generics.RetrieveAPIView):

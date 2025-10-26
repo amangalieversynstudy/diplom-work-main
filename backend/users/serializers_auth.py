@@ -28,9 +28,14 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Create a new User instance from validated data."""
+        # Ensure username is unique with clear validation error
+        username = validated_data["username"]
+        if User.objects.filter(username=username).exists():
+            raise serializers.ValidationError({"username": "Username already taken"})
+        email = validated_data.get("email") or ""
         user = User.objects.create_user(
-            username=validated_data["username"],
-            email=validated_data.get("email", ""),
+            username=username,
+            email=email,
             password=validated_data["password"],
         )
         return user
@@ -44,6 +49,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
         model = Profile
         fields = ("xp", "level", "bio")
+        ref_name = "AuthProfileSerializer"
 
 
 class UserDetailSerializer(serializers.ModelSerializer):

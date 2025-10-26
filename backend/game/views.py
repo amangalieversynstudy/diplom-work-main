@@ -1,8 +1,7 @@
 """API viewsets for game models with CodeCombat-like logic."""
 
 from django.db import transaction
-from django.utils import timezone
-from rest_framework import permissions, status, viewsets
+from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from drf_yasg import openapi
@@ -46,7 +45,8 @@ class MissionViewSet(viewsets.ModelViewSet):
         method="post",
         operation_summary="Start mission",
         operation_description=(
-            "Начинает попытку прохождения миссии. Проверяет is_active, min_level, prerequisites.\n"
+            "Начинает попытку прохождения миссии. Проверяет is_active, "
+            "min_level, prerequisites.\n"
             "Инкрементирует attempts, выставляет статус in_progress."
         ),
         responses={200: ProgressSerializer},
@@ -84,13 +84,17 @@ class MissionViewSet(viewsets.ModelViewSet):
         method="post",
         operation_summary="Complete mission",
         operation_description=(
-            "Завершает миссию и начисляет XP: первый раз — полный reward, повтор — процент (repeat_xp_rate),\n"
-            "если миссия не repeatable — повтор без XP. Можно передать 'stars' (0..3)."
+            "Завершает миссию и начисляет XP: первый раз — полный reward, "
+            "повтор — процент (repeat_xp_rate),\n"
+            "если миссия не repeatable — повтор без XP. "
+            "Можно передать 'stars' (0..3)."
         ),
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                "stars": openapi.Schema(type=openapi.TYPE_INTEGER, description="0..3"),
+                "stars": openapi.Schema(
+                    type=openapi.TYPE_INTEGER, description="0..3"
+                ),
             },
             required=[],
         ),

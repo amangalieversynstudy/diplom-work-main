@@ -14,6 +14,26 @@ variables:
   POSTGRES_PORT: "5432"
   DJANGO_SETTINGS_MODULE: core.settings.base
 
+# Optional: once self-hosted runner is registered with tags (e.g., self-hosted, mac),
+# uncomment the block below to route all jobs to your runner by default.
+# default:
+#   tags:
+#     - self-hosted
+#     - mac
+
+# Save shared minutes by skipping CI when only docs/markdown or Makefile changed.
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH != ""'
+      changes:
+        - "**/*.md"
+        - "README*"
+        - "Makefile"
+      when: never
+    - when: always
+
 lint-backend:
   image: python:3.11
   stage: lint

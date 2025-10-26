@@ -39,7 +39,7 @@ lint-backend:
     - changes:
         - backend/**/*
         - .gitlab-ci.yml
-        - requirements*.txt
+        - backend/requirements*.txt
       when: on_success
     - when: never
   script:
@@ -55,7 +55,7 @@ pytest-backend:
     - changes:
         - backend/**/*
         - .gitlab-ci.yml
-        - requirements*.txt
+        - backend/requirements*.txt
       when: on_success
     - when: never
   services:
@@ -123,6 +123,13 @@ upload-coverage-codecov:
       artifacts: true
   variables:
     GIT_STRATEGY: none
+  rules:
+    - changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+        - backend/requirements*.txt
+      when: on_success
+    - when: never
   script:
     - apt-get update && apt-get install -y curl
     - |
@@ -140,12 +147,19 @@ upload-coverage-codecov:
       else
         echo "coverage.xml not found, skipping codecov upload"
       fi
-  when: always
+  # job will run only when backend changes (by rules above)
 
 flake8-docstrings-baseline:
   image: python:3.11
   stage: docs-lint
   needs: [lint-backend]
+  rules:
+    - changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+        - backend/requirements*.txt
+      when: on_success
+    - when: never
   script:
     - python -m pip install --upgrade pip
     - python -m pip install --no-cache-dir flake8 flake8-docstrings

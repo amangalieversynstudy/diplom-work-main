@@ -21,4 +21,7 @@ class Command(BaseCommand):
             for t in titles:
                 self.stdout.write(f"    - {t}")
         else:
-            self.stdout.write("  No missions found. Run: python manage.py load_demo_content")
+            self.stdout.write(
+                "  No missions found. Run: "
+                "python manage.py load_demo_content"
+            )

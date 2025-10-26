@@ -23,8 +23,12 @@ class Command(BaseCommand):
             )
             return
         # Locations
-        world1, _ = Location.objects.get_or_create(title="World 1", defaults={"order": 1})
-        world2, _ = Location.objects.get_or_create(title="World 2", defaults={"order": 2})
+        world1, _ = Location.objects.get_or_create(
+            title="World 1", defaults={"order": 1}
+        )
+        world2, _ = Location.objects.get_or_create(
+            title="World 2", defaults={"order": 2}
+        )
 
         # Missions
         intro, _ = Mission.objects.get_or_create(

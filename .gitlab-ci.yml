@@ -22,19 +22,6 @@ lint-backend:
     - python -m pip install --no-cache-dir flake8 black
     - python -m black --check backend
     - python -m flake8 backend
-
-ci-validate:
-  image: python:3.11
-  stage: lint
-  script:
-    - |
-      # Optional validation: can be enabled by setting GITLAB_TOKEN and PROJECT_ID,
-      # but this CI no longer relies on repo scripts. To validate variables from CI
-      # use an external check or run the helper script locally.
-      echo "ci-validate placeholder: no-op (script removed).";
-  rules:
-    - when: on_success
-
 pytest-backend:
   image: python:3.11
   stage: test
@@ -286,15 +273,69 @@ deploy-local:
         exit 1;
       fi
       docker version || (echo "ERROR: Cannot talk to Docker daemon" && exit 1)
-      # deploy-local expects to run on a local runner that has docker available
+
+      # Self-contained local stack: create network, (re)start redis/postgres, run migrations & static, then backend and celery
+      NET="ci_local_net"
+      echo "Ensuring network $NET exists"
+      docker network inspect "$NET" >/dev/null 2>&1 || docker network create "$NET"
+
+      echo "Starting/refreshing Redis (ci_local_redis)"
+      docker rm -f ci_local_redis >/dev/null 2>&1 || true
+      docker run -d --name ci_local_redis --network "$NET" redis:7 >/dev/null
+
+      echo "Starting/refreshing Postgres (ci_local_postgres)"
+      docker rm -f ci_local_postgres >/dev/null 2>&1 || true
+      docker run -d --name ci_local_postgres --network "$NET" \
+        -e POSTGRES_DB="${POSTGRES_DB:-rpgdb}" \
+        -e POSTGRES_USER="${POSTGRES_USER:-rpguser}" \
+        -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-rpgpass}" \
+        postgres:15 >/dev/null
+
+      echo "Waiting for Postgres to be ready..."
+      for i in $(seq 1 30); do
+        if docker exec ci_local_postgres pg_isready -U "${POSTGRES_USER:-rpguser}" -d "${POSTGRES_DB:-rpgdb}" -h localhost >/dev/null 2>&1; then
+          echo "Postgres is ready"; break; fi; sleep 1; done
+
       if [ -f backend_image.tar ]; then
         echo "Loading backend_image.tar";
-        docker load -i backend_image.tar;
+        docker load -i backend_image.tar >/dev/null;
         IMAGE="backend-ci:$CI_COMMIT_SHORT_SHA";
+        echo "Running migrations and collectstatic"
+        docker run --rm --network "$NET" \
+          -e DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-core.settings.base}" \
+          -e POSTGRES_HOST="ci_local_postgres" \
+          -e POSTGRES_DB="${POSTGRES_DB:-rpgdb}" \
+          -e POSTGRES_USER="${POSTGRES_USER:-rpguser}" \
+          -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-rpgpass}" \
+          -e REDIS_URL="redis://ci_local_redis:6379/0" \
+          "$IMAGE" bash -lc "python manage.py migrate --noinput && python manage.py collectstatic --noinput" >/dev/null
+
         echo "Stopping/removing existing ci_local_backend if present";
-        docker rm -f ci_local_backend || true;
-        echo "Running $IMAGE (detached)";
-        docker run -d --name ci_local_backend -p 8000:8000 "$IMAGE" || true;
+        docker rm -f ci_local_backend >/dev/null 2>&1 || true;
+        echo "Running backend $IMAGE (detached) on network $NET"
+        docker run -d --name ci_local_backend --network "$NET" -p 8000:8000 \
+          -e DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-core.settings.base}" \
+          -e POSTGRES_HOST="ci_local_postgres" \
+          -e POSTGRES_DB="${POSTGRES_DB:-rpgdb}" \
+          -e POSTGRES_USER="${POSTGRES_USER:-rpguser}" \
+          -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-rpgpass}" \
+          -e REDIS_URL="redis://ci_local_redis:6379/0" \
+          "$IMAGE" >/dev/null || true;
+
+        echo "Starting Celery worker (ci_local_celery)"
+        docker rm -f ci_local_celery >/dev/null 2>&1 || true
+        docker run -d --name ci_local_celery --network "$NET" \
+          -e DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-core.settings.base}" \
+          -e POSTGRES_HOST="ci_local_postgres" \
+          -e POSTGRES_DB="${POSTGRES_DB:-rpgdb}" \
+          -e POSTGRES_USER="${POSTGRES_USER:-rpguser}" \
+          -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-rpgpass}" \
+          -e REDIS_URL="redis://ci_local_redis:6379/0" \
+          "$IMAGE" bash -lc "celery -A core worker -l info" >/dev/null
+
+        echo "Waiting for backend health on http://localhost:8000/healthz"
+        for i in $(seq 1 30); do
+          if curl -sS --fail http://localhost:8000/healthz >/dev/null; then echo "Backend healthy"; break; fi; sleep 1; done
         echo "Backend started locally on port 8000";
       else
         echo "backend_image.tar artifact not found; nothing to deploy";

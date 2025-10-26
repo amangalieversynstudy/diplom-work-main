@@ -13,6 +13,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
         model = Profile
         fields = ["xp", "level", "bio"]
+        ref_name = "UsersProfileSerializer"
 
 
 class UserSerializer(serializers.ModelSerializer):

@@ -1,9 +1,9 @@
 """Serializers for game models used in API endpoints."""
 
 from rest_framework import serializers
+from users.models import Profile
 
 from .models import Location, Mission, Progress
-from users.models import Profile
 
 
 class MissionSerializer(serializers.ModelSerializer):
@@ -11,6 +11,7 @@ class MissionSerializer(serializers.ModelSerializer):
 
     available = serializers.SerializerMethodField()
     user_progress = serializers.SerializerMethodField()
+    prerequisites = serializers.SerializerMethodField()
 
     class Meta:
         """Meta options for MissionSerializer."""
@@ -26,8 +27,11 @@ class MissionSerializer(serializers.ModelSerializer):
             "min_level",
             "repeatable",
             "repeat_xp_rate",
+            "pos_x",
+            "pos_y",
             "available",
             "user_progress",
+            "prerequisites",
         ]
 
     def get_available(self, obj):
@@ -75,6 +79,10 @@ class MissionSerializer(serializers.ModelSerializer):
                 "completed_at": None,
             }
         return None
+
+    def get_prerequisites(self, obj):
+        # Compact representation for UI linking
+        return list(obj.prerequisites.values("id", "title"))
 
 
 class LocationSerializer(serializers.ModelSerializer):

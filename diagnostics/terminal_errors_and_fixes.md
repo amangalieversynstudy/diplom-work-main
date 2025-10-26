@@ -142,7 +142,3 @@
 - `docker-compose.yml` — healthchecks и команда backend
 - `.gitlab-ci.yml` — CI исправления (paths, HUSKY=0, diagnostics)
 - `project_full_problems_and_fixes_report.txt` — детальная хронология и пояснения
-
-
-
-

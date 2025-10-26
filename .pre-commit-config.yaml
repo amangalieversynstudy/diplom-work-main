@@ -32,4 +32,4 @@ repos:
         entry: bash -lc 'npx --yes doctoc --github --title "Содержание" README.md README.deploy.md'
         language: system
         pass_filenames: false
-        stages: [commit]
+        stages: [pre-commit]

@@ -53,6 +53,8 @@ class Command(BaseCommand):
                 "xp_reward": 100,
                 "repeatable": True,
                 "repeat_xp_rate": 10,
+                "pos_x": 12,
+                "pos_y": 72,
             },
         )
 
@@ -66,6 +68,8 @@ class Command(BaseCommand):
                 "xp_reward": 120,
                 "repeatable": False,
                 "repeat_xp_rate": 0,
+                "pos_x": 37,
+                "pos_y": 52,
             },
         )
 
@@ -79,6 +83,8 @@ class Command(BaseCommand):
                 "xp_reward": 50,
                 "repeatable": True,
                 "repeat_xp_rate": 20,
+                "pos_x": 62,
+                "pos_y": 37,
             },
         )
 

@@ -1,9 +1,8 @@
 import pytest
 from django.urls import reverse
-from rest_framework.test import APIClient
-
-from users.models import User
 from game.models import Location, Mission, Progress
+from rest_framework.test import APIClient
+from users.models import User
 
 
 @pytest.fixture()

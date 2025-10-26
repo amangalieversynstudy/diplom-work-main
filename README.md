@@ -6,6 +6,15 @@
 
 — Быстрый старт: [локально](README.deploy.md#quickstart-local) • [staging](README.deploy.md#quickstart-staging) • [Полный гайд по деплою](README.deploy.md)
 
+Быстрый просмотр фронтенда (без бэкенда):
+
+```bash
+cd frontend && npm ci --no-audit --no-fund && npm run dev
+# если порт 3000 занят: npm run dev -- -p 3002 -H 127.0.0.1
+```
+
+Откройте http://localhost:3000 (или http://127.0.0.1:3002). По умолчанию фронтенд использует встроенный mock API по пути /api.
+
 > Документация по деплою: см. `README.deploy.md` — там описаны deploy-local, deploy-staging, флаги DEMO_SEED/ALLOW_DEMO_SEED и Postman-инструкции.
 
 > Примечание: когда переходите к работе с кодом, используйте удобные make-цели и .env — см. раздел [Make команды и .env](README.deploy.md#make-команды-и-env).
@@ -15,10 +24,11 @@
 Содержание
 
 - [Как начать с Make](#%D0%9A%D0%B0%D0%BA-%D0%BD%D0%B0%D1%87%D0%B0%D1%82%D1%8C-%D1%81-make)
+- [Manual testing (локально)](#manual-testing-%D0%BB%D0%BE%D0%BA%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE)
 - [Быстрый старт](#%D0%91%D1%8B%D1%81%D1%82%D1%80%D1%8B%D0%B9-%D1%81%D1%82%D0%B0%D1%80%D1%82)
 - [Codecov integration](#codecov-integration)
 - [Документация по деплою](#%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%B0%D1%86%D0%B8%D1%8F-%D0%BF%D0%BE-%D0%B4%D0%B5%D0%BF%D0%BB%D0%BE%D1%8E)
-- [Manual testing (локально)](#manual-testing-%D0%BB%D0%BE%D0%BA%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE)
+- [Manual testing (локально)](#manual-testing-%D0%BB%D0%BE%D0%BA%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE-1)
 - [Branch Protection](#branch-protection)
   - [Настройка защиты веток](#%D0%9D%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0-%D0%B7%D0%B0%D1%89%D0%B8%D1%82%D1%8B-%D0%B2%D0%B5%D1%82%D0%BE%D0%BA)
 
@@ -34,6 +44,46 @@ make deploy-local                      # поднять Redis+Postgres+Backend+C
 make logs                              # смотреть логи бэкенда; Ctrl+C чтобы выйти
 # make stop-local                       # остановить локальный стек (по необходимости)
 ```
+
+## Manual testing (локально)
+
+Two reliable flows:
+
+1) Full Docker (если front-контейнер стабильно читает volume на вашей системе):
+
+```bash
+docker compose up -d db redis backend frontend
+docker compose exec backend python manage.py load_demo_content
+# Backend API index
+open http://localhost:8000/api
+# Frontend (Next.js dev)
+open http://localhost:3000/worlds
+```
+
+2) Надёжный для macOS: backend в Docker, frontend локально (обходит volume error -35):
+
+```bash
+# Backend
+docker compose up -d db redis backend
+docker compose exec backend python manage.py load_demo_content
+
+# Frontend (локально)
+cd frontend
+echo "NEXT_PUBLIC_API_BASE=http://localhost:8000/api" > .env.local
+npm install --no-audit --no-fund
+npm run dev -- -p 3002 -H 127.0.0.1
+# Открыть UI
+open http://127.0.0.1:3002/worlds
+```
+
+Checklist:
+- Register → Login (username+password)
+- /class → выбрать класс
+- /worlds → острова и прогресс
+- /worlds/1 → карта нод из бэкенда (pos_x/pos_y)
+- /missions/{id} → Start/Complete, XP начисляется; Gate недоступна до Intro
+
+Если просто нужен индекс API: http://localhost:8000/api
 
 =======
 ## Быстрый старт
@@ -85,11 +135,11 @@ Manual testing (локально)
 
 Ниже шаги для ручного тестирования API и проверки состояния БД/Redis через Docker Compose (macOS, zsh).
 
-1) Поднять сервисы
+1) Поднять сервисы (бэкенд)
 
 ```bash
-# поднять все сервисы (db, redis, backend, frontend, celery)
-docker compose up -d
+# поднять все сервисы (db, redis, backend, celery)
+docker compose up -d db redis backend celery
 
 # или поднять только db и redis если backend не нужен
 docker compose up -d db redis
@@ -111,6 +161,13 @@ docker compose exec backend python manage.py shell -c "from django.contrib.auth 
 ```
 
 Admin: http://localhost:8000/admin (логин: admin / пароль: adminpass)
+
+Фронтенд: отдельным процессом
+
+```bash
+cd frontend && npm run dev
+# если нужно, задайте адрес бэкенда: echo "NEXT_PUBLIC_API_BASE=http://localhost:8000/api" > .env.local
+```
 
 4) Примеры API-запросов (Postman / curl)
 

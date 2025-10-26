@@ -1,9 +1,9 @@
-FROM node:20-alpine
+FROM node:20-bullseye
 WORKDIR /app
-# copy package files (works with or without package-lock.json)
 COPY package*.json ./
-# install dependencies: prefer npm ci when lockfile present, fallback to npm install
+# install dependencies for dev (fallback to npm install if no lock)
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+# Copy sources (in dev we will override by volume)
 COPY . .
-RUN npm run build
-CMD ["npm","start"]
+# Default to dev server; docker-compose can override
+CMD ["npm","run","dev"]

@@ -120,7 +120,6 @@ deploy-local:
       optional: true
   rules:
     - when: manual
-  tags: [local]
   variables:
     DEMO_SEED: "true"
     ALLOW_DEMO_SEED: "true"

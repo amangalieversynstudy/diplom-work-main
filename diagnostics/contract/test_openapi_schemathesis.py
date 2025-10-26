@@ -5,7 +5,12 @@ Run preconditions:
 - BASE_URL env (default http://localhost:8000).
 
 Usage:
-  pytest -q diagnostics/contract/test_openapi_schemathesis.py
+    pytest -q diagnostics/contract/test_openapi_schemathesis.py
+
+CI note:
+- This test suite is disabled by default in CI to avoid network calls & extra deps.
+    To enable, set the env var RUN_CONTRACT_TESTS=1 and ensure `schemathesis` is
+    installed and the backend is reachable via BASE_URL.
 """
 
 import os
@@ -13,8 +18,17 @@ import random
 import string
 
 import pytest
-import schemathesis
-from schemathesis import DataGenerationMethod
+
+# Skip entire module unless explicitly enabled
+if os.getenv("RUN_CONTRACT_TESTS") != "1":
+    pytest.skip(
+        "Skipping contract tests (set RUN_CONTRACT_TESTS=1 to enable)",
+        allow_module_level=True,
+    )
+
+# Import schemathesis only when enabled; skip if not installed
+schemathesis = pytest.importorskip("schemathesis")
+from schemathesis import DataGenerationMethod  # noqa: E402
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 SCHEMA_URI = f"{BASE_URL.rstrip('/')}/swagger.json"

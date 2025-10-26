@@ -4,6 +4,15 @@
 ![coverage](https://gitlab.com/amangalieversynstudy/diplom-work/badges/main/coverage.svg)
 ![codecov](https://codecov.io/gh/amangalieversynstudy/diplom-work/branch/main/graph/badge.svg)
 
+— Быстрый старт: [локально](README.deploy.md#quickstart-local) • [staging](README.deploy.md#quickstart-staging) • [Полный гайд по деплою](README.deploy.md)
+
+> Документация по деплою: см. `README.deploy.md` — там описаны deploy-local, deploy-staging, флаги DEMO_SEED/ALLOW_DEMO_SEED и Postman-инструкции.
+
+## Быстрый старт
+
+- Локально: [README.deploy.md#quickstart-local](README.deploy.md#quickstart-local)
+- Staging: [README.deploy.md#quickstart-staging](README.deploy.md#quickstart-staging)
+
 Run backend tests with coverage locally (using Docker Compose):
 
 ```bash
@@ -35,6 +44,11 @@ After enabling Codecov and adding the token (if needed), add the Codecov badge U
 - /frontend — Next.js приложение
 - docker-compose.yml — локальный стек: db, redis, backend, frontend, celery
 - .github/workflows — CI
+
+Документация по деплою
+----------------------
+
+Подробный гайд по деплою (локально и staging), настройке раннера/хоста и авто-заливке демо-данных — в `README.deploy.md`.
 
 Дальнейшие шаги см. TODOs в .github/ or project board
 

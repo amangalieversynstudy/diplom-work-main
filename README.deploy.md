@@ -3,7 +3,6 @@
 Этот документ описывает, как запускать локальную демонстрационную среду (deploy-local) и как выкатывать на staging (deploy-staging) через GitLab CI, а также флаги для автозагрузки демо-данных.
 
 ## Содержание
-
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 Содержание
@@ -20,6 +19,9 @@
 - [Частые проблемы](#%D0%A7%D0%B0%D1%81%D1%82%D1%8B%D0%B5-%D0%BF%D1%80%D0%BE%D0%B1%D0%BB%D0%B5%D0%BC%D1%8B)
 - [Безопасность](#%D0%91%D0%B5%D0%B7%D0%BE%D0%BF%D0%B0%D1%81%D0%BD%D0%BE%D1%81%D1%82%D1%8C)
 - [Make команды и .env](#make-%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D1%8B-%D0%B8-env)
+- [Быстрый старт](#%D0%91%D1%8B%D1%81%D1%82%D1%80%D1%8B%D0%B9-%D1%81%D1%82%D0%B0%D1%80%D1%82-1)
+  - [1) Локальная демонстрация (deploy-local)](#1-%D0%9B%D0%BE%D0%BA%D0%B0%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F-%D0%B4%D0%B5%D0%BC%D0%BE%D0%BD%D1%81%D1%82%D1%80%D0%B0%D1%86%D0%B8%D1%8F-deploy-local-1)
+  - [2) Staging с демо-данными](#2-staging-%D1%81-%D0%B4%D0%B5%D0%BC%D0%BE-%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%BC%D0%B8-1)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -167,6 +169,7 @@
 ---
 Если потребуется, можно расширить deploy-staging автоматическим выводом публичного URL/cred'ов и интегрировать шаги очистки демо-данных.
 
+<<<<<<< HEAD
 ## Make команды и .env
 
 Для удобства доступны цели Make (см. `Makefile`). Рекомендуется создать локальный файл `.env` на основе примера ниже — переменные будут автоматически подхвачены Makefile.
@@ -199,3 +202,36 @@ ALLOW_DEMO_SEED=false
 - `make ps` — показать контейнеры ci_local_*.
 - `make curl-health` — быстрый проверочный запрос к /healthz.
 - `make deploy-staging` — деплой на staging по SSH (docker-compose). Требуются `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_DIR`. Для демо включайте `DEMO_SEED=true` и при необходимости `ALLOW_DEMO_SEED=true`.
+=======
+## Быстрый старт
+
+<a id="quickstart"></a>
+
+### 1) Локальная демонстрация (deploy-local)
+
+<a id="quickstart-local"></a>
+1. Убедитесь, что локальный GitLab Runner с тегом `local` монтирует Docker socket (`/var/run/docker.sock:/var/run/docker.sock`).
+2. В GitLab → CI/CD → Pipelines запустите вручную job `deploy-local`.
+3. Дождитесь сообщения:
+  - `Backend started locally on http://localhost:8000`
+  - `Admin login: admin/admin123`
+4. Откройте `http://localhost:8000/healthz` — должно вернуть `{ "status": "ok" }`.
+5. Для ручного API-теста импортируйте в Postman:
+  - Коллекцию: `diagnostics/postman/RPG.postman_collection.json`
+  - Окружение: `diagnostics/postman/Local.postman_environment.json`
+
+### 2) Staging с демо-данными
+
+<a id="quickstart-staging"></a>
+1. В GitLab → Settings → CI/CD → Variables добавьте:
+  - `DEPLOY_HOST` (адрес сервера)
+  - `DEPLOY_USER` (SSH пользователь)
+  - `SSH_PRIVATE_KEY` (masked, protected)
+  - Опционально: `DEPLOY_DIR` (папка с docker-compose.yml)
+2. Чтобы засеять демо, добавьте/включите:
+  - `DEMO_SEED = true`
+  - `ALLOW_DEMO_SEED = true`
+3. Запустите вручную `deploy-staging`.
+4. В логе увидите "Seeding demo data on staging..." и сводку `print_demo_summary`.
+5. Отключите флаги DEMO_SEED/ALLOW_DEMO_SEED после демонстрации.
+>>>>>>> origin/main

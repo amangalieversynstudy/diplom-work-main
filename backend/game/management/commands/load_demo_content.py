@@ -1,13 +1,25 @@
+"""Management command to seed demo locations and missions.
+
+This command is intended for local/dev environments to quickly populate
+the database with two locations and three missions (including a repeatable
+one) for manual testing. In non-debug environments it requires the
+environment variable ALLOW_DEMO_SEED=true to proceed.
+"""
+
 import os
-from django.core.management.base import BaseCommand
+
 from django.conf import settings
+from django.core.management.base import BaseCommand
 from game.models import Location, Mission
 
 
 class Command(BaseCommand):
+    """Load demo locations and missions for quick manual testing."""
+
     help = "Load demo locations and missions for quick manual testing"
 
     def handle(self, *args, **options):
+        """Execute command: create locations, missions and prerequisites."""
         allow_env = os.getenv("ALLOW_DEMO_SEED", "").lower() in {
             "1",
             "true",

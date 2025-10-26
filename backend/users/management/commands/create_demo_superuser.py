@@ -1,13 +1,19 @@
+"""Management command: create a demo superuser from environment variables."""
+
 import os
-from django.core.management.base import BaseCommand
-from django.contrib.auth import get_user_model
+
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
+    """Create a demo superuser from environment variables if it doesn't exist."""
+
     help = "Create a demo superuser from environment variables if it doesn't exist"
 
     def handle(self, *args, **options):
+        """Entry point for the management command."""
         allow_env = os.getenv("ALLOW_DEMO_SEED", "").lower() in {
             "1",
             "true",

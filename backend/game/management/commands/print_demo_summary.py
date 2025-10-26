@@ -29,5 +29,5 @@ class Command(BaseCommand):
                 self.stdout.write(f"    - {t}")
         else:
             self.stdout.write(
-                "  No missions found. Run: " "python manage.py load_demo_content"
+                "  No missions found. Run: python manage.py load_demo_content"
             )

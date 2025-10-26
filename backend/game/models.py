@@ -47,6 +47,9 @@ class Mission(models.Model):
     repeat_xp_rate = models.IntegerField(
         default=0, help_text="Repeat completion XP in %, 0 = no XP on repeat"
     )
+    # Позиция ноды на карте (в процентах по контейнеру 0..100)
+    pos_x = models.IntegerField(default=0)
+    pos_y = models.IntegerField(default=0)
 
     def __str__(self):
         """Return human-readable title for Mission."""

@@ -1,15 +1,15 @@
 """API viewsets for game models with CodeCombat-like logic."""
 
 from django.db import transaction
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from users.models import Profile
 
 from .models import Location, Mission, Progress
 from .serializers import LocationSerializer, MissionSerializer, ProgressSerializer
-from users.models import Profile
 
 
 class LocationViewSet(viewsets.ModelViewSet):

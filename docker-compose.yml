@@ -33,9 +33,7 @@ services:
     build: ./backend
     command: >
       sh -c "python ./scripts/wait_for_postgres.py && \
-      python manage.py makemigrations --noinput || true && \
       python manage.py migrate --noinput && \
-      python manage.py collectstatic --noinput && \
       gunicorn core.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - ./backend:/app
@@ -44,7 +42,7 @@ services:
     environment:
       DATABASE_URL: "postgres://rpguser:rpgpass@db:5432/rpgdb"
       REDIS_URL: "redis://redis:6379/0"
-      DJANGO_SETTINGS_MODULE: "core.settings.production"
+      DJANGO_SETTINGS_MODULE: "core.settings.local"
       POSTGRES_DB: rpgdb
       POSTGRES_USER: rpguser
       POSTGRES_PASSWORD: rpgpass
@@ -54,7 +52,7 @@ services:
       - db
       - redis
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/healthz || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/healthz >/dev/null || exit 1"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -64,6 +62,14 @@ services:
     build: ./frontend
     ports:
       - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE=http://localhost:8000/api
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    command: sh -c "(npm ci || npm install) && npm run dev"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
 

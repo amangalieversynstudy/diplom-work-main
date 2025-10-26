@@ -4,6 +4,7 @@ Adds `backend` to sys.path so the Django project package `core` can be imported
 when running pytest from the repository root. Also ensures a sane default
 `DJANGO_SETTINGS_MODULE` is set for test runs.
 """
+
 import os
 import sys
 

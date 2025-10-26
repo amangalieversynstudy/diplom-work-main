@@ -12,14 +12,14 @@ Runner requirements:
 - A GitLab Runner capable of running Docker-in-Docker (if you plan to build/push images), or use a shell runner with docker available.
 - Sufficient permissions to start sibling containers (dind) if using docker-in-docker.
 
-Recommended pipeline flow:
+Recommended pipeline flow (actual jobs in this repo):
 
-1. lint-backend
-2. pytest-backend (creates coverage and junit artifacts)
-3. frontend-ci
-4. build-backend-image (build & push image when registry creds present)
-5. smoke-test-image (pull and health-check the pushed image)
-6. deploy-staging (manual)
+1. frontend-lint
+2. frontend-build
+3. backend-test
+4. backend-build-image
+5. smoke-backend-image
+6. deploy-local (manual)
 
 How to trigger and test:
 
@@ -31,6 +31,51 @@ Notes:
 
 - `deploy-staging` is a manual placeholder — replace with your environment-specific commands (kubectl/helm/ssh).
 - If you don't want to use Docker-in-Docker, change build jobs to run on a runner with docker access or use build services like GitLab's buildkit.
+
+Runner setup on macOS (docker executor)
+--------------------------------------
+
+1) Install and start runner:
+
+```bash
+brew install gitlab-runner
+sudo gitlab-runner install
+sudo gitlab-runner start
+```
+
+2) Register runner:
+
+```bash
+sudo gitlab-runner register
+# GitLab URL: https://gitlab.com (or your self-hosted)
+# Registration token: <copy from Settings → CI/CD → Runners>
+# Description: mac-local
+# Tags: self-hosted, mac
+# Executor: docker
+# Default Docker image: docker:27.2.0
+```
+
+3) Enable Docker socket and privileged mode (for sibling containers):
+
+Edit `config.toml` (e.g. `/Users/<user>/.gitlab-runner/config.toml`) and set:
+
+```toml
+[[runners]]
+	name = "mac-local"
+	url = "https://gitlab.com"
+	token = "REDACTED"
+	executor = "docker"
+	[runners.docker]
+		image = "docker:27.2.0"
+		privileged = true
+		volumes = ["/var/run/docker.sock:/var/run/docker.sock", "/cache"]
+```
+
+Restart runner:
+
+```bash
+sudo gitlab-runner restart
+```
 
 Optional automatic CI validation
 --------------------------------
@@ -49,7 +94,7 @@ ssh $DEPLOY_USER@$DEPLOY_HOST "cd /srv/myapp && docker-compose pull backend && d
 Make sure the `SSH_PRIVATE_KEY` variable is set as protected and masked in GitLab for security.
 
 Local runner and deploy-local
-----------------------------
+-----------------------------
 If you don't have a remote server, you can run the deploy steps on your local machine by registering a GitLab Runner with a tag `local` and running jobs that require that tag.
 
 Quick steps to run pipeline jobs locally (recommended for testing):
@@ -63,3 +108,4 @@ Notes:
 
 - The `deploy-local` job is manual and uses the runner tag `local` to avoid running accidental deploys in shared CI.
 - Ports: `deploy-local` maps backend to port 8000 on the runner host. Ensure the port is free.
+- Default runner tags for most jobs are `[self-hosted, mac]` as configured in `.gitlab-ci.yml`. Make sure your runner has these tags or adjust them.

@@ -5,3 +5,11 @@
 html, body, #__next {
   height: 100%;
 }
+
+body {
+  @apply bg-bg text-white;
+  background-image: radial-gradient(ellipse at top, rgba(124,58,237,0.08), transparent 40%), radial-gradient(ellipse at bottom, rgba(34,211,238,0.08), transparent 40%);
+}
+
+a { @apply text-accent; }
+a:hover { @apply opacity-80; }

@@ -8,7 +8,12 @@ class Command(BaseCommand):
     help = "Create a demo superuser from environment variables if it doesn't exist"
 
     def handle(self, *args, **options):
-        allow_env = os.getenv("ALLOW_DEMO_SEED", "").lower() in {"1", "true", "yes", "on"}
+        allow_env = os.getenv("ALLOW_DEMO_SEED", "").lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
         if not settings.DEBUG and not allow_env:
             self.stdout.write(
                 self.style.WARNING(
@@ -26,5 +31,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Superuser already exists."))
             return
 
-        user = User.objects.create_superuser(username=username, email=email, password=password)
+        user = User.objects.create_superuser(
+            username=username, email=email, password=password
+        )
         self.stdout.write(self.style.SUCCESS(f"Superuser created: {user.username}"))

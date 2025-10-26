@@ -8,7 +8,12 @@ class Command(BaseCommand):
     help = "Load demo locations and missions for quick manual testing"
 
     def handle(self, *args, **options):
-        allow_env = os.getenv("ALLOW_DEMO_SEED", "").lower() in {"1", "true", "yes", "on"}
+        allow_env = os.getenv("ALLOW_DEMO_SEED", "").lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
         if not settings.DEBUG and not allow_env:
             self.stdout.write(
                 self.style.WARNING(

@@ -8,7 +8,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         loc_count = Location.objects.count()
         mis_count = Mission.objects.count()
-        titles = list(Mission.objects.order_by("location__order", "order").values_list("title", flat=True)[:10])
+        titles = list(
+            Mission.objects.order_by("location__order", "order")
+            .values_list("title", flat=True)[:10]
+        )
 
         self.stdout.write(self.style.SUCCESS("Demo summary:"))
         self.stdout.write(f"  Locations: {loc_count}")

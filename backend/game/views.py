@@ -34,7 +34,8 @@ class MissionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_permissions(self):
-        # Read-only for all; write operations for admins only (except custom actions below)
+        # Read-only for all; write operations for admins only
+        # (except custom actions below)
         if self.action in ("start", "complete"):
             return [permissions.IsAuthenticated()]
         if self.request.method in ("GET", "HEAD", "OPTIONS"):

@@ -24,3 +24,12 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-yaml
+
+  - repo: local
+    hooks:
+      - id: doctoc
+        name: doctoc - update TOC in markdown files
+        entry: bash -lc 'npx --yes doctoc --github --title "Содержание" README.md README.deploy.md'
+        language: system
+        pass_filenames: false
+        stages: [commit]

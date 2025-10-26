@@ -14,12 +14,10 @@ variables:
   POSTGRES_PORT: "5432"
   DJANGO_SETTINGS_MODULE: core.settings.base
 
-# Optional: once self-hosted runner is registered with tags (e.g., self-hosted, mac),
-# uncomment the block below to route all jobs to your runner by default.
-# default:
-#   tags:
-#     - self-hosted
-#     - mac
+default:
+  tags:
+    - self-hosted
+    - mac
 
 # Save shared minutes by skipping CI when only docs/markdown or Makefile changed.
 workflow:
@@ -37,6 +35,13 @@ workflow:
 lint-backend:
   image: python:3.11
   stage: lint
+  rules:
+    - changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+        - requirements*.txt
+      when: on_success
+    - when: never
   script:
     - python -m pip install --upgrade pip
     - python -m pip install --no-cache-dir flake8 black
@@ -46,6 +51,13 @@ pytest-backend:
   image: python:3.11
   stage: test
   needs: [lint-backend]
+  rules:
+    - changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+        - requirements*.txt
+      when: on_success
+    - when: never
   services:
     - name: postgres:15
       alias: postgres
@@ -81,6 +93,12 @@ frontend-ci:
   stage: frontend
   variables:
     HUSKY: "0"
+  rules:
+    - changes:
+        - frontend/**/*
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
   before_script:
     - cd frontend
   script:
@@ -142,6 +160,14 @@ flake8-docstrings-baseline:
 build-backend-image:
   image: docker:20
   stage: build
+  rules:
+    - changes:
+        - backend/**/*
+        - Dockerfile
+        - backend/Dockerfile
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
   services:
     - name: docker:20-dind
       alias: docker
@@ -176,8 +202,6 @@ build-backend-image:
     paths:
       - backend_image.tar
     expire_in: 1 hour
-  rules:
-    - when: on_success
   retry: 2
 
 deploy-staging:
@@ -235,6 +259,14 @@ deploy-staging:
 smoke-test-image:
   image: docker:20
   stage: build
+  rules:
+    - changes:
+        - backend/**/*
+        - Dockerfile
+        - backend/Dockerfile
+        - .gitlab-ci.yml
+      when: on_success
+    - when: never
   services:
     - name: docker:20-dind
       alias: docker
@@ -278,8 +310,6 @@ smoke-test-image:
         fi; sleep 1;
       done
       docker rm -f "$CONTAINER_ID" || true
-  rules:
-    - when: on_success
   retry: 2
 
 deploy-local:

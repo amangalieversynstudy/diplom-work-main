@@ -7,7 +7,7 @@ stages:
   - deploy
 
 default:
-  tags: [self-hosted, mac]
+  # tags removed to avoid waiting for a specific runner; jobs can run on any available runner
 
 workflow:
   rules:

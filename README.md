@@ -5,6 +5,7 @@
 ![codecov](https://codecov.io/gh/amangalieversynstudy/diplom-work/branch/main/graph/badge.svg)
 
 — Быстрый старт: [локально](README.deploy.md#quickstart-local) • [staging](README.deploy.md#quickstart-staging) • [Полный гайд по деплою](README.deploy.md)
+— CI/CD на GitLab: [docs/gitlab.md](docs/gitlab.md) описывает пайплайн, переменные и чек-листы.
 
 Быстрый просмотр фронтенда (без бэкенда):
 
@@ -29,6 +30,7 @@ cd frontend && npm ci --no-audit --no-fund && npm run dev
 - [Codecov integration](#codecov-integration)
 - [Документация по деплою](#%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%B0%D1%86%D0%B8%D1%8F-%D0%BF%D0%BE-%D0%B4%D0%B5%D0%BF%D0%BB%D0%BE%D1%8E)
 - [Manual testing (локально)](#manual-testing-%D0%BB%D0%BE%D0%BA%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE-1)
+- [GitLab CI/CD](#gitlab-cicd)
 - [Branch Protection](#branch-protection)
   - [Настройка защиты веток](#%D0%9D%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0-%D0%B7%D0%B0%D1%89%D0%B8%D1%82%D1%8B-%D0%B2%D0%B5%D1%82%D0%BE%D0%BA)
 
@@ -189,6 +191,12 @@ cd frontend && npm run dev
 		}
 	- Ответ: access + refresh токены
 
+- Профиль (GET/PATCH)
+	- URL: http://localhost:8000/api/profile
+	- Header: Authorization: Bearer <access_token>
+	- GET возвращает XP/level/bio/class_role
+	- PATCH позволяет обновить bio и выбрать class_role (только один раз; сброс или повторный выбор другого класса вернёт 400)
+
 - Получить профиль (GET)
 	- URL: http://localhost:8000/api/auth/me/
 	- Header: Authorization: Bearer <access_token>
@@ -234,6 +242,15 @@ docker compose exec db pg_dump -U rpguser rpgdb > db-dump.sql
 ```
 
 Если хотите, могу сгенерировать пример Postman коллекции (JSON) или добавить конкретные curl-примеры для каждого endpoint.
+
+## GitLab CI/CD
+
+- **Конфигурация** — хранится в `.gitlab-ci.yml`. Структура: `lint → test → frontend → build → smoke → deploy`.
+- **Docker job-ы** (`backend-build-image`, `smoke-backend-image`, `deploy-local`) используют сервис `docker:dind`. На GitLab.com shared runner-ах флаг `privileged` отключён, поэтому подключаемся к демону через `DOCKER_HOST=tcp://docker:2375` и выключаем TLS (`DOCKER_TLS_CERTDIR=""`).
+- **Отчёты** — `backend-test` публикует `pytest` результаты и coverage, фронтенд-джобы сохраняют `.next` как артефакт.
+- **Документация** — см. `docs/gitlab.md` для детального описания стадий, переменных, чек-листа перед merge и типовых ошибок (`lookup docker`, `healthz`).
+
+Когда обновляешь `.gitlab-ci.yml`, обязательно синхронизируй заметки в `docs/gitlab.md`, чтобы команда видела единое место правды.
 
 ## Branch Protection
 

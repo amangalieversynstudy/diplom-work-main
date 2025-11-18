@@ -21,6 +21,14 @@ class Profile(models.Model):
     xp = models.IntegerField(default=0)
     level = models.IntegerField(default=1)
     bio = models.TextField(blank=True)
+    # Optional selected hero class/role
+    class_role = models.ForeignKey(
+        "game.ClassRole",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="profiles",
+    )
 
     def add_xp(self, amount):
         """Add XP to the profile and adjust level when thresholds are crossed."""

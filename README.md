@@ -189,6 +189,12 @@ cd frontend && npm run dev
 		}
 	- Ответ: access + refresh токены
 
+- Профиль (GET/PATCH)
+	- URL: http://localhost:8000/api/profile
+	- Header: Authorization: Bearer <access_token>
+	- GET возвращает XP/level/bio/class_role
+	- PATCH позволяет обновить bio и выбрать class_role (только один раз; сброс или повторный выбор другого класса вернёт 400)
+
 - Получить профиль (GET)
 	- URL: http://localhost:8000/api/auth/me/
 	- Header: Authorization: Bearer <access_token>

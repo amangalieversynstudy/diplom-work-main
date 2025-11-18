@@ -75,7 +75,6 @@ backend-build-image:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
-  privileged: true
   needs: ["backend-test"]
   rules:
     - changes: ["backend/**/*", ".gitlab-ci.yml"]
@@ -101,7 +100,6 @@ smoke-backend-image:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
-  privileged: true
   needs:
     - job: backend-build-image
       optional: true
@@ -142,7 +140,6 @@ deploy-local:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
-  privileged: true
   needs:
     - job: backend-build-image
       optional: true

@@ -246,7 +246,7 @@ docker compose exec db pg_dump -U rpguser rpgdb > db-dump.sql
 ## GitLab CI/CD
 
 - **Конфигурация** — хранится в `.gitlab-ci.yml`. Структура: `lint → test → frontend → build → smoke → deploy`.
-- **Docker job-ы** (`backend-build-image`, `smoke-backend-image`, `deploy-local`) используют `docker:dind` сервис и требуют `privileged: true`. Переменные `DOCKER_HOST`, `DOCKER_TLS_CERTDIR=""`, `DOCKER_DRIVER=overlay2` прописаны внутри job-ов.
+- **Docker job-ы** (`backend-build-image`, `smoke-backend-image`, `deploy-local`) используют сервис `docker:dind`. На GitLab.com shared runner-ах флаг `privileged` отключён, поэтому подключаемся к демону через `DOCKER_HOST=tcp://docker:2375` и выключаем TLS (`DOCKER_TLS_CERTDIR=""`).
 - **Отчёты** — `backend-test` публикует `pytest` результаты и coverage, фронтенд-джобы сохраняют `.next` как артефакт.
 - **Документация** — см. `docs/gitlab.md` для детального описания стадий, переменных, чек-листа перед merge и типовых ошибок (`lookup docker`, `healthz`).
 

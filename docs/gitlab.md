@@ -16,7 +16,7 @@
 | `deploy` | `deploy-local` (manual)                                                             | Поднимает Redis/Postgres/Backend/Celery внутри CI и прогоняет миграции + демо-данные |
 
 - Все джобы работают на shared SaaS runner-ах, поэтому теги не используются.
-- Stages `build`, `smoke`, `deploy` зависят от Docker; там используется `docker:dind` сервис и `privileged: true`.
+- Stages `build`, `smoke`, `deploy` зависят от Docker; там используется сервис `docker:dind`. GitLab.com shared runner-ы не разрешают флаг `privileged`, поэтому полагаемся на стандартные настройки runner-а и подключаемся к демону по `tcp://docker:2375`.
 
 ## 2. Глобальные переменные и кэш
 

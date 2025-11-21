@@ -238,7 +238,7 @@ export default function MissionDetail() {
             {mission?.description || copy.descr}
           </p>
           <div className="flex flex-wrap gap-2 mt-4 text-xs">
-            <Badge status={status}>{statusLabel}</Badge>
+            <Badge status={missionStatusValue}>{statusLabel}</Badge>
             {completed && <Badge status="completed">{copy.status.completed}</Badge>}
           </div>
         </Card>

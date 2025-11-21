@@ -1,39 +1,28 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import Layout from "../components/Layout";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import { setPlayerClass, getPlayerClass } from "../lib/class";
 import { toast } from "sonner";
 import { Code, ServerCog, Share2 } from "lucide-react";
+import { useDictionary } from "../lib/i18n";
 
-const classes = [
-  {
-    id: "django",
-    name: "Django Arcanist",
-    desc: "ORM rituals, DRF glyphs, Celery familiars, Postgres temples.",
-    crest: "🛡️",
-    focus: "Backend control",
-    icon: ServerCog,
-  },
-  {
-    id: "python",
-    name: "Python Spellblade",
-    desc: "Scripts, algorithms, and automation scrolls for any guild quest.",
-    crest: "🐍",
-    focus: "Core mastery",
-    icon: Code,
-  },
-  {
-    id: "devops",
-    name: "DevOps Ranger",
-    desc: "Docker rituals, CI/CD wards, and multi-cloud scouting expertise.",
-    crest: "⚙️",
-    focus: "Deployment",
-    icon: Share2,
-  },
-];
+const CLASS_ICONS = {
+  django: ServerCog,
+  python: Code,
+  devops: Share2,
+};
 
 export default function ChooseClassPage() {
+  const dict = useDictionary();
+  const classes = useMemo(() => {
+    return Object.entries(dict.classPage.classes).map(([id, data]) => ({
+      id,
+      ...data,
+      icon: CLASS_ICONS[id] || Code,
+    }));
+  }, [dict.classPage.classes]);
+
   useEffect(() => {
     const chosen = getPlayerClass();
     if (chosen) window.location.href = "/worlds";
@@ -41,7 +30,7 @@ export default function ChooseClassPage() {
 
   function choose(id) {
     setPlayerClass(id);
-    toast.success("Class selected");
+    toast.success(dict.classPage.toastSuccess);
     window.location.href = "/worlds";
   }
 
@@ -49,11 +38,11 @@ export default function ChooseClassPage() {
     <Layout>
       <section className="mb-6">
         <p className="text-xs uppercase tracking-[0.35em] text-white/60">
-          Alignment
+          {dict.classPage.alignment}
         </p>
-        <h1 className="text-3xl font-display">Choose your specialization</h1>
+        <h1 className="text-3xl font-display">{dict.classPage.heading}</h1>
         <p className="text-sm text-white/70 mt-2">
-          Classes grant unique passives, cosmetic upgrades, and custom questlines.
+          {dict.classPage.subheading}
         </p>
       </section>
       <div className="grid md:grid-cols-3 gap-6">
@@ -69,7 +58,7 @@ export default function ChooseClassPage() {
               </div>
               <p className="text-sm text-white/80">{c.desc}</p>
               <Button className="mt-4" onClick={() => choose(c.id)}>
-                Pledge allegiance
+                {dict.classPage.cta}
               </Button>
             </Card>
           );

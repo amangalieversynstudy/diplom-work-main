@@ -9,21 +9,60 @@ import {
   Shield,
   LogIn,
   UserPlus,
+  Languages,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getPlayerClass } from "../lib/class";
+import { useI18n, languages as supportedLanguages } from "../lib/i18n";
 
 const navLinks = [
-  { href: "/", label: "Sanctum", icon: Sparkles },
-  { href: "/worlds", label: "Worlds", icon: Map },
-  { href: "/missions/1", label: "Quest", icon: Swords },
-  { href: "/leaderboard", label: "Legends", icon: Trophy },
-  { href: "/profile", label: "Character", icon: User2 },
-  { href: "/class", label: "Class", icon: Crown },
+  { href: "/", labelKey: "nav.sanctum", icon: Sparkles },
+  { href: "/worlds", labelKey: "nav.worlds", icon: Map },
+  { href: "/missions/1", labelKey: "nav.quest", icon: Swords },
+  { href: "/leaderboard", labelKey: "nav.legends", icon: Trophy },
+  { href: "/profile", labelKey: "nav.character", icon: User2 },
+  { href: "/class", labelKey: "nav.class", icon: Crown },
 ];
+
+function LanguageToggle() {
+  const { language, setLanguage, t } = useI18n();
+
+  return (
+    <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full border border-white/10 bg-white/5">
+      <Languages size={14} className="text-accent" />
+      <span className="text-xs uppercase tracking-[0.25em] text-white/70 hidden sm:block">
+        {t("layout.toggleLabel")}
+      </span>
+      <div className="inline-flex rounded-full border border-white/10 overflow-hidden">
+        {supportedLanguages.map((lang) => (
+          <button
+            key={lang.id}
+            type="button"
+            onClick={() => setLanguage(lang.id)}
+            className={`px-2 py-1 text-xs font-semibold transition ${
+              language === lang.id ? "bg-accent/30 text-white" : "bg-transparent text-white/70"
+            }`}
+          >
+            {lang.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Layout({ children }) {
   const [pclass, setPclass] = useState(null);
+  const { t } = useI18n();
+
+  const translatedNavLinks = useMemo(
+    () =>
+      navLinks.map((item) => ({
+        ...item,
+        label: t(item.labelKey),
+      })),
+    [t]
+  );
 
   useEffect(() => {
     setPclass(getPlayerClass());
@@ -44,14 +83,14 @@ export default function Layout({ children }) {
           <div className="flex items-center justify-between">
             <Link href="/" className="font-display text-xl tracking-wider inline-flex items-center gap-3">
               <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs uppercase tracking-[0.3em]">
-                RPG Academy
+                {t("layout.badge")}
               </span>
-              <span className="text-accent/90 text-sm">Build your legend</span>
+              <span className="text-accent/90 text-sm">{t("layout.tagline")}</span>
             </Link>
             <div className="flex items-center gap-2 text-xs text-white/70">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/15 bg-white/5">
                 <Shield size={14} className="text-accent" />
-                Season: Obsidian Dawn
+                {t("layout.seasonLabel")}: {t("layout.seasonName")}
               </span>
               {pclass && (
                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/15 bg-white/5">
@@ -59,10 +98,11 @@ export default function Layout({ children }) {
                   {pclass}
                 </span>
               )}
+              <LanguageToggle />
             </div>
           </div>
           <nav className="flex flex-wrap items-center gap-3 text-sm">
-            {navLinks.map((item) => (
+            {translatedNavLinks.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -77,13 +117,13 @@ export default function Layout({ children }) {
               href="/login"
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 hover:border-accent/60"
             >
-              <LogIn size={16} /> Login
+              <LogIn size={16} /> {t("layout.login")}
             </Link>
             <Link
               href="/register"
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/30 border border-accent/40 hover:bg-accent/40"
             >
-              <UserPlus size={16} /> Join Legion
+              <UserPlus size={16} /> {t("layout.register")}
             </Link>
           </nav>
         </div>
@@ -99,7 +139,7 @@ export default function Layout({ children }) {
       <footer className="border-t border-white/10 bg-black/30 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 py-4 text-xs text-white/60 flex flex-wrap gap-3 justify-between">
           <span>© {new Date().getFullYear()} RPG Academy</span>
-          <span>Made for the Diploma questline</span>
+          <span>{t("layout.footerNote")}</span>
         </div>
       </footer>
     </div>

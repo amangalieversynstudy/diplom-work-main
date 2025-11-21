@@ -2,9 +2,27 @@
 
 Этот документ описывает, как запускать локальную демонстрационную среду (deploy-local) и как выкатывать на staging (deploy-staging) через GitLab CI, а также флаги для автозагрузки демо-данных.
 
+## Зачем нам Docker в деплоях
+
+- **Паритет Dev/Staging/Prod**: один и тот же `docker-compose.yml` и набор образов используются локально, на staging и на проде.
+- **Детерминированность**: нужные версии Python/Node/Postgres/Redis/Chromium упакованы в образы, пайплайн не зависит от окружения runner-а.
+- **Автоматизация демо**: `DEMO_SEED` и `ALLOW_DEMO_SEED` подхватываются контейнерами и запускают `load_demo_content`/`create_demo_superuser` без дополнительных шагов.
+- **Сервисная изоляция**: отдельные контейнеры для db, redis, backend, frontend, celery ⇒ проще отлаживать и мониторить.
+
+## Что готово в продукте
+
+- Аутентификация + JWT + выбор класса героя.
+- Миры/миссии/таски с прогрессом Story → Quiz → Code.
+- Leaderboard, XP, повторяемые миссии.
+- Celery воркер для фоновых начислений.
+- Команды `load_demo_content`, `create_demo_superuser`, `print_demo_summary` — под DEMO-флагами.
+- Postman коллекции и k6 скрипт для нагрузочного теста.
+
 ## Содержание
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
 Содержание
 
 - [Быстрый старт](#%D0%91%D1%8B%D1%81%D1%82%D1%80%D1%8B%D0%B9-%D1%81%D1%82%D0%B0%D1%80%D1%82)
@@ -36,27 +54,36 @@
 ### 1) Локальная демонстрация (deploy-local)
 
 <a id="quickstart-local"></a>
+
 1. Убедитесь, что локальный GitLab Runner с тегом `local` монтирует Docker socket (`/var/run/docker.sock:/var/run/docker.sock`).
 2. В GitLab → CI/CD → Pipelines запустите вручную job `deploy-local`.
 3. Дождитесь сообщения:
-  - `Backend started locally on http://localhost:8000`
-  - `Admin login: admin/admin123`
+
+- `Backend started locally on http://localhost:8000`
+- `Admin login: admin/admin123`
+
 4. Откройте `http://localhost:8000/healthz` — должно вернуть `{ "status": "ok" }`.
 5. Для ручного API-теста импортируйте в Postman:
-  - Коллекцию: `diagnostics/postman/RPG.postman_collection.json`
-  - Окружение: `diagnostics/postman/Local.postman_environment.json`
+
+- Коллекцию: `diagnostics/postman/RPG.postman_collection.json`
+- Окружение: `diagnostics/postman/Local.postman_environment.json`
 
 ### 2) Staging с демо-данными
 
 <a id="quickstart-staging"></a>
+
 1. В GitLab → Settings → CI/CD → Variables добавьте:
-  - `DEPLOY_HOST` (адрес сервера)
-  - `DEPLOY_USER` (SSH пользователь)
-  - `SSH_PRIVATE_KEY` (masked, protected)
-  - Опционально: `DEPLOY_DIR` (папка с docker-compose.yml)
+
+- `DEPLOY_HOST` (адрес сервера)
+- `DEPLOY_USER` (SSH пользователь)
+- `SSH_PRIVATE_KEY` (masked, protected)
+- Опционально: `DEPLOY_DIR` (папка с docker-compose.yml)
+
 2. Чтобы засеять демо, добавьте/включите:
-  - `DEMO_SEED = true`
-  - `ALLOW_DEMO_SEED = true`
+
+- `DEMO_SEED = true`
+- `ALLOW_DEMO_SEED = true`
+
 3. Запустите вручную `deploy-staging`.
 4. В логе увидите "Seeding demo data on staging..." и сводку `print_demo_summary`.
 5. Отключите флаги DEMO_SEED/ALLOW_DEMO_SEED после демонстрации.
@@ -66,6 +93,7 @@
 Стейджи: `lint` → `test` → `frontend` → `docs-lint` → `build` → `deploy`.
 
 Ключевые job’ы:
+
 - `build-backend-image` — собирает Docker-образ бэкенда и сохраняет артефакт `backend_image.tar`.
 - `smoke-test-image` — опционально проверяет образ простым health-check.
 - `deploy-local` — ручной запуск, поднимает локальный стек (Postgres, Redis, Backend, Celery) на вашей машине через Docker сокет.
@@ -79,6 +107,7 @@
 - `ALLOW_DEMO_SEED` — переменная окружения приложения, разрешающая сидинг в средах с `DEBUG = False` (staging/prod). Без неё сидинг в non-debug среде игнорируется.
 
 Гарантия безопасности:
+
 - Команды `load_demo_content` и `create_demo_superuser` в non-debug режимах (DEBUG=False) выполняются только если `ALLOW_DEMO_SEED=true` в окружении контейнера.
 - По умолчанию:
   - В `deploy-local`: `DEMO_SEED=true`, `ALLOW_DEMO_SEED=true` (безопасно для локали).
@@ -87,11 +116,13 @@
 ## Локальный деплой (deploy-local)
 
 Требования к локальному GitLab Runner:
+
 - Executor: docker (privileged не обязателен).
 - Должен быть проброшен Docker socket хоста: `/var/run/docker.sock:/var/run/docker.sock`.
 - Раннер должен иметь тег `local` (job помечен `tags: [local]`).
 
 Что делает job:
+
 1. Проверяет доступ к Docker сокету.
 2. Создаёт сеть `ci_local_net`.
 3. Поднимает `redis:7` и `postgres:15` (контейнеры `ci_local_redis`, `ci_local_postgres`).
@@ -108,6 +139,7 @@
    - Admin: `${DEMO_ADMIN_USERNAME}/${DEMO_ADMIN_PASSWORD}` (по умолчанию `admin/admin123`).
 
 Переменные по умолчанию (можно переопределить в CI Variables):
+
 - `POSTGRES_DB=rpgdb`, `POSTGRES_USER=rpguser`, `POSTGRES_PASSWORD=rpgpass`
 - `DEMO_ADMIN_USERNAME=admin`, `DEMO_ADMIN_EMAIL=admin@example.com`, `DEMO_ADMIN_PASSWORD=admin123`
 - `DEMO_SEED=true`, `ALLOW_DEMO_SEED=true`
@@ -115,6 +147,7 @@
 ## Staging деплой (deploy-staging)
 
 Требования:
+
 - На staging-хосте должен быть установлен `docker-compose` и настроен проект в каталоге `$DEPLOY_DIR`.
 - CI Variables:
   - `DEPLOY_HOST` — адрес хоста.
@@ -124,6 +157,7 @@
   - (опционально) `DOCKER_REGISTRY`, `DOCKER_USERNAME`, `DOCKER_PASSWORD` — для pull образа по sha.
 
 Что делает job:
+
 1. Подключается по SSH, выполняет `docker-compose pull || true` и `docker-compose up -d`.
 2. Запускает миграции: `docker-compose exec backend python manage.py migrate --noinput`.
 3. Если `DEMO_SEED=true`, дополнительно выполняет сидинг:
@@ -131,6 +165,7 @@
    - `load_demo_content`, `create_demo_superuser`, `print_demo_summary` выполнятся только если `ALLOW_DEMO_SEED=true`.
 
 Рекомендации по staging:
+
 - Держите `DEMO_SEED=false` и `ALLOW_DEMO_SEED=false` по умолчанию.
 - Включайте оба флага только для временных/превью окружений.
 
@@ -139,17 +174,20 @@
 Деплой на production запускается вручную по релизному тегу (формат `vX.Y.Z`) через job `deploy-prod`.
 
 Требования переменных (GitLab → Settings → CI/CD → Variables):
+
 - `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY` (masked, protected) — доступ к прод‑хосту по SSH.
 - (опционально) `DEPLOY_PATH` — каталог на хосте, где расположен `docker-compose.yml`.
 - (опционально) `DOCKER_REGISTRY` — реестр образов, если тянете образ по тегу.
 - (опционально) `PROD_HEALTH_URL` — URL для health‑проверки (по умолчанию: `https://example.com/healthz`).
 
 Последовательность:
+
 1. Создайте тег релиза `vX.Y.Z` и запушьте его.
 2. Запустите manual job `deploy-prod`.
 3. После деплоя автоматически можно запустить `smoke-prod` (health‑check).
 
 Рекомендации безопасности:
+
 - Сделайте environment `production` защищённым (Protected) и требующим approvals.
 - Храните ключи только в CI Variables c флагами Protected + Masked.
 
@@ -158,10 +196,12 @@
 В пайплайне есть job `rollback-prod` (manual). Для отката укажите переменную `PREVIOUS_TAG` (например, предыдущий релиз `vX.Y.Z`).
 
 Требования:
+
 - `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY` — как и для прод‑деплоя.
 - `DOCKER_REGISTRY` — если откатываетесь тегом в реестре.
 
 Шаги:
+
 1. Запустите `rollback-prod` и передайте `PREVIOUS_TAG`.
 2. Джоба подтянет указанный образ и перезапустит `docker-compose`.
 
@@ -170,12 +210,14 @@
 Пайплайн может отправлять уведомления о фейлах в Slack через job `notify-failure`.
 
 Настройка:
+
 - Добавьте `SLACK_WEBHOOK_URL` в CI Variables (Masked/Protected).
 - Уведомления приходят автоматически при падении пайплайна.
 
 ## Переменные GitLab CI (общее)
 
 Общие переменные (пример):
+
 - Реестр: `DOCKER_REGISTRY`, `DOCKER_USERNAME`, `DOCKER_PASSWORD`.
 - Staging: `DEPLOY_HOST`, `DEPLOY_USER`, `SSH_PRIVATE_KEY`, (опц.) `DEPLOY_DIR`, `STAGING_HEALTH_URL`.
 - Production: `SSH_HOST`, `SSH_USER`, `SSH_PRIVATE_KEY`, (опц.) `DEPLOY_PATH`, `PROD_HEALTH_URL`.
@@ -198,6 +240,7 @@
 ## Ручное тестирование API (Postman)
 
 Импортируйте:
+
 - Коллекция: `diagnostics/postman/RPG.postman_collection.json`
 - Окружение: `diagnostics/postman/Local.postman_environment.json`
 
@@ -218,6 +261,7 @@
 - Даже при запуске команд вручную в non-debug средах они не внесут изменения без `ALLOW_DEMO_SEED=true`.
 
 ---
+
 Если потребуется, можно расширить deploy-staging автоматическим выводом публичного URL/cred'ов и интегрировать шаги очистки демо-данных.
 
 ## Быстрый старт (фронт+бэк)
@@ -245,6 +289,7 @@ open http://127.0.0.1:3002/worlds
 ```
 
 Примечание: на некоторых конфигурациях macOS bind-mount для фронтенда вызывает ошибку `Unknown system error -35 read` внутри контейнера. В таком случае используйте Вариант B.
+
 ## Make команды и .env
 
 Для удобства доступны цели Make (см. `Makefile`). Рекомендуется создать локальный файл `.env` на основе примера ниже — переменные будут автоматически подхвачены Makefile.
@@ -274,6 +319,6 @@ ALLOW_DEMO_SEED=false
 - `make logs` — логи бэкенда.
 - `make redeploy-local` — stop + deploy-local.
 - `make clean` — удалить локальные артефакты (контейнеры, сеть, образ backend-local).
-- `make ps` — показать контейнеры ci_local_*.
+- `make ps` — показать контейнеры ci*local*\*.
 - `make curl-health` — быстрый проверочный запрос к /healthz.
 - `make deploy-staging` — деплой на staging по SSH (docker-compose). Требуются `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_DIR`. Для демо включайте `DEMO_SEED=true` и при необходимости `ALLOW_DEMO_SEED=true`.

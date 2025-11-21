@@ -8,8 +8,45 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from users.models import Profile
 
-from .models import Location, Mission, Progress
-from .serializers import LocationSerializer, MissionSerializer, ProgressSerializer
+from .models import (
+    LeaderboardEntry,
+    Location,
+    Mission,
+    MissionTask,
+    Progress,
+    Rank,
+    TaskProgress,
+    Track,
+)
+from .serializers import (
+    LeaderboardEntrySerializer,
+    LocationSerializer,
+    MissionSerializer,
+    MissionTaskSerializer,
+    ProgressSerializer,
+    RankSerializer,
+    TaskProgressSerializer,
+    TrackSerializer,
+)
+
+
+class TrackViewSet(viewsets.ModelViewSet):
+    """ViewSet for learning tracks."""
+
+    queryset = Track.objects.all().order_by("order", "id")
+    serializer_class = TrackSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.method in ("GET", "HEAD", "OPTIONS"):
+            return qs.filter(is_active=True)
+        return qs
+
+    def get_permissions(self):
+        if self.request.method in ("GET", "HEAD", "OPTIONS"):
+            return [permissions.AllowAny()]
+        return [permissions.IsAdminUser()]
 
 
 class LocationViewSet(viewsets.ModelViewSet):
@@ -169,3 +206,69 @@ class ProgressViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # Users can only access their own progress
         return Progress.objects.filter(user=self.request.user).select_related("mission")
+
+
+class MissionTaskViewSet(viewsets.ReadOnlyModelViewSet):
+    """Expose mission tasks/steps for Story → Quiz → Code UX."""
+
+    queryset = MissionTask.objects.select_related("mission", "mission__location").order_by(
+        "mission_id", "order"
+    )
+    serializer_class = MissionTaskSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        mission_id = self.request.query_params.get("mission")
+        if mission_id:
+            qs = qs.filter(mission_id=mission_id)
+        task_type = self.request.query_params.get("task_type")
+        if task_type:
+            qs = qs.filter(task_type=task_type)
+        return qs
+
+
+class TaskProgressViewSet(viewsets.ModelViewSet):
+    """Allow learners to persist their progress on mission tasks."""
+
+    queryset = TaskProgress.objects.none()
+    serializer_class = TaskProgressSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return TaskProgress.objects.filter(user=self.request.user).select_related(
+            "task", "task__mission"
+        )
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class RankViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Rank.objects.all().order_by("order", "min_level", "min_xp")
+    serializer_class = RankSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = LeaderboardEntry.objects.select_related("track", "user", "user__profile")
+    serializer_class = LeaderboardEntrySerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        track_slug = self.request.query_params.get("track")
+        if track_slug:
+            qs = qs.filter(track__slug=track_slug)
+        scope = self.request.query_params.get("scope")
+        if scope:
+            qs = qs.filter(scope=scope)
+        period = self.request.query_params.get("period")
+        if period:
+            qs = qs.filter(period_label=period)
+        else:
+            qs = qs.filter(period_label="all_time")
+        return qs.order_by("position", "-xp_total")[:200]

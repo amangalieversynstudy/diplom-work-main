@@ -1,11 +1,14 @@
+import { useI18n } from "../lib/i18n";
+
 export default function XPBar({ current = 0, max = 100 }) {
+  const { t } = useI18n();
   const pct = Math.min(100, Math.round((current / max) * 100));
   const anim = pct < 100 ? "animate-pulse" : "";
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs uppercase tracking-[0.3em] text-white/60">
-          XP Trail
+          {t("sheet.xpLabel")}
         </span>
         <span className="text-sm text-white/70">
           {current} / {max}

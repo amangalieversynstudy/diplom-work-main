@@ -2,7 +2,12 @@
 
 Uses an in-memory SQLite database so tests can run quickly without
 requiring the Postgres service to be available during local runs.
+
+If the environment variable ``SQLITE_PATH`` задан, то база будет храниться
+в указанном файле, что удобно для ручного запуска приложения без Postgres.
 """
+
+import os
 
 from .base import *  # noqa: F401,F403
 
@@ -10,10 +15,12 @@ from .base import *  # noqa: F401,F403
 SECRET_KEY = "test-secret-key"
 
 # Use an in-memory SQLite database for tests to avoid external DB deps.
+SQLITE_PATH = os.getenv("SQLITE_PATH", ":memory:")
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": ":memory:",
+        "NAME": SQLITE_PATH,
     }
 }
 

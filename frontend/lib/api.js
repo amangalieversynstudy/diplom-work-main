@@ -1,8 +1,11 @@
 import axios from "axios";
 import { getTokens, setTokens, clearTokens } from "./auth";
 
-// Default to Next.js local API routes for demo; override with NEXT_PUBLIC_API_BASE to use real DRF
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api";
+// Default to Django backend in dev, but allow overriding (or falling back to Next.js mock API)
+const fallbackBase =
+  process.env.NODE_ENV === "development" ? "http://127.0.0.1:8000/api" : "/api";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || fallbackBase;
 
 export const api = axios.create({ baseURL: API_BASE });
 
@@ -87,6 +90,42 @@ export const Missions = {
   complete: (id) => api.post(`/missions/${id}/complete/`).then((r) => r.data),
 };
 
+export const MissionTasks = {
+  list: (missionId, params = {}) =>
+    api
+      .get("/mission-tasks/", { params: { mission: missionId, ...params } })
+      .then((r) => r.data),
+};
+
+const unwrapList = (data) => {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.results)) return data.results;
+  return [];
+};
+
+export const TaskProgressAPI = {
+  list: () => api.get("/task-progress/").then((r) => unwrapList(r.data)),
+  create: (payload) => api.post("/task-progress/", payload).then((r) => r.data),
+  update: (id, payload) =>
+    api.patch(`/task-progress/${id}/`, payload).then((r) => r.data),
+};
+
+export const Ranks = {
+  list: () => api.get("/ranks/").then((r) => unwrapList(r.data)),
+};
+
+export const LeaderboardAPI = {
+  list: (params = {}) =>
+    api
+      .get("/leaderboard/", { params })
+      .then((r) => unwrapList(r.data))
+      .catch((err) => {
+        if (err?.response?.status === 404) return [];
+        throw err;
+      }),
+};
+
 export const Profile = {
   me: async () => {
     try {
@@ -117,8 +156,44 @@ export const Locations = {
   get: (id) => api.get(`/locations/${id}/`).then((r) => r.data),
 };
 
+export const Tracks = {
+  list: () => api.get("/tracks/").then((r) => r.data),
+  get: (id) => api.get(`/tracks/${id}/`).then((r) => r.data),
+};
+
 export const ProgressAPI = {
   list: () => api.get("/progress/").then((r) => r.data),
+};
+
+const callLocalApi = async (url, options = {}) => {
+  const res = await fetch(url, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options,
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    const error = new Error(errBody?.detail || "Local API error");
+    error.status = res.status;
+    error.payload = errBody;
+    throw error;
+  }
+  return res.json();
+};
+
+export const Runner = {
+  execute: (payload) =>
+    callLocalApi("/api/runner/execute", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+};
+
+export const Payments = {
+  checkout: (payload) =>
+    callLocalApi("/api/payments/checkout", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
 
 export function missionStatus(mission) {

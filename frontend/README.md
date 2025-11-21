@@ -15,9 +15,9 @@ If port 3000 is busy:
 
 2. Backend API base URL
 
-- Default: frontend uses built-in mock API under Next.js pages/api (no backend required)
-- To use real DRF backend, create .env.local with:
-  NEXT_PUBLIC_API_BASE=http://localhost:8000/api
+- Development default: axios points to Django at http://127.0.0.1:8000/api (see `.env.local.example`)
+- To use a different backend, copy `.env.local.example` → `.env.local` and change `NEXT_PUBLIC_API_BASE`
+- To fall back to the bundled mock API (no backend), set `NEXT_PUBLIC_API_BASE=/api`
 
 Auth pages
 

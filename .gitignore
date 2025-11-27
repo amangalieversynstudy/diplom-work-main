@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+node_modules/
+.env
+.env.*
+*.pyc
+*.sqlite3
+.DS_Store
+/dist
+/.next
+# Next.js build artifacts inside frontend
+frontend/.next/
+
+# Backend coverage/junit artifacts
+backend/coverage.xml
+backend/junit.xml
+backend/.coverage
+# Ignore collected static files
+backend/staticfiles/
+
+# Exercises deliverables (PDF exports)
+docs/*.pdf

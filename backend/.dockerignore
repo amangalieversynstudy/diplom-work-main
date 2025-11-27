@@ -1,0 +1,27 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.log
+*.tmp
+*.pytest_cache
+
+.venv
+.env
+.DS_Store
+coverage.xml
+coverage/
+junit.xml
+reports/
+staticfiles/
+media/
+
+# Local db snapshots
+*.db
+
+# Git and IDE files
+.git
+.gitignore
+.idea
+.vscode

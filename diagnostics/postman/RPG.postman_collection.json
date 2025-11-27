@@ -1,0 +1,234 @@
+{
+  "info": {
+    "_postman_id": "e7b2d6d4-9c51-4c2e-8a90-28d9d15b7b3c",
+    "name": "RPG API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Коллекция для ручного тестирования RPG API (Django/DRF)."
+  },
+  "item": [
+    {
+      "name": "Healthz",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/healthz",
+          "host": ["{{baseUrl}}"],
+          "path": ["healthz"]
+        }
+      }
+    },
+    {
+      "name": "Swagger JSON",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/swagger.json",
+          "host": ["{{baseUrl}}"],
+          "path": ["swagger.json"]
+        }
+      }
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"user1\",\n  \"password\": \"pass1\",\n  \"email\": \"user1@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register", ""]
+            }
+          }
+        },
+        {
+          "name": "Login (JWT obtain pair)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "let data = {};",
+                  "try { data = pm.response.json(); } catch (e) {}",
+                  "if (data.access) pm.environment.set('access', data.access);",
+                  "if (data.refresh) pm.environment.set('refresh', data.refresh);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"user1\",\n  \"password\": \"pass1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login", ""]
+            }
+          }
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "refresh", ""]
+            }
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me", ""]
+            }
+          }
+        },
+        {
+          "name": "Logout (blacklist refresh)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{access}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout", ""]
+            }
+          }
+        },
+        {
+          "name": "Verify Email (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-email/?uid={{uid}}&token={{token}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify-email", ""],
+              "query": [
+                {"key": "uid", "value": "{{uid}}"},
+                {"key": "token", "value": "{{token}}"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Game",
+      "item": [
+        {
+          "name": "Locations list",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/locations/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "locations", ""]
+            }
+          }
+        },
+        {
+          "name": "Missions list (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/missions/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "missions", ""]
+            }
+          }
+        },
+        {
+          "name": "Mission start",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/missions/{{missionId}}/start/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "missions", "{{missionId}}", "start", ""]
+            }
+          }
+        },
+        {
+          "name": "Mission complete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{access}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stars\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/missions/{{missionId}}/complete/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "missions", "{{missionId}}", "complete", ""]
+            }
+          }
+        },
+        {
+          "name": "My progress",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/progress/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "progress", ""]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [],
+  "variable": []
+}

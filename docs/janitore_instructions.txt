@@ -1,0 +1,119 @@
+# Janitore team guide
+
+1. Зачем нам Docker
+
+---
+
+- **Единая среда**. Контейнеры фиксируют версии Python, Node.js, Postgres, Redis и сторонних утилит, поэтому разработчики и CI получают идентичные окружения.
+- **Изоляция сервисов**. База данных, Redis, backend (Django) и frontend (Next.js) запускаются в отдельных контейнерах. Это упрощает параллельную разработку и исключает конфликт портов/зависимостей на локальных машинах.
+- **Быстрый онбординг**. Новому человеку достаточно `docker compose up` — не нужно вручную ставить Postgres, Redis, настраивать Python virtualenv или Node.
+- **Производственные параллели**. Тот же docker-compose легко превращается в манифесты для staging/production (k8s, ECS и т.п.), поэтому Dev ≈ Prod.
+- **Фоновая обработка и демо-сидинг**. Celery worker и management-команды (`load_demo_content`, `create_demo_superuser`, `print_demo_summary`) крутятся в том же окружении; DEMO-флаги в docker-compose гарантируют, что база всегда наполнена одинаково.
+- **Диагностика**. Проще смотреть логи (`docker compose logs -f backend`) и проверять healthz, не засоряя локальную ОС.
+
+2. Что реализовано в проекте (статус на 21.11)
+
+---
+
+- Регистрация/логин + JWT + выбор класса персонажа, XP/уровни и leaderboard.
+- Карта мира: треки → миры → миссии с координатами, prerequisite и повторяемыми задачами.
+- Шаги миссий Story → Quiz → Code + code-runner (`/api/runner/execute`) с автоматическим TaskProgress.
+- Профиль игрока и прогресс в `/missions/{id}`, `/worlds`, `/profile`, `/leaderboard` на фронте.
+- Celery/Redis для фоновых начислений и будущих уведомлений.
+- Постман коллекция, k6 скрипт для нагрузочного теста, pytest + coverage отчёты.
+
+3. Навигация по репозиторию
+
+---
+
+| Путь                        | Что внутри                                                                |
+| --------------------------- | ------------------------------------------------------------------------- |
+| `backend/core/`             | Настройки Django (`settings/*.py`), Celery app, health-check.             |
+| `backend/users/`            | Модель пользователя, сериализаторы, views для auth/password/profile.      |
+| `backend/game/`             | Треки, миры, миссии, таски, API для карты и прогресса, demo-команды.      |
+| `backend/scripts/`          | `wait_for_postgres.py` для docker-entrypoint.                             |
+| `frontend/pages/`           | Next.js страницы (`index`, `worlds`, `missions/[id]`, `profile`, `auth`). |
+| `frontend/components/`      | UI-блоки: AdventureMap, MissionStepper, CodeRunnerPanel и т.д.            |
+| `docs/`                     | README, deploy инструкции, file_overview (расширенное описание).          |
+| `diagnostics/postman/`      | Коллекция/окружение для ручного тестирования API.                         |
+| `ci/`, `.github/workflows/` | Примеры пайплайнов GitLab/GitHub.                                         |
+
+Каждый раздел кода старается быть атомарным: `users` отвечает за аккаунты, `game` — за геймификацию, frontend — за UI. Если нужен более подробный разбор по файлам, см. `docs/file_overview.md`.
+
+4. Как запустить всё локально без Docker
+
+---
+
+Ниже последовательность для macOS/Linux. На Windows используйте WSL2 или аналогичные шаги.
+
+### 2.1. Общие предварительные условия
+
+- Python 3.11+ (для backend)
+- Node.js 18+ и npm (для frontend)
+- PostgreSQL 15 и Redis 7 установлены локально или через brew/apt
+- `pipx` или `pip` для установки poetry/pipenv не требуется — используем `python -m venv`
+
+### 2.2. Подготовка базы и Redis
+
+```bash
+# Postgres
+createuser -s rpguser || true
+createdb -O rpguser rpgdb || true
+psql -c "ALTER USER rpguser WITH PASSWORD 'rpgpass';"
+
+# Redis (если не запущен)
+brew services start redis   # macOS пример; на Linux запустите redis-server
+```
+
+### 2.3. Backend (Django)
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+export DJANGO_SETTINGS_MODULE=core.settings.local
+export POSTGRES_DB=rpgdb
+export POSTGRES_USER=rpguser
+export POSTGRES_PASSWORD=rpgpass
+export POSTGRES_HOST=localhost
+export POSTGRES_PORT=5432
+export REDIS_URL=redis://localhost:6379/0
+python manage.py migrate
+python manage.py loaddata initial_data  # если нужны фикстуры (опционально)
+python manage.py runserver 0.0.0.0:8000
+```
+
+Backend будет доступен на http://127.0.0.1:8000 , API — по `/api/...`.
+
+### 2.4. Frontend (Next.js)
+
+```bash
+cd frontend
+cp .env.local.example .env.local  # при необходимости поменяйте NEXT_PUBLIC_API_BASE
+npm install --no-audit --no-fund
+npm run dev
+```
+
+По умолчанию Next.js слушает http://127.0.0.1:3000 и ходит в backend на http://127.0.0.1:8000/api.
+
+### 2.5. Celery (опционально)
+
+Для фоновых задач после активации venv backend:
+
+```bash
+celery -A core worker -l info
+```
+
+Он будет использовать тот же Redis.
+
+5. Быстрый чек-лист запуска
+
+---
+
+1. Запустить Postgres и Redis.
+2. Backend: `python manage.py migrate && python manage.py runserver` (c локальными env).
+3. Frontend: `npm run dev` (указав `NEXT_PUBLIC_API_BASE=http://127.0.0.1:8000/api`).
+4. Проверить `/healthz` и `/api/auth/register/` на backend и `/register` на frontend.
+
+С Docker тот же процесс сводится к `docker compose up --build`, но данная памятка показывает, что окружение можно поднять и вручную для отладки или разработки без контейнеров.

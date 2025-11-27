@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exercises report — RPG Learning Platform</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif; line-height: 1.5; max-width: 860px; margin: 2rem auto; padding: 0 1rem; }
+    h1, h2, h3 { margin-top: 1.6rem; }
+    code, pre { background: #f6f8fa; border-radius: 6px; padding: 0.2rem 0.4rem; }
+    pre { padding: 1rem; overflow: auto; }
+    .note { color: #555; font-size: .9rem; }
+    @media print {
+      body { margin: 0; }
+      h1 { page-break-after: avoid; }
+      h2 { page-break-after: avoid; }
+      pre { page-break-inside: avoid; }
+    }
+  </style>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10.9.4/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: "default" });
+  </script>
+</head>
+<body>
+  <h1>Exercises report: RPG Learning Platform</h1>
+  <p class="note">Short 1–2 page report. For submission, export to PDF (File → Print → Save as PDF).</p>
+
+  <h2>Introduction</h2>
+  <p>The project is an RPG-style learning platform, "like CodeCombat", where a user learns programming by completing missions on a world map. The backend (Django/DRF) manages content (locations, missions, progress, character classes, authentication), the frontend (Next.js) renders the map and gameplay, and Postgres/Redis/Celery support storage and background tasks.</p>
+
+  <h2>Glossary (brief)</h2>
+  <ul>
+    <li><b>Mission</b> — a learning assignment with coordinates on the world map and XP rules.</li>
+    <li><b>Location (world)</b> — a set of missions; a visual map area.</li>
+    <li><b>Prerequisite</b> — a dependency: mission N can start only after mission M is completed.</li>
+    <li><b>XP</b> — experience points granted for successful mission completion.</li>
+    <li><b>Repeatability</b> — reward policy for repeated completion (multiplier or 0).</li>
+    <li><b>Progress status</b> — started/completed; stored per user per mission.</li>
+  </ul>
+
+  <h2>Objectives</h2>
+  <ul>
+    <li>Map of worlds and missions with dependencies and progress.</li>
+    <li>Clear learning objectives, XP/rewards, assignment repeatability.</li>
+    <li>Progress tracking and mission availability respecting prerequisites.</li>
+  </ul>
+
+  <p><b>Definition of Done:</b> all unit tests are green; /healthz returns 200; missions render on the map and correctly change statuses; XP is awarded according to the rules.</p>
+
+  <h2>THE 7 STAGES OF THE SOFTWARE DEVELOPMENT LIFE CYCLE (SDLC)</h2>
+  <p>A classic 7-stage SDLC model. Below is a concise yet complete description of each stage with goals, inputs/outputs, and exit criteria.</p>
+
+  <h3>1) Planning</h3>
+  <ul>
+    <li><b>Goals:</b> define business value, scope, key risks, and a high-level plan.</li>
+    <li><b>Inputs:</b> business idea, market/competitors, available resources.</li>
+    <li><b>Activities:</b> goals and KPIs, epic-level estimation, budget, risks/assumptions, roadmap.</li>
+    <li><b>Outputs/Artifacts:</b> Vision/Scope, Business Case, Roadmap.</li>
+    <li><b>Exit criteria:</b> agreed scope and goals, known constraints and risks.</li>
+  </ul>
+
+  <h3>2) Requirements Analysis</h3>
+  <ul>
+    <li><b>Goals:</b> collect and formalize functional/nonfunctional requirements and acceptance criteria.</li>
+    <li><b>Inputs:</b> Vision/Scope, stakeholder/user interviews.</li>
+    <li><b>Activities:</b> user stories/use cases, NFRs (performance, security, availability), acceptance criteria, prioritization.</li>
+    <li><b>Outputs/Artifacts:</b> SRS/BRD, refined backlog, prototypes (as needed).</li>
+    <li><b>Exit criteria:</b> requirements are traceable, approved, and concrete enough for design.</li>
+  </ul>
+
+  <h3>3) Design</h3>
+  <ul>
+    <li><b>Goals:</b> design architecture, data, interfaces, and UX satisfying requirements and NFRs.</li>
+    <li><b>Inputs:</b> agreed requirements, constraints/standards.</li>
+    <li><b>Activities:</b> HLD/LLD, tech choices, ER/data schemas, API contracts (OpenAPI), diagrams (sequence/state), UI/UX design, threat modeling.</li>
+    <li><b>Outputs/Artifacts:</b> architecture description, data schemas, API specs, UI prototypes.</li>
+    <li><b>Exit criteria:</b> design is agreed and feasible; risks and trade-offs documented.</li>
+  </ul>
+
+  <h3>4) Development</h3>
+  <ul>
+    <li><b>Goals:</b> implement functionality per specification with code quality.</li>
+    <li><b>Inputs:</b> design/specs, task backlog.</li>
+    <li><b>Activities:</b> coding, reviews, DB migrations, environment config, static analysis, documentation.</li>
+    <li><b>Outputs/Artifacts:</b> source code, DB schemas/migrations, developer docs.</li>
+    <li><b>Exit criteria:</b> implementations are tested, builds pass, core acceptance cases implemented.</li>
+  </ul>
+
+  <h3>5) Testing</h3>
+  <ul>
+    <li><b>Goals:</b> verify compliance with requirements and quality.</li>
+    <li><b>Inputs:</b> built artifacts, test plans/cases.</li>
+    <li><b>Activities:</b> unit/integration/e2e, regression, performance, security, UAT; CI automation.</li>
+    <li><b>Outputs/Artifacts:</b> test reports, coverage, defects, release recommendations.</li>
+    <li><b>Exit criteria:</b> critical defects resolved/mitigated, quality metrics within thresholds.</li>
+  </ul>
+
+  <h3>6) Deployment</h3>
+  <ul>
+    <li><b>Goals:</b> deliver the release safely to the target environment.</li>
+    <li><b>Inputs:</b> approved build and release notes.</li>
+    <li><b>Activities:</b> packaging, IaC/scripts, CI/CD setup, migrations/seed, feature flags, rollback/roll-forward, smoke checks.</li>
+    <li><b>Outputs/Artifacts:</b> deployed version, changelog, release instructions.</li>
+    <li><b>Exit criteria:</b> release verified successfully, monitoring shows stability.</li>
+  </ul>
+
+  <h3>7) Maintenance & Operations</h3>
+  <ul>
+    <li><b>Goals:</b> ensure stable operations, fixes, and product evolution.</li>
+    <li><b>Inputs:</b> user feedback, monitoring/alerts, roadmap.</li>
+    <li><b>Activities:</b> observability (logging, metrics, tracing), incident response, security patches, optimizations, minor improvements, user training.</li>
+    <li><b>Outputs/Artifacts:</b> post-mortems, updated runbooks and docs, enriched backlog.</li>
+    <li><b>Exit criteria:</b> SLO/SLA met, incidents handled, debt and improvements managed.</li>
+  </ul>
+
+  <h2>Information model (ER)</h2>
+  <pre class="mermaid">erDiagram
+USER ||--o{ USER_PROFILE : has
+USER ||--o{ USER_MISSION_PROGRESS : progresses
+LOCATION ||--o{ MISSION : contains
+MISSION ||--o{ MISSION_PREREQUISITE : requires
+
+USER {
+  int id PK
+  string username
+  string email
+}
+USER_PROFILE {
+  int id PK
+  int user_id FK
+  string hero_class
+  int xp
+}
+LOCATION {
+  int id PK
+  string name
+  string slug
+}
+MISSION {
+  int id PK
+  int location_id FK
+  string title
+  int pos_x
+  int pos_y
+  bool repeatable
+  float repeat_xp_rate
+}
+MISSION_PREREQUISITE {
+  int id PK
+  int mission_id FK
+  int required_mission_id FK
+}
+USER_MISSION_PROGRESS {
+  int id PK
+  int user_id FK
+  int mission_id FK
+  string status
+  datetime started_at
+  datetime completed_at
+}
+</pre>
+
+  <h2>Data Flow Diagram (DFD)</h2>
+  <pre class="mermaid">flowchart LR
+subgraph Frontend [Next.js UI]
+  A[Auth/Login] --> B[Worlds List]
+  B --> C[World Map]
+  C --> D[Mission Detail]
+end
+
+subgraph Backend [Django + DRF]
+  API[REST API /api]
+end
+
+A -- "JWT creds" --> API
+B -- "GET /locations" --> API
+C -- "GET /locations/{id} (миссии с pos_x/pos_y, prerequisites)" --> API
+D -- "POST /missions/{id}/start" --> API
+D -- "POST /missions/{id}/complete" --> API
+
+API -- "JWT tokens" --> A
+API -- "Locations, missions" --> B
+API -- "Missions map (coordinates, dependencies)" --> C
+API -- "Progress, XP" --> D
+</pre>
+
+  <h2>State diagram (mission progress)</h2>
+  <pre class="mermaid">stateDiagram-v2
+[*] --> idle
+idle --> started: start
+started --> completed: complete
+completed --> started: repeat [repeatable]
+idle --> [*]
+started --> [*]
+</pre>
+
+  <h2>Formal model (pseudocode)</h2>
+  <pre><code>function is_mission_available(user, mission):
+  for req in mission.prerequisites:
+    if not user.has_completed(req):
+      return false
+  return true
+
+function start_mission(user, mission):
+  if not is_mission_available(user, mission):
+    raise AccessDenied
+  user.progress[mission].status = "started"
+  user.progress[mission].started_at = now()
+
+function complete_mission(user, mission):
+  if user.progress[mission].status != "started":
+    raise InvalidState
+  base_xp = mission.base_xp
+  if user.has_completed(mission):
+    if mission.repeatable:
+      award = floor(base_xp * mission.repeat_xp_rate)
+    else:
+      award = 0
+  else:
+    award = base_xp
+  user.profile.xp += award
+  user.progress[mission].status = "completed"
+  user.progress[mission].completed_at = now()</code></pre>
+
+  <h3>Success metrics (examples)</h3>
+  <ul>
+    <li>Time‑to‑First‑Mission: &lt; 3 minutes from registration.</li>
+    <li>Intro → Gate completion ≥ 60% on demo data.</li>
+    <li>API 5xx errors: &lt; 0.1% per demo session.</li>
+  </ul>
+
+  <h2>Export to PDF (quick)</h2>
+  <p>Open this HTML in a browser → Print (Cmd+P) → PDF → Save.</p>
+
+  <hr/>
+  <p class="note">Author: Thesis project team. Date: 27 Oct 2025</p>
+</body>
+</html>

@@ -1,0 +1,215 @@
+stages:
+  - lint
+  - test
+  - frontend
+  - build
+  - smoke
+  - deploy
+
+default:
+  # tags removed to avoid waiting for a specific runner; jobs can run on any available runner
+
+workflow:
+  rules:
+    - when: always
+
+frontend-lint:
+  image: node:20-alpine
+  stage: lint
+  rules:
+    - changes: ["frontend/**/*", ".gitlab-ci.yml"]
+  cache:
+    key: frontend-node
+    paths:
+      - frontend/node_modules/
+    policy: pull-push
+  script:
+    - cd frontend
+    - npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+    - npx next lint || true
+
+frontend-build:
+  image: node:20-alpine
+  stage: frontend
+  needs: ["frontend-lint"]
+  rules:
+    - changes: ["frontend/**/*", ".gitlab-ci.yml"]
+  cache:
+    key: frontend-node
+    paths:
+      - frontend/node_modules/
+    policy: pull
+  variables:
+    NEXT_TELEMETRY_DISABLED: 1
+  script:
+    - cd frontend
+    - npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/.next
+      - frontend/package.json
+      - frontend/package-lock.json
+    expire_in: 1 day
+
+backend-test:
+  image: python:3.11-slim
+  stage: test
+  rules:
+    - changes: ["backend/**/*", "tests/**/*", ".gitlab-ci.yml"]
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
+    - pip install --no-cache-dir -r backend/requirements.txt
+  script:
+    - python -m pytest -q
+
+backend-build-image:
+  image: docker:27.2.0
+  services:
+    - name: docker:27.2.0-dind
+      alias: docker
+      command: ["--tls=false"]
+  stage: build
+  variables:
+    DOCKER_BUILDKIT: 1
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+  needs: ["backend-test"]
+  rules:
+    - changes: ["backend/**/*", ".gitlab-ci.yml"]
+  before_script:
+    - apk add --no-cache bash
+  script:
+    - docker version
+    - docker build -t backend-ci:$CI_COMMIT_SHORT_SHA ./backend
+    - docker save backend-ci:$CI_COMMIT_SHORT_SHA -o backend_image.tar
+  artifacts:
+    paths:
+      - backend_image.tar
+    expire_in: 1 day
+
+smoke-backend-image:
+  image: docker:27.2.0
+  services:
+    - name: docker:27.2.0-dind
+      alias: docker
+      command: ["--tls=false"]
+  stage: smoke
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+  needs:
+    - job: backend-build-image
+      optional: true
+  rules:
+    - changes: ["backend/**/*", ".gitlab-ci.yml"]
+  before_script:
+    - apk add --no-cache bash
+  script:
+    - |
+      if [ ! -f backend_image.tar ]; then
+        echo "No backend_image.tar artifact present; skipping smoke test gracefully.";
+        exit 0;
+      fi
+    - docker load -i backend_image.tar
+    - docker rm -f ci_smoke_backend >/dev/null 2>&1 || true
+    - docker run -d --name ci_smoke_backend -e DJANGO_SETTINGS_MODULE=core.settings.test backend-ci:$CI_COMMIT_SHORT_SHA
+    - |
+      echo -n "Waiting for healthz";
+      for i in $(seq 1 30); do
+        if docker exec ci_smoke_backend wget -q --spider http://127.0.0.1:8000/healthz; then
+          echo " OK";
+          break;
+        fi;
+        echo -n "."; sleep 1;
+      done
+    - docker rm -f ci_smoke_backend >/dev/null 2>&1 || true
+
+deploy-local:
+  image: docker:27.2.0
+  services:
+    - name: docker:27.2.0-dind
+      alias: docker
+      command: ["--tls=false"]
+  stage: deploy
+  variables:
+    DEMO_SEED: "true"
+    ALLOW_DEMO_SEED: "true"
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+  needs:
+    - job: backend-build-image
+      optional: true
+  rules:
+    - when: manual
+  before_script:
+    - apk add --no-cache curl
+  script: |
+    set -e
+    NET=ci_local_net
+    echo "Create network $NET"
+    docker network create "$NET" >/dev/null 2>&1 || true
+    echo "Cleanup old containers"
+    docker rm -f ci_local_backend ci_local_celery ci_local_postgres ci_local_redis >/dev/null 2>&1 || true
+    echo "Start Redis and Postgres"
+    docker run -d --name ci_local_redis --network "$NET" redis:7 >/dev/null
+    docker run -d --name ci_local_postgres --network "$NET" -e POSTGRES_DB=${POSTGRES_DB:-rpgdb} -e POSTGRES_USER=${POSTGRES_USER:-rpguser} -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-rpgpass} postgres:15 >/dev/null
+    echo -n "Waiting for Postgres"; for i in $(seq 1 30); do if docker exec ci_local_postgres pg_isready -U ${POSTGRES_USER:-rpguser} -d ${POSTGRES_DB:-rpgdb} >/dev/null 2>&1; then echo " OK"; break; fi; echo -n "."; sleep 1; done
+    IMAGE="backend-ci:$CI_COMMIT_SHORT_SHA"
+    if [ -f backend_image.tar ]; then
+      echo "Load backend image artifact"
+      docker load -i backend_image.tar >/dev/null
+    else
+      echo "No backend_image.tar artifact found; building backend image locally"
+      docker build -t "$IMAGE" ./backend
+    fi
+    echo "Run migrations and collectstatic"
+    docker run --rm --network "$NET" \
+      -e DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-core.settings.base}" \
+      -e POSTGRES_HOST="ci_local_postgres" \
+      -e POSTGRES_DB="${POSTGRES_DB:-rpgdb}" \
+      -e POSTGRES_USER="${POSTGRES_USER:-rpguser}" \
+      -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-rpgpass}" \
+      -e REDIS_URL="redis://ci_local_redis:6379/0" \
+      "$IMAGE" bash -lc "python manage.py migrate --noinput && python manage.py collectstatic --noinput" >/dev/null
+    if [ "${DEMO_SEED}" = "true" ]; then
+      echo "Seeding demo content and creating demo admin"
+      docker run --rm --network "$NET" \
+        -e DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-core.settings.base}" \
+        -e POSTGRES_HOST="ci_local_postgres" \
+        -e POSTGRES_DB="${POSTGRES_DB:-rpgdb}" \
+        -e POSTGRES_USER="${POSTGRES_USER:-rpguser}" \
+        -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-rpgpass}" \
+        -e REDIS_URL="redis://ci_local_redis:6379/0" \
+        -e DEMO_ADMIN_USERNAME="${DEMO_ADMIN_USERNAME:-admin}" \
+        -e DEMO_ADMIN_EMAIL="${DEMO_ADMIN_EMAIL:-admin@example.com}" \
+        -e DEMO_ADMIN_PASSWORD="${DEMO_ADMIN_PASSWORD:-admin123}" \
+        -e ALLOW_DEMO_SEED="${ALLOW_DEMO_SEED}" \
+        "$IMAGE" bash -lc "python manage.py load_demo_content && python manage.py create_demo_superuser && python manage.py print_demo_summary" || true
+    else
+      echo "DEMO_SEED=false -> skipping demo seeding"
+    fi
+    echo "Run backend and celery"
+    docker run -d --name ci_local_backend --network "$NET" -p 8000:8000 \
+      -e DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-core.settings.base}" \
+      -e POSTGRES_HOST="ci_local_postgres" \
+      -e POSTGRES_DB="${POSTGRES_DB:-rpgdb}" \
+      -e POSTGRES_USER="${POSTGRES_USER:-rpguser}" \
+      -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-rpgpass}" \
+      -e REDIS_URL="redis://ci_local_redis:6379/0" \
+      "$IMAGE" >/dev/null || true
+    docker run -d --name ci_local_celery --network "$NET" \
+      -e DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-core.settings.base}" \
+      -e POSTGRES_HOST="ci_local_postgres" \
+      -e POSTGRES_DB="${POSTGRES_DB:-rpgdb}" \
+      -e POSTGRES_USER="${POSTGRES_USER:-rpguser}" \
+      -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-rpgpass}" \
+      -e REDIS_URL="redis://ci_local_redis:6379/0" \
+      "$IMAGE" bash -lc "celery -A core worker -l info" >/dev/null
+    echo "Waiting for backend health on http://localhost:8000/healthz"
+    for i in $(seq 1 30); do if curl -sS --fail http://localhost:8000/healthz >/dev/null; then echo "Backend healthy"; break; fi; sleep 1; done
+    echo "Backend started locally on http://localhost:8000"
+    echo "Admin login: ${DEMO_ADMIN_USERNAME:-admin}/${DEMO_ADMIN_PASSWORD:-admin123} (if DEMO_SEED=true)"

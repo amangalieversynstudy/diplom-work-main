@@ -20,3 +20,4 @@ backend/staticfiles/
 
 # Exercises deliverables (PDF exports)
 docs/*.pdf
+.github/copilot-instructions.md

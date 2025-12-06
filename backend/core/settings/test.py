@@ -34,3 +34,10 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": True,
 }
+
+# Run Celery tasks eagerly in tests (no broker/worker needed)
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+
+# Simplify i18n in tests to avoid loading system locales that may be missing/corrupted.
+LANGUAGE_CODE = "en-us"

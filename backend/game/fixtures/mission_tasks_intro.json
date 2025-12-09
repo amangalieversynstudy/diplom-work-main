@@ -1,0 +1,62 @@
+[
+  {
+    "model": "game.missiontask",
+    "pk": 1,
+    "fields": {
+      "mission": 1,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "Intro Story",
+      "title_ru": "Интродукция",
+      "body_en": "Welcome to the interface and energy system overview.",
+      "body_ru": "Знакомство с интерфейсом, энергией и первой задачей.​",
+      "data": {},
+      "xp_reward": 5,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 2,
+    "fields": {
+      "mission": 1,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz",
+      "title_ru": "Викторина",
+      "body_en": "Check your understanding.",
+      "body_ru": "Проверьте знания по управлению энергией.",
+      "data": {
+        "question": "Какой оператор принудительно завершает цикл?",
+        "options": [
+          { "value": "break", "label": "break", "isCorrect": true },
+          { "value": "continue", "label": "continue" },
+          { "value": "return", "label": "return" }
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 3,
+    "fields": {
+      "mission": 1,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "Code Challenge",
+      "title_ru": "Кодовая задача",
+      "body_en": "Implement the greeting function.",
+      "body_ru": "Напишите функцию, которая возвращает приветствие.",
+      "data": {
+        "language": "python",
+        "starter": "def solution(name):\n    return f\"Привет, {name}\"",
+        "expectedSnippet": "return",
+        "sampleOutput": "Привет, мир"
+      },
+      "xp_reward": 15,
+      "is_required": true
+    }
+  }
+]

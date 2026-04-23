@@ -195,6 +195,46 @@ class MissionViewSet(viewsets.ModelViewSet):
         )
         return Response(data)
 
+    @swagger_auto_schema(
+        method="post",
+        operation_summary="Force complete mission (Admin)",
+        operation_description="Завершает миссию за указанного пользователя (обход проверок).",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "user_id": openapi.Schema(type=openapi.TYPE_INTEGER, description="ID пользователя"),
+            },
+            required=["user_id"],
+        ),
+    )
+    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAdminUser])
+    @transaction.atomic
+    def force_complete(self, request, pk=None):
+        mission = self.get_object()
+        user_id = request.data.get("user_id")
+        
+        if not user_id:
+            return Response({"detail": "user_id is required"}, status=400)
+            
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        try:
+            target_user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found"}, status=404)
+            
+        prog, _ = Progress.objects.get_or_create(user=target_user, mission=mission)
+        
+        if not prog.completed:
+            prog.complete()
+            prog.xp_earned += mission.xp_reward
+            prog.save()
+            target_user.profile.add_xp(mission.xp_reward)
+            return Response({"detail": f"Completed for {target_user.username}", "xp_added": mission.xp_reward})
+            
+        return Response({"detail": "Already completed"}, status=400)
+
 
 class ProgressViewSet(viewsets.ModelViewSet):
     """ViewSet for managing user progress on missions."""

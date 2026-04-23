@@ -9,3 +9,8 @@ export function setPlayerClass(value) {
   if (typeof window === "undefined") return;
   localStorage.setItem(KEY, value);
 }
+
+export function clearPlayerClass() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(KEY);
+}

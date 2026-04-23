@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import { toast } from "sonner";
-import { registerUser } from "../lib/api";
+import { registerUser, login } from "../lib/api";
 import { useDictionary } from "../lib/i18n";
+import { clearPlayerClass } from "../lib/class"; // <--- Импортируем нашу новую функцию
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -13,14 +15,19 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const dict = useDictionary();
   const copy = dict.auth.register;
+  const router = useRouter();
 
   async function onSubmit(e) {
     e.preventDefault();
     setLoading(true);
     try {
       await registerUser({ username, email, password });
+      await login({ username, password });
+      
+      clearPlayerClass(); // <--- Очищаем старый выбор перед тем, как показать страницу классов!
+      
       toast.success(copy.success);
-      window.location.href = "/login";
+      router.push("/class");
     } catch (err) {
       const detail = err?.response?.data || {};
       const msg =

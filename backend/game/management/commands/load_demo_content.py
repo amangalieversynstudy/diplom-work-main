@@ -139,4 +139,48 @@ class Command(BaseCommand):
         # Prerequisite: Gate requires Intro
         gate.prerequisites.add(intro)
 
+        # === Новые миссии (Алгоритмы и ORM) ===
+
+        algorithms, _ = Mission.objects.get_or_create(
+            title="Algorithms",
+            defaults={
+                "location": world1,
+                "order": 3,
+                "is_active": True,
+                "min_level": 2,
+                "xp_reward": 150,
+                "repeatable": False,
+                "repeat_xp_rate": 0,
+                "pos_x": 50,
+                "pos_y": 20,
+                "title_en": "Sorting Algorithms",
+                "title_ru": "Алгоритмы сортировки",
+                "description_en": "Defeat the chaos by writing a bubble sort spell.",
+                "description_ru": "Победи элементаля хаоса, написав заклинание пузырьковой сортировки.",
+            },
+        )
+        # Prerequisite: Algorithms requires Gate
+        algorithms.prerequisites.add(gate)
+
+        django_orm, _ = Mission.objects.get_or_create(
+            title="Django ORM",
+            defaults={
+                "location": world2,
+                "order": 2,
+                "is_active": True,
+                "min_level": 3,
+                "xp_reward": 200,
+                "repeatable": True,
+                "repeat_xp_rate": 20,
+                "pos_x": 80,
+                "pos_y": 60,
+                "title_en": "The Data Monolith",
+                "title_ru": "Монолит Данных (ORM)",
+                "description_en": "Retrieve artifacts using Django ORM.",
+                "description_ru": "Извлеки артефакты, используя запросы Django ORM.",
+            },
+        )
+        # Prerequisite: Django ORM requires Repeatable
+        django_orm.prerequisites.add(repeatable)
+
         self.stdout.write(self.style.SUCCESS("Demo content loaded."))

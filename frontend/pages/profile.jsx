@@ -1,17 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import Card from "../components/Card";
 import XPBar from "../components/XPBar";
+import Button from "../components/Button";
 import { Profile as ProfileAPI } from "../lib/api";
 import Skeleton from "../components/Skeleton";
 import { toast } from "sonner";
 import { useDictionary } from "../lib/i18n";
+import { clearPlayerClass } from "../lib/class";
 
 export default function Profile() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const dict = useDictionary();
   const copy = dict.profile;
+  const router = useRouter();
+
   const attributes = useMemo(
     () => [
       { label: copy.attributes.wisdom, key: "wisdom" },
@@ -37,6 +42,11 @@ export default function Profile() {
     };
   }, [copy.errors.load]);
 
+  const handleResetClass = () => {
+    clearPlayerClass(); // Очищаем localStorage
+    router.push("/class"); // Перенаправляем на выбор класса
+  };
+
   const username = data?.username ?? dict.common.none;
   const email = data?.email ?? dict.common.none;
   const xp = data?.profile?.xp ?? 0;
@@ -60,9 +70,19 @@ export default function Profile() {
         <h1 className="text-3xl font-display">{username}</h1>
       </div>
       <section className="grid gap-6 md:grid-cols-[1.3fr,0.7fr] mb-6">
-  <Card tone="aurora" title={`${dict.sheet.level} ${level}`} subtitle={`${copy.classLabel}: ${classRole}`}>
+        <Card tone="aurora" title={`${dict.sheet.level} ${level}`} subtitle={`${copy.classLabel}: ${classRole}`}>
           <XPBar current={xp % 100} max={100} />
-          <p className="text-sm text-white/70 mt-3">{dict.sheet.totalXp}: {xp}</p>
+          <p className="text-sm text-white/70 mt-3 mb-4">{dict.sheet.totalXp}: {xp}</p>
+          
+          <div className="pt-4 border-t border-white/10 mt-4">
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={handleResetClass}
+            >
+              {dict.hero.secondaryCta}
+            </Button>
+          </div>
         </Card>
         <Card tone="night" title={copy.account} subtitle={email}>
           <p className="text-sm text-white/70">{copy.accountHelper}</p>

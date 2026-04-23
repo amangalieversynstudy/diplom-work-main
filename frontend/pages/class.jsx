@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { useRouter } from "next/router"; // Импортируем роутер
 import Layout from "../components/Layout";
 import Card from "../components/Card";
 import Button from "../components/Button";
@@ -15,6 +16,8 @@ const CLASS_ICONS = {
 
 export default function ChooseClassPage() {
   const dict = useDictionary();
+  const router = useRouter(); // Инициализируем роутер
+
   const classes = useMemo(() => {
     return Object.entries(dict.classPage.classes).map(([id, data]) => ({
       id,
@@ -25,13 +28,14 @@ export default function ChooseClassPage() {
 
   useEffect(() => {
     const chosen = getPlayerClass();
-    if (chosen) window.location.href = "/worlds";
-  }, []);
+    // Закомментируй эту строку, чтобы страница не перекидывала автоматически:
+    // if (chosen) router.push("/worlds"); 
+  }, [router]);
 
   function choose(id) {
     setPlayerClass(id);
     toast.success(dict.classPage.toastSuccess);
-    window.location.href = "/worlds";
+    router.push("/worlds"); // Заменили window.location.href
   }
 
   return (

@@ -28,8 +28,7 @@ export default function ChooseClassPage() {
 
   useEffect(() => {
     const chosen = getPlayerClass();
-    // Закомментируй эту строку, чтобы страница не перекидывала автоматически:
-    // if (chosen) router.push("/worlds"); 
+    if (chosen) router.push("/worlds"); 
   }, [router]);
 
   function choose(id) {

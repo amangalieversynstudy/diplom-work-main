@@ -1,66 +1,83 @@
+import { useState } from "react";
 import Button from "./Button";
-import Card from "./Card";
-import { Loader2, Play } from "lucide-react";
+import { toast } from "sonner";
+import { Runner } from "../lib/api"; // ИСПРАВЛЕНО: Импортируем Runner в фигурных скобках
 
 export default function CodeRunnerPanel({
-  task,
-  code,
-  onChange,
-  onRun,
-  result,
-  running,
-  copy,
+  initialCode = "def solve():\n    # Напиши свой код здесь\n    pass\n\nsolve()",
+  onSuccess,
 }) {
-  if (!task) return null;
+  const [code, setCode] = useState(initialCode);
+  const [output, setOutput] = useState("");
+  const [isRunning, setIsRunning] = useState(false);
+
+  const handleRunCode = async () => {
+    if (!code.trim()) {
+      toast.error("Код не может быть пустым!");
+      return;
+    }
+
+    setIsRunning(true);
+    setOutput("Запуск кода в изолированной песочнице...");
+
+    try {
+      // ИСПРАВЛЕНО: Используем правильный метод Runner.execute
+      const response = await Runner.execute(code);
+      
+      const result = response.data;
+      
+      if (result.status === "success") {
+        setOutput(result.output || "Код выполнен успешно (нет вывода в консоль).");
+        toast.success("Код выполнен без ошибок!");
+        if (onSuccess) onSuccess();
+      } else {
+        setOutput(`Ошибка выполнения:\n${result.output}`);
+        toast.error("Ошибка в коде!");
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.output || "Не удалось связаться с сервером песочницы.";
+      setOutput(`Системная ошибка:\n${errorMsg}`);
+      toast.error("Сбой песочницы");
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
   return (
-    <Card tone="night" title={task.title} subtitle={copy.subtitle}>
-      <textarea
-        className="w-full h-48 rounded-xl bg-black/60 border border-white/10 p-3 font-mono text-sm text-white"
-        value={code}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={copy.placeholder}
-      />
-      <div className="flex items-center justify-between mt-3">
-        <p className="text-xs text-white/50">
-          {copy.hint.replace("{language}", task.data?.language || "Python")}
-        </p>
-        <Button onClick={onRun} disabled={running}>
-          {running ? <Loader2 className="animate-spin" size={18} /> : <Play size={18} />}
-          {copy.run}
-        </Button>
-      </div>
-      {result && (
-        <div className="mt-4 space-y-2">
-          <p className="text-sm text-white/70">
-            {result.success ? copy.success : copy.fail}
-          </p>
-          {result.stdout && (
-            <pre className="bg-black/50 rounded-lg p-3 text-xs text-emerald-300 border border-emerald-500/20">
-              {result.stdout}
-            </pre>
-          )}
-          {result.stderr && (
-            <pre className="bg-black/50 rounded-lg p-3 text-xs text-rose-300 border border-rose-500/20">
-              {result.stderr}
-            </pre>
-          )}
-          <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/50">
-              {copy.tests}
-            </p>
-            <ul className="text-sm text-white/80 mt-2 space-y-1">
-              {(result.tests || []).map((test) => (
-                <li key={test.name} className="flex justify-between">
-                  <span>{test.name}</span>
-                  <span className={test.status === "passed" ? "text-emerald-300" : test.status === "warning" ? "text-amber-300" : "text-rose-300"}>
-                    {test.status}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+    <div className="flex flex-col border border-white/20 rounded-lg overflow-hidden bg-black">
+      {/* Верхняя панель (Редактор) */}
+      <div className="flex-1 min-h-[300px] relative">
+        <div className="absolute top-0 left-0 w-full px-4 py-2 bg-white/5 border-b border-white/10 flex justify-between items-center z-10">
+          <span className="text-xs font-mono text-white/50">main.py</span>
+          <Button
+            size="sm"
+            variant="primary"
+            onClick={handleRunCode}
+            disabled={isRunning}
+            className="h-8 text-xs px-4"
+          >
+            {isRunning ? "Компиляция..." : "▶ Запустить код"}
+          </Button>
         </div>
-      )}
-    </Card>
+        
+        <textarea
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          spellCheck="false"
+          className="w-full h-full p-4 pt-12 bg-transparent text-sm font-mono text-white/90 resize-none focus:outline-none focus:ring-0"
+          placeholder="Напиши свой Python код здесь..."
+        />
+      </div>
+
+      {/* Нижняя панель (Консоль вывода) */}
+      <div className="h-[150px] bg-[#0A0A0A] border-t border-white/20 p-3 flex flex-col">
+        <span className="text-[10px] uppercase tracking-wider text-white/40 mb-2 font-bold">
+          Консоль вывода (stdout)
+        </span>
+        <pre className="flex-1 overflow-y-auto text-xs font-mono text-green-400 whitespace-pre-wrap">
+          {output || "> Готов к выполнению..."}
+        </pre>
+      </div>
+    </div>
   );
 }

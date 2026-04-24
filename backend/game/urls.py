@@ -12,6 +12,7 @@ from .views import (
     RankViewSet,
     TaskProgressViewSet,
     TrackViewSet,
+    CodeRunnerView
 )
 
 router = DefaultRouter()
@@ -27,4 +28,5 @@ router.register(r"leaderboard", LeaderboardViewSet, basename="leaderboard")
 
 urlpatterns = [
     path("", include(router.urls)),
+    path('runner/execute/', CodeRunnerView.as_view(), name='runner_execute'),
 ]

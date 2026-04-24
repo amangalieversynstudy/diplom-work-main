@@ -7,6 +7,7 @@ from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from users.models import Profile
+from rest_framework.views import APIView
 
 from .models import (
     LeaderboardEntry,
@@ -312,3 +313,33 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
         else:
             qs = qs.filter(period_label="all_time")
         return qs.order_by("position", "-xp_total")[:200]
+
+class CodeRunnerView(APIView):
+    """
+    API для безопасного запуска пользовательского кода в песочнице.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="Execute Python Code",
+        operation_description="Запускает Python-код в изолированном Docker-контейнере.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "code": openapi.Schema(type=openapi.TYPE_STRING, description="Python code to run"),
+            },
+            required=["code"],
+        )
+    )
+    def post(self, request, *args, **kwargs):
+        code = request.data.get("code", "")
+        if not code:
+            return Response({"status": "error", "output": "Код не предоставлен."}, status=400)
+        
+        from .runner import execute_python_code
+        result = execute_python_code(code)
+        
+        if result["status"] == "error":
+            return Response(result, status=400)
+            
+        return Response(result, status=200)

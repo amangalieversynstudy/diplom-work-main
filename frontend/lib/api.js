@@ -181,11 +181,7 @@ const callLocalApi = async (url, options = {}) => {
 };
 
 export const Runner = {
-  execute: (payload) =>
-    callLocalApi("/api/runner/execute", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
+  execute: (code) => api.post("/runner/execute/", { code }),
 };
 
 export const Payments = {

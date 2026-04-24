@@ -36,7 +36,8 @@ services:
       python manage.py migrate --noinput && \
       gunicorn core.wsgi:application --bind 0.0.0.0:8000"
     volumes:
-      - ./backend:/app
+      - ./backend:/app:delegated
+      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "8000:8000"
     environment:

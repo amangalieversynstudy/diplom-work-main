@@ -16,3 +16,7 @@ whitenoise
 # Testing
 pytest
 pytest-django
+
+docker==7.1.0
+requests==2.31.0
+urllib3<2

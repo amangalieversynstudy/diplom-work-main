@@ -34,7 +34,8 @@ from .serializers import (
 class TrackViewSet(viewsets.ModelViewSet):
     """ViewSet for learning tracks."""
 
-    queryset = Track.objects.all().order_by("order", "id")
+    # ОПТИМИЗАЦИЯ: prefetch_related вытягивает все локации трека заранее
+    queryset = Track.objects.prefetch_related('locations').order_by("order", "id")
     serializer_class = TrackSerializer
     permission_classes = [permissions.AllowAny]
 
@@ -53,12 +54,12 @@ class TrackViewSet(viewsets.ModelViewSet):
 class LocationViewSet(viewsets.ModelViewSet):
     """ViewSet for managing locations."""
 
-    queryset = Location.objects.all().order_by("order")
+    # ОПТИМИЗАЦИЯ: select_related для трека (ForeignKey), prefetch_related для миссий (Reverse FK)
+    queryset = Location.objects.select_related('track').prefetch_related('missions').order_by("order")
     serializer_class = LocationSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_permissions(self):
-        # Read-only for all; write operations for admins only
         if self.request.method in ("GET", "HEAD", "OPTIONS"):
             return [permissions.AllowAny()]
         return [permissions.IsAdminUser()]
@@ -67,13 +68,12 @@ class LocationViewSet(viewsets.ModelViewSet):
 class MissionViewSet(viewsets.ModelViewSet):
     """ViewSet for managing missions."""
 
-    queryset = Mission.objects.all().order_by("order")
+    # ОПТИМИЗАЦИЯ: Вытягиваем локацию миссии и её требования одним запросом
+    queryset = Mission.objects.select_related('location').prefetch_related('prerequisites').order_by("order")
     serializer_class = MissionSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_permissions(self):
-        # Read-only for all; write operations for admins only
-        # (except custom actions below)
         if self.action in ("start", "complete"):
             return [permissions.IsAuthenticated()]
         if self.request.method in ("GET", "HEAD", "OPTIONS"):
@@ -98,7 +98,6 @@ class MissionViewSet(viewsets.ModelViewSet):
         mission = self.get_object()
         profile: Profile = request.user.profile
 
-        # availability checks like CodeCombat doors
         if not mission.is_active:
             return Response({"detail": "Mission is inactive"}, status=400)
         if profile.level < mission.min_level:
@@ -124,9 +123,7 @@ class MissionViewSet(viewsets.ModelViewSet):
         operation_summary="Complete mission",
         operation_description=(
             "Завершает миссию и начисляет XP: первый раз — полный reward, "
-            "повтор — процент (repeat_xp_rate),\n"
-            "если миссия не repeatable — повтор без XP. "
-            "Можно передать 'stars' (0..3)."
+            "повтор — процент (repeat_xp_rate).\n"
         ),
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -144,7 +141,7 @@ class MissionViewSet(viewsets.ModelViewSet):
     def complete(self, request, pk=None):
         mission = self.get_object()
         profile: Profile = request.user.profile
-        # Повторяем проверки доступности как при старте
+        
         if not mission.is_active:
             return Response({"detail": "Mission is inactive"}, status=400)
         if profile.level < mission.min_level:
@@ -163,26 +160,21 @@ class MissionViewSet(viewsets.ModelViewSet):
 
         prog, _ = Progress.objects.get_or_create(user=request.user, mission=mission)
 
-        # if already completed and not repeatable -> no XP
         base_reward = mission.xp_reward
         xp_gain = 0
         if prog.completed and not mission.repeatable:
             xp_gain = 0
         elif prog.completed and mission.repeatable:
-            # repeat XP rate (percentage of base)
             xp_gain = max(0, (base_reward * mission.repeat_xp_rate) // 100)
         else:
             xp_gain = base_reward
 
-        # apply complete
         prog.complete()
         prog.xp_earned += xp_gain
-        # optional: compute stars based on extra criteria (placeholder 0-3)
         stars = int(request.data.get("stars", 0))
         prog.stars = max(0, min(3, stars))
         prog.save()
 
-        # add XP to profile
         if xp_gain > 0:
             profile.add_xp(xp_gain)
 
@@ -245,13 +237,13 @@ class ProgressViewSet(viewsets.ModelViewSet):
     serializer_class = ProgressSerializer
 
     def get_queryset(self):
-        # Users can only access their own progress
         return Progress.objects.filter(user=self.request.user).select_related("mission")
 
 
 class MissionTaskViewSet(viewsets.ReadOnlyModelViewSet):
     """Expose mission tasks/steps for Story → Quiz → Code UX."""
 
+    # Тут уже отлично сделана оптимизация:
     queryset = MissionTask.objects.select_related("mission", "mission__location").order_by(
         "mission_id", "order"
     )
@@ -277,6 +269,7 @@ class TaskProgressViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        # Отличная оптимизация:
         return TaskProgress.objects.filter(user=self.request.user).select_related(
             "task", "task__mission"
         )
@@ -295,6 +288,7 @@ class RankViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
+    # Тут тоже всё было сделано шикарно:
     queryset = LeaderboardEntry.objects.select_related("track", "user", "user__profile")
     serializer_class = LeaderboardEntrySerializer
     permission_classes = [permissions.AllowAny]

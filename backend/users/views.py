@@ -12,7 +12,8 @@ from .serializers import ProfileSerializer, UserSerializer
 class UserViewSet(viewsets.ModelViewSet):
     """ViewSet for listing and modifying users."""
 
-    queryset = User.objects.all()
+    # ОПТИМИЗАЦИЯ: подтягиваем связанный профиль сразу
+    queryset = User.objects.select_related('profile').all()
     serializer_class = UserSerializer
 
 

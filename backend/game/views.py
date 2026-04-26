@@ -35,7 +35,7 @@ class TrackViewSet(viewsets.ModelViewSet):
     """ViewSet for learning tracks."""
 
     # ОПТИМИЗАЦИЯ: prefetch_related вытягивает все локации трека заранее
-    queryset = Track.objects.prefetch_related('locations').order_by("order", "id")
+    queryset = Track.objects.prefetch_related('worlds').order_by("order", "id")
     serializer_class = TrackSerializer
     permission_classes = [permissions.AllowAny]
 

@@ -1,0 +1,162 @@
+@import url('https://fonts.googleapis.com/css2?family=Melodrama:wght@400;500;600;700;800&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Custom Properties ─────────────────────────────────── */
+:root {
+  color-scheme: light;
+
+  /* A warmer, "parchment" light theme */
+  --bg:        #fdfbf7; /* Very light, warm off-white */
+  --surface:   #ffffff; /* Pure white for cards */
+  --panel:     #f9f5ef; /* Slightly darker warm off-white */
+  --border:    #edeae4; /* Soft, warm gray */
+
+  --primary:   #2a6f68; /* Muted, deep teal/green */
+  --primary-dk:#205550; /* Darker teal */
+  --accent:    #d97706; /* Amber 600 */
+  --accent-dk: #b45309; /* Amber 700 */
+  --gold:      #F59E0B; /* amber-500 */
+
+  --text:      #443c32; /* Dark, warm brown */
+  --muted:     #8a7e6f; /* Mid-tone brown */
+  --faint:     #b8b0a4; /* Light brown/gray */
+
+  --primary-selection: rgba(42, 111, 104, 0.25);
+  --success:  #22C55E;
+  --warning:  #F59E0B;
+  --error:    #EF4444;
+  --xpbar-track-color: #cbd5e1; /* slate-300 for light theme */
+}
+
+html.dark {
+  color-scheme: dark;
+
+  --bg:        #06100D;
+  --surface:   #0D1F18;
+  --panel:     #122318;
+  --border:    rgba(46,204,138,0.12);
+
+  --primary:   #2ECC8A;
+  --primary-dk:#1AA870;
+  --accent:    #E8693A;
+  --accent-dk: #C0522A;
+  --gold:      #D4A853;
+
+  --text:      #E8F0EA;
+  --muted:     rgba(232,240,234,0.55);
+  --faint:     rgba(232,240,234,0.25);
+  --primary-selection: rgba(46, 204, 138, 0.25);
+  --xpbar-track-color: var(--panel); /* Same as panel for dark theme */
+  /* success, warning, error are the same for dark theme */
+}
+
+/* ─── Base ──────────────────────────────────────────────────── */
+html,
+body,
+#__next {
+  height: 100%;
+}
+
+body {
+  font-family: "General Sans", system-ui, sans-serif;
+  background-color: var(--bg) !important;
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+ * Принудительно отключаем псевдо-элементы на body, которые могли
+ * остаться от старых/кэшированных CSS-файлов и создают
+ * фиксированный фон, перекрывающий смену темы.
+*/
+body::before, body::after { display: none !important; }
+
+/* Custom cursor override */
+body, a, button {
+  cursor: none !important;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+a:hover { color: var(--primary-dk); }
+
+::selection {
+  background: var(--primary-selection);
+  color: #fff;
+}
+
+
+/* ─── Components ────────────────────────────────────────────── */
+.glass-panel {
+  background: linear-gradient(135deg, rgba(13,31,24,0.92), rgba(6,16,13,0.95));
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55), inset 0 1px 0 hsl(var(--primary) / 6%);
+  border-radius: 1.25rem;
+}
+
+.glow-border {
+  position: relative;
+}
+
+.glow-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(120deg, rgba(46,204,138,0.5), rgba(232,105,58,0.5), rgba(212,168,83,0.5));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.glow-border::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: inherit;
+  background: radial-gradient(circle at top left, rgba(46,204,138,0.1), transparent 45%);
+  pointer-events: none;
+  filter: blur(20px);
+}
+
+.starfield {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(2px 2px at 80px 120px, rgba(212,168,83,0.35), transparent),
+    radial-gradient(2px 2px at 150px 60px, rgba(46,204,138,0.35), transparent);
+  opacity: 0.35;
+  animation: drift 20s linear infinite;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--faint);
+}
+
+/* Code */
+pre, code {
+  font-family: "JetBrains Mono", monospace;
+}

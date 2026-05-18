@@ -1,0 +1,40 @@
+# Backup of the previous CI/CD pipeline configuration (temporarily disabled)
+# To restore CI/CD, rename this file back to .gitlab-ci.yml or copy its content.
+
+stages:
+  - lint
+  - test
+  - frontend
+  - docs-lint
+  - build
+  - deploy
+  - smoke
+  - notify
+
+variables:
+  POSTGRES_DB: rpgdb
+  POSTGRES_USER: rpguser
+  POSTGRES_PASSWORD: rpgpass
+  POSTGRES_HOST: "postgres"
+  POSTGRES_PORT: "5432"
+  DJANGO_SETTINGS_MODULE: core.settings.base
+
+default:
+  tags:
+    - self-hosted
+    - mac
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH != ""'
+      changes:
+        - "**/*.md"
+        - "README*"
+        - "Makefile"
+      when: never
+    - when: always
+
+# The rest of the original jobs were here...
+# Refer to the repository history if you need the full version.

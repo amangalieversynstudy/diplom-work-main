@@ -1,0 +1,22 @@
+Django>=4.2,<5.0
+djangorestframework
+djangorestframework-simplejwt
+psycopg2-binary
+gunicorn
+celery[redis]
+python-dotenv
+django-cors-headers
+django-environ
+django-filter
+drf-yasg
+
+# WhiteNoise for static files
+whitenoise
+
+# Testing
+pytest
+pytest-django
+
+docker==7.1.0
+requests==2.31.0
+urllib3<2

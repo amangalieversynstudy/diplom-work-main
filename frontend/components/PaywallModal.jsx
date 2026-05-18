@@ -12,25 +12,25 @@ export default function PaywallModal({ open, onClose, onCheckout, loading, state
   const plans = copy?.plans?.length ? copy.plans : defaultPlans;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur">
-      <div className="bg-night px-6 py-5 rounded-2xl border border-white/10 w-full max-w-xl text-white relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-white/60" aria-label="close">
+      <div className="bg-surface px-6 py-8 rounded-3xl border border-border w-full max-w-xl text-text relative shadow-2xl">
+        <button onClick={onClose} className="absolute top-6 right-6 text-muted hover:text-text transition-colors" aria-label="close">
           <X size={20} />
         </button>
-        <p className="text-xs uppercase tracking-[0.35em] text-white/60 mb-1">
+        <p className="text-xs uppercase tracking-widest text-gold mb-2 font-bold">
           {copy?.badge || "Premium Gate"}
         </p>
-        <h2 className="text-2xl font-display mb-3">{copy?.title || "Unlock premium content"}</h2>
-        <p className="text-sm text-white/70 mb-4">
+        <h2 className="text-3xl font-display font-bold mb-3">{copy?.title || "Unlock premium content"}</h2>
+        <p className="text-sm text-muted mb-6">
           {copy?.subtitle || "Get advanced missions, side quests, and XP boosters."}
         </p>
-        <div className="grid md:grid-cols-3 gap-3">
+        <div className="grid md:grid-cols-3 gap-4">
           {plans.map((plan) => (
-            <div key={plan.id} className="border border-white/10 rounded-xl p-3">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/60">{plan.title}</p>
+            <div key={plan.id} className="border border-border bg-panel rounded-2xl p-4 flex flex-col">
+              <p className="text-xs uppercase tracking-widest text-muted font-bold mb-1">{plan.title}</p>
               <p className="text-xl font-semibold text-gold">{plan.price}</p>
-              <ul className="mt-2 text-sm text-white/70 space-y-1">
+              <ul className="mt-3 mb-4 text-sm text-text space-y-1.5 flex-1">
                 {plan.perks.map((perk) => (
-                  <li key={perk}>• {perk}</li>
+                  <li key={perk} className="flex gap-2"><span className="text-gold mt-0.5">•</span> {perk}</li>
                 ))}
               </ul>
               <Button className="mt-3 w-full" onClick={() => onCheckout(plan.id)} disabled={loading}>
@@ -40,10 +40,10 @@ export default function PaywallModal({ open, onClose, onCheckout, loading, state
           ))}
         </div>
         {state && (
-          <div className="mt-4 text-sm text-white/80">
+          <div className="mt-6 p-4 rounded-xl bg-success/10 border border-success/20 text-sm text-text">
             <p>{state.message}</p>
             {state.perks && (
-              <p className="text-xs text-white/60">
+              <p className="text-xs text-muted mt-2">
                 {(copy?.perksLabel || "Perks") + ": " + state.perks.join(", ")}
               </p>
             )}

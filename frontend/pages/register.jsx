@@ -27,7 +27,7 @@ export default function Register() {
       clearPlayerClass(); // <--- Очищаем старый выбор перед тем, как показать страницу классов!
       
       toast.success(copy.success);
-      router.push("/class");
+      router.push("/profile");
     } catch (err) {
       const detail = err?.response?.data || {};
       const msg =
@@ -44,31 +44,31 @@ export default function Register() {
 
   return (
     <Layout>
-      <div className="max-w-md mx-auto">
-        <Card tone="aurora" title={copy.title} subtitle={copy.subtitle}>
+      <div className="max-w-md mx-auto mt-24 mb-10">
+        <Card title={copy.title} subtitle={copy.subtitle}>
           <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-            <label className="text-sm text-white/70">
+            <label className="text-sm text-muted">
               {copy.usernameLabel}
               <input
-                className="mt-1 w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-2"
+                className="mt-1 w-full bg-panel border border-border text-text placeholder:text-faint rounded-2xl px-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
                 placeholder={copy.usernamePlaceholder}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
               />
             </label>
-            <label className="text-sm text-white/70">
+            <label className="text-sm text-muted">
               {copy.emailLabel}
               <input
-                className="mt-1 w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-2"
+                className="mt-1 w-full bg-panel border border-border text-text placeholder:text-faint rounded-2xl px-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
                 placeholder={copy.emailPlaceholder}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </label>
-            <label className="text-sm text-white/70">
+            <label className="text-sm text-muted">
               {copy.passwordLabel}
               <input
-                className="mt-1 w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-2"
+                className="mt-1 w-full bg-panel border border-border text-text placeholder:text-faint rounded-2xl px-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
                 placeholder={copy.passwordPlaceholder}
                 type="password"
                 value={password}
@@ -79,7 +79,7 @@ export default function Register() {
               {loading ? copy.submitting : copy.submit}
             </Button>
           </form>
-          <p className="text-xs text-white/50 mt-3">{copy.helper}</p>
+          <p className="text-xs text-faint mt-3">{copy.helper}</p>
         </Card>
       </div>
     </Layout>

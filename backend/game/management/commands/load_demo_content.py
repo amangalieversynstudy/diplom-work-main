@@ -79,7 +79,7 @@ class Command(BaseCommand):
             world2.save(update_fields=["track"])
 
         # Missions
-        intro, _ = Mission.objects.get_or_create(
+        intro, _ = Mission.objects.update_or_create(
             title="Intro",
             defaults={
                 "location": world1,
@@ -91,10 +91,10 @@ class Command(BaseCommand):
                 "repeat_xp_rate": 10,
                 "pos_x": 12,
                 "pos_y": 72,
-                "title_en": "Intro",
-                "title_ru": "Интродукция",
-                "description_en": "Learn the interface, energy system and first Python spell.",
-                "description_ru": "Знакомство с интерфейсом, энергией и первой Python-функцией.",
+                "title_en": "Hello, World!",
+                "title_ru": "Привет, Мир!",
+                "description_en": "Write your first Python program and print the legendary greeting.",
+                "description_ru": "Напиши свою первую программу на Python и выведи легендарное приветствие в консоль.",
             },
         )
 

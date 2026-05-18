@@ -1,185 +1,159 @@
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
-import Card from "../components/Card";
-import Badge from "../components/Badge";
-import Button from "../components/Button";
+import { LeaderboardAPI } from "../lib/api";
 import { useDictionary } from "../lib/i18n";
-import { LeaderboardAPI, Tracks } from "../lib/api";
+import { Trophy, Medal, Flame, RefreshCw, User } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Leaderboard() {
-  const dict = useDictionary();
-  const copy = dict.leaderboard;
-  const common = dict.common;
-  const [rows, setRows] = useState([]);
-  const [tracks, setTracks] = useState([]);
-  const [filters, setFilters] = useState({ scope: "global", period: "all_time", track: "" });
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [period, setPeriod] = useState("all_time");
+  const dict = useDictionary();
+  const copy = dict.leaderboard;
 
-  useEffect(() => {
-    Tracks.list()
-      .then((data) => setTracks(data || []))
-      .catch(() => setTracks([]));
-  }, []);
+  const loadData = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
 
-  useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-    LeaderboardAPI.list({
-      scope: filters.scope,
-      period: filters.period,
-      track: filters.scope === "track" ? filters.track || undefined : undefined,
-    })
-      .then((data) => {
-        if (isMounted) setRows(data || []);
-      })
-      .catch(() => toast.error(copy.errors.load))
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
-    return () => {
-      isMounted = false;
-    };
-  }, [filters, copy.errors.load]);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
     try {
-      const data = await LeaderboardAPI.list({
-        scope: filters.scope,
-        period: filters.period,
-        track: filters.scope === "track" ? filters.track || undefined : undefined,
-      });
-      setRows(data || []);
-      toast.success(copy.successRefreshed);
-    } catch (e) {
-      toast.error(copy.errors.load);
+      const res = await LeaderboardAPI.list({ period });
+      setData(res || []);
+      if (isRefresh) toast.success(copy.successRefreshed || "Обновлено");
+    } catch (err) {
+      toast.error(copy.errors?.load || "Ошибка загрузки лидерборда");
     } finally {
+      setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const trackOptions = useMemo(
-    () => [
-      { value: "", label: copy.filters.trackAny },
-      ...tracks.map((track) => ({ value: track.slug, label: track.title })),
-    ],
-    [tracks, copy.filters.trackAny]
-  );
+  useEffect(() => {
+    loadData();
+  }, [period]);
+
+  // Функция для красивой подсветки Топ-3 игроков
+  const getRankStyle = (index) => {
+    if (index === 0) return "text-yellow-500 bg-yellow-500/10 border-yellow-500/20";
+    if (index === 1) return "text-slate-400 bg-slate-400/10 border-slate-400/20";
+    if (index === 2) return "text-amber-600 bg-amber-600/10 border-amber-600/20";
+    return "text-muted bg-panel border-border";
+  };
 
   return (
     <Layout>
-      <section className="mb-6">
-        <p className="text-xs uppercase tracking-[0.35em] text-white/60">
-          {copy.eyebrow}
-        </p>
-        <h1 className="text-3xl font-display">{copy.title}</h1>
-        <p className="text-sm text-white/70">{copy.subtitle}</p>
-      </section>
-
-      <Card tone="default" title={copy.filters.title} subtitle={copy.filters.subtitle}>
-        <div className="grid gap-3 md:grid-cols-4">
-          <label className="flex flex-col text-xs uppercase tracking-[0.3em] text-white/60">
-            {copy.filters.scope}
-            <select
-              className="mt-1 rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-white"
-              value={filters.scope}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  scope: e.target.value,
-                }))
-              }
-            >
-              <option value="global">{copy.filters.scopeOptions.global}</option>
-              <option value="track">{copy.filters.scopeOptions.track}</option>
-            </select>
-          </label>
-          <label className="flex flex-col text-xs uppercase tracking-[0.3em] text-white/60">
-            {copy.filters.period}
-            <select
-              className="mt-1 rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-white"
-              value={filters.period}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  period: e.target.value,
-                }))
-              }
-            >
-              <option value="all_time">{copy.filters.periodOptions.all_time}</option>
-              <option value="weekly">{copy.filters.periodOptions.weekly}</option>
-              <option value="monthly">{copy.filters.periodOptions.monthly}</option>
-            </select>
-          </label>
-          <label className="flex flex-col text-xs uppercase tracking-[0.3em] text-white/60">
-            {copy.filters.track}
-            <select
-              className="mt-1 rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-white"
-              value={filters.track}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  track: e.target.value,
-                }))
-              }
-              disabled={filters.scope !== "track"}
-            >
-              {trackOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex items-end">
-            <Button onClick={handleRefresh} disabled={refreshing} className="w-full">
-              {refreshing ? copy.filters.refreshing : copy.filters.refresh}
-            </Button>
+      <div className="max-w-4xl mx-auto pt-24 pb-10 px-4 transition-colors duration-300">
+        
+        {/* ── Заголовок ── */}
+        <header className="mb-10 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-primary/10 border border-primary/20 text-primary mb-6 shadow-[0_0_30px_var(--primary-selection)]">
+            <Trophy size={32} />
           </div>
-        </div>
-      </Card>
+          <p className="text-xs uppercase tracking-widest text-primary mb-3">
+            {copy.eyebrow}
+          </p>
+          <h1 className="text-4xl md:text-5xl font-display font-bold text-text mb-4">
+            {copy.title}
+          </h1>
+          <p className="text-muted max-w-lg mx-auto">
+            {copy.subtitle}
+          </p>
+        </header>
 
-      <Card tone="night" className="mt-6">
-        {loading ? (
-          <p className="text-sm text-white/60">{copy.loading}</p>
-        ) : rows.length === 0 ? (
-          <p className="text-sm text-white/60">{copy.empty}</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="text-white/70 text-xs uppercase tracking-[0.3em]">
-              <tr>
-                <th className="text-left py-3">{copy.columns.rank}</th>
-                <th className="text-left">{copy.columns.player}</th>
-                <th className="text-left">{copy.columns.level}</th>
-                <th className="text-left">{copy.columns.xp}</th>
-                <th className="text-left">{copy.columns.streak}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, index) => {
-                const level = row.user_display?.level ?? common.none;
-                const xp = row.xp_total ?? row.user_display?.xp ?? 0;
-                const streakValue = row.streak ?? Math.max(1, Math.round(xp / 150));
-                return (
-                  <tr key={row.id || `${row.user_display?.username || "user"}-${index}`} className="border-t border-white/10">
-                    <td className="py-3 text-white/60">#{row.position || index + 1}</td>
-                    <td className="py-3 font-semibold">
-                      {row.user_display?.display_name || row.user_display?.username || "unknown"}
-                    </td>
-                    <td>{level}</td>
-                    <td>{xp}</td>
-                    <td>
-                      <Badge status={streakValue > 2 ? "available" : "locked"}>{streakValue}d</Badge>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </Card>
+        {/* ── Фильтры ── */}
+        <div className="flex flex-wrap items-center justify-between gap-4 p-2 bg-panel rounded-2xl border border-border mb-8 transition-colors duration-300">
+          <div className="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar">
+            {Object.entries(copy.filters.periodOptions).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setPeriod(key)}
+                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
+                  period === key
+                    ? "bg-surface text-text shadow-sm border border-border"
+                    : "text-muted hover:text-text hover:bg-surface/50 border border-transparent"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => loadData(true)}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-muted hover:text-text hover:bg-surface/50 rounded-xl transition-all w-full sm:w-auto justify-center"
+          >
+            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+            {refreshing ? copy.filters.refreshing : copy.filters.refresh}
+          </button>
+        </div>
+
+        {/* ── Список лидеров ── */}
+        <div className="space-y-3">
+          {loading ? (
+            // Скелетон-загрузчик
+            [...Array(5)].map((_, i) => (
+              <div key={i} className="h-20 bg-panel animate-pulse rounded-2xl border border-border" />
+            ))
+          ) : data.length === 0 ? (
+            // Пустое состояние
+            <div className="text-center py-20 bg-panel rounded-3xl border border-border transition-colors duration-300">
+              <Trophy size={48} className="mx-auto text-faint mb-4 opacity-50" />
+              <p className="text-muted">{copy.empty}</p>
+            </div>
+          ) : (
+            // Строки игроков
+            data.map((user, index) => {
+              const rankStyle = getRankStyle(index);
+              const isTop3 = index < 3;
+
+              return (
+                <div
+                  key={user.id || index}
+                  className={`group flex items-center gap-4 p-4 md:p-5 rounded-2xl border bg-surface transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 ${
+                    isTop3 ? "shadow-sm border-transparent" : "border-border"
+                  }`}
+                >
+                  {/* Плашка с местом */}
+                  <div className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl border font-display text-xl font-bold transition-colors duration-300 ${rankStyle}`}>
+                    {isTop3 ? <Medal size={24} /> : `#${index + 1}`}
+                  </div>
+
+                  {/* Информация об игроке */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold text-text truncate group-hover:text-primary transition-colors">
+                      {user.username || user.player || "Неизвестный герой"}
+                    </h3>
+                    <div className="flex items-center gap-3 text-xs md:text-sm text-muted mt-1">
+                      <span className="flex items-center gap-1">
+                        <User size={14} className="opacity-70" /> {copy.columns.level} {user.level || 1}
+                      </span>
+                      <span className="w-1 h-1 rounded-full bg-border" />
+                      <span className="truncate">{user.class_role || "Академик"}</span>
+                    </div>
+                  </div>
+
+                  {/* Статистика (Серия и Опыт) */}
+                  <div className="flex items-center gap-6 text-right">
+                    <div className="hidden sm:block">
+                      <p className="text-[10px] uppercase tracking-widest text-faint mb-1">{copy.columns.streak}</p>
+                      <p className="flex items-center justify-end gap-1 font-bold text-accent">
+                        {user.streak || 0} <Flame size={14} />
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest text-faint mb-1">{copy.columns.xp}</p>
+                      <p className="font-display text-xl font-bold text-primary">
+                        {user.xp || 0}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
     </Layout>
   );
 }

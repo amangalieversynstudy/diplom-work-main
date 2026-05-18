@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     "./pages/**/*.{js,jsx,ts,tsx}",
     "./components/**/*.{js,jsx,ts,tsx}",
@@ -7,36 +8,50 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        display: ["'Cinzel Decorative'", "serif"],
-        body: ["'Space Grotesk'", "sans-serif"],
+        display: ["'Melodrama'", "Georgia", "serif"],
+        body: ["'General Sans'", "sans-serif"],
+        mono: ["'JetBrains Mono'", "monospace"],
       },
       colors: {
-        primary: "#7C3AED",
-        accent: "#22D3EE",
-        gold: "#F59E0B",
-        bg: "#0F1226",
-        surface: "#1B2040",
-        success: "#10B981",
-        warning: "#F59E0B",
-        error: "#EF4444",
-        obsidian: "#0b0d1b",
-        nebula: "#312e81",
-        aurora: "#4f46e5",
-        crystal: "#34d399",
-        ember: "#f97316",
+        primary:      'var(--primary)',
+        'primary-dk': 'var(--primary-dk)',
+        accent:       'var(--accent)',
+        'accent-dk':  'var(--accent-dk)',
+        gold:         'var(--gold)',
+        bg:           'var(--bg)',
+        surface:      'var(--surface)',
+        panel:        'var(--panel)',
+        text:         'var(--text)',
+        muted:        'var(--muted)',
+        faint:        'var(--faint)',
+        border:       'var(--border)',
+        success:      'var(--success)',
+        warning:      'var(--warning)',
+        error:        'var(--error)',
       },
       boxShadow: {
-        card: "0 20px 60px rgba(0,0,0,0.45)",
-        glow: "0 0 40px rgba(34,211,238,0.35)",
+        card:   "0 20px 60px rgba(0,0,0,0.55)",
+        glow:   "0 0 40px rgba(46,204,138,0.25)",
+        ember:  "0 0 40px rgba(232,105,58,0.3)",
+        inner:  "inset 0 1px 0 rgba(232,240,234,0.08)",
       },
       animation: {
-        float: "float 6s ease-in-out infinite",
-        pulseSlow: "pulse 4s ease-in-out infinite",
+        float:     "float 8s ease-in-out infinite",
+        pulseSlow: "pulse 5s ease-in-out infinite",
+        drift:     "drift 30s linear infinite",
+        shimmer:   "shimmer 2.5s linear infinite",
       },
       keyframes: {
         float: {
-          "0%, 100%": { transform: "translateY(0px)" },
-          "50%": { transform: "translateY(-10px)" },
+          "0%, 100%": { transform: "translateY(0px) rotate(0deg)" },
+          "50%":      { transform: "translateY(-16px) rotate(2deg)" },
+        },
+        drift: {
+          from: { transform: "translateY(0px)" },
+          to:   { transform: "translateY(-240px)" },
+        },
+        shimmer: {
+          "100%": { transform: "translateX(100%)" },
         },
       },
     },

@@ -139,6 +139,35 @@ export const Profile = {
       throw e;
     }
   },
+  update: async (payload) => {
+    let result = {};
+
+    // 1. Обновляем системную модель User (логин/почта) через правильные auth-эндпоинты
+    if (payload.username || payload.email) {
+      try {
+        const { data } = await api.patch("/auth/users/me/", payload);
+        result = { ...result, ...data };
+      } catch (err) {
+        if (err?.response?.status === 404 || err?.response?.status === 405) {
+          // Запасной вариант (если на бэкенде используются другие урлы)
+          const { data } = await api.patch("/auth/me/", payload);
+          result = { ...result, ...data };
+        } else {
+          throw err; // Прокидываем реальную ошибку (например 400 Bad Request)
+        }
+      }
+    }
+
+    // 2. Обновляем саму модель Profile (например, если обновился класс)
+    try {
+      const { data } = await api.patch("/profile/me/", payload);
+      result = { ...result, ...data };
+    } catch (err) {
+      if (Object.keys(result).length === 0) throw err;
+    }
+
+    return result;
+  },
 };
 
 export async function registerUser({ username, email, password }) {

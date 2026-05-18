@@ -58,21 +58,25 @@ function ThemeSwitcher() {
     <div className="p-1 rounded-full border border-border bg-panel flex items-center justify-center gap-1">
       <button
         onClick={() => setTheme('light')}
-        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-          theme === 'light' ? 'bg-surface shadow-sm text-accent' : 'text-muted hover:bg-surface'
+        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ease-out ${
+          theme === 'light' 
+            ? 'bg-surface shadow-sm text-accent scale-100 rotate-0' 
+            : 'text-muted hover:bg-surface scale-90 -rotate-45 opacity-70'
         }`}
         aria-label="Светлая тема"
       >
-        <Sun size={18} />
+        <Sun size={18} className="transition-transform duration-500" />
       </button>
       <button
         onClick={() => setTheme('dark')}
-        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-          theme === 'dark' ? 'bg-primary text-white' : 'text-muted hover:bg-surface'
+        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ease-out ${
+          theme === 'dark' 
+            ? 'bg-primary text-white scale-100 rotate-0' 
+            : 'text-muted hover:bg-surface scale-90 rotate-45 opacity-70'
         }`}
         aria-label="Тёмная тема"
       >
-        <Moon size={18} />
+        <Moon size={18} className="transition-transform duration-500" />
       </button>
     </div>
   );

@@ -68,6 +68,8 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Решение проблемы CLS: резервируем место под скроллбар */
+  scrollbar-gutter: stable; 
 }
 
 /*

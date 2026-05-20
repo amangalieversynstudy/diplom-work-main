@@ -148,15 +148,31 @@ export default function MissionDetail() {
 
   const onComplete = async () => {
     try {
+      // Отправляем запрос на завершение миссии
       const res = await Missions.complete(id);
-      await refreshMission();
-      const xp = res?.xp_added ?? 0;
-      toast.success(copy.success.completed, {
-        description: xp ? copy.xpGain.replace("{xp}", xp) : copy.noXp,
+      
+      // Поддерживаем разные форматы ответа бэкенда (на случай если там xp_added или xp_earned)
+      const xp = res?.xp_earned ?? res?.xp_added ?? 0;
+      const leveledUp = res?.leveled_up;
+
+      toast.success(`Миссия пройдена! Получено ${xp} XP ⚔️`, {
+        duration: 4000,
       });
+
+      if (leveledUp) {
+        toast.success("🎉 УРОВЕНЬ ПОВЫШЕН! 🎉", { 
+          duration: 6000,
+          description: "Ваши характеристики выросли. Так держать!" 
+        });
+      }
+
+      // После успеха эпично возвращаем на карту миров
+      router.push("/worlds");
+
     } catch (e) {
-      const msg = e?.response?.data?.detail || copy.errors.complete;
-      toast.error(copy.errors.complete, { description: msg });
+      console.error("Ошибка при завершении миссии:", e);
+      const msg = e?.response?.data?.detail || "Связь с сервером потеряна. Прогресс не сохранен.";
+      toast.error(copy.errors.complete || "Ошибка", { description: msg });
     }
   };
 
@@ -286,15 +302,28 @@ export default function MissionDetail() {
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
-            {completed && <span className="text-success text-xs font-bold border border-success/30 px-3 py-1.5 rounded bg-success/10">{copy.status.completed}</span>}
-            <Button onClick={onStart} className="bg-[#0e639c] hover:bg-[#1177bb] border-none text-white rounded-md text-sm shadow-none px-4 py-2">
-              <Sword size={16} /> {copy.start}
+            {completed && (
+              <span className="text-[#89d185] text-xs font-bold border border-[#89d185]/30 px-3 py-1.5 rounded bg-[#89d185]/10">
+                {copy.status.completed}
+              </span>
+            )}
+            
+            {!completed && (
+              <Button onClick={onStart} className="bg-[#0e639c] hover:bg-[#1177bb] border-none text-white rounded-md text-sm shadow-none px-4 py-2">
+                <Sword size={16} className="mr-2" /> {copy.start}
+              </Button>
+            )}
+
+            <Button 
+              variant="outline" 
+              onClick={onComplete} 
+              className="border border-[#89d185] text-[#89d185] hover:bg-[#89d185] hover:text-[#1e1e1e] rounded-md text-sm shadow-[0_0_10px_rgba(137,209,133,0.1)] hover:shadow-[0_0_15px_rgba(137,209,133,0.4)] px-4 py-2 transition-all duration-300 bg-[#1e1e1e]"
+            >
+              <Sparkles size={16} className="mr-2" /> {copy.complete || "Завершить миссию"}
             </Button>
-            <Button variant="outline" onClick={onComplete} className="border border-[#333] hover:bg-[#333] text-text rounded-md text-sm shadow-none px-4 py-2 bg-[#1e1e1e]">
-              <Sparkles size={16} /> {copy.complete}
-            </Button>
-            <Button variant="ghost" onClick={() => router.back()} className="text-muted hover:text-text rounded-md text-sm px-4 py-2">
-              {copy.back}
+
+            <Button variant="ghost" onClick={() => router.back()} className="text-[#858585] hover:text-white hover:bg-[#333] rounded-md text-sm px-4 py-2 transition-colors">
+              {copy.back || "Назад"}
             </Button>
           </div>
         </header>

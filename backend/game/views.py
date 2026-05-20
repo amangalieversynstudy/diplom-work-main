@@ -169,21 +169,29 @@ class MissionViewSet(viewsets.ModelViewSet):
         else:
             xp_gain = base_reward
 
+        # ЗАПОМИНАЕМ СТАРЫЙ УРОВЕНЬ
+        old_level = profile.level
+
         prog.complete()
         prog.xp_earned += xp_gain
         stars = int(request.data.get("stars", 0))
         prog.stars = max(0, min(3, stars))
         prog.save()
 
+        # НАЧИСЛЯЕМ ОПЫТ
         if xp_gain > 0:
             profile.add_xp(xp_gain)
+
+        # ПРОВЕРЯЕМ, БЫЛ ЛИ ПОВЫШЕН УРОВЕНЬ
+        leveled_up = profile.level > old_level
 
         data = ProgressSerializer(prog).data
         data.update(
             {
-                "xp_added": xp_gain,
+                "xp_added": xp_gain,           # Подхватится фронтендом
+                "leveled_up": leveled_up,      # Триггер для салюта на клиенте!
+                "new_level": profile.level,
                 "profile_xp": profile.xp,
-                "profile_level": profile.level,
             }
         )
         return Response(data)

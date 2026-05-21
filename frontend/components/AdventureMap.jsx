@@ -1,51 +1,94 @@
 import { motion } from "framer-motion";
 
-function Node({ node, delay = 0 }) {
+// Словарь стилей для разных классов
+const classThemes = {
+  warrior: {
+    bg: "bg-gradient-to-br from-red-900/40 via-[#1e1e1e] to-[#0f0f11]",
+    lineStroke: "#ef4444", // Красный путь
+    nodeBase: "bg-red-500/20 border-red-500/50",
+    nodeGlow: "shadow-[0_0_15px_rgba(239,68,68,0.3)]",
+  },
+  mage: {
+    bg: "bg-gradient-to-br from-blue-900/40 via-[#1e1e1e] to-[#0f0f11]",
+    lineStroke: "#3b82f6", // Синий путь
+    nodeBase: "bg-blue-500/20 border-blue-500/50",
+    nodeGlow: "shadow-[0_0_15px_rgba(59,130,246,0.3)]",
+  },
+  rogue: {
+    bg: "bg-gradient-to-br from-green-900/40 via-[#1e1e1e] to-[#0f0f11]",
+    lineStroke: "#22c55e", // Зеленый путь
+    nodeBase: "bg-green-500/20 border-green-500/50",
+    nodeGlow: "shadow-[0_0_15px_rgba(34,197,94,0.3)]",
+  },
+  default: {
+    bg: "bg-[#141418]", // Стандартный темный фон
+    lineStroke: "#6b7280",
+    nodeBase: "bg-gray-500/20 border-gray-500/50",
+    nodeGlow: "",
+  }
+};
+
+function Node({ node, delay = 0, theme }) {
+  const isLocked = node.status === "locked";
+  const isCompleted = node.status === "completed";
+
+  // Стилизуем узлы в зависимости от их статуса и темы класса
+  let nodeStyle = theme.nodeBase;
+  if (isCompleted) nodeStyle = "bg-yellow-500/20 border-yellow-500/80 shadow-[0_0_10px_rgba(234,179,8,0.4)]";
+  else if (!isLocked) nodeStyle = `bg-[#1e1e1e] border-white ${theme.nodeGlow}`;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay }}
-      className="absolute"
+      className={`absolute w-12 h-12 -ml-6 -mt-6 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all hover:scale-110 ${nodeStyle}`}
       style={{
         left: `${node.x}%`,
         top: `${node.y}%`,
-        transform: "translate(-50%, -50%)",
       }}
+      title={node.title}
     >
-      <div className="group">
-        <div className="w-28 rounded-2xl border border-white/20 bg-black/40 backdrop-blur p-3 text-center shadow-glow">
-          <div className="text-xs text-white/60 uppercase tracking-[0.3em]">{node.tier}</div>
-          <div className="text-sm font-semibold">{node.name}</div>
-          <div className="mt-1 h-1.5 rounded-full bg-white/10">
-            <div className="h-full rounded-full bg-gradient-to-r from-white to-emerald-300" style={{ width: `${node.progress}%` }} />
-          </div>
-        </div>
-      </div>
+      <span className="text-xs font-bold text-white">
+        {node.id}
+      </span>
     </motion.div>
   );
 }
 
-export default function AdventureMap({ missions = [] }) {
+export default function AdventureMap({ nodes, playerClass }) {
+  // Определяем тему, приводя класс к нижнему регистру (или берем дефолт)
+  const normalizedClass = playerClass ? playerClass.toLowerCase() : "default";
+  const theme = classThemes[normalizedClass] || classThemes.default;
+
   return (
-    <div className="relative rounded-[32px] border border-white/10 bg-gradient-to-br from-[#060913] via-[#0f1628] to-[#04050a] overflow-hidden h-[420px]">
-      <div className="absolute inset-0 opacity-40" aria-hidden>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(124,58,237,0.35),transparent_55%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:120px_120px]" />
-      </div>
-      <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-        <g stroke="rgba(255,255,255,0.15)" strokeWidth="2">
-          {missions.map((node, index) => {
-            if (index === 0) return null;
-            const prev = missions[index - 1];
-            return (
-              <line key={`${prev.name}-${node.name}`} x1={`${prev.x}%`} y1={`${prev.y}%`} x2={`${node.x}%`} y2={`${node.y}%`} />
-            );
-          })}
-        </g>
+    <div className={`relative w-full h-[600px] border border-[#333] rounded-xl overflow-hidden shadow-2xl ${theme.bg}`}>
+      {/* Рендеринг SVG-линий между нодами */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none">
+        {nodes.map((node, i) => {
+          if (i === 0) return null;
+          const prev = nodes[i - 1];
+          return (
+            <motion.line
+              key={`line-${node.id}`}
+              x1={`${prev.x}%`}
+              y1={`${prev.y}%`}
+              x2={`${node.x}%`}
+              y2={`${node.y}%`}
+              stroke={theme.lineStroke}
+              strokeWidth="2"
+              strokeDasharray="4 4"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 1, delay: i * 0.2 }}
+            />
+          );
+        })}
       </svg>
-      {missions.map((node, idx) => (
-        <Node key={node.id || idx} node={node} delay={idx * 0.05} />
+
+      {/* Рендеринг самих нод */}
+      {nodes.map((node, i) => (
+        <Node key={node.id} node={node} delay={i * 0.2} theme={theme} />
       ))}
     </div>
   );

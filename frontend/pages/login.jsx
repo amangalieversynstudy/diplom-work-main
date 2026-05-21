@@ -4,7 +4,7 @@ import Layout from "../components/Layout";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import { toast } from "sonner";
-import { login } from "../lib/api";
+import { login, Profile as ProfileAPI } from "../lib/api"; // ИСПРАВЛЕНО: Добавлен импорт ProfileAPI
 import { useDictionary } from "../lib/i18n";
 
 export default function Login() {
@@ -38,8 +38,19 @@ export default function Login() {
     try {
       await login({ email: identifier, username: identifier, password });
       toast.success(copy.success || "Добро пожаловать!", { duration: 2000 });
-      // Use Next.js router for SPA navigation (no full page reload, no overlay flash)
-      router.push("/profile");
+      
+      // ИСПРАВЛЕНО: Интеллектуальный редирект на основе профиля
+      // Получаем данные текущего пользователя
+      const userData = await ProfileAPI.me();
+      
+      // Если класс еще не выбран (новичок) -> отправляем выбирать путь
+      if (!userData?.profile?.class_role) {
+        router.push("/class");
+      } else {
+        // Если бывалый студент -> отправляем на карту миров
+        router.push("/worlds");
+      }
+
     } catch (err) {
       const detail = err?.response?.data?.detail || "";
       // Специальное сообщение для неактивированного аккаунта

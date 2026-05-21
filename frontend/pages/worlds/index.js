@@ -5,7 +5,7 @@ import { useDictionary } from "../../lib/i18n";
 import { Lock, CheckCircle, X as XIcon, Compass } from "lucide-react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Missions, missionStatus } from "../../lib/api";
 
 if (typeof window !== "undefined") {
@@ -32,18 +32,13 @@ export default function Worlds() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Вычисляем хаотичные координаты: неравномерное расстояние и изгибы
+  // Вычисляем хаотичные координаты
   const getCoords = (index, total) => {
-    // Отступаем от краев, оставляя большую неизведанную область справа (до 80%)
     const step = total > 1 ? 72 / (total - 1) : 0;
-    
-    // Смещения по оси X (чтобы они были то ближе, то дальше друг от друга)
     const xVariations = [0, 4, -3, 5, -4, 2, -2, 3];
     let xVar = xVariations[index % xVariations.length];
-    // Запрещаем смещение для первой и последней миссии, чтобы не вышли за края
     if (index === 0 || index === total - 1) xVar = 0;
 
-    // Смещения по оси Y для создания "кривого" пиратского пути
     const yOffsets = [15, -25, 5, -30, 20, -10, 35, -20];
     return {
       x: 8 + index * step + xVar,
@@ -51,13 +46,12 @@ export default function Worlds() {
     };
   };
 
-  // Генерируем линию с уникальными, не повторяющимися изгибами
+  // Генерируем линию
   const generatePath = (missionsArr) => {
     if (!missionsArr || missionsArr.length === 0) return "";
     const len = missionsArr.length;
     let path = `M ${getCoords(0, len).x} ${getCoords(0, len).y}`;
     
-    // Наборы контрольных точек для змеевидных (S-образных) изгибов с большой амплитудой
     const cp1YVars = [60, -55, 65, -50, 70, -60, 55, -65];
     const cp2YVars = [-60, 55, -65, 50, -70, 60, -55, 65];
     const cpXVars1 = [0.2, 0.25, 0.2, 0.3, 0.25, 0.2, 0.3, 0.25];
@@ -66,33 +60,49 @@ export default function Worlds() {
     for (let i = 1; i < len; i++) {
       const prev = getCoords(i - 1, len);
       const curr = getCoords(i, len);
-      
-      // Индивидуальные контрольные точки для каждого отрезка
       const cp1X = prev.x + (curr.x - prev.x) * cpXVars1[i % cpXVars1.length];
       const cp1Y = prev.y + cp1YVars[i % cp1YVars.length];
-      
       const cp2X = prev.x + (curr.x - prev.x) * cpXVars2[i % cpXVars2.length];
       const cp2Y = curr.y + cp2YVars[i % cp2YVars.length];
-      
       path += ` C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${curr.x} ${curr.y}`;
     }
     return path;
   };
 
+  // Перехват горизонтального жеста трекпада — РАБОТАЕТ ВСЕГДА
+  useEffect(() => {
+    if (loading) return; // ИСПРАВЛЕНО: убрана блокировка пустого списка миссий
+
+    const container = pinContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e) => {
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        e.preventDefault();
+        window.scrollTo({
+          top: window.scrollY + e.deltaX,
+          behavior: "auto"
+        });
+      }
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
+  }, [loading, missions]);
+
+  // Инициализация ScrollTrigger — РАБОТАЕТ ВСЕГДА
   useGSAP(() => {
-    if (loading || missions.length === 0) return;
+    if (loading) return; // ИСПРАВЛЕНО: убрана блокировка пустого списка миссий
 
     const tl = gsap.timeline();
 
-    // Анимация отрисовки линии пути
-    tl.fromTo(".map-path", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 2.5, ease: "power2.inOut" });
+    if (missions.length > 0) {
+      tl.fromTo(".map-path", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 2.5, ease: "power2.inOut" });
+      tl.fromTo(".mission-node", { scale: 0, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "back.out(1.5)" }, "-=2");
+    }
 
-    // Плавное появление узлов миссий
-    tl.fromTo(".mission-node", { scale: 0, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "back.out(1.5)" }, "-=2");
-
-    // Настройка горизонтального скролла (Lenis + GSAP)
     const mapEl = mapScrollRef.current;
-    const moveDist = mapEl.scrollWidth - window.innerWidth + 48; // Учитываем отступы
+    const moveDist = mapEl.scrollWidth - window.innerWidth + 48;
 
     if (moveDist > 0) {
       gsap.to(mapEl, {
@@ -102,11 +112,13 @@ export default function Worlds() {
           trigger: pinContainerRef.current,
           pin: true,
           scrub: 1,
-          start: "center center",
+          start: "top top",
           end: () => `+=${moveDist}`,
           invalidateOnRefresh: true,
         }
       });
+
+      ScrollTrigger.refresh();
     }
   }, { scope: pinContainerRef, dependencies: [loading, missions] });
 
@@ -128,15 +140,28 @@ export default function Worlds() {
         </div>
       </div>
 
-      {/* ── Интерактивная карта (Горизонтальный скролл) ── */}
+      {/* ── Контейнер карты ── */}
       <div ref={pinContainerRef} className="w-full h-screen overflow-hidden flex flex-col justify-center bg-bg relative">
         
+        {/* ИСПРАВЛЕНО: Оверлеи состояний теперь зафиксированы по центру экрана и не улетают при прокрутке */}
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center text-[#5c3a21] font-display text-2xl font-bold tracking-widest uppercase animate-pulse z-20 pointer-events-none">
+            Разворачиваем пергамент...
+          </div>
+        )}
+
+        {!loading && missions.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center text-[#5c3a21] font-display text-xl font-bold z-20 pointer-events-none">
+            Пираты украли карту. Задания не найдены.
+          </div>
+        )}
+
+        {/* Холст пергамента */}
         <div 
           ref={mapScrollRef} 
           className="relative h-[70vh] w-[300vw] sm:w-[250vw] md:w-[200vw] lg:w-[150vw] ml-6 mr-6 rounded-[2.5rem] border-8 border-[#5c3a21] bg-[#dcb98a] shadow-2xl shrink-0 overflow-hidden"
         >
-          
-          {/* Бумажная текстура (Генерация шума) */}
+          {/* Бумажная текстура */}
           <div className="absolute inset-0 pointer-events-none opacity-30 mix-blend-multiply rounded-[inherit]">
             <svg className="w-full h-full">
               <filter id="paper-noise">
@@ -146,7 +171,7 @@ export default function Worlds() {
             </svg>
           </div>
 
-          {/* Старинная штурманская сетка */}
+          {/* Штурманская сетка */}
           <div 
             className="absolute inset-0 opacity-15 pointer-events-none rounded-[inherit]" 
             style={{ 
@@ -155,22 +180,12 @@ export default function Worlds() {
             }} 
           />
           
-          {/* Винтажное затемнение краёв (Vignette) */}
           <div className="absolute inset-0 shadow-[inset_0_0_150px_rgba(62,39,35,0.6)] pointer-events-none rounded-[inherit]" />
 
-          {loading ? (
-            <div className="absolute inset-0 flex items-center justify-center text-[#5c3a21] font-display text-2xl font-bold tracking-widest uppercase animate-pulse">
-              Разворачиваем пергамент...
-            </div>
-          ) : missions.length === 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center text-[#5c3a21] font-display text-xl font-bold">
-              Пираты украли карту. Задания не найдены.
-            </div>
-          ) : (
+          {!loading && missions.length > 0 && (
             <>
-              {/* SVG Путь, соединяющий миссии */}
+              {/* SVG Путь */}
               <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
-                {/* Маска для анимации отрисовки */}
                 <defs>
                   <mask id="path-mask">
                     <path
@@ -186,7 +201,6 @@ export default function Worlds() {
                   </mask>
                 </defs>
                 
-                {/* Старый чернильный след (пунктир) */}
                 <path
                   d={generatePath(missions)}
                   fill="none"
@@ -195,7 +209,6 @@ export default function Worlds() {
                   strokeDasharray="6,6"
                   vectorEffect="non-scaling-stroke"
                 />
-                {/* Анимированная линия прогресса (Кроваво-красные чернила), теперь тоже пунктирная */}
                 <path
                   d={generatePath(missions)}
                   fill="none"
@@ -224,12 +237,10 @@ export default function Worlds() {
                     className={`mission-node absolute transform -translate-x-1/2 -translate-y-1/2 group z-10 ${isLocked ? 'cursor-default' : 'cursor-pointer'}`}
                     style={{ left: `${coords.x}%`, top: `${coords.y}%` }}
                   >
-                    {/* Пульсирующий круг для текущей активной миссии */}
                     {isActive && (
                       <span className="absolute inset-0 rounded-full bg-[#8e1d1d]/40 animate-ping group-hover:bg-[#8e1d1d]/60 transition-colors duration-300" style={{ zIndex: -1 }}></span>
                     )}
 
-                    {/* Сургучная печать (Узел миссии) */}
                     <div className={`flex items-center p-1 md:p-1.5 rounded-full border-2 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_4px_10px_rgba(62,39,35,0.4)] group-hover:scale-110
                       ${isLocked ? 'bg-[#c4a173] border-[#8b5a2b]' : 'bg-[#f4e4bc] border-[#8e1d1d] group-hover:bg-[#fff0d4] group-hover:shadow-[0_0_25px_rgba(142,29,29,0.5)]'}
                     `}>

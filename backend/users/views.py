@@ -19,26 +19,78 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class ProfileMeView(APIView):
-    """Retrieve or update the authenticated user's profile."""
+    """Retrieve or update the authenticated user's profile.
+
+    Returns a flat object that combines User (username/email/display_name)
+    and Profile (xp/level/inventory/class_role) — the frontend expects this shape.
+    PATCH accepts any subset of these fields.
+    """
 
     permission_classes = [IsAuthenticated]
 
+    def _payload(self, user):
+        profile = user.profile
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "display_name": user.display_name,
+            "xp": profile.xp,
+            "level": profile.level,
+            "bio": profile.bio,
+            "class_role": profile.class_role_id,
+            "ai_summons": profile.ai_summons,
+            "hint_scrolls": profile.hint_scrolls,
+            "skeleton_scrolls": profile.skeleton_scrolls,
+        }
+
     def get(self, request):
-        serializer = ProfileSerializer(
-            request.user.profile, context={"request": request}
-        )
-        return Response(serializer.data)
+        return Response(self._payload(request.user))
 
     def patch(self, request):
-        serializer = ProfileSerializer(
-            request.user.profile,
-            data=request.data,
-            partial=True,
-            context={"request": request},
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
+        user = request.user
+        profile = user.profile
+        data = request.data or {}
+
+        # ─── User fields ──────────────────────────────────────────────
+        user_dirty = []
+        if "username" in data and data["username"]:
+            new_username = str(data["username"]).strip()
+            if new_username != user.username:
+                # check uniqueness
+                if User.objects.exclude(pk=user.pk).filter(username=new_username).exists():
+                    return Response(
+                        {"username": "Такое имя пользователя уже занято."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                user.username = new_username
+                user_dirty.append("username")
+        if "email" in data and data["email"] is not None:
+            new_email = str(data["email"]).strip().lower()
+            if new_email != (user.email or "").lower():
+                if new_email and User.objects.exclude(pk=user.pk).filter(email__iexact=new_email).exists():
+                    return Response(
+                        {"email": "Этот email уже используется."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                user.email = new_email
+                user_dirty.append("email")
+        if "display_name" in data:
+            user.display_name = str(data["display_name"] or "")
+            user_dirty.append("display_name")
+        if user_dirty:
+            user.save(update_fields=user_dirty)
+
+        # ─── Profile fields (use serializer for class_role validation) ─
+        profile_payload = {k: data[k] for k in ("bio", "class_role") if k in data}
+        if profile_payload:
+            serializer = ProfileSerializer(
+                profile, data=profile_payload, partial=True, context={"request": request}
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        return Response(self._payload(user))
 
 class UseItemView(APIView):
     """

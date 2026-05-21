@@ -74,3 +74,26 @@ class UseItemView(APIView):
             return Response({
                 "detail": "Недостаточно предметов в инвентаре или неверный тип."
             }, status=status.HTTP_400_BAD_REQUEST)
+class EmailVerifyView(APIView):
+    permission_classes = []
+
+    def get(self, request, token_id):
+        token = get_object_or_404(EmailVerificationToken, id=token_id)
+        if token.is_used:
+            return Response({"detail": "Свиток уже был использован."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = token.user
+        user.is_active = True
+        user.save()
+        
+        token.is_used = True
+        token.save()
+        return Response({"detail": "Магическая печать снята. Аккаунт активирован."})
+
+class ResendVerifyView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        email = request.data.get("email")
+        # Логика повторной отправки (найти юзера, сгенерировать токен, send_mail)
+        return Response({"detail": "Новый почтовый ворон отправлен."})

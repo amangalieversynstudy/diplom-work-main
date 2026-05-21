@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+import uuid
 
 
 class User(AbstractUser):
@@ -77,3 +78,10 @@ def create_user_profile(sender, instance, created, **kwargs):
     """Ensure a Profile is created for each new User."""
     if created:
         Profile.objects.create(user=instance)
+
+
+class EmailVerificationToken(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name="verification_tokens")
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_used = models.BooleanField(default=False)

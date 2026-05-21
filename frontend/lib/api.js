@@ -64,6 +64,18 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 429) {
+      const detail = error.response.data?.detail || "Слишком много запросов. Подождите.";
+      throw new Error(detail);
+    }
+    return Promise.reject(error);
+  }
+);
+
+export default api;
 
 export async function login({ email, username, password }) {
   const identifier = username || email;

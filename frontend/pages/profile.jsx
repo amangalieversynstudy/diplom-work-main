@@ -67,10 +67,31 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading) {
+if (loading) {
     return (
       <Layout>
-        <div className="pt-32 text-center text-muted animate-pulse">Загрузка профиля героя...</div>
+        <div className="max-w-4xl mx-auto pt-24 pb-16 px-4">
+          <div className="h-10 bg-[#2a2a2e] rounded w-1/3 mb-8 animate-pulse" />
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="md:col-span-1 space-y-6">
+              <div className="bg-[#2a2a2e] border border-[#222] rounded-3xl p-6 text-center animate-pulse">
+                <div className="w-24 h-24 mx-auto bg-[#3f3f46] rounded-full mb-4" />
+                <div className="h-6 bg-[#3f3f46] rounded w-1/2 mx-auto mb-2" />
+                <div className="h-4 bg-[#3f3f46] rounded w-1/3 mx-auto mb-6" />
+                <div className="h-2 bg-[#3f3f46] rounded w-full mb-8" />
+                <div className="h-10 bg-[#3f3f46] rounded w-full mb-3" />
+                <div className="h-10 bg-[#3f3f46] rounded w-full" />
+              </div>
+            </div>
+            <div className="md:col-span-2">
+              <div className="bg-[#2a2a2e] border border-[#222] rounded-3xl p-8 animate-pulse">
+                <div className="h-6 bg-[#3f3f46] rounded w-1/3 mb-8" />
+                <div className="h-16 bg-[#3f3f46] rounded-xl w-full mb-4" />
+                <div className="h-16 bg-[#3f3f46] rounded-xl w-full" />
+              </div>
+            </div>
+          </div>
+        </div>
       </Layout>
     );
   }

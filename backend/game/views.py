@@ -8,6 +8,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from users.models import Profile
 from rest_framework.views import APIView
+from django.utils.decorators import method_decorator
+from django_ratelimit.decorators import ratelimit
+from django_ratelimit.exceptions import Ratelimited
+from rest_framework.exceptions import APIException
 
 from .models import (
     LeaderboardEntry,
@@ -388,6 +392,10 @@ class CodeRunnerView(APIView):
 
         return Response(result, status=200)
 
+class RateLimitException(APIException):
+    status_code = 429
+    default_detail = "Слишком много запросов к Мудрецу. Подожди 1 минуту."
+    default_code = "rate_limit_exceeded"
 
 class AIAssistView(APIView):
     """Gemini-powered AI assistant for quest code tasks.
@@ -459,3 +467,10 @@ class AIAssistView(APIView):
             )
         except Exception as exc:  # noqa: BLE001
             return f"⚠️ Мудрец недоступен: {exc}"
+    def handle_exception(self, exc):
+        if isinstance(exc, Ratelimited):
+            return Response(
+                {"detail": "Слишком много запросов к Мудрецу. Подожди 1 минуту."},
+                status=429
+            )
+        return super().handle_exception(exc)

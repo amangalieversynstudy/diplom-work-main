@@ -4,54 +4,29 @@ import { useEffect } from "react";
 import { Toaster } from "sonner";
 import { I18nProvider } from "../lib/i18n";
 import { ThemeProvider, useTheme } from "../lib/theme";
+import Head from "next/head"; // <-- ИМПОРТ
 
-// Initialise Lenis + GSAP ScrollTrigger in one place so every page benefits.
-// Dynamic imports keep Next.js SSR happy (these libs touch window/document).
 async function initSmoothScroll() {
   const [{ default: Lenis }, { gsap }, { ScrollTrigger }] = await Promise.all([
     import("lenis"),
     import("gsap"),
     import("gsap/ScrollTrigger"),
   ]);
-
   gsap.registerPlugin(ScrollTrigger);
-
-  const lenis = new Lenis({
-    duration: 1.2,
-    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-    orientation: "vertical",
-    gestureOrientation: "vertical",
-    smoothWheel: true,
-    wheelMultiplier: 1,
-    touchMultiplier: 2,
-  });
-
-  // Sync ScrollTrigger with Lenis
+  const lenis = new Lenis({ duration: 1.2, orientation: "vertical", smoothWheel: true });
   lenis.on("scroll", ScrollTrigger.update);
-
-  gsap.ticker.add((time) => {
-    lenis.raf(time * 1000);
-  });
-
+  gsap.ticker.add((time) => { lenis.raf(time * 1000); });
   gsap.ticker.lagSmoothing(0);
-
-  // Expose globally so individual pages can access the instance
   window.__lenis = lenis;
-
   return lenis;
 }
 
 function AppContent({ Component, pageProps }) {
   const { theme } = useTheme();
-
   return (
     <>
       <Component {...pageProps} />
-      <Toaster
-        theme={theme}
-        richColors
-        position="top-right"
-      />
+      <Toaster theme={theme} richColors position="top-right" />
     </>
   );
 }
@@ -59,9 +34,7 @@ function AppContent({ Component, pageProps }) {
 export default function MyApp({ Component, pageProps }) {
   useEffect(() => {
     let lenisInstance = null;
-    initSmoothScroll().then((lenis) => {
-      lenisInstance = lenis;
-    });
+    initSmoothScroll().then((lenis) => { lenisInstance = lenis; });
     return () => {
       if (lenisInstance) {
         lenisInstance.destroy();
@@ -71,10 +44,24 @@ export default function MyApp({ Component, pageProps }) {
   }, []);
 
   return (
-    <I18nProvider>
-      <ThemeProvider>
-        <AppContent Component={Component} pageProps={pageProps} />
-      </ThemeProvider>
-    </I18nProvider>
+    <>
+      <Head>
+        <title>RPG Academy</title>
+        <meta name="description" content="Геймифицированная платформа обучения программированию." />
+        <meta property="og:title" content="RPG Academy" />
+        <meta property="og:description" content="Изучай код через прохождение миссий и сражения!" />
+        <meta property="og:image" content="/og-image.png" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <link rel="icon" href="/favicon-32.png" sizes="32x32" />
+        <link rel="icon" href="/favicon-16.png" sizes="16x16" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+      </Head>
+      <I18nProvider>
+        <ThemeProvider>
+          <AppContent Component={Component} pageProps={pageProps} />
+        </ThemeProvider>
+      </I18nProvider>
+    </>
   );
 }

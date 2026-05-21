@@ -91,9 +91,25 @@ export default function Leaderboard() {
         {/* ── Список лидеров ── */}
         <div className="space-y-3">
           {loading ? (
-            // Скелетон-загрузчик
+            // Улучшенный Скелетон-загрузчик (RPG стиль)
             [...Array(5)].map((_, i) => (
-              <div key={i} className="h-20 bg-panel animate-pulse rounded-2xl border border-border" />
+              <div key={i} className="group flex items-center gap-4 p-4 md:p-5 rounded-2xl border border-[#222] bg-[#2a2a2e] animate-pulse">
+                <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-[#3f3f46]" />
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="h-4 bg-[#3f3f46] rounded w-1/3" />
+                  <div className="h-3 bg-[#3f3f46] rounded w-1/4" />
+                </div>
+                <div className="flex items-center gap-6 text-right">
+                  <div className="hidden sm:block space-y-2">
+                    <div className="h-2 bg-[#3f3f46] rounded w-12 ml-auto" />
+                    <div className="h-4 bg-[#3f3f46] rounded w-8 ml-auto" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-2 bg-[#3f3f46] rounded w-10 ml-auto" />
+                    <div className="h-6 bg-[#3f3f46] rounded w-14 ml-auto" />
+                  </div>
+                </div>
+              </div>
             ))
           ) : data.length === 0 ? (
             // Пустое состояние

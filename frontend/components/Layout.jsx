@@ -180,8 +180,8 @@ export default function Layout({ children, hideFooter, noBottomPadding }) {
 
   return (
     <div className="min-h-screen text-text bg-bg relative overflow-x-hidden transition-colors duration-300">
-      {/* ── Page Transition Overlay ── */}
-      <div className="page-transition-overlay fixed inset-0 z-[999] bg-[var(--primary)] origin-top flex items-center justify-center pointer-events-none">
+      {/* ── Page Transition Overlay (hidden on auth pages) ── */}
+      <div className="page-transition-overlay fixed inset-0 z-[999] bg-[var(--primary)] origin-top flex items-center justify-center pointer-events-none hidden">
         <Sparkles className="w-12 h-12 text-white animate-spin-slow" />
       </div>
 

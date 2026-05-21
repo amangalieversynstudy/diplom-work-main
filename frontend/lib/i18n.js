@@ -167,6 +167,14 @@ const dictionaries = {
       subheading: "Classes grant unique passives, cosmetic upgrades, and custom questlines.",
       cta: "Pledge allegiance",
       toastSuccess: "Class selected",
+      locked: {
+        kicker: "Class locked",
+        heading: "Complete the Introductory Course first",
+        subheading: "Before choosing your calling, finish the intro track. There you'll master the fundamentals every class is built upon.",
+        progressLabel: "Progress",
+        checking: "Checking your path...",
+        cta: "To the intro course",
+      },
       classes: {
         django: {
           name: "Django Arcanist",
@@ -565,6 +573,14 @@ const dictionaries = {
       subheading: "Классы дают пассивки, косметику и уникальные квесты.",
       cta: "Принять клятву",
       toastSuccess: "Класс выбран",
+      locked: {
+        kicker: "Класс пока заблокирован",
+        heading: "Сначала пройди Вводный Курс",
+        subheading: "Прежде чем выбрать своё призвание, заверши вводный трек. Там ты освоишь основы, на которых строится магия каждого класса.",
+        progressLabel: "Прогресс",
+        checking: "Проверяю твой путь...",
+        cta: "К вводному курсу",
+      },
       classes: {
         django: {
           name: "Арканист Django",

@@ -4,6 +4,8 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    CodeRunnerView,
+    IntroStatusView,
     LeaderboardViewSet,
     LocationViewSet,
     MissionTaskViewSet,
@@ -12,7 +14,6 @@ from .views import (
     RankViewSet,
     TaskProgressViewSet,
     TrackViewSet,
-    CodeRunnerView
 )
 
 router = DefaultRouter()
@@ -29,4 +30,5 @@ router.register(r"leaderboard", LeaderboardViewSet, basename="leaderboard")
 urlpatterns = [
     path("", include(router.urls)),
     path('runner/execute/', CodeRunnerView.as_view(), name='runner_execute'),
+    path('intro-status/', IntroStatusView.as_view(), name='intro_status'),
 ]

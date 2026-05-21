@@ -1,11 +1,11 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion"; // <-- Добавили framer-motion
 import Layout from "../components/Layout";
 import Button from "../components/Button";
-import { setPlayerClass, getPlayerClass } from "../lib/class";
+import { setPlayerClass, getPlayerClass, fetchIntroStatus } from "../lib/class";
 import { toast } from "sonner";
-import { Code, ServerCog, Share2 } from "lucide-react";
+import { Code, ServerCog, Share2, Lock, Sparkles } from "lucide-react";
 import { useDictionary } from "../lib/i18n";
 
 const CLASS_ICONS = {
@@ -26,15 +26,115 @@ export default function ChooseClassPage() {
     }));
   }, [dict.classPage.classes]);
 
+  // ── Intro gate state ──
+  const [introStatus, setIntroStatus] = useState({ loading: true, locked: false, data: null });
+
   useEffect(() => {
     const chosen = getPlayerClass();
-    if (chosen) router.push("/worlds"); 
+    if (chosen) {
+      router.push("/worlds");
+      return;
+    }
+    let cancelled = false;
+    fetchIntroStatus().then((data) => {
+      if (cancelled) return;
+      // Fail-open: если бэкенд недоступен, не блокируем выбор.
+      if (!data) {
+        setIntroStatus({ loading: false, locked: false, data: null });
+        return;
+      }
+      setIntroStatus({
+        loading: false,
+        locked: !data.class_unlocked,
+        data,
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   function choose(id) {
     setPlayerClass(id);
     toast.success(dict.classPage.toastSuccess);
     router.push("/worlds");
+  }
+
+  // ── Loading state ──
+  if (introStatus.loading) {
+    return (
+      <Layout>
+        <div className="max-w-3xl mx-auto pt-32 pb-16 px-4 text-center">
+          <Sparkles className="w-10 h-10 text-primary mx-auto animate-spin-slow opacity-60" />
+          <p className="text-sm text-muted mt-6 uppercase tracking-widest">
+            {dict.classPage?.locked?.checking || "Проверяю твой путь..."}
+          </p>
+        </div>
+      </Layout>
+    );
+  }
+
+  // ── Locked state: intro course not completed ──
+  if (introStatus.locked) {
+    const info = introStatus.data?.intro_track;
+    const prog = introStatus.data?.progress;
+    const percent =
+      prog && prog.total > 0 ? Math.round((prog.completed / prog.total) * 100) : 0;
+    return (
+      <Layout>
+        <div className="max-w-3xl mx-auto pt-24 pb-16 px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="text-center border border-border bg-surface rounded-[2.5rem] p-10 md:p-14 relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent pointer-events-none" />
+            <div className="relative z-10">
+              <div className="w-20 h-20 mx-auto rounded-full bg-panel border border-border flex items-center justify-center mb-6 shadow-inner">
+                <Lock size={32} className="text-muted" />
+              </div>
+              <p className="text-xs uppercase tracking-widest text-primary mb-4 font-bold">
+                {dict.classPage?.locked?.kicker || "Класс пока заблокирован"}
+              </p>
+              <h1 className="text-4xl md:text-5xl font-display font-bold text-text mb-6">
+                {dict.classPage?.locked?.heading || "Сначала пройди Вводный Курс"}
+              </h1>
+              <p className="text-lg text-muted leading-relaxed mb-8">
+                {dict.classPage?.locked?.subheading ||
+                  `Прежде чем выбрать своё призвание, заверши вводный трек${
+                    info?.title ? ` «${info.title}»` : ""
+                  }. Там ты освоишь основы, на которых строится магия каждого класса.`}
+              </p>
+              {prog && (
+                <div className="mb-8 max-w-md mx-auto">
+                  <div className="flex justify-between text-xs text-muted mb-2 uppercase tracking-widest">
+                    <span>{dict.classPage?.locked?.progressLabel || "Прогресс"}</span>
+                    <span>
+                      {prog.completed} / {prog.total}
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-panel overflow-hidden border border-border">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${percent}%` }}
+                      transition={{ duration: 0.9, ease: "easeOut" }}
+                      className="h-full bg-gradient-to-r from-primary to-accent"
+                    />
+                  </div>
+                </div>
+              )}
+              <Button
+                onClick={() => router.push("/worlds")}
+                className="bg-primary text-white hover:bg-primary-dk shadow-[0_0_20px_var(--primary-selection)]"
+              >
+                {dict.classPage?.locked?.cta || "К вводному курсу"}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      </Layout>
+    );
   }
 
   return (

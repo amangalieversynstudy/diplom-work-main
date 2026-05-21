@@ -22,6 +22,14 @@ class Track(models.Model):
     order = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
     is_premium = models.BooleanField(default=False)
+    is_intro = models.BooleanField(
+        default=False,
+        help_text=(
+            "Вводный курс. Пока пользователь не пройдёт все миссии "
+            "этого трека, выбор класса заблокирован. "
+            "Включать стоит ровно у одного активного трека."
+        ),
+    )
     default_language = models.CharField(max_length=5, default="ru")
 
     class Meta:
@@ -29,6 +37,42 @@ class Track(models.Model):
 
     def __str__(self):
         return self.get_localized_title()
+
+    @classmethod
+    def get_intro(cls):
+        """Return the single active intro track, or None if not configured."""
+        return cls.objects.filter(is_intro=True, is_active=True).first()
+
+    def is_completed_by(self, user) -> bool:
+        """True if `user` has completed every active mission in this track.
+
+        Fail-open: a track with no missions is treated as already complete,
+        so a misconfigured intro track never strands users on a locked page.
+        """
+        mission_ids = set(
+            Mission.objects
+            .filter(location__track=self, is_active=True)
+            .values_list("id", flat=True)
+        )
+        if not mission_ids:
+            return True
+        completed_ids = set(
+            Progress.objects
+            .filter(user=user, mission_id__in=mission_ids, completed=True)
+            .values_list("mission_id", flat=True)
+        )
+        return mission_ids.issubset(completed_ids)
+
+    def completion_progress(self, user) -> dict:
+        """Return {completed, total} for active missions in this track."""
+        total = Mission.objects.filter(location__track=self, is_active=True).count()
+        done = Progress.objects.filter(
+            user=user,
+            mission__location__track=self,
+            mission__is_active=True,
+            completed=True,
+        ).count()
+        return {"completed": done, "total": total}
 
     def _get_localized_value(self, field_name: str, lang: str = "ru") -> str:
         lang = (lang or "ru").lower()

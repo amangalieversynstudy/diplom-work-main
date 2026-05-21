@@ -316,6 +316,47 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(period_label="all_time")
         return qs.order_by("position", "-xp_total")[:200]
 
+class IntroStatusView(APIView):
+    """Reports whether the current user has unlocked class selection.
+
+    Class selection is gated on completing the "intro" Track (a Track with
+    is_intro=True). If no intro track is configured, class is unlocked by
+    default — we don't trap users on a misconfigured server.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="Class-selection unlock status",
+        operation_description=(
+            "Возвращает class_unlocked=True, если пользователь завершил "
+            "вводный трек (или если такой трек не настроен)."
+        ),
+    )
+    def get(self, request):
+        intro = Track.get_intro()
+        if intro is None:
+            return Response({
+                "class_unlocked": True,
+                "intro_track": None,
+                "progress": None,
+                "reason": "no_intro_configured",
+            })
+
+        completed = intro.is_completed_by(request.user)
+        progress = intro.completion_progress(request.user)
+        return Response({
+            "class_unlocked": completed,
+            "intro_track": {
+                "slug": intro.slug,
+                "title": intro.get_localized_title("ru"),
+                "title_en": intro.get_localized_title("en"),
+            },
+            "progress": progress,
+            "reason": None if completed else "intro_not_completed",
+        })
+
+
 class CodeRunnerView(APIView):
     """
     API для безопасного запуска пользовательского кода в песочнице.

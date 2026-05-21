@@ -28,12 +28,21 @@ export default function Login() {
 
   async function onSubmit(e) {
     e.preventDefault();
+
+    if (!identifier || !password) {
+      toast.error("Заполните все поля");
+      return;
+    }
+
     setLoading(true);
     try {
-      await login({ email: identifier, username: identifier, password });
+      const response = await login({ email: identifier, username: identifier, password });
+      console.log("Login successful:", response);
       toast.success(copy.success || "Добро пожаловать!");
+      // Use router.push instead of window.location.href for better handling
       window.location.href = "/profile";
     } catch (err) {
+      console.error("Login error:", err);
       const detail = err?.response?.data?.detail || "";
       // Специальное сообщение для неактивированного аккаунта
       if (detail.toLowerCase().includes("no active account")) {

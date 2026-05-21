@@ -8,6 +8,12 @@ import { Profile as ProfileAPI } from "../lib/api";
 import { toast } from "sonner";
 import { LogOut, Settings, Mail, User, Shield } from "lucide-react";
 
+const CLASS_NAMES = {
+  1: "Маг Кода",
+  2: "Рыцарь Логики",
+  3: "Друид Данных",
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState(null);
@@ -39,6 +45,7 @@ export default function ProfilePage() {
         email: userBlock.email || data.email || "",
         xp: profileBlock.xp ?? 0,
         level: profileBlock.level ?? 1,
+        class_role: profileBlock.class_role ?? data.class_role ?? null,
         ai_summons: profileBlock.ai_summons ?? 0,
         hint_scrolls: profileBlock.hint_scrolls ?? 0,
         skeleton_scrolls: profileBlock.skeleton_scrolls ?? 0,
@@ -130,6 +137,11 @@ if (loading) {
                 <User size={40} className="text-muted" />
               </div>
               <h2 className="text-2xl font-bold text-text mb-1">{profile?.username || "Неизвестный"}</h2>
+              {profile?.class_role && (
+                <p className="text-xs text-accent uppercase tracking-widest font-bold mb-1">
+                  {CLASS_NAMES[profile.class_role] || "Класс неизвестен"}
+                </p>
+              )}
               <p className="text-sm text-primary uppercase tracking-widest font-bold mb-4">
                 Уровень {profile?.level || 1}
               </p>

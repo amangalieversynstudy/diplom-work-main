@@ -4,9 +4,17 @@ import { motion } from "framer-motion"; // <-- Добавили framer-motion
 import Layout from "../components/Layout";
 import Button from "../components/Button";
 import { setPlayerClass, getPlayerClass, fetchIntroStatus } from "../lib/class";
+import { Profile } from "../lib/api";
 import { toast } from "sonner";
 import { Code, ServerCog, Share2, Lock, Sparkles } from "lucide-react";
 import { useDictionary } from "../lib/i18n";
+
+// Maps frontend class id to backend ClassRole pk (see fixtures/class_roles.json)
+const CLASS_ROLE_IDS = {
+  python: 1,  // Маг Кода
+  django: 2,  // Рыцарь Логики
+  devops: 3,  // Друид Данных
+};
 
 const CLASS_ICONS = {
   django: ServerCog,
@@ -28,6 +36,7 @@ export default function ChooseClassPage() {
 
   // ── Intro gate state ──
   const [introStatus, setIntroStatus] = useState({ loading: true, locked: false, data: null });
+  const [choosing, setChoosing] = useState(false);
 
   useEffect(() => {
     const chosen = getPlayerClass();
@@ -54,10 +63,24 @@ export default function ChooseClassPage() {
     };
   }, [router]);
 
-  function choose(id) {
-    setPlayerClass(id);
-    toast.success(dict.classPage.toastSuccess);
-    router.push("/worlds");
+  async function choose(id) {
+    if (choosing) return;
+    setChoosing(true);
+    try {
+      const classRoleId = CLASS_ROLE_IDS[id];
+      if (classRoleId) {
+        // Save to backend first
+        await Profile.update({ class_role: classRoleId });
+      }
+      // Save to localStorage for quick local access
+      setPlayerClass(id);
+      toast.success(dict.classPage.toastSuccess, { duration: 3000 });
+      router.push("/profile");
+    } catch (err) {
+      toast.error("Не удалось сохранить класс. Попробуй ещё раз.", { duration: 4000 });
+    } finally {
+      setChoosing(false);
+    }
   }
 
   // ── Loading state ──

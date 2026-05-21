@@ -37,11 +37,9 @@ export default function Login() {
     setLoading(true);
     try {
       await login({ email: identifier, username: identifier, password });
-      // Don't show toast before redirect — page is reloading anyway
-      // Small delay to ensure tokens are stored before navigation
-      setTimeout(() => {
-        window.location.href = "/profile";
-      }, 100);
+      toast.success(copy.success || "Добро пожаловать!", { duration: 2000 });
+      // Use Next.js router for SPA navigation (no full page reload, no overlay flash)
+      router.push("/profile");
     } catch (err) {
       const detail = err?.response?.data?.detail || "";
       // Специальное сообщение для неактивированного аккаунта

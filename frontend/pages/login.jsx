@@ -4,7 +4,7 @@ import Layout from "../components/Layout";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import { toast } from "sonner";
-import { login } from "../lib/api";
+import { login, Profile as ProfileAPI } from "../lib/api"; // ИСПРАВЛЕНО: Добавлен импорт ProfileAPI
 import { useDictionary } from "../lib/i18n";
 
 export default function Login() {
@@ -28,20 +28,34 @@ export default function Login() {
 
   async function onSubmit(e) {
     e.preventDefault();
+
+    if (!identifier || !password) {
+      toast.error("Заполните все поля", { duration: 4000 });
+      return;
+    }
+
     setLoading(true);
     try {
       await login({ email: identifier, username: identifier, password });
-      toast.success(copy.success || "Добро пожаловать!");
-      window.location.href = "/profile";
+      toast.success(copy.success || "Добро пожаловать!", { duration: 2000 });
+
+      // Интеллектуальный редирект: новичок → выбор класса, бывалый → миры
+      const userData = await ProfileAPI.me();
+      if (!userData?.profile?.class_role && !userData?.class_role) {
+        router.push("/class");
+      } else {
+        router.push("/worlds");
+      }
     } catch (err) {
       const detail = err?.response?.data?.detail || "";
       // Специальное сообщение для неактивированного аккаунта
       if (detail.toLowerCase().includes("no active account")) {
         toast.error(
-          "Аккаунт не активирован. Проверь почту и перейди по ссылке в письме."
+          "Аккаунт не активирован. Проверь почту и перейди по ссылке в письме.",
+          { duration: 5000 }
         );
       } else {
-        toast.error(detail || copy.error || "Ошибка входа");
+        toast.error(detail || copy.error || "Ошибка входа", { duration: 5000 });
       }
     } finally {
       setLoading(false);

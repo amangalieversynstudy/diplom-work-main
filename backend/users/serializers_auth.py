@@ -5,6 +5,7 @@
 """
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 from .models import Profile
@@ -26,12 +27,28 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ("id", "username", "email", "password")
 
+    def validate_email(self, value):
+        """Ensure email is unique across all users."""
+        if value and User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("Этот email уже используется.")
+        return value
+
+    def validate_password(self, value):
+        """Validate password strength using Django's built-in validators."""
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            validate_password(value)
+        except DjangoValidationError as e:
+            # e.messages is a list; join them with semicolons for the user
+            raise serializers.ValidationError("; ".join(e.messages))
+        return value
+
     def create(self, validated_data):
         """Create a new User instance from validated data."""
         # Ensure username is unique with clear validation error
         username = validated_data["username"]
         if User.objects.filter(username=username).exists():
-            raise serializers.ValidationError({"username": "Username already taken"})
+            raise serializers.ValidationError({"username": "Это имя пользователя уже занято."})
         email = validated_data.get("email") or ""
         user = User.objects.create_user(
             username=username,

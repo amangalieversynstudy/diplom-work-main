@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useRouter } from "next/router";
 import {
   Map, Swords, User2, Crown, Sparkles, Trophy,
   Languages, ArrowUpRight, Sun, Moon
@@ -119,6 +120,7 @@ function ThemeSwitcher() {
 }
 
 export default function Layout({ children, hideFooter, noBottomPadding }) {
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [scrollDir, setScrollDir] = useState("up");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -168,12 +170,15 @@ export default function Layout({ children, hideFooter, noBottomPadding }) {
   }, [isMenuOpen]);
 
   useGSAP(() => {
-    gsap.to(".page-transition-overlay", {
-      yPercent: -100,
-      duration: 0.8,
-      ease: "power3.inOut",
-    });
-
+    // On page load: overlay slides UP to reveal the page.
+    // Works correctly in both cases:
+    // - First visit: overlay was at yPercent:0 (visible) and slides up
+    // - After navigation: TransitionLink left overlay at yPercent:0, now it slides up revealing new page
+    gsap.fromTo(
+      ".page-transition-overlay",
+      { yPercent: 0 },
+      { yPercent: -100, duration: 0.8, ease: "power3.inOut" }
+    );
   }, []);
 
   const isShrunk = scrolled && scrollDir === "down" && !isMenuOpen;
@@ -181,6 +186,10 @@ export default function Layout({ children, hideFooter, noBottomPadding }) {
   return (
     <div className="min-h-screen text-text bg-bg relative overflow-x-hidden transition-colors duration-300">
       {/* ── Page Transition Overlay ── */}
+      {/* ── Page Transition Overlay ──
+           Slides DOWN to cover page (TransitionLink on click)
+           Slides UP to reveal page (Layout on mount)
+           Does NOT trigger on errors/toasts — only during real navigation */}
       <div className="page-transition-overlay fixed inset-0 z-[999] bg-[var(--primary)] origin-top flex items-center justify-center pointer-events-none">
         <Sparkles className="w-12 h-12 text-white animate-spin-slow" />
       </div>
@@ -287,8 +296,10 @@ export default function Layout({ children, hideFooter, noBottomPadding }) {
               <div className="flex flex-col gap-3">
                 <button
                   onClick={() => {
-                    ["access", "refresh", "token", "access_token"].forEach(k => localStorage.removeItem(k));
-                    window.location.href = "/";
+                    ["access", "refresh", "token", "access_token", "refresh_token"].forEach(k => localStorage.removeItem(k));
+                    setIsAuthenticated(false);
+                    setIsMenuOpen(false);
+                    router.push("/");
                   }}
                   className="w-full py-3 rounded-xl border border-border text-muted font-semibold text-center hover:bg-panel hover:text-error transition-colors"
                 >

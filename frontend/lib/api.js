@@ -79,7 +79,7 @@ export default api;
 
 export async function login({ email, username, password }) {
   const identifier = username || email;
-  // Отправляем и email, и username: мок-API читает email, DRF(SimpleJWT) — username
+  // Отправляем и email, и username: backend LoginView поддерживает оба
   const payload = {
     email: email || identifier,
     username: identifier,

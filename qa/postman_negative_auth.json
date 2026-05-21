@@ -1,0 +1,311 @@
+{
+  "info": {
+    "name": "RPG Academy — Negative Auth Suite",
+    "description": "Группа А (автотесты): валидация регистрации, верификация email, активность, refresh-токен. Прогон: `newman run qa/postman_negative_auth.json --env-var baseUrl=http://localhost:8000/api`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "rpg-academy-neg-auth-001"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000/api" },
+    { "key": "seedUser", "value": "qa_seed_user" },
+    { "key": "seedEmail", "value": "qa_seed@example.com" },
+    { "key": "seedPass", "value": "Sup3rSecret!2026" },
+    { "key": "validRefresh", "value": "" },
+    { "key": "validAccess", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "SETUP — Register seed user (idempotent)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/register/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{seedUser}}\",\n  \"email\": \"{{seedEmail}}\",\n  \"password\": \"{{seedPass}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Allow 201 (fresh) or 400 (already exists) — both OK for setup",
+              "pm.test('Setup: 201 or 400', () => pm.expect([201, 400]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "TC-AUTH-02 — duplicate username → 400",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/register/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{seedUser}}\",\n  \"email\": \"different_{{$timestamp}}@example.com\",\n  \"password\": \"AnotherStrong#1\"\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('username error present', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(JSON.stringify(body).toLowerCase()).to.match(/username|логин|exists|уже/);",
+            "});"
+          ]
+        }
+      }]
+    },
+
+    {
+      "name": "TC-AUTH-03 — duplicate email → 400",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/register/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"fresh_{{$timestamp}}\",\n  \"email\": \"{{seedEmail}}\",\n  \"password\": \"AnotherStrong#1\"\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('email error present', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(JSON.stringify(body).toLowerCase()).to.match(/email|почт|exists|уже/);",
+            "});"
+          ]
+        }
+      }]
+    },
+
+    {
+      "name": "TC-AUTH-04 — empty payload → 400",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/register/",
+        "body": { "mode": "raw", "raw": "{}" }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('required-field errors', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body).to.have.any.keys('username', 'password');",
+            "});"
+          ]
+        }
+      }]
+    },
+
+    {
+      "name": "TC-AUTH-05 — password too short → 400",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/register/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"shortpw_{{$timestamp}}\",\n  \"email\": \"shortpw_{{$timestamp}}@example.com\",\n  \"password\": \"12\"\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('password validation error', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(JSON.stringify(body).toLowerCase()).to.match(/password|пароль|short|корот/);",
+            "});"
+          ]
+        }
+      }]
+    },
+
+    {
+      "name": "TC-AUTH-07 — verify-email: broken uid → 400",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/auth/verify-email/?uid=NOT_A_VALID_UID&token=anything"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('detail field present', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body).to.have.property('detail');",
+            "});"
+          ]
+        }
+      }]
+    },
+
+    {
+      "name": "TC-AUTH-08 — verify-email: invalid token → 400",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/auth/verify-email/?uid=MQ&token=bad-token-zzz"
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+            "pm.test('detail field present', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body).to.have.property('detail');",
+            "});"
+          ]
+        }
+      }]
+    },
+
+    {
+      "name": "TC-LOGIN-03 — wrong password → 401",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/token/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{seedUser}}\",\n  \"password\": \"DEFINITELY_WRONG_{{$timestamp}}\"\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
+          ]
+        }
+      }]
+    },
+
+    {
+      "name": "TC-LOGIN-04 — inactive user → 401",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/token/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{seedUser}}\",\n  \"password\": \"{{seedPass}}\"\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "// Seed user is NOT email-verified, so SimpleJWT should reject as inactive.",
+            "// Some setups reject inactive with 401 (default), some with 403 — accept both.",
+            "pm.test('401 or 403', () => pm.expect([401, 403]).to.include(pm.response.code));"
+          ]
+        }
+      }]
+    },
+
+    {
+      "name": "BOOTSTRAP — capture valid refresh (active QA user)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/token/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"qa_active\",\n  \"password\": \"QaActive#2026\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Pre-req: create qa_active user via Django shell and mark is_active=True.",
+              "// Example: python manage.py shell -c \"from django.contrib.auth import get_user_model;",
+              "//   U=get_user_model(); u,_=U.objects.get_or_create(username='qa_active');",
+              "//   u.set_password('QaActive#2026'); u.is_active=True; u.save()\"",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.collectionVariables.set('validRefresh', body.refresh);",
+              "  pm.collectionVariables.set('validAccess', body.access);",
+              "  pm.test('Bootstrap OK', () => pm.expect(body).to.have.property('refresh'));",
+              "} else {",
+              "  pm.test.skip('qa_active not provisioned — TC-LOGIN-06/07 will be skipped');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "TC-LOGIN-06 — refresh with valid token → 200 + new access",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/token/refresh/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refresh\": \"{{validRefresh}}\"\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "if (!pm.collectionVariables.get('validRefresh')) {",
+            "  pm.test.skip('No validRefresh — bootstrap skipped');",
+            "  return;",
+            "}",
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.test('new access token issued', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(body).to.have.property('access');",
+            "  pm.expect(body.access).to.be.a('string').and.have.length.greaterThan(20);",
+            "});"
+          ]
+        }
+      }]
+    },
+
+    {
+      "name": "TC-LOGIN-07 — refresh with expired/invalid token → 401",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/token/refresh/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refresh\": \"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.expired.signature\"\n}"
+        }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));",
+            "pm.test('token-invalid error code', () => {",
+            "  const body = pm.response.json();",
+            "  pm.expect(JSON.stringify(body).toLowerCase()).to.match(/token|invalid|expired|недейств/);",
+            "});"
+          ]
+        }
+      }]
+    }
+  ]
+}

@@ -1,17 +1,17 @@
 """Authentication URL patterns (register, login, logout, verify)."""
 
 from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 
-from .views_auth import LogoutView, MeView, RegisterView, VerifyEmailView
+from .views_auth import LoginView, LogoutView, MeView, RegisterView, VerifyEmailView
 
 urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="auth-register"),
-    # Canonical JWT endpoints
-    path("auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    # Canonical JWT endpoints with custom LoginView that supports email or username
+    path("auth/login/", LoginView.as_view(), name="token_obtain_pair"),
     path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # Compatibility aliases for frontend expecting djoser-like paths
-    path("auth/jwt/create/", TokenObtainPairView.as_view(), name="jwt_create"),
+    path("auth/jwt/create/", LoginView.as_view(), name="jwt_create"),
     path("auth/jwt/refresh/", TokenRefreshView.as_view(), name="jwt_refresh"),
     path("auth/me/", MeView.as_view(), name="auth-me"),
     path("auth/logout/", LogoutView.as_view(), name="auth-logout"),

@@ -12,14 +12,11 @@ export default function CustomCursor() {
     const followerEl = followerRef.current;
     if (!cursorEl || !followerEl) return;
 
-    // Центрируем курсор относительно его координат
     gsap.set(cursorEl, { xPercent: -50, yPercent: -50 });
     gsap.set(followerEl, { xPercent: -50, yPercent: -50 });
 
     const onMouseMove = (e) => {
-      // Основная точка двигается мгновенно
       gsap.to(cursorEl, { x: e.clientX, y: e.clientY, duration: 0.1, ease: "power2.out" });
-      // Кольцо тянется с легкой задержкой
       gsap.to(followerEl, { x: e.clientX, y: e.clientY, duration: 0.6, ease: "power3.out" });
     };
 
@@ -47,9 +44,7 @@ export default function CustomCursor() {
       }
     };
 
-    // Split-screen fix: при потере фокуса окна (alt-tab, разделение экрана,
-    // переключение между приложениями) показываем родной системный курсор,
-    // а наш кастомный прячем. На возврат фокуса — возвращаем кастомный.
+    // Split-screen fix: при alt-tab / split-screen показываем системный курсор
     const onWindowBlur = () => {
       document.body.classList.add("native-cursor");
       gsap.to([cursorEl, followerEl], { opacity: 0, duration: 0.15 });
@@ -65,7 +60,6 @@ export default function CustomCursor() {
     window.addEventListener("blur", onWindowBlur);
     window.addEventListener("focus", onWindowFocus);
 
-    // Если окно без фокуса при первой загрузке — сразу показываем родной курсор
     if (!document.hasFocus()) {
       document.body.classList.add("native-cursor");
       gsap.set([cursorEl, followerEl], { opacity: 0 });
@@ -83,10 +77,8 @@ export default function CustomCursor() {
 
   return (
     <>
-      {/* Главная точка */}
-      <div ref={cursorRef} className="fixed top-0 left-0 w-2 h-2 bg-emerald-500 rounded-full pointer-events-none z-[9999] hidden md:block" />
-      {/* Плавающее кольцо */}
-      <div ref={followerRef} className="fixed top-0 left-0 w-10 h-10 border border-slate-400/40 rounded-full pointer-events-none z-[9998] hidden md:block" />
+      <div ref={cursorRef} className="fixed top-0 left-0 w-2 h-2 bg-emerald-500 rounded-full pointer-events-none z-[9999] hidden md:block will-change-transform" />
+      <div ref={followerRef} className="fixed top-0 left-0 w-10 h-10 border-2 border-slate-400/40 rounded-full pointer-events-none z-[9998] hidden md:block will-change-transform" />
     </>
   );
 }

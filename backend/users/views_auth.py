@@ -7,10 +7,53 @@ from rest_framework.views import APIView
 
 # Token views are imported where needed; keep imports local in views that use them
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .serializers_auth import RegisterSerializer, UserDetailSerializer
 
 User = get_user_model()
+
+
+class LoginView(TokenObtainPairView):
+    """Custom login that accepts either username or email."""
+
+    def post(self, request, *args, **kwargs):
+        """
+        Accept username OR email in the 'username' or 'email' field.
+
+        Frontend sends both fields with the same identifier value:
+        - 'username': "smoketest" or "smoke@test.com"
+        - 'email': "smoke@test.com" or identifier
+
+        We resolve this to the actual username for authentication.
+        """
+        # Get identifier from either username or email field
+        identifier = request.data.get('username') or request.data.get('email', '')
+
+        if not identifier:
+            return Response(
+                {"detail": "Укажите username или email"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Try to find user by username or email
+        user = User.objects.filter(username__iexact=identifier).first()
+        if not user:
+            user = User.objects.filter(email__iexact=identifier).first()
+
+        # If user found, replace identifier with actual username in request
+        if user:
+            from django.http import QueryDict
+            # Create mutable copy of request data
+            if isinstance(request.data, QueryDict):
+                mutable_data = request.data.copy()
+                mutable_data['username'] = user.username
+                request._full_data = mutable_data
+            else:
+                request.data['username'] = user.username
+
+        # If not found, let TokenObtainPairView handle the error (will return 401)
+        return super().post(request, *args, **kwargs)
 
 
 class RegisterView(generics.CreateAPIView):

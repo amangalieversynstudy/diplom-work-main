@@ -5,6 +5,7 @@
 """
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
 from .models import Profile
@@ -30,6 +31,16 @@ class RegisterSerializer(serializers.ModelSerializer):
         """Ensure email is unique across all users."""
         if value and User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("Этот email уже используется.")
+        return value
+
+    def validate_password(self, value):
+        """Validate password strength using Django's built-in validators."""
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            validate_password(value)
+        except DjangoValidationError as e:
+            # e.messages is a list; join them with semicolons for the user
+            raise serializers.ValidationError("; ".join(e.messages))
         return value
 
     def create(self, validated_data):

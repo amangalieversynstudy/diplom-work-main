@@ -7,34 +7,88 @@
 — Быстрый старт: [локально](README.deploy.md#quickstart-local) • [staging](README.deploy.md#quickstart-staging) • [Полный гайд по деплою](README.deploy.md)
 — CI/CD на GitLab: [docs/gitlab.md](docs/gitlab.md) описывает пайплайн, переменные и чек-листы.
 
-## Что уже реализовано
+## Что реализовано
 
-- **Аутентификация и профиль**: регистрация/логин, JWT, выбор класса героя, XP/уровень, таблица лидеров.
-- **Миры и миссии**: треки → миры → миссии с координатами, prerequisite-ами и цепочками Story → Quiz → Code.
-- **Runner для кода**: локальный `/api/runner/execute` проверяет решения и пишет TaskProgress.
-- **Фоновые задачи**: Celery воркер, Redis как брокер, подготовка к отложенным начислениям и уведомлениям.
-- **Демо-контент**: management-команды `load_demo_content`, `create_demo_superuser`, `print_demo_summary` заполняют базу и создают логин `admin/admin123`.
+### Аутентификация и профиль
+- Регистрация / логин / JWT (access + refresh), смена пароля
+- Email-верификация: письмо при регистрации, `user.is_active=False` до подтверждения
+- Профиль: XP, уровень, класс героя (Mage / Knight), инвентарь
+- Выбор класса **заблокирован** до прохождения вводного курса (`Track.is_intro=True`)
+- Лидерборд: фильтры по периодам (all_time / weekly / monthly), топ-200
+
+### Геймплей
+- Треки → Локации (карта мира) → Миссии → Задачи (Story → Quiz → Code)
+- **Вводный курс "Основы Python"** (`backend/game/fixtures/intro_course.json`):
+  4 миссии × 3 задачи = 12 шагов с реальным учебным контентом RU/EN
+- Карты миров визуально меняются по классу игрока (`AdventureMap.jsx`)
+- Прогресс синхронизируется через `/api/task-progress/`; attempts, best_score, статус
+
+### Стриминговый терминал (Phase 4)
+- xterm.js + WebSocket (`ws://host/ws/runner/?token=<JWT>`)
+- Код выполняется в **Docker-песочнице** `python:3.11-alpine` (128MB RAM, no-network, 15s timeout)
+- Каждая строка stdout/stderr транслируется в реальном времени
+- Кнопка Stop убивает контейнер через cooperative stop-event
+
+### AI-ассистент
+- Кнопка "AI Summon" в редакторе → расходует предмет инвентаря → POST `/api/game/ai-assist/`
+- Модель: **Gemini 1.5-flash** (настроить `GEMINI_API_KEY` в `.env`)
+- Rate-limit: 10 запросов / минуту / пользователь (django-ratelimit → 429)
+- Graceful fallback: без ключа выводит дружелюбное сообщение в терминал
+
+### Инвентарь (3 предмета)
+| Предмет | Действие |
+|---|---|
+| 🏗 Свиток Архитектора | Вставляет boilerplate-каркас кода |
+| 💡 Зелье Ясности | Показывает подсказку из `task.data.hint` |
+| 🤖 AI Summon | Вызывает Gemini для анализа кода |
+
+### Локализация
+- Русский / Английский через кастомный React Context
+- Мгновенное переключение без перезагрузки, сохранение в localStorage
+- Словари: `frontend/dictionaries/en.js` + `frontend/dictionaries/ru.js`
+
+### Инфраструктура
+- **Daphne (ASGI)** обслуживает HTTP и WebSocket в одном процессе
+- Django Channels 4 + InMemoryChannelLayer для WS-роутинга
+- Docker Compose: PostgreSQL + Daphne + Next.js
+- Celery + Redis: фоновые задачи (опционально)
+- 26 pytest-тестов включая async WebSocket-тесты через `WebsocketCommunicator`
+
+### Django Admin (CMS для методологов)
+- Редактирование курсов без кода: fieldsets RU/EN, stacked inline задач
+- Цветные badges по типу задачи (story/quiz/code)
+- `list_editable` для быстрой правки порядка и XP
+- Поиск + фильтры на всех моделях
 
 ## Почему Docker обязателен
 
-- Один `docker compose up -d db redis backend frontend` поднимает Postgres, Redis, Django, Next.js и Celery в согласованных версиях.
+- Один `docker compose up --build` поднимает Postgres, Daphne (ASGI), Next.js и опционально Redis+Celery.
+- Код-раннер **требует Docker** на хосте: `stream_python_code()` создаёт контейнер `python:3.11-alpine` для каждого запуска.
 - Локальная разработка и CI получают идентичные артефакты; баги «работает у меня» исчезают.
-- Seed-скрипты и миграции гоняются внутри контейнера: `docker compose exec backend python manage.py load_demo_content` и т.д.
+- Seed-скрипты и миграции гоняются внутри контейнера: `docker compose exec backend python manage.py migrate` и т.д.
 - Конфигурация легко переносится на staging/production: те же образы и `docker-compose.yml`.
 
 ## Структура репозитория
 
-| Папка/файл                  | Назначение                                                                         |
-| --------------------------- | ---------------------------------------------------------------------------------- |
-| `backend/`                  | Django/DRF проект (`core`, `users`, `game`, Celery, management-команды).           |
-| `frontend/`                 | Next.js + Tailwind UI, страницы `/worlds`, `/missions`, `/profile`.                |
-| `docker-compose.yml`        | Локальный стек: db/redis/backend/frontend/celery.                                  |
-| `docs/`                     | Живые гайды: `gitlab.md`, `file_overview.md`, `janitore_instructions.txt`, отчёты. |
-| `diagnostics/postman/`      | Коллекции/окружения для ручного теста API.                                         |
-| `ci/`, `.github/workflows/` | Сценарии GitLab/GitHub CI.                                                         |
-| `Makefile`                  | Укороченные команды (`deploy-local`, `seed-demo`, `logs`).                         |
+| Папка/файл | Назначение |
+|---|---|
+| `backend/` | Django/DRF + Channels + Daphne (`core`, `users`, `game`) |
+| `backend/game/fixtures/intro_course.json` | Данные вводного курса Python (Track+Location+4 Missions+12 Tasks) |
+| `backend/game/runner.py` | Docker-песочница — `stream_python_code()` генератор событий |
+| `backend/game/consumers.py` | WebSocket consumer — стриминг через asyncio + threading |
+| `frontend/` | Next.js 14 + Tailwind; страницы `/worlds`, `/missions`, `/profile` |
+| `frontend/components/Terminal.jsx` | xterm.js обёртка (SSR-safe, динамический import) |
+| `frontend/components/CodeRunnerPanel.jsx` | Редактор + терминал + инвентарь + AI Summon |
+| `frontend/dictionaries/` | i18n словари `en.js` и `ru.js` |
+| `docker-compose.yml` | Локальный стек: db / backend (Daphne) / frontend |
+| `docs/QA_CHECKLIST.md` | Чеклист ручного тестирования всех критических путей |
+| `README.deploy.md` | Полный гайд по деплою на VPS (nginx + SSL + systemd) |
+| `docs/` | Гайды: `gitlab.md`, `file_overview.md`, `internet_deploy_plan.md` |
+| `diagnostics/postman/` | Коллекции для ручного теста API |
+| `ci/`, `.github/workflows/` | GitLab CI + GitHub Actions |
+| `Makefile` | Укороченные команды (`deploy-local`, `seed-demo`, `logs`) |
 
-Подробные описания файлов лежат в `docs/file_overview.md`, но этот README теперь даёт быстрый обзор, что где искать.
+Подробные описания файлов: `docs/file_overview.md`.
 
 Быстрый просмотр фронтенда (без бэкенда):
 
@@ -102,46 +156,72 @@ docker compose down        # остановить все сервисы
 
 > Если порты 8000/3000 заняты, остановите старые контейнеры (`docker ps` → `docker stop <name>`), затем повторите запуск.
 
-## Manual testing (локально)
-
-Two reliable flows:
-
-1. Full Docker (если front-контейнер стабильно читает volume на вашей системе):
+## Быстрый старт (первый запуск)
 
 ```bash
-docker compose up -d db redis backend frontend
-docker compose exec backend python manage.py load_demo_content
-# Backend API index
-open http://localhost:8000/api
-# Frontend (Next.js dev)
-open http://localhost:3000/worlds
+# 1. Клонировать и настроить .env
+git clone git@gitlab.com:amangalieversynstudy/diplom-work.git && cd diplom-work
+cp .env.example .env
+# Заполни .env: DJANGO_SECRET_KEY, DB_PASSWORD, GEMINI_API_KEY (опционально)
+
+# 2. Поднять стек
+docker compose up --build -d
+
+# 3. Применить миграции + загрузить вводный курс
+docker compose exec backend python manage.py migrate
+docker compose exec backend python manage.py loaddata intro_course.json
+docker compose exec backend python manage.py collectstatic --no-input
+docker compose exec backend python manage.py createsuperuser
+
+# 4. Открыть
+open http://localhost:3000        # UI
+open http://localhost:8000/api    # API Browser
+open http://localhost:8000/admin  # Django Admin
 ```
 
-2. Надёжный для macOS: backend в Docker, frontend локально (обходит volume error -35):
+## Локальная разработка (macOS — без контейнера фронтенда)
 
 ```bash
-# Backend
-docker compose up -d db redis backend
-docker compose exec backend python manage.py load_demo_content
+# Backend в Docker
+docker compose up -d db backend
 
-# Frontend (локально)
+# Frontend локально (обходит volume error -35 на macOS)
 cd frontend
 echo "NEXT_PUBLIC_API_BASE=http://localhost:8000/api" > .env.local
-npm install --no-audit --no-fund
-npm run dev -- -p 3002 -H 127.0.0.1
-# Открыть UI
-open http://127.0.0.1:3002/worlds
+npm install
+npm run dev
+open http://localhost:3000
 ```
 
-Checklist:
+## Ключевые API-эндпоинты
 
-- Register → Login (username+password)
-- /class → выбрать класс
-- /worlds → острова и прогресс
-- /worlds/1 → карта нод из бэкенда (pos_x/pos_y)
-- /missions/{id} → Start/Complete, XP начисляется; Gate недоступна до Intro
+| Метод | Путь | Описание |
+|---|---|---|
+| POST | `/api/auth/register/` | Регистрация (письмо активации) |
+| POST | `/api/auth/login/` | Логин → JWT tokens |
+| GET | `/api/auth/verify/<uuid>/` | Активация email |
+| POST | `/api/auth/resend-verify/` | Повторное письмо |
+| GET | `/api/profile/me/` | Профиль + инвентарь |
+| PATCH | `/api/profile/me/` | Обновление профиля |
+| POST | `/api/profile/use-item/` | Расход предмета инвентаря |
+| GET | `/api/game/intro-status/` | Статус вводного курса (class_unlocked) |
+| POST | `/api/game/ai-assist/` | Gemini hint (10 req/min) |
+| WS | `ws://host/ws/runner/?token=JWT` | Стриминговый Python-раннер |
+| GET | `/api/game/missions/` | Список миссий |
+| POST | `/api/game/missions/{id}/complete/` | Завершить миссию + XP |
+| GET | `/api/game/leaderboard/` | Лидерборд |
 
-Если просто нужен индекс API: http://localhost:8000/api
+> Полный интерактивный список: `http://localhost:8000/swagger/`
+
+## Запуск тестов
+
+```bash
+# Все тесты (26 pytest, включая async WebSocket-тесты)
+DJANGO_SETTINGS_MODULE=core.settings.test PYTHONPATH=backend pytest --tb=short
+
+# Frontend lint + build
+cd frontend && npm run lint && npm run build
+```
 
 ## Механика урока (Story → Quiz → Code)
 

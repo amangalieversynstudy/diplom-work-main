@@ -218,6 +218,36 @@ export const Runner = {
   execute: (code) => api.post("/runner/execute/", { code }),
 };
 
+/**
+ * Build a WebSocket URL for the streaming runner.
+ *
+ * Reuses the same origin as the REST API base, swaps http(s) → ws(s),
+ * strips the trailing `/api` segment, and appends the access JWT as a
+ * query parameter (the only way to authenticate a browser WebSocket,
+ * since `Authorization` headers are not supported by the WS API).
+ *
+ * Returns null when no token is provided AND the origin cannot be derived
+ * (SSR with no NEXT_PUBLIC_API_BASE).
+ */
+export function getRunnerWsUrl(accessToken) {
+  let httpBase = API_BASE;
+  let origin;
+  if (httpBase.startsWith("http")) {
+    try {
+      origin = new URL(httpBase).origin;
+    } catch {
+      return null;
+    }
+  } else if (typeof window !== "undefined") {
+    origin = window.location.origin;
+  } else {
+    return null;
+  }
+  const wsOrigin = origin.replace(/^http/i, "ws");
+  const token = accessToken ? `?token=${encodeURIComponent(accessToken)}` : "";
+  return `${wsOrigin}/ws/runner/${token}`;
+}
+
 export const Payments = {
   checkout: (payload) =>
     callLocalApi("/api/payments/checkout", {

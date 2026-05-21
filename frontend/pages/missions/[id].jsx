@@ -7,16 +7,12 @@ import { useRouter } from "next/router";
 import { toast } from "sonner";
 import {
   Missions,
-  MissionTasks,
   TaskProgressAPI,
-  missionStatus,
-  Runner,
   Payments,
   Profile, // Импортируем Profile для работы с инвентарем
 } from "../../lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { Sword, Sparkles, Code2, BookOpen } from "lucide-react";
-import { useDictionary } from "../../lib/i18n";
 
 export default function MissionDetail() {
   const router = useRouter();
@@ -26,14 +22,11 @@ export default function MissionDetail() {
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [taskProgress, setTaskProgress] = useState({});
   const [codeDrafts, setCodeDrafts] = useState({});
-  const [runnerResult, setRunnerResult] = useState(null);
-  const [runnerLoading, setRunnerLoading] = useState(false);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const [paymentState, setPaymentState] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState({});
   const [savingTaskId, setSavingTaskId] = useState(null);
-  const dict = useDictionary();
 
   // --- СТЕЙТ ДЛЯ ИНВЕНТАРЯ ---
   const [inventory, setInventory] = useState({
@@ -127,36 +120,14 @@ export default function MissionDetail() {
     return activeTask?.data?.starter || "";
   }, [codeDrafts, activeTaskId, activeTask]);
 
-  const handleRunCode = async () => {
-    if (!activeTask || runnerLoading) return;
-    setRunnerLoading(true);
-    setRunnerResult(null);
-
-    const codeToRun = codeDrafts[activeTask.id] || activeTask.data?.starter || "";
-
-    try {
-      const res = await Runner.execute({
-        language: "python",
-        code: codeToRun,
-        challenge: {
-          expectedSnippet: activeTask.data?.expected_snippet || "def",
-          sampleOutput: activeTask.data?.sample_output || "",
-        },
-      });
-
-      setRunnerResult(res);
-
-      if (res.status === "success" || res.success) {
-        toast.success("Испытание пройдено! Отправка отчета на сервер...");
-        await handleCompleteTask(activeTask.id, { code: codeToRun }, 100);
-      } else {
-        toast.error("Код выполнен с ошибками. Исправьте баги и попробуйте снова.");
-      }
-    } catch (err) {
-      toast.error("Песочница временно недоступна.");
-    } finally {
-      setRunnerLoading(false);
-    }
+  // Called by CodeRunnerPanel when the streaming runner returns exit code 0.
+  // Persists the code draft and marks the task as completed.
+  const handleTestPassed = async (payload) => {
+    if (!activeTask) return;
+    const codeToRun =
+      codeDrafts[activeTask.id] ?? activeTask.data?.starter ?? payload?.code ?? "";
+    toast.success("Испытание пройдено! Отправка отчёта на сервер...");
+    await handleCompleteTask(activeTask.id, { code: codeToRun }, 100);
   };
 
   const handleCompleteTask = async (taskId, answerData = {}, score = 0) => {
@@ -179,7 +150,6 @@ export default function MissionDetail() {
       const currentIndex = tasks.findIndex((t) => t.id === taskId);
       if (currentIndex !== -1 && currentIndex < tasks.length - 1) {
         setActiveTaskId(tasks[currentIndex + 1].id);
-        setRunnerResult(null);
       } else {
         // Если это была последняя задача, проверяем статус всей миссии
         Missions.complete(id)
@@ -275,7 +245,6 @@ export default function MissionDetail() {
                 progress={taskProgress}
                 onSelect={(taskId) => {
                   setActiveTaskId(taskId);
-                  setRunnerResult(null);
                 }}
               />
             </div>
@@ -364,18 +333,16 @@ export default function MissionDetail() {
                 task={activeTask}
                 code={codeValue}
                 onChange={(val) => setCodeDrafts((prev) => ({ ...prev, [activeTask.id]: val }))}
-                onRun={handleRunCode}
-                result={runnerResult}
-                running={runnerLoading}
-                inventoryCounts={inventory} // Передаем актуальное состояние инвентаря
-                onInventoryUpdate={handleInventoryUpdate} // Передаем коллбек обновления инвентаря
+                onTestPassed={handleTestPassed}
+                inventoryCounts={inventory}
+                onInventoryUpdate={handleInventoryUpdate}
               />
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#1e1e1e] border-l border-[#333]">
                 <Code2 size={80} className="text-[#333] mb-6" />
                 <p className="text-2xl font-bold text-[#858585] mb-2">Editor Standby</p>
                 <p className="text-sm text-[#555] max-w-sm text-center">
-                  Select a "Code" file from the Explorer on the left to open the editor and terminal.
+                  Select a &ldquo;Code&rdquo; file from the Explorer on the left to open the editor and terminal.
                 </p>
               </div>
             )}

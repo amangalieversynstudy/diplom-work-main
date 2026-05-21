@@ -1,4 +1,5 @@
 import "../styles/globals.css";
+import "@xterm/xterm/css/xterm.css";
 import { useEffect } from "react";
 import { Toaster } from "sonner";
 import { I18nProvider } from "../lib/i18n";

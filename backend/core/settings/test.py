@@ -41,3 +41,8 @@ CELERY_TASK_EAGER_PROPAGATES = True
 
 # Simplify i18n in tests to avoid loading system locales that may be missing/corrupted.
 LANGUAGE_CODE = "en-us"
+
+# AllowedHostsOriginValidator (ASGI) checks the Origin header against
+# ALLOWED_HOSTS. Channels' test communicator does not send one, so we
+# permit all origins under the test settings only.
+ALLOWED_HOSTS = ["*"]

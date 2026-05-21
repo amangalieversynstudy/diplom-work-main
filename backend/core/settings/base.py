@@ -13,12 +13,16 @@ DEBUG = os.getenv("DEBUG", "True").lower() in {"1", "true", "yes", "on"}
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0").split(",")
 
 INSTALLED_APPS = [
+    # daphne must come first so it overrides runserver with the ASGI server,
+    # ensuring WebSocket support during `manage.py runserver`.
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "channels",
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
@@ -61,6 +65,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "core.wsgi.application"
+ASGI_APPLICATION = "core.asgi.application"
+
+# Channels: in-memory layer is sufficient for the single-process Daphne
+# deployment. If we ever scale to multiple worker processes, switch to
+# ``channels_redis.core.RedisChannelLayer`` with the existing REDIS_URL.
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 DATABASES = {
     "default": {

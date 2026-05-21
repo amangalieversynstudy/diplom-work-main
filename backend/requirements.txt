@@ -13,9 +13,13 @@ drf-yasg
 # WhiteNoise for static files
 whitenoise
 
+# Real-time / WebSockets
+channels[daphne]>=4.0,<5.0
+
 # Testing
 pytest
 pytest-django
+pytest-asyncio>=0.21,<1.0
 
 docker==7.1.0
 requests==2.31.0

@@ -13,6 +13,9 @@
   },
   "dependencies": {
     "@gsap/react": "^2.1.1",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-web-links": "^0.11.0",
+    "@xterm/xterm": "^5.5.0",
     "axios": "1.5.0",
     "framer-motion": "^10.18.0",
     "gsap": "^3.12.5",

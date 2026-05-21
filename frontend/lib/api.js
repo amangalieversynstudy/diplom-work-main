@@ -85,9 +85,23 @@ export async function login({ email, username, password }) {
     username: identifier,
     password,
   };
-  const { data } = await api.post("/auth/jwt/create/", payload);
-  setTokens({ access: data.access, refresh: data.refresh });
-  return data;
+  console.log("Login payload:", payload);
+  try {
+    const { data } = await api.post("/auth/jwt/create/", payload);
+    console.log("Login response data:", data);
+    if (data.access && data.refresh) {
+      setTokens({ access: data.access, refresh: data.refresh });
+      console.log("Tokens saved to localStorage");
+      console.log("Stored access token (first 20 chars):", data.access.substring(0, 20));
+      console.log("Stored refresh token (first 20 chars):", data.refresh.substring(0, 20));
+    } else {
+      console.error("Missing access or refresh token in response", data);
+    }
+    return data;
+  } catch (err) {
+    console.error("Login failed:", err);
+    throw err;
+  }
 }
 
 export function logout() {

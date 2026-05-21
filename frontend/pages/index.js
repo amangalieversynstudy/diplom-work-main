@@ -272,7 +272,7 @@ export default function Home() {
 
           {/* Right steps */}
           <div className="space-y-5">
-            {HOW_IT_WORKS.map((step, i) => (
+            {HOW_IT_WORKS.map((step) => (
               <div
                 key={step.num}
                 className="hiw-item group flex gap-4 sm:gap-5 p-4 sm:p-6 rounded-3xl border border-border bg-surface shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"

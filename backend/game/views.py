@@ -191,6 +191,7 @@ class MissionViewSet(viewsets.ModelViewSet):
                 "xp_added": xp_gain,           # Подхватится фронтендом
                 "leveled_up": leveled_up,      # Триггер для салюта на клиенте!
                 "new_level": profile.level,
+                "profile_level": profile.level,
                 "profile_xp": profile.xp,
             }
         )

@@ -123,9 +123,10 @@ export default function ProfilePage() {
               {isEditing ? (
                 <form onSubmit={handleSaveProfile} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-muted mb-1">Имя пользователя</label>
-                    <input 
-                      type="text" 
+                    <label htmlFor="profile-username" className="block text-sm font-medium text-muted mb-1">Имя пользователя</label>
+                    <input
+                      id="profile-username"
+                      type="text"
                       value={formData.username}
                       onChange={(e) => setFormData({...formData, username: e.target.value})}
                       className="w-full bg-panel border border-border rounded-xl px-4 py-2 text-text focus:border-primary outline-none transition-colors"
@@ -133,9 +134,10 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-muted mb-1">Электронная почта</label>
-                    <input 
-                      type="email" 
+                    <label htmlFor="profile-email" className="block text-sm font-medium text-muted mb-1">Электронная почта</label>
+                    <input
+                      id="profile-email"
+                      type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
                       className="w-full bg-panel border border-border rounded-xl px-4 py-2 text-text focus:border-primary outline-none transition-colors"

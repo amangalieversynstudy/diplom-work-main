@@ -1,10 +1,9 @@
 import Link from "next/link";
 import {
   Map, Swords, User2, Crown, Sparkles, Trophy,
-  Languages, Menu, ArrowUpRight, Sun, Moon
+  Languages, ArrowUpRight, Sun, Moon
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { getPlayerClass } from "../lib/class";
 import { useI18n, languages as supportedLanguages } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import CustomCursor from "./CustomCursor";
@@ -27,7 +26,7 @@ const navLinks = [
 ];
 
 function LanguageToggle() {
-  const { language, setLanguage, t } = useI18n();
+  const { language, setLanguage } = useI18n();
 
   return (
     <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full border border-border bg-surface shadow-sm">
@@ -120,7 +119,6 @@ function ThemeSwitcher() {
 }
 
 export default function Layout({ children, hideFooter, noBottomPadding }) {
-  const [pclass, setPclass] = useState(null);
   const [scrolled, setScrolled] = useState(false);
   const [scrollDir, setScrollDir] = useState("up");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -135,10 +133,6 @@ export default function Layout({ children, hideFooter, noBottomPadding }) {
       })),
     [t]
   );
-
-  useEffect(() => {
-    setPclass(getPlayerClass());
-  }, []);
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -241,10 +235,14 @@ export default function Layout({ children, hideFooter, noBottomPadding }) {
 
       {/* ── Sidebar Menu Drawer ── */}
       <div
+        role="button"
+        tabIndex={isMenuOpen ? 0 : -1}
+        aria-label="Закрыть меню"
         className={`fixed inset-0 z-[90] bg-black/20 backdrop-blur-sm transition-opacity duration-500 ${
           isMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={() => setIsMenuOpen(false)}
+        onKeyDown={(e) => e.key === "Escape" && setIsMenuOpen(false)}
       />
 
       {/* Контейнер меню (справа) */}

@@ -1,12 +1,9 @@
 import Layout from "../../components/Layout";
 import Button from "../../components/Button";
-import Link from "next/link";
 import { useRouter } from "next/router";
 import Badge from "../../components/Badge";
-import Card from "../../components/Card";
-import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Locations, missionStatus, Profile as ProfileAPI } from "../../lib/api"; // Убедитесь, что Profile импортирован
+import { Locations, Profile as ProfileAPI } from "../../lib/api";
 import AdventureMap from "../../components/AdventureMap";
 import { toast } from "sonner";
 
@@ -37,7 +34,7 @@ export default function WorldDetail() {
         // Если class_role это объект { name: "Warrior" }:
         setPlayerClass(userDoc?.profile?.class_role?.name || userDoc?.profile?.class_role);
       })
-      .catch((e) => {
+      .catch(() => {
         toast.error("Не удалось загрузить данные локации.");
       })
       .finally(() => {

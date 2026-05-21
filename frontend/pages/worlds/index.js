@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Layout from "../../components/Layout";
 import { useDictionary } from "../../lib/i18n";
-import { Map as MapIcon, Lock, CheckCircle, X as XIcon, Compass } from "lucide-react";
+import { Lock, CheckCircle, X as XIcon, Compass } from "lucide-react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";

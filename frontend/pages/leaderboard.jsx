@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import { LeaderboardAPI } from "../lib/api";
 import { useDictionary } from "../lib/i18n";
@@ -13,7 +13,7 @@ export default function Leaderboard() {
   const dict = useDictionary();
   const copy = dict.leaderboard;
 
-  const loadData = async (isRefresh = false) => {
+  const loadData = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
 
@@ -21,17 +21,17 @@ export default function Leaderboard() {
       const res = await LeaderboardAPI.list({ period });
       setData(res || []);
       if (isRefresh) toast.success(copy.successRefreshed || "Обновлено");
-    } catch (err) {
+    } catch {
       toast.error(copy.errors?.load || "Ошибка загрузки лидерборда");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [period, copy]);
 
   useEffect(() => {
     loadData();
-  }, [period]);
+  }, [loadData]);
 
   // Функция для красивой подсветки Топ-3 игроков
   const getRankStyle = (index) => {

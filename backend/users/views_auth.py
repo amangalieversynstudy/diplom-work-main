@@ -22,9 +22,16 @@ class RegisterView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         """Create the user and attempt to send a verification email."""
+        from django.conf import settings
+
         user = serializer.save()
-        # Новый аккаунт неактивен до перехода по ссылке из письма
-        user.is_active = False
+        # В DEBUG-режиме (локальная разработка) — авто-активация,
+        # чтобы можно было сразу логиниться без email-флоу.
+        # На проде DEBUG=False → нужна верификация через ссылку.
+        if getattr(settings, "DEBUG", False):
+            user.is_active = True
+        else:
+            user.is_active = False
         user.save(update_fields=["is_active"])
 
         # send verification email (console backend in dev)

@@ -8,24 +8,27 @@ export default function CustomCursor() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    const cursorEl = cursorRef.current;
+    const followerEl = followerRef.current;
+    if (!cursorEl || !followerEl) return;
+
     // Центрируем курсор относительно его координат
-    gsap.set(cursorRef.current, { xPercent: -50, yPercent: -50 });
-    gsap.set(followerRef.current, { xPercent: -50, yPercent: -50 });
+    gsap.set(cursorEl, { xPercent: -50, yPercent: -50 });
+    gsap.set(followerEl, { xPercent: -50, yPercent: -50 });
 
     const onMouseMove = (e) => {
       // Основная точка двигается мгновенно
-      gsap.to(cursorRef.current, { x: e.clientX, y: e.clientY, duration: 0.1, ease: "power2.out" });
+      gsap.to(cursorEl, { x: e.clientX, y: e.clientY, duration: 0.1, ease: "power2.out" });
       // Кольцо тянется с легкой задержкой
-      gsap.to(followerRef.current, { x: e.clientX, y: e.clientY, duration: 0.6, ease: "power3.out" });
+      gsap.to(followerEl, { x: e.clientX, y: e.clientY, duration: 0.6, ease: "power3.out" });
     };
 
     const onMouseEnter = (e) => {
-      // Если навели на интерактивный элемент
       if (e.target.closest("a") || e.target.closest("button") || e.target.closest("input")) {
-        gsap.to(cursorRef.current, { scale: 0, opacity: 0, duration: 0.3 });
-        gsap.to(followerRef.current, {
+        gsap.to(cursorEl, { scale: 0, opacity: 0, duration: 0.3 });
+        gsap.to(followerEl, {
           scale: 1.5,
-          backgroundColor: "rgba(16, 185, 129, 0.15)", // полупрозрачный emerald
+          backgroundColor: "rgba(16, 185, 129, 0.15)",
           borderColor: "rgba(16, 185, 129, 0.6)",
           duration: 0.3,
         });
@@ -34,24 +37,47 @@ export default function CustomCursor() {
 
     const onMouseLeave = (e) => {
       if (e.target.closest("a") || e.target.closest("button") || e.target.closest("input")) {
-        gsap.to(cursorRef.current, { scale: 1, opacity: 1, duration: 0.3 });
-        gsap.to(followerRef.current, {
+        gsap.to(cursorEl, { scale: 1, opacity: 1, duration: 0.3 });
+        gsap.to(followerEl, {
           scale: 1,
           backgroundColor: "transparent",
-          borderColor: "rgba(148, 163, 184, 0.4)", // возвращаем серый цвет
+          borderColor: "rgba(148, 163, 184, 0.4)",
           duration: 0.3,
         });
       }
     };
 
+    // Split-screen fix: при потере фокуса окна (alt-tab, разделение экрана,
+    // переключение между приложениями) показываем родной системный курсор,
+    // а наш кастомный прячем. На возврат фокуса — возвращаем кастомный.
+    const onWindowBlur = () => {
+      document.body.classList.add("native-cursor");
+      gsap.to([cursorEl, followerEl], { opacity: 0, duration: 0.15 });
+    };
+    const onWindowFocus = () => {
+      document.body.classList.remove("native-cursor");
+      gsap.to([cursorEl, followerEl], { opacity: 1, duration: 0.15 });
+    };
+
     window.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseover", onMouseEnter);
     document.addEventListener("mouseout", onMouseLeave);
+    window.addEventListener("blur", onWindowBlur);
+    window.addEventListener("focus", onWindowFocus);
+
+    // Если окно без фокуса при первой загрузке — сразу показываем родной курсор
+    if (!document.hasFocus()) {
+      document.body.classList.add("native-cursor");
+      gsap.set([cursorEl, followerEl], { opacity: 0 });
+    }
 
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseover", onMouseEnter);
       document.removeEventListener("mouseout", onMouseLeave);
+      window.removeEventListener("blur", onWindowBlur);
+      window.removeEventListener("focus", onWindowFocus);
+      document.body.classList.remove("native-cursor");
     };
   }, []);
 

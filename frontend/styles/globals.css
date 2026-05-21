@@ -79,9 +79,28 @@ body {
 */
 body::before, body::after { display: none !important; }
 
-/* Custom cursor override */
-body, a, button {
+/* Custom cursor override.
+   По умолчанию скрываем родной курсор — на его месте рисуем кастомный.
+   Класс body.native-cursor ставит CustomCursor.jsx при потере фокуса окна
+   (split-screen, alt-tab), чтобы вернуть системный курсор. */
+body, a, button, input, textarea, select {
   cursor: none !important;
+}
+
+body.native-cursor,
+body.native-cursor a,
+body.native-cursor button,
+body.native-cursor input,
+body.native-cursor textarea,
+body.native-cursor select {
+  cursor: auto !important;
+}
+
+/* На тач-устройствах кастомный курсор не нужен — возвращаем родной всегда */
+@media (hover: none), (pointer: coarse) {
+  body, body a, body button, body input, body textarea, body select {
+    cursor: auto !important;
+  }
 }
 
 a {

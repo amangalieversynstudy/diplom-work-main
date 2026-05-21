@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { en } from "./dictionaries/en";
-import { ru } from "./dictionaries/ru";
+import { en } from "../dictionaries/en";
+import { ru } from "../dictionaries/ru";
 
 const LANG_KEY = "ui_language";
 const DEFAULT_LANG = "ru";

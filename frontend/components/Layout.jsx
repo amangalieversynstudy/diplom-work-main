@@ -170,14 +170,15 @@ export default function Layout({ children, hideFooter, noBottomPadding }) {
   }, [isMenuOpen]);
 
   useGSAP(() => {
-    // Set initial state: overlay is hidden above the viewport
-    gsap.set(".page-transition-overlay", { yPercent: -100 });
-    // Animate it away (in case it was shown by TransitionLink during navigation)
-    gsap.to(".page-transition-overlay", {
-      yPercent: -100,
-      duration: 0.8,
-      ease: "power3.inOut",
-    });
+    // On page load: overlay slides UP to reveal the page.
+    // Works correctly in both cases:
+    // - First visit: overlay was at yPercent:0 (visible) and slides up
+    // - After navigation: TransitionLink left overlay at yPercent:0, now it slides up revealing new page
+    gsap.fromTo(
+      ".page-transition-overlay",
+      { yPercent: 0 },
+      { yPercent: -100, duration: 0.8, ease: "power3.inOut" }
+    );
   }, []);
 
   const isShrunk = scrolled && scrollDir === "down" && !isMenuOpen;
@@ -185,11 +186,11 @@ export default function Layout({ children, hideFooter, noBottomPadding }) {
   return (
     <div className="min-h-screen text-text bg-bg relative overflow-x-hidden transition-colors duration-300">
       {/* ── Page Transition Overlay ── */}
-      {/* Hidden by default via inline style (translateY -100%), shown by TransitionLink on navigation, hidden by Layout on mount */}
-      <div
-        className="page-transition-overlay fixed inset-0 z-[999] bg-[var(--primary)] origin-top flex items-center justify-center pointer-events-none"
-        style={{ transform: "translateY(-100%)" }}
-      >
+      {/* ── Page Transition Overlay ──
+           Slides DOWN to cover page (TransitionLink on click)
+           Slides UP to reveal page (Layout on mount)
+           Does NOT trigger on errors/toasts — only during real navigation */}
+      <div className="page-transition-overlay fixed inset-0 z-[999] bg-[var(--primary)] origin-top flex items-center justify-center pointer-events-none">
         <Sparkles className="w-12 h-12 text-white animate-spin-slow" />
       </div>
 

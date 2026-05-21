@@ -8,10 +8,11 @@ import { Profile as ProfileAPI } from "../lib/api";
 import { toast } from "sonner";
 import { LogOut, Settings, Mail, User, Shield } from "lucide-react";
 
+// Maps backend ClassRole pk → frontend display name (must match dictionaries/ru.js classPage.classes)
 const CLASS_NAMES = {
-  1: "Маг Кода",
-  2: "Рыцарь Логики",
-  3: "Друид Данных",
+  1: "Python-спеллблейд",
+  2: "Арканист Django",
+  3: "DevOps-рейнджер",
 };
 
 export default function ProfilePage() {

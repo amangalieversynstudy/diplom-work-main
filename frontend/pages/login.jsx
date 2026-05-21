@@ -37,8 +37,11 @@ export default function Login() {
     setLoading(true);
     try {
       await login({ email: identifier, username: identifier, password });
-      toast.success(copy.success || "Добро пожаловать!");
-      window.location.href = "/profile";
+      // Don't show toast before redirect — page is reloading anyway
+      // Small delay to ensure tokens are stored before navigation
+      setTimeout(() => {
+        window.location.href = "/profile";
+      }, 100);
     } catch (err) {
       const detail = err?.response?.data?.detail || "";
       // Специальное сообщение для неактивированного аккаунта

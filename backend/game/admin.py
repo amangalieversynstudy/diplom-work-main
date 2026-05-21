@@ -237,11 +237,11 @@ class MissionTaskAdmin(admin.ModelAdmin):
 
 @admin.register(Progress)
 class ProgressAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "mission", "completed", "score")
-    list_filter = ("completed",)
+    list_display = ("id", "user", "mission", "status", "completed", "xp_earned", "stars", "attempts")
+    list_filter = ("completed", "status")
     list_select_related = ("user", "mission")
     search_fields = ("user__username", "mission__title_ru")
-    readonly_fields = ("user", "mission")
+    readonly_fields = ("user", "mission", "attempts", "started_at", "completed_at")
 
 
 @admin.register(TaskProgress)

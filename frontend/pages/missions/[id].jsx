@@ -12,6 +12,7 @@ import {
   missionStatus,
   Runner,
   Payments,
+  Profile, // Импортируем Profile для работы с инвентарем
 } from "../../lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { Sword, Sparkles, Code2, BookOpen } from "lucide-react";
@@ -33,429 +34,326 @@ export default function MissionDetail() {
   const [quizAnswers, setQuizAnswers] = useState({});
   const [savingTaskId, setSavingTaskId] = useState(null);
   const dict = useDictionary();
-  const copy = dict.missions;
 
-  useEffect(() => {
-    if (!id) return;
-    Missions.get(id)
-      .then(setMission)
-      .catch(() => toast.error(copy.errors.load));
-  }, [id, copy.errors.load]);
-
-  useEffect(() => {
-    if (!mission) return;
-    if (mission.tasks?.length) {
-      const sorted = [...mission.tasks].sort((a, b) => a.order - b.order);
-      setTasks(sorted);
-      setActiveTaskId((prev) => prev ?? sorted[0]?.id ?? null);
-      return;
-    }
-    MissionTasks.list(mission.id)
-      .then((list) => {
-        // Внедряем обучающую цепочку "Hello World" для самой первой миссии
-        if (list.length === 0 && (mission.order === 1 || mission.title === "Intro" || id === "1")) {
-          list = [
-            {
-              id: "task-hw-story",
-              task_type: "story",
-              title: "Традиция магов кода",
-              body: "Добро пожаловать в Академию!\n\nПуть каждого разработчика начинается с одного и того же древнего ритуала. В 1978 году была написана первая программа, которая просто выводила текст на экран. С тех пор это стало великим обрядом посвящения.\n\nТебе предстоит запустить свою первую программу и поприветствовать этот мир.",
-              estimated_minutes: 2,
-              xp_reward: 10
-            },
-            {
-              id: "task-hw-quiz",
-              task_type: "quiz",
-              title: "Проверка знаний",
-              body: "Какая встроенная функция в Python используется для вывода текста в консоль?",
-              estimated_minutes: 1,
-              xp_reward: 15,
-              data: {
-                options: [
-                  { label: "echo('Hello World')", value: "a", isCorrect: false },
-                  { label: "print('Hello World')", value: "b", isCorrect: true },
-                  { label: "console.log('Hello World')", value: "c", isCorrect: false }
-                ]
-              }
-            },
-            {
-              id: "task-hw-code",
-              task_type: "code",
-              title: "Первое заклинание",
-              body: "Напиши код, который выведет строку 'Hello World' в консоль. Это докажет, что твой терминал настроен верно.",
-              estimated_minutes: 5,
-              xp_reward: 25,
-              data: {
-                language: "python",
-                starter: "# Твой первый код\ndef greet():\n    # Напиши функцию вывода 'Hello World'\n    pass\n\ngreet()",
-                expectedSnippet: "hello",
-                sampleOutput: "Hello World\n\n> Программа успешно выполнена!"
-              }
-            }
-          ];
-        }
-        setTasks(list);
-        setActiveTaskId(list[0]?.id ?? null);
-      })
-      .catch(() => setTasks([]));
-  }, [mission]);
-
-  useEffect(() => {
-    if (!mission) return;
-    TaskProgressAPI.list()
-      .then((entries) => {
-        const map = entries.reduce((acc, entry) => {
-          acc[entry.task] = entry;
-          return acc;
-        }, {});
-        setTaskProgress(map);
-      })
-      .catch(() => {});
-  }, [mission]);
+  // --- СТЕЙТ ДЛЯ ИНВЕНТАРЯ ---
+  const [inventory, setInventory] = useState({
+    ai_summons: 0,
+    hint_scrolls: 0,
+    skeleton_scrolls: 0,
+  });
 
   const activeTask = useMemo(() => {
-    if (!tasks.length) return null;
-    return tasks.find((task) => task.id === activeTaskId) || tasks[0];
+    return tasks.find((t) => t.id === activeTaskId) || tasks[0] || null;
   }, [tasks, activeTaskId]);
 
+  const requiresPremium = useMemo(() => {
+    if (!mission?.track_is_premium) return false;
+    if (mission?.user_has_premium) return false;
+    return activeTask?.is_required ?? true;
+  }, [mission, activeTask]);
+
+  // Загрузка данных миссии и инвентаря пользователя
   useEffect(() => {
-    if (!activeTask || activeTask.task_type !== "code") return;
-    setRunnerResult(null);
-    setCodeDrafts((prev) => {
-      if (prev[activeTask.id]) return prev;
-      return {
-        ...prev,
-        [activeTask.id]: activeTask.data?.starter || "def solution():\n    return 'Привет'",
-      };
-    });
-  }, [activeTask]);
+    if (!id) return;
+    let active = true;
 
-  const refreshMission = async () => {
-    const updated = await Missions.get(id);
-    setMission(updated);
-  };
-
-  const onStart = async () => {
-    try {
-      await Missions.start(id);
-      await refreshMission();
-      toast.success(copy.success.started);
-    } catch (e) {
-      const msg = e?.response?.data?.detail || copy.errors.start;
-      toast.error(copy.errors.start, { description: msg });
-    }
-  };
-
-  const onComplete = async () => {
-    try {
-      // Отправляем запрос на завершение миссии
-      const res = await Missions.complete(id);
-      
-      // Поддерживаем разные форматы ответа бэкенда (на случай если там xp_added или xp_earned)
-      const xp = res?.xp_earned ?? res?.xp_added ?? 0;
-      const leveledUp = res?.leveled_up;
-
-      toast.success(`Миссия пройдена! Получено ${xp} XP ⚔️`, {
-        duration: 4000,
+    // 1. Загружаем данные миссии
+    Missions.get(id)
+      .then((data) => {
+        if (!active) return;
+        setMission(data);
+        if (data.tasks && data.tasks.length > 0) {
+          setTasks(data.tasks);
+          setActiveTaskId(data.tasks[0].id);
+        }
+      })
+      .catch(() => {
+        toast.error("Не удалось загрузить данные квеста.");
       });
 
-      if (leveledUp) {
-        toast.success("🎉 УРОВЕНЬ ПОВЫШЕН! 🎉", { 
-          duration: 6000,
-          description: "Ваши характеристики выросли. Так держать!" 
+    // 2. Загружаем прогресс задач
+    TaskProgressAPI.list(id)
+      .then((progressList) => {
+        if (!active) return;
+        const mapping = {};
+        const drafts = {};
+        progressList.forEach((p) => {
+          mapping[p.task_id] = p;
+          if (p.answer && p.answer.code) {
+            drafts[p.task_id] = p.answer.code;
+          }
         });
-      }
+        setTaskProgress(mapping);
+        setCodeDrafts(drafts);
+      })
+      .catch(() => {});
 
-      // После успеха эпично возвращаем на карту миров
-      router.push("/worlds");
-
-    } catch (e) {
-      console.error("Ошибка при завершении миссии:", e);
-      const msg = e?.response?.data?.detail || "Связь с сервером потеряна. Прогресс не сохранен.";
-      toast.error(copy.errors.complete || "Ошибка", { description: msg });
-    }
-  };
-
-  const upsertTaskProgress = async (taskId, payload = {}) => {
-    if (!taskId) return null;
-    setSavingTaskId(taskId);
-    try {
-      const existing = taskProgress[taskId];
-      const body = { task: taskId, ...payload };
-      const entry = existing
-        ? await TaskProgressAPI.update(existing.id, body)
-        : await TaskProgressAPI.create(body);
-      setTaskProgress((prev) => ({ ...prev, [taskId]: entry }));
-      return entry;
-    } finally {
-      setSavingTaskId(null);
-    }
-  };
-
-  const handleStoryComplete = async (task) => {
-    if (!task) return;
-    try {
-      const attempts = (taskProgress[task.id]?.attempts || 0) + 1;
-      await upsertTaskProgress(task.id, { status: "completed", attempts });
-      toast.success(copy.runner.storyDone);
-    } catch (e) {
-      toast.error(copy.runner.saveError);
-    }
-  };
-
-  const handleQuizPick = async (task, option) => {
-    if (!task || !option) return;
-    const isCorrect =
-      option.isCorrect ?? option.correct ?? option.value === task.data?.answer;
-    setQuizAnswers((prev) => ({
-      ...prev,
-      [task.id]: { selected: option.value, isCorrect },
-    }));
-    try {
-      await upsertTaskProgress(task.id, {
-        status: isCorrect ? "completed" : "in_progress",
-        best_score: isCorrect ? 100 : 50,
-        attempts: (taskProgress[task.id]?.attempts || 0) + 1,
-        answer: { selected: option.value },
+    // 3. Загружаем профиль для получения актуального инвентаря
+    Profile.me()
+      .then((userDoc) => {
+        if (!active) return;
+        // Извлекаем вложенный объект profile из ответа auth/me или profile/me
+        const p = userDoc?.profile;
+        if (p) {
+          setInventory({
+            ai_summons: p.ai_summons ?? 0,
+            hint_scrolls: p.hint_scrolls ?? 0,
+            skeleton_scrolls: p.skeleton_scrolls ?? 0,
+          });
+        }
+      })
+      .catch(() => {
+        console.error("Не удалось загрузить инвентарь игрока.");
       });
-      toast[isCorrect ? "success" : "error"](
-        isCorrect ? copy.runner.quizCorrect : copy.runner.quizWrong
-      );
-    } catch (e) {
-      toast.error(copy.runner.saveError);
-    }
+
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  // Коллбэк для обновления инвентаря из CodeRunnerPanel
+  const handleInventoryUpdate = (itemType, remainingCount) => {
+    setInventory((prev) => ({
+      ...prev,
+      [itemType]: remainingCount,
+    }));
   };
+
+  const codeValue = useMemo(() => {
+    if (!activeTaskId) return "";
+    if (codeDrafts[activeTaskId] !== undefined) {
+      return codeDrafts[activeTaskId];
+    }
+    return activeTask?.data?.starter || "";
+  }, [codeDrafts, activeTaskId, activeTask]);
 
   const handleRunCode = async () => {
-    if (!activeTask) return;
-    const source = codeDrafts[activeTask.id] || "";
+    if (!activeTask || runnerLoading) return;
     setRunnerLoading(true);
-    setRunnerResult(null); // Очищаем старый результат на время загрузки
+    setRunnerResult(null);
+
+    const codeToRun = codeDrafts[activeTask.id] || activeTask.data?.starter || "";
+
     try {
-      // Отправляем чистый код на сервер песочницы
-      const response = await Runner.execute(source);
-      const result = response.data;
-      
-      setRunnerResult(result);
-      
-      const isSuccess = result.status === "success";
-      
-      await upsertTaskProgress(activeTask.id, {
-        status: isSuccess ? "completed" : "in_progress",
-        best_score: isSuccess ? 100 : 0,
-        attempts: (taskProgress[activeTask.id]?.attempts || 0) + 1,
-        answer: { code: source, stdout: result.output },
+      const res = await Runner.execute({
+        language: "python",
+        code: codeToRun,
+        challenge: {
+          expectedSnippet: activeTask.data?.expected_snippet || "def",
+          sampleOutput: activeTask.data?.sample_output || "",
+        },
       });
-      toast[isSuccess ? "success" : "error"](
-        isSuccess ? copy.runner.codeDone : copy.runner.codeRetry
-      );
-    } catch (e) {
-      setRunnerResult({
-        status: "error",
-        output: "Сервис песочницы недоступен. Проверьте подключение к бэкенду."
-      });
-      toast.error(copy.runner.runnerError);
+
+      setRunnerResult(res);
+
+      if (res.status === "success" || res.success) {
+        toast.success("Испытание пройдено! Отправка отчета на сервер...");
+        await handleCompleteTask(activeTask.id, { code: codeToRun }, 100);
+      } else {
+        toast.error("Код выполнен с ошибками. Исправьте баги и попробуйте снова.");
+      }
+    } catch (err) {
+      toast.error("Песочница временно недоступна.");
     } finally {
       setRunnerLoading(false);
     }
   };
 
-  const handleCheckout = async (planId) => {
-    setPaymentLoading(true);
+  const handleCompleteTask = async (taskId, answerData = {}, score = 0) => {
+    setSavingTaskId(taskId);
     try {
-      const state = await Payments.checkout({ plan: planId });
-      setPaymentState(state);
-      toast.success(copy.paywall.success);
-      setPaywallOpen(false);
+      const updatedProgress = await TaskProgressAPI.submit(taskId, {
+        status: "completed",
+        score: score,
+        answer: answerData,
+      });
+
+      setTaskProgress((prev) => ({
+        ...prev,
+        [taskId]: updatedProgress,
+      }));
+
+      toast.success("Шаг квеста успешно зафиксирован!");
+
+      // Автоматический переход на следующий шаг
+      const currentIndex = tasks.findIndex((t) => t.id === taskId);
+      if (currentIndex !== -1 && currentIndex < tasks.length - 1) {
+        setActiveTaskId(tasks[currentIndex + 1].id);
+        setRunnerResult(null);
+      } else {
+        // Если это была последняя задача, проверяем статус всей миссии
+        Missions.complete(id)
+          .then(() => toast.success("Поздравляем! Легендарный квест полностью завершен!"))
+          .catch(() => {});
+      }
     } catch (e) {
-      toast.error(copy.paywall.error);
+      toast.error("Не удалось сохранить прогресс шага.");
+    } finally {
+      setSavingTaskId(false);
+    }
+  };
+
+  const handleQuizSubmit = (taskId) => {
+    const userAnswer = quizAnswers[taskId];
+    const currentTask = tasks.find((t) => t.id === taskId);
+    if (!currentTask) return;
+
+    const correctAnswer = currentTask.data?.correct_answer;
+    if (String(userAnswer).trim().toLowerCase() === String(correctAnswer).trim().toLowerCase()) {
+      handleCompleteTask(taskId, { selected: userAnswer }, 100);
+    } else {
+      toast.error("🛡️ Ответ неверный! Мана поглощена, попробуйте другое заклинание.");
+    }
+  };
+
+  const handleCheckout = async () => {
+    if (!id || paymentLoading) return;
+    setPaymentLoading(true);
+    setPaymentState("initiating");
+    try {
+      const res = await Payments.checkoutTrack(mission?.track_id);
+      if (res.checkout_url) {
+        window.location.href = res.checkout_url;
+      } else {
+        toast.error("Провайдер не вернул шлюз оплаты.");
+        setPaymentState("error");
+      }
+    } catch (e) {
+      toast.error("Ошибка инициализации транзакции.");
+      setPaymentState("error");
     } finally {
       setPaymentLoading(false);
     }
   };
 
-  const activeProgress = activeTask ? taskProgress[activeTask.id] : null;
-  const missionStatusValue = mission ? missionStatus(mission) : "locked";
-  const requiresPremium = activeTask?.data?.requiresPremium && !paymentState?.success;
-  const codeValue = activeTask ? codeDrafts[activeTask.id] || "" : "";
-
-  const prereq = mission?.prerequisites?.length
-    ? mission.prerequisites.map((p) => p.title).join(", ")
-    : copy.none;
-  const statusLabel = copy.status[missionStatusValue] || missionStatusValue;
-  const completed = mission?.user_progress?.completed;
-  const started = mission?.user_progress?.started_at;
+  if (!mission) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-[#0f0f11] flex items-center justify-center text-white font-mono">
+          <div className="text-center space-y-4">
+            <div className="w-12 h-12 border-4 border-t-purple-500 border-gray-700 rounded-full animate-spin mx-auto"></div>
+            <p className="text-gray-400 tracking-widest text-sm uppercase">Loading Quest Chronicles...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      <div className="max-w-[1500px] mx-auto pt-24 pb-10 px-4 transition-colors duration-300">
-        
-        {/* ── Заголовок и Действия ── */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-6">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-[#3794ff] mb-2 font-mono">
-              {copy.recap} {mission?.id || id}
-            </p>
-            <h1 className="text-3xl md:text-4xl font-display font-bold text-text">
-              {mission?.title || "..."}
-            </h1>
+      <div className="min-h-screen bg-[#0f0f11] text-gray-200 font-sans flex flex-col">
+        {/* Квест-Линия Шапка */}
+        <header className="bg-[#141418] border-b border-[#222] px-8 py-4 flex items-center justify-between select-none shadow-md">
+          <div className="flex items-center gap-4">
+            <div className="p-2.5 bg-purple-900/30 border border-purple-500/40 rounded-xl text-purple-400">
+              <Sword size={22} className="animate-pulse" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-white tracking-wide">{mission.title_ru || mission.title}</h1>
+              <p className="text-xs text-purple-400/80 font-mono mt-0.5 uppercase tracking-wider">
+                Reward: <span className="text-white font-bold">{mission.xp_reward}</span> XP Gained
+              </p>
+            </div>
           </div>
-          
-          <div className="flex flex-wrap items-center gap-3">
-            {completed && (
-              <span className="text-[#89d185] text-xs font-bold border border-[#89d185]/30 px-3 py-1.5 rounded bg-[#89d185]/10">
-                {copy.status.completed}
-              </span>
-            )}
-            
-            {!completed && (
-              <Button onClick={onStart} className="bg-[#0e639c] hover:bg-[#1177bb] border-none text-white rounded-md text-sm shadow-none px-4 py-2">
-                <Sword size={16} className="mr-2" /> {copy.start}
-              </Button>
-            )}
-
-            <Button 
-              variant="outline" 
-              onClick={onComplete} 
-              className="border border-[#89d185] text-[#89d185] hover:bg-[#89d185] hover:text-[#1e1e1e] rounded-md text-sm shadow-[0_0_10px_rgba(137,209,133,0.1)] hover:shadow-[0_0_15px_rgba(137,209,133,0.4)] px-4 py-2 transition-all duration-300 bg-[#1e1e1e]"
-            >
-              <Sparkles size={16} className="mr-2" /> {copy.complete || "Завершить миссию"}
-            </Button>
-
-            <Button variant="ghost" onClick={() => router.back()} className="text-[#858585] hover:text-white hover:bg-[#333] rounded-md text-sm px-4 py-2 transition-colors">
-              {copy.back || "Назад"}
-            </Button>
-          </div>
+          <Button variant="secondary" size="sm" onClick={() => router.push("/worlds")}>
+            &larr; На карту мира
+          </Button>
         </header>
 
-        {/* ── ИНТЕРФЕЙС VS CODE ── */}
-        <section className="flex flex-col lg:flex-row border border-[#333] rounded-lg overflow-hidden shadow-2xl h-[85vh] min-h-[700px] bg-[#1e1e1e] font-sans">
-          
-          {/* Activity Bar (Тонкая левая полоса) */}
-          <div className="hidden lg:flex w-12 bg-[#333333] flex-col items-center py-4 gap-6 shrink-0 z-10 border-r border-[#252526]">
-            <div className="relative group cursor-pointer w-full flex justify-center">
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-[2px] bg-white"></div>
-              <BookOpen size={24} className="text-white" />
+        {/* Основной контент */}
+        <section className="flex-1 flex min-h-0 overflow-hidden">
+          {/* Левая панель (Explorer / Stepper) */}
+          <div className="w-[360px] bg-[#141418] border-r border-[#222] flex flex-col select-none shadow-2xl z-10">
+            <div className="px-6 py-4 border-b border-[#222] bg-[#111114]">
+              <p className="text-xs font-mono font-bold tracking-widest text-gray-400 uppercase">Quest Logistics</p>
             </div>
-            <Code2 size={24} className="text-[#858585] hover:text-white cursor-pointer transition-colors" />
-            <Sparkles size={24} className="text-[#858585] hover:text-white cursor-pointer transition-colors" />
+
+            <div className="flex-1 overflow-y-auto p-4">
+              <MissionStepper
+                tasks={tasks}
+                activeId={activeTaskId}
+                progress={taskProgress}
+                onSelect={(taskId) => {
+                  setActiveTaskId(taskId);
+                  setRunnerResult(null);
+                }}
+              />
+            </div>
+
+            {/* Статистика текущей ноды */}
+            <div className="p-4 bg-[#111114] border-t border-[#222] font-mono text-xs text-gray-400">
+              {activeTask && (
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Тип файла:</span>
+                    <span className="text-purple-400 uppercase font-semibold">{activeTask.task_type}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Оценка времени:</span>
+                    <span className="text-white">{activeTask.estimated_minutes} мин</span>
+                  </div>
+                  {taskProgress[activeTask.id] && (
+                    <div className="mt-2 pt-2 border-t border-[#222] space-y-1">
+                      <p>Статус: <span className="text-green-400 font-bold">Выполнено</span></p>
+                      <p>Попыток: {taskProgress[activeTask.id].attempts || 1}</p>
+                      <p>Рекорд: <span className="text-yellow-400 font-bold">{taskProgress[activeTask.id].best_score || 0}</span></p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Левая панель (Explorer & Lore) */}
-          <div className="w-full lg:w-[320px] xl:w-[380px] bg-[#252526] border-r border-[#333] flex flex-col shrink-0">
-            <div className="text-[11px] uppercase tracking-wider px-4 py-3 text-[#cccccc] font-semibold flex items-center">
-              EXPLORER
-            </div>
-            
-            {/* Файловое дерево (Степпер) */}
-            <div className="flex flex-col">
-              <div className="flex items-center px-1 py-1 cursor-pointer text-[#cccccc] bg-[#252526] hover:bg-[#2a2d2e] font-bold text-[10px] uppercase tracking-wider">
-                <span className="mr-1">▼</span> MISSION TASKS
-              </div>
-              <div className="pb-2 border-b border-[#333]">
-                <MissionStepper
-                  tasks={tasks}
-                  activeTaskId={activeTaskId}
-                  progressMap={taskProgress}
-                  onSelect={setActiveTaskId}
-                  labels={copy.runner.stepper}
-                />
-              </div>
+          {/* Центральная панель (Инструкции / Контент шага) */}
+          <div className="w-[450px] bg-[#111114] flex flex-col border-r border-[#222] min-w-0">
+            <div className="px-6 py-4 border-b border-[#222] bg-[#141418] flex items-center gap-2">
+              {activeTask?.task_type === "code" ? <Code2 size={16} className="text-blue-400" /> : <BookOpen size={16} className="text-green-400" />}
+              <h2 className="text-sm font-bold text-white tracking-wide truncate">
+                {activeTask?.title_ru || activeTask?.title || "Описание свитка"}
+              </h2>
             </div>
 
-            {/* Markdown Preview (Лор) */}
-            <div className="flex flex-col flex-1 overflow-hidden">
-              <div className="flex items-center px-1 py-1 cursor-pointer text-[#cccccc] bg-[#252526] hover:bg-[#2a2d2e] font-bold text-[10px] uppercase tracking-wider">
-                <span className="mr-1">▼</span> DESCRIPTION.md
-              </div>
-              <div className="flex-1 overflow-y-auto px-5 py-6 text-sm text-[#cccccc] bg-[#1e1e1e]">
-                <h2 className="text-2xl font-bold text-white mb-6 pb-2 border-b border-[#333]">
-                  {activeTask?.title || copy.runner.emptyTitle}
-                </h2>
-                
-                {activeTask ? (
-                  <div className="space-y-6">
-                    <div className="whitespace-pre-wrap leading-relaxed text-[13px] text-[#d4d4d4] font-mono">
-                      {activeTask.body || copy.runner.noBody}
-                    </div>
-                    
-                    {activeTask?.data?.objectives && (
-                      <div className="bg-[#252526] border border-[#333] rounded p-4 mt-6">
-                        <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#3794ff] mb-2">Objectives</h4>
-                        <ul className="list-disc ml-5 space-y-1 text-[#cccccc]">
-                          {activeTask.data.objectives.map((obj) => (
-                            <li key={obj}>{obj}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
-                    {requiresPremium && (
-                      <div className="border border-[#cca700]/50 bg-[#cca700]/10 rounded-md p-4 mt-6">
-                        <p className="text-[11px] font-bold uppercase tracking-widest text-[#cca700] mb-2">
-                          {copy.paywall.badge}
-                        </p>
-                        <p className="text-[#cccccc] text-sm mb-4">{copy.paywall.message}</p>
-                        <Button className="w-full bg-[#cca700] hover:bg-[#b39300] text-[#1e1e1e] border-none rounded-sm" onClick={() => setPaywallOpen(true)}>
-                          {copy.paywall.cta}
-                        </Button>
-                      </div>
-                    )}
-                    
-                    {!requiresPremium && activeTask.task_type === "story" && (
-                      <div className="pt-4 border-t border-[#333]">
-                        <Button className="w-full bg-[#0e639c] hover:bg-[#1177bb] text-white border-none rounded-sm text-sm shadow-none" onClick={() => handleStoryComplete(activeTask)} disabled={savingTaskId === activeTask.id}>
-                          {copy.runner.storyCta}
-                        </Button>
-                      </div>
-                    )}
-                    
-                    {!requiresPremium && activeTask.task_type === "quiz" && (
-                      <div className="space-y-2 pt-4 border-t border-[#333]">
-                        <p className="text-[11px] font-bold text-[#858585] uppercase mb-3">Select the correct answer:</p>
-                        {(activeTask.data?.options || copy.runner.quizFallback).map((opt) => {
-                          const state = quizAnswers[activeTask.id];
-                          const isSelected = state?.selected === opt.value;
-                          return (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              className={`w-full border rounded-sm px-4 py-3 text-left transition-all duration-200 ${
-                                isSelected 
-                                  ? "border-[#0e639c] bg-[#0e639c]/20 text-white" 
-                                  : "border-[#333] bg-[#1e1e1e] text-[#cccccc] hover:border-[#858585] hover:bg-[#2d2d2d]"
-                              }`}
-                              onClick={() => handleQuizPick(activeTask, opt)}
-                            >
-                              <p className="font-medium text-sm">{opt.label}</p>
-                              {isSelected && (
-                                <p className="text-xs mt-1">
-                                  {state?.isCorrect ? "✅ " + copy.runner.quizCorrect : "❌ " + copy.runner.quizWrong}
-                                </p>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
+            <div className="flex-1 overflow-y-auto p-6 prose prose-invert max-w-none text-sm text-gray-300 leading-relaxed space-y-4">
+              <div dangerouslySetInnerHTML={{ __html: activeTask?.body_ru || activeTask?.body || "" }} />
+
+              {/* Рендеринг Квиза / Теста */}
+              {activeTask?.task_type === "quiz" && (
+                <div className="mt-8 p-4 bg-[#141418] border border-[#26262b] rounded-xl space-y-4 shadow-inner">
+                  <p className="font-mono text-xs font-bold uppercase text-purple-400 tracking-wider">Выберите верный ответ:</p>
+                  <div className="space-y-2">
+                    {activeTask.data?.options?.map((opt, i) => (
+                      <label key={i} className="flex items-start gap-3 p-3 bg-[#1a1a20] hover:bg-[#202029] border border-[#26262b] rounded-lg cursor-pointer transition-colors group">
+                        <input
+                          type="radio"
+                          name={`quiz-${activeTask.id}`}
+                          value={opt.value ?? opt}
+                          checked={quizAnswers[activeTask.id] === (opt.value ?? opt)}
+                          onChange={(e) => setQuizAnswers((prev) => ({ ...prev, [activeTask.id]: e.target.value }))}
+                          className="mt-1 text-purple-500 focus:ring-purple-500 focus:ring-offset-0 bg-[#141418] border-[#333]"
+                        />
+                        <span className="text-gray-300 group-hover:text-white transition-colors">{opt.label ?? opt}</span>
+                      </label>
+                    ))}
                   </div>
-                ) : (
-                  <p className="text-sm text-[#858585]">{copy.runner.emptyBody}</p>
-                )}
-                
-                {activeProgress && (
-                  <div className="mt-8 pt-4 border-t border-[#333] grid grid-cols-2 gap-4 text-[11px]">
-                    <div>
-                      <p className="text-[#858585] mb-1 uppercase">Status</p>
-                      <p className="text-[#89d185] font-mono">{activeProgress.status}</p>
-                    </div>
-                    <div>
-                      <p className="text-[#858585] mb-1 uppercase">Score</p>
-                      <p className="text-[#cca700] font-mono">{activeProgress.best_score || 0}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+                  <Button
+                    onClick={() => handleQuizSubmit(activeTask.id)}
+                    disabled={!quizAnswers[activeTask.id] || savingTaskId === activeTask.id}
+                    className="w-full justify-center mt-2 shadow-lg"
+                    size="sm"
+                  >
+                    {savingTaskId === activeTask.id ? "Применение..." : "Произнести ответ"}
+                  </Button>
+                </div>
+              )}
+
+              {/* Рендеринг Теории (Кнопка завершения) */}
+              {activeTask?.task_type === "story" && !taskProgress[activeTask.id] && (
+                <div className="mt-8 pt-4">
+                  <Button onClick={() => handleCompleteTask(activeTask.id, {}, 100)} className="w-full justify-center shadow-md" icon={Sparkles}>
+                    Материал усвоен +Продолжить
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -469,6 +367,8 @@ export default function MissionDetail() {
                 onRun={handleRunCode}
                 result={runnerResult}
                 running={runnerLoading}
+                inventoryCounts={inventory} // Передаем актуальное состояние инвентаря
+                onInventoryUpdate={handleInventoryUpdate} // Передаем коллбек обновления инвентаря
               />
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#1e1e1e] border-l border-[#333]">
@@ -489,7 +389,6 @@ export default function MissionDetail() {
         onCheckout={handleCheckout}
         loading={paymentLoading}
         state={paymentState}
-        copy={copy.paywall}
       />
     </Layout>
   );

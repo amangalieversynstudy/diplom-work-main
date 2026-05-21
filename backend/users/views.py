@@ -4,6 +4,7 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import status
 
 from .models import User
 from .serializers import ProfileSerializer, UserSerializer
@@ -38,3 +39,38 @@ class ProfileMeView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+class UseItemView(APIView):
+    """
+    Эндпоинт для использования предметов из инвентаря.
+    Ожидает POST-запрос с JSON: {"item_type": "hint_scrolls"}
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        item_type = request.data.get('item_type')
+        
+        # Проверяем, передали ли название предмета
+        if not item_type:
+            return Response(
+                {"detail": "Не указан тип предмета (item_type)."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        profile = request.user.profile
+        
+        # Используем метод, который мы написали на предыдущем шаге
+        success = profile.use_item(item_type)
+        
+        if success:
+            # Получаем актуальный остаток, чтобы фронтенд сразу обновил UI
+            remaining = getattr(profile, item_type)
+            return Response({
+                "detail": "Предмет успешно применен.",
+                "item_type": item_type,
+                "remaining": remaining
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                "detail": "Недостаточно предметов в инвентаре или неверный тип."
+            }, status=status.HTTP_400_BAD_REQUEST)

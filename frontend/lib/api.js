@@ -168,6 +168,11 @@ export const Profile = {
 
     return result;
   },
+  // ДОБАВЛЕННЫЙ МЕТОД ДЛЯ ИНВЕНТАРЯ:
+  consumeItem: async (itemType) => {
+    const { data } = await api.post("/profile/use-item/", { item_type: itemType });
+    return data;
+  },
 };
 
 export async function registerUser({ username, email, password }) {

@@ -2,6 +2,7 @@
 
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+from .views import UseItemView
 
 from .views import ProfileMeView, UserViewSet
 
@@ -13,4 +14,5 @@ urlpatterns = [
     path("", include(router.urls)),
     path("profile", ProfileMeView.as_view(), name="profile"),
     path("profile/me/", ProfileMeView.as_view(), name="profile-me"),
+    path('profile/use-item/', UseItemView.as_view(), name='use-item'),
 ]

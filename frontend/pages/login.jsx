@@ -30,7 +30,7 @@ export default function Login() {
     e.preventDefault();
 
     if (!identifier || !password) {
-      toast.error("Заполните все поля");
+      toast.error("Заполните все поля", { duration: 4000 });
       return;
     }
 
@@ -44,10 +44,11 @@ export default function Login() {
       // Специальное сообщение для неактивированного аккаунта
       if (detail.toLowerCase().includes("no active account")) {
         toast.error(
-          "Аккаунт не активирован. Проверь почту и перейди по ссылке в письме."
+          "Аккаунт не активирован. Проверь почту и перейди по ссылке в письме.",
+          { duration: 5000 }
         );
       } else {
-        toast.error(detail || copy.error || "Ошибка входа");
+        toast.error(detail || copy.error || "Ошибка входа", { duration: 5000 });
       }
     } finally {
       setLoading(false);

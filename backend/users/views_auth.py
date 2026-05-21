@@ -23,8 +23,15 @@ class RegisterView(generics.CreateAPIView):
     def perform_create(self, serializer):
         """Create the user and attempt to send a verification email."""
         user = serializer.save()
+        # Новый аккаунт неактивен до перехода по ссылке из письма
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+
         # send verification email (console backend in dev)
         try:
+            import os
+
+            from django.conf import settings
             from django.contrib.auth.tokens import default_token_generator
             from django.core.mail import send_mail
             from django.utils.encoding import force_bytes
@@ -33,9 +40,24 @@ class RegisterView(generics.CreateAPIView):
             if user.email:
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
                 token = default_token_generator.make_token(user)
-                verify_link = f"/api/auth/verify-email/?uid={uid}&token={token}"
+                frontend_url = (
+                    getattr(settings, "FRONTEND_URL", None)
+                    or os.environ.get("FRONTEND_URL")
+                    or "http://localhost:3000"
+                )
+                verify_link = (
+                    f"{frontend_url.rstrip('/')}/verify-email?uid={uid}&token={token}"
+                )
                 send_mail(
-                    "Verify your email", f"Click: {verify_link}", None, [user.email]
+                    "Подтверждение email — RPG Academy",
+                    (
+                        f"Привет, {user.username}!\n\n"
+                        "Перейди по ссылке, чтобы активировать аккаунт:\n"
+                        f"{verify_link}\n\n"
+                        "Если ты не регистрировался — проигнорируй это письмо."
+                    ),
+                    None,
+                    [user.email],
                 )
         except Exception:
             # don't fail registration if email backend misconfigured

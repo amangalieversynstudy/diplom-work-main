@@ -11,6 +11,9 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret")
 # Gemini AI — set in .env or environment; leave empty to disable AI hints
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
+# Frontend URL — used in email verification links
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
 # Debug flag (enable via env DEBUG=True/False)
 DEBUG = os.getenv("DEBUG", "True").lower() in {"1", "true", "yes", "on"}
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0").split(",")

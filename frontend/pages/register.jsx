@@ -4,7 +4,7 @@ import Layout from "../components/Layout";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import { toast } from "sonner";
-import { registerUser, login } from "../lib/api";
+import { registerUser } from "../lib/api";
 import { useDictionary } from "../lib/i18n";
 import { clearPlayerClass } from "../lib/class"; // <--- Импортируем нашу новую функцию
 
@@ -22,12 +22,15 @@ export default function Register() {
     setLoading(true);
     try {
       await registerUser({ username, email, password });
-      await login({ username, password });
-      
-      clearPlayerClass(); // <--- Очищаем старый выбор перед тем, как показать страницу классов!
-      
-      toast.success(copy.success);
-      router.push("/profile");
+
+      // Аккаунт создан, но is_active=False до подтверждения email.
+      // Авто-логин делать НЕЛЬЗЯ — он вернёт 401 "No active account".
+      clearPlayerClass();
+
+      toast.success(
+        "Аккаунт создан! Проверь почту — мы отправили ссылку для активации."
+      );
+      router.push(`/login?pending_verify=${encodeURIComponent(email)}`);
     } catch (err) {
       const detail = err?.response?.data || {};
       const msg =

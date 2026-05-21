@@ -6,23 +6,43 @@ from rest_framework.test import APIClient
 
 @pytest.mark.django_db
 def test_register_login_logout():
-    """Register a user, obtain tokens via login, and logout (blacklist refresh)."""
+    """Register a user, verify email, obtain JWT, then logout."""
+    from django.contrib.auth import get_user_model
+    from django.contrib.auth.tokens import default_token_generator
+    from django.utils.encoding import force_bytes
+    from django.utils.http import urlsafe_base64_encode
+
     client = APIClient()
     register_url = "/api/auth/register/"
     login_url = "/api/auth/login/"
     logout_url = "/api/auth/logout/"
 
-    # Register
-    resp = client.post(register_url, {"username": "u1", "password": "p1"})
+    # 1. Register — аккаунт создаётся с is_active=False
+    resp = client.post(
+        register_url,
+        {"username": "u1", "password": "p1", "email": "u1@example.com"},
+    )
     assert resp.status_code == 201
 
-    # Login
+    # 2. Логин неактивного пользователя должен упасть
+    resp = client.post(login_url, {"username": "u1", "password": "p1"})
+    assert resp.status_code == 401
+
+    # 3. Активация email
+    User = get_user_model()
+    user = User.objects.get(username="u1")
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    resp = client.get(f"/api/auth/verify-email/?uid={uid}&token={token}")
+    assert resp.status_code == 200
+
+    # 4. Теперь логин проходит
     resp = client.post(login_url, {"username": "u1", "password": "p1"})
     assert resp.status_code == 200
     data = resp.json()
     assert "access" in data and "refresh" in data
 
-    # Logout (blacklist refresh)
+    # 5. Logout (blacklist refresh)
     refresh = data["refresh"]
     client.credentials(HTTP_AUTHORIZATION=f"Bearer {data['access']}")
     resp = client.post(logout_url, {"refresh": refresh})

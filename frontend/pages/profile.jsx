@@ -4,7 +4,7 @@ import Layout from "../components/Layout";
 import XPBar from "../components/XPBar";
 import Button from "../components/Button";
 import { clearPlayerClass } from "../lib/class";
-import api from "../lib/api"; // Твой настроенный axios instance
+import { Profile as ProfileAPI } from "../lib/api";
 import { toast } from "sonner";
 import { LogOut, Settings, Mail, User, Shield } from "lucide-react";
 
@@ -25,12 +25,29 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      // Запрашиваем реальные данные из Django DRF
-      const response = await api.get("/users/me/"); // Убедись, что эндпоинт совпадает с твоим API
-      setProfile(response.data);
+      // ProfileAPI.me() сам пробует /profile/me/, а при 404 — /auth/me/
+      const data = await ProfileAPI.me();
+
+      // Бэкенд возвращает ProfileSerializer: {xp, level, user: {username, email, ...}}
+      // ИЛИ UserDetailSerializer: {username, email, profile: {xp, level, ...}}.
+      // Нормализуем оба варианта в плоскую структуру.
+      const userBlock = data.user ?? data;
+      const profileBlock = data.profile ?? data;
+
+      const merged = {
+        username: userBlock.username || data.username || "",
+        email: userBlock.email || data.email || "",
+        xp: profileBlock.xp ?? 0,
+        level: profileBlock.level ?? 1,
+        ai_summons: profileBlock.ai_summons ?? 0,
+        hint_scrolls: profileBlock.hint_scrolls ?? 0,
+        skeleton_scrolls: profileBlock.skeleton_scrolls ?? 0,
+      };
+
+      setProfile(merged);
       setFormData({
-        username: response.data.username || "",
-        email: response.data.email || ""
+        username: merged.username,
+        email: merged.email,
       });
     } catch (error) {
       console.error("Ошибка загрузки профиля:", error);
@@ -57,13 +74,17 @@ export default function ProfilePage() {
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     try {
-      await api.patch("/users/me/", formData); // Отправляем PATCH запрос на обновление
+      await ProfileAPI.update(formData);
       toast.success("Данные профиля успешно обновлены!");
       setIsEditing(false);
       fetchProfile();
     } catch (error) {
       console.error(error);
-      toast.error("Ошибка при сохранении данных");
+      const detail =
+        error?.response?.data?.detail ||
+        Object.values(error?.response?.data || {})[0] ||
+        "Ошибка при сохранении данных";
+      toast.error(String(detail));
     }
   };
 

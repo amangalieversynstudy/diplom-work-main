@@ -419,6 +419,7 @@ class AIAssistView(APIView):
         "Keep a slightly mystical, encouraging RPG tone."
     )
 
+    @method_decorator(ratelimit(key="user", rate="10/m", block=True))
     def post(self, request):
         code = request.data.get("code", "").strip()
         task_description = request.data.get("task_description", "").strip()

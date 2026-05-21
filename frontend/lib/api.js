@@ -79,29 +79,15 @@ export default api;
 
 export async function login({ email, username, password }) {
   const identifier = username || email;
-  // Отправляем и email, и username: мок-API читает email, DRF(SimpleJWT) — username
+  // Отправляем и email, и username: backend LoginView поддерживает оба
   const payload = {
     email: email || identifier,
     username: identifier,
     password,
   };
-  console.log("Login payload:", payload);
-  try {
-    const { data } = await api.post("/auth/jwt/create/", payload);
-    console.log("Login response data:", data);
-    if (data.access && data.refresh) {
-      setTokens({ access: data.access, refresh: data.refresh });
-      console.log("Tokens saved to localStorage");
-      console.log("Stored access token (first 20 chars):", data.access.substring(0, 20));
-      console.log("Stored refresh token (first 20 chars):", data.refresh.substring(0, 20));
-    } else {
-      console.error("Missing access or refresh token in response", data);
-    }
-    return data;
-  } catch (err) {
-    console.error("Login failed:", err);
-    throw err;
-  }
+  const { data } = await api.post("/auth/jwt/create/", payload);
+  setTokens({ access: data.access, refresh: data.refresh });
+  return data;
 }
 
 export function logout() {

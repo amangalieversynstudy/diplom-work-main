@@ -12,6 +12,7 @@ import TransitionLink from "./TransitionLink";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { motion } from "framer-motion";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -54,30 +55,66 @@ function LanguageToggle() {
 function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
 
+  const options = [
+    {
+      id: "light",
+      icon: Sun,
+      label: "Светлая тема",
+      activeBg: "bg-surface",
+      activeIcon: "text-accent",
+      glow: "0 0 18px var(--primary-selection)",
+      idleRotate: -35,
+    },
+    {
+      id: "dark",
+      icon: Moon,
+      label: "Тёмная тема",
+      activeBg: "bg-primary",
+      activeIcon: "text-white",
+      glow: "0 0 22px var(--primary)",
+      idleRotate: 35,
+    },
+  ];
+
   return (
-    <div className="p-1 rounded-full border border-border bg-panel flex items-center justify-center gap-1">
-      <button
-        onClick={() => setTheme('light')}
-        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ease-out ${
-          theme === 'light' 
-            ? 'bg-surface shadow-sm text-accent scale-100 rotate-0' 
-            : 'text-muted hover:bg-surface scale-90 -rotate-45 opacity-70'
-        }`}
-        aria-label="Светлая тема"
-      >
-        <Sun size={18} className="transition-transform duration-500" />
-      </button>
-      <button
-        onClick={() => setTheme('dark')}
-        className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ease-out ${
-          theme === 'dark' 
-            ? 'bg-primary text-white scale-100 rotate-0' 
-            : 'text-muted hover:bg-surface scale-90 rotate-45 opacity-70'
-        }`}
-        aria-label="Тёмная тема"
-      >
-        <Moon size={18} className="transition-transform duration-500" />
-      </button>
+    <div className="relative p-1 rounded-full border border-border bg-panel flex items-center gap-1">
+      {options.map(({ id, icon: Icon, label, activeBg, activeIcon, glow, idleRotate }) => {
+        const isActive = theme === id;
+        return (
+          <motion.button
+            key={id}
+            type="button"
+            onClick={() => setTheme(id)}
+            aria-label={label}
+            aria-pressed={isActive}
+            whileTap={{ scale: 0.92 }}
+            className="relative w-10 h-10 rounded-full flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          >
+            {isActive && (
+              <motion.span
+                layoutId="theme-switcher-pill"
+                className={`absolute inset-0 rounded-full ${activeBg}`}
+                style={{ boxShadow: glow }}
+                transition={{ type: "spring", stiffness: 380, damping: 28 }}
+              />
+            )}
+            <motion.span
+              animate={{
+                rotate: isActive ? 0 : idleRotate,
+                scale: isActive ? 1 : 0.82,
+                opacity: isActive ? 1 : 0.55,
+              }}
+              transition={{ type: "spring", stiffness: 320, damping: 22 }}
+              className="relative z-10 flex items-center justify-center"
+            >
+              <Icon
+                size={18}
+                className={`transition-colors duration-300 ${isActive ? activeIcon : "text-muted"}`}
+              />
+            </motion.span>
+          </motion.button>
+        );
+      })}
     </div>
   );
 }

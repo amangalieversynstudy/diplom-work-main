@@ -1,0 +1,77 @@
+[
+  {
+    "model": "game.rank",
+    "pk": 1,
+    "fields": {
+      "slug": "novice",
+      "title_ru": "Новичок",
+      "title_en": "Novice",
+      "description_ru": "Первые шаги в мире магии кода",
+      "description_en": "First steps in the world of code magic",
+      "min_level": 1,
+      "min_xp": 0,
+      "order": 1,
+      "icon_url": ""
+    }
+  },
+  {
+    "model": "game.rank",
+    "pk": 2,
+    "fields": {
+      "slug": "apprentice",
+      "title_ru": "Ученик",
+      "title_en": "Apprentice",
+      "description_ru": "Освоил основы и готов к настоящим заданиям",
+      "description_en": "Mastered the basics and ready for real challenges",
+      "min_level": 2,
+      "min_xp": 100,
+      "order": 2,
+      "icon_url": ""
+    }
+  },
+  {
+    "model": "game.rank",
+    "pk": 3,
+    "fields": {
+      "slug": "mage",
+      "title_ru": "Маг Кода",
+      "title_en": "Code Mage",
+      "description_ru": "Владеет заклинаниями Python и побеждает алгоритмы",
+      "description_en": "Commands Python spells and conquers algorithms",
+      "min_level": 5,
+      "min_xp": 500,
+      "order": 3,
+      "icon_url": ""
+    }
+  },
+  {
+    "model": "game.rank",
+    "pk": 4,
+    "fields": {
+      "slug": "archmage",
+      "title_ru": "Архимаг",
+      "title_en": "Archmage",
+      "description_ru": "Мастер сложных структур данных и паттернов",
+      "description_en": "Master of complex data structures and patterns",
+      "min_level": 10,
+      "min_xp": 1500,
+      "order": 4,
+      "icon_url": ""
+    }
+  },
+  {
+    "model": "game.rank",
+    "pk": 5,
+    "fields": {
+      "slug": "grand-wizard",
+      "title_ru": "Великий Волшебник",
+      "title_en": "Grand Wizard",
+      "description_ru": "Легенда RPG Academy — прошёл все курсы",
+      "description_en": "RPG Academy legend — completed all courses",
+      "min_level": 20,
+      "min_xp": 5000,
+      "order": 5,
+      "icon_url": ""
+    }
+  }
+]

@@ -81,19 +81,19 @@ export default function MissionDetail() {
       })
       .catch(() => {});
 
-    // 3. Загружаем профиль для получения актуального инвентаря
+    // 3. Загружаем профиль для получения актуального инвентаря.
+    // Новый ProfileMeView возвращает плоский payload — поля ai_summons/hint_scrolls/
+    // skeleton_scrolls лежат прямо в корне объекта. Старую вложенную форму
+    // (data.profile.xxx) поддерживаем как fallback для /auth/me/.
     Profile.me()
       .then((userDoc) => {
-        if (!active) return;
-        // Извлекаем вложенный объект profile из ответа auth/me или profile/me
-        const p = userDoc?.profile;
-        if (p) {
-          setInventory({
-            ai_summons: p.ai_summons ?? 0,
-            hint_scrolls: p.hint_scrolls ?? 0,
-            skeleton_scrolls: p.skeleton_scrolls ?? 0,
-          });
-        }
+        if (!active || !userDoc) return;
+        const p = userDoc.profile ?? userDoc;
+        setInventory({
+          ai_summons: p.ai_summons ?? 0,
+          hint_scrolls: p.hint_scrolls ?? 0,
+          skeleton_scrolls: p.skeleton_scrolls ?? 0,
+        });
       })
       .catch(() => {
         console.error("Не удалось загрузить инвентарь игрока.");

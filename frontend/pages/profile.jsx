@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import XPBar from "../components/XPBar";
 import Button from "../components/Button";
+import SkillTree from "../components/SkillTree";
 import { clearPlayerClass } from "../lib/class";
 import { Profile as ProfileAPI } from "../lib/api";
 import { toast } from "sonner";
@@ -224,6 +225,11 @@ if (loading) {
               )}
             </div>
           </div>
+        </div>
+
+        {/* ── Древо Навыков (MVP) ── */}
+        <div className="mt-8">
+          <SkillTree currentClassId={profile?.class_role} />
         </div>
       </div>
     </Layout>

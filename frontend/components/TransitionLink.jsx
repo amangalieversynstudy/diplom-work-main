@@ -9,6 +9,11 @@ export default function TransitionLink({ href, children, className, onClick }) {
     e.preventDefault();
     if (onClick) onClick();
 
+    // If already on this page, don't play the overlay animation (it won't come back up)
+    if (router.pathname === href || router.asPath === href) {
+      return;
+    }
+
     gsap.to(".page-transition-overlay", {
       yPercent: 0,
       duration: 0.7,

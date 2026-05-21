@@ -11,6 +11,8 @@
   --bg: #fdfbf7;
   --text: #443c32;
   --primary: #2a6f68;
+  --accent: #c07c3a;
+  --accent-dk: #9a5f2a;
 }
 
 html.dark {
@@ -18,6 +20,8 @@ html.dark {
   --bg: #06100D;
   --text: #E8F0EA;
   --primary: #2ECC8A;
+  --accent: #f4a261;
+  --accent-dk: #e07b3a;
 }
 
 /* ─── Базовые стили курсора ───────────────────────────────── */

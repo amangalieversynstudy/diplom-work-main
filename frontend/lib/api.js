@@ -218,6 +218,20 @@ export const Runner = {
   execute: (code) => api.post("/runner/execute/", { code }),
 };
 
+export const AIAssist = {
+  /**
+   * Ask Gemini for a hint on the current task.
+   * @param {string} code        Current code in the editor
+   * @param {string} taskDesc    Task description (body_ru or body_en)
+   * @param {string} language    Programming language ("python")
+   * @returns {Promise<{hint: string}>}
+   */
+  getHint: (code, taskDesc, language = "python") =>
+    api
+      .post("/game/ai-assist/", { code, task_description: taskDesc, language })
+      .then((r) => r.data),
+};
+
 /**
  * Build a WebSocket URL for the streaming runner.
  *

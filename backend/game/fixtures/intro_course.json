@@ -1,0 +1,367 @@
+[
+  {
+    "model": "game.track",
+    "pk": 1,
+    "fields": {
+      "slug": "python-intro",
+      "title": "Python Basics",
+      "title_en": "Python Basics: The Gateway",
+      "title_ru": "Основы Python: Врата в Магию",
+      "description": "Introductory Python course unlocking class selection.",
+      "description_en": "Master the fundamental spells of Python. Complete this track to unlock your hero class.",
+      "description_ru": "Освой базовые заклинания Python. Пройди этот курс, чтобы разблокировать выбор класса героя.",
+      "tagline_en": "Your journey begins here",
+      "tagline_ru": "Твой путь начинается здесь",
+      "order": 0,
+      "is_active": true,
+      "is_premium": false,
+      "is_intro": true,
+      "default_language": "ru",
+      "icon_url": "",
+      "banner_url": "",
+      "color_theme": "purple"
+    }
+  },
+  {
+    "model": "game.location",
+    "pk": 1,
+    "fields": {
+      "track": 1,
+      "title": "Академия Новобранцев",
+      "title_en": "Novice Academy",
+      "title_ru": "Академия Новобранцев",
+      "description": "Where every great mage begins their journey.",
+      "description_en": "The ancient halls where every great programmer forges their first spells.",
+      "description_ru": "Древние залы, где каждый великий программист кует свои первые заклинания.",
+      "order": 0
+    }
+  },
+  {
+    "model": "game.mission",
+    "pk": 1,
+    "fields": {
+      "location": 1,
+      "title": "Переменные и Типы",
+      "title_en": "Variables & Types",
+      "title_ru": "Свиток I: Переменные и Типы",
+      "description": "Learn about Python variables and data types.",
+      "description_en": "Every spell needs ingredients. Variables store the magical essence you will wield.",
+      "description_ru": "Каждое заклинание нуждается в ингредиентах. Переменные хранят магическую сущность.",
+      "xp_reward": 30,
+      "order": 0,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 10,
+      "pos_y": 50
+    }
+  },
+  {
+    "model": "game.mission",
+    "pk": 2,
+    "fields": {
+      "location": 1,
+      "title": "Ветви Судьбы",
+      "title_en": "Branches of Fate",
+      "title_ru": "Свиток II: Ветви Судьбы",
+      "description": "Master conditionals and control the flow of your code.",
+      "description_en": "The crossroads of magic — learn to guide your spells with conditions.",
+      "description_ru": "Развилки магии — научись направлять заклинания с помощью условий.",
+      "xp_reward": 40,
+      "order": 1,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 30,
+      "pos_y": 35
+    }
+  },
+  {
+    "model": "game.mission",
+    "pk": 3,
+    "fields": {
+      "location": 1,
+      "title": "Вечный Цикл",
+      "title_en": "The Eternal Loop",
+      "title_ru": "Свиток III: Вечный Цикл",
+      "description": "Harness the power of loops to repeat actions.",
+      "description_en": "Channel repeating power — loops let your spells echo through time.",
+      "description_ru": "Освой силу повтора — циклы заставляют заклинания эхом разноситься сквозь время.",
+      "xp_reward": 40,
+      "order": 2,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 55,
+      "pos_y": 60
+    }
+  },
+  {
+    "model": "game.mission",
+    "pk": 4,
+    "fields": {
+      "location": 1,
+      "title": "Арсенал Мага",
+      "title_en": "The Mage's Arsenal",
+      "title_ru": "Свиток IV: Арсенал Мага",
+      "description": "Create reusable functions — the building blocks of all programs.",
+      "description_en": "Forge your own spells. Functions are the core of every great mage's grimoire.",
+      "description_ru": "Кузница своих заклинаний. Функции — основа гримуара каждого великого мага.",
+      "xp_reward": 50,
+      "order": 3,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 78,
+      "pos_y": 40
+    }
+  },
+
+  {
+    "model": "game.missiontask",
+    "pk": 10,
+    "fields": {
+      "mission": 1,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "What Are Variables?",
+      "title_ru": "Что такое переменные?",
+      "body_en": "<h2>Variables — Vessels of Power</h2><p>In Python, a <strong>variable</strong> is a named container that holds a value. You create one with a simple assignment:</p><pre><code>hero_name = \"Aidan\"\npower_level = 42\nis_alive = True</code></pre><p>Python automatically detects the <strong>type</strong> of data:</p><ul><li><code>str</code> — text strings (<code>\"hello\"</code>)</li><li><code>int</code> — whole numbers (<code>42</code>)</li><li><code>float</code> — decimal numbers (<code>3.14</code>)</li><li><code>bool</code> — True or False</li></ul><p>Use <code>type()</code> to inspect any variable:</p><pre><code>print(type(hero_name))  # &lt;class 'str'&gt;</code></pre>",
+      "body_ru": "<h2>Переменные — Сосуды Силы</h2><p>В Python <strong>переменная</strong> — это именованный контейнер для хранения значения. Создаётся простым присваиванием:</p><pre><code>hero_name = \"Айдан\"\npower_level = 42\nis_alive = True</code></pre><p>Python автоматически определяет <strong>тип</strong> данных:</p><ul><li><code>str</code> — строки текста (<code>\"привет\"</code>)</li><li><code>int</code> — целые числа (<code>42</code>)</li><li><code>float</code> — дробные числа (<code>3.14</code>)</li><li><code>bool</code> — True или False</li></ul><p>Используй <code>type()</code>, чтобы узнать тип переменной:</p><pre><code>print(type(hero_name))  # &lt;class 'str'&gt;</code></pre>",
+      "data": {},
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 11,
+    "fields": {
+      "mission": 1,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: Types",
+      "title_ru": "Испытание: Типы данных",
+      "body_en": "<p>Which Python type stores the value <code>\"Hello\"</code>?</p>",
+      "body_ru": "<p>Какой тип Python хранит значение <code>\"Привет\"</code>?</p>",
+      "data": {
+        "correct_answer": "str",
+        "options": [
+          {"value": "str",   "label": "str"},
+          {"value": "int",   "label": "int"},
+          {"value": "bool",  "label": "bool"},
+          {"value": "float", "label": "float"}
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 12,
+    "fields": {
+      "mission": 1,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "Cast Your First Spell",
+      "title_ru": "Первое Заклинание",
+      "body_en": "<p>Declare three variables and print them:</p><ul><li><code>hero</code> = your hero's name (string)</li><li><code>level</code> = starting level (integer, 1)</li><li><code>xp</code> = starting XP (float, 0.0)</li></ul><p>Then print all three with <code>print(hero, level, xp)</code>.</p>",
+      "body_ru": "<p>Объяви три переменные и выведи их:</p><ul><li><code>hero</code> — имя героя (строка)</li><li><code>level</code> — начальный уровень (целое, 1)</li><li><code>xp</code> — начальный опыт (дробное, 0.0)</li></ul><p>Затем выведи все три через <code>print(hero, level, xp)</code>.</p>",
+      "data": {
+        "language": "python",
+        "starter": "# Объяви три переменные\nhero = \"\"\nlevel = 0\nxp = 0.0\n\n# Выведи их\nprint(hero, level, xp)\n",
+        "sampleOutput": "Герой 1 0.0"
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+
+  {
+    "model": "game.missiontask",
+    "pk": 20,
+    "fields": {
+      "mission": 2,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "Branching Paths",
+      "title_ru": "Развилки Пути",
+      "body_en": "<h2>Conditions — The Crossroads of Code</h2><p>Use <code>if</code>, <code>elif</code>, and <code>else</code> to make decisions:</p><pre><code>energy = 80\n\nif energy > 75:\n    print(\"Full power!\")\nelif energy > 25:\n    print(\"Half power.\")\nelse:\n    print(\"Out of mana!\")</code></pre><p>Comparison operators you can use:</p><ul><li><code>==</code> equal to</li><li><code>!=</code> not equal</li><li><code>&gt;</code> greater than</li><li><code>&lt;</code> less than</li><li><code>&gt;=</code> greater or equal</li><li><code>&lt;=</code> less or equal</li></ul>",
+      "body_ru": "<h2>Условия — Развилки Кода</h2><p>Используй <code>if</code>, <code>elif</code> и <code>else</code> для принятия решений:</p><pre><code>energy = 80\n\nif energy > 75:\n    print(\"Полная мощность!\")\nelif energy > 25:\n    print(\"Половина мощности.\")\nelse:\n    print(\"Мана иссякла!\")</code></pre><p>Операторы сравнения:</p><ul><li><code>==</code> равно</li><li><code>!=</code> не равно</li><li><code>&gt;</code> больше</li><li><code>&lt;</code> меньше</li><li><code>&gt;=</code> больше или равно</li><li><code>&lt;=</code> меньше или равно</li></ul>",
+      "data": {},
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 21,
+    "fields": {
+      "mission": 2,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: Conditions",
+      "title_ru": "Испытание: Условия",
+      "body_en": "<p>What keyword introduces an alternative condition in Python?</p>",
+      "body_ru": "<p>Какое ключевое слово вводит альтернативное условие в Python?</p>",
+      "data": {
+        "correct_answer": "elif",
+        "options": [
+          {"value": "elif",   "label": "elif"},
+          {"value": "else if","label": "else if"},
+          {"value": "orif",   "label": "orif"},
+          {"value": "unless", "label": "unless"}
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 22,
+    "fields": {
+      "mission": 2,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "The Oracle's Test",
+      "title_ru": "Испытание Оракула",
+      "body_en": "<p>Write a function <code>mana_status(mana)</code> that returns:</p><ul><li><code>\"Overcharged\"</code> if mana &gt; 100</li><li><code>\"Charged\"</code> if mana is between 50 and 100 (inclusive)</li><li><code>\"Low\"</code> if mana is below 50</li></ul><p>Then call it with <code>print(mana_status(75))</code> — should print <code>Charged</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>mana_status(mana)</code>, которая возвращает:</p><ul><li><code>\"Overcharged\"</code> если mana &gt; 100</li><li><code>\"Charged\"</code> если mana от 50 до 100 включительно</li><li><code>\"Low\"</code> если mana меньше 50</li></ul><p>Вызови её: <code>print(mana_status(75))</code> — должно вывести <code>Charged</code>.</p>",
+      "data": {
+        "language": "python",
+        "starter": "def mana_status(mana):\n    # Твой код здесь\n    pass\n\nprint(mana_status(75))\n",
+        "sampleOutput": "Charged"
+      },
+      "xp_reward": 20,
+      "is_required": true
+    }
+  },
+
+  {
+    "model": "game.missiontask",
+    "pk": 30,
+    "fields": {
+      "mission": 3,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "Loops: The Eternal Spell",
+      "title_ru": "Циклы: Вечное Заклинание",
+      "body_en": "<h2>Loops — Power Through Repetition</h2><p>Python has two loop types:</p><h3>for loop</h3><pre><code>for i in range(5):\n    print(f\"Attack {i+1}\")</code></pre><p>This repeats 5 times, with <code>i</code> going 0 → 4.</p><h3>while loop</h3><pre><code>hp = 100\nwhile hp > 0:\n    hp -= 25\n    print(f\"HP: {hp}\")</code></pre><p>Repeats <em>while</em> the condition is True.</p><h3>Control keywords</h3><ul><li><code>break</code> — exit the loop immediately</li><li><code>continue</code> — skip to the next iteration</li></ul>",
+      "body_ru": "<h2>Циклы — Сила Повтора</h2><p>В Python два типа циклов:</p><h3>Цикл for</h3><pre><code>for i in range(5):\n    print(f\"Атака {i+1}\")</code></pre><p>Повторяется 5 раз, <code>i</code> идёт от 0 до 4.</p><h3>Цикл while</h3><pre><code>hp = 100\nwhile hp > 0:\n    hp -= 25\n    print(f\"HP: {hp}\")</code></pre><p>Повторяется <em>пока</em> условие истинно.</p><h3>Управляющие слова</h3><ul><li><code>break</code> — выйти из цикла</li><li><code>continue</code> — перейти к следующей итерации</li></ul>",
+      "data": {},
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 31,
+    "fields": {
+      "mission": 3,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: Loops",
+      "title_ru": "Испытание: Циклы",
+      "body_en": "<p>Which keyword immediately exits a loop?</p>",
+      "body_ru": "<p>Какое ключевое слово немедленно завершает цикл?</p>",
+      "data": {
+        "correct_answer": "break",
+        "options": [
+          {"value": "break",    "label": "break"},
+          {"value": "continue", "label": "continue"},
+          {"value": "exit",     "label": "exit"},
+          {"value": "return",   "label": "return"}
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 32,
+    "fields": {
+      "mission": 3,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "The Echo Chamber",
+      "title_ru": "Эхо-камера",
+      "body_en": "<p>Write code that prints the sum of numbers from 1 to 10 using a <code>for</code> loop.</p><p>Expected output: <code>55</code></p>",
+      "body_ru": "<p>Напиши код, который выводит сумму чисел от 1 до 10 с помощью цикла <code>for</code>.</p><p>Ожидаемый вывод: <code>55</code></p>",
+      "data": {
+        "language": "python",
+        "starter": "total = 0\nfor i in range(1, 11):\n    # Прибавь i к total\n    pass\n\nprint(total)\n",
+        "sampleOutput": "55"
+      },
+      "xp_reward": 20,
+      "is_required": true
+    }
+  },
+
+  {
+    "model": "game.missiontask",
+    "pk": 40,
+    "fields": {
+      "mission": 4,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "Functions: Reusable Spells",
+      "title_ru": "Функции: Многоразовые Заклинания",
+      "body_en": "<h2>Functions — Your Personal Grimoire</h2><p>A function lets you package a spell once and cast it many times:</p><pre><code>def greet(name):\n    return f\"Welcome, {name}!\"\n\nprint(greet(\"Warrior\"))  # Welcome, Warrior!\nprint(greet(\"Mage\"))     # Welcome, Mage!</code></pre><p>Key concepts:</p><ul><li><code>def</code> — defines a function</li><li>Parameters go in the parentheses</li><li><code>return</code> sends a value back to the caller</li><li>Functions without <code>return</code> implicitly return <code>None</code></li></ul><p>Functions can have <strong>default arguments</strong>:</p><pre><code>def attack(target, damage=10):\n    print(f\"{target} takes {damage} damage\")</code></pre>",
+      "body_ru": "<h2>Функции — Твой Личный Гримуар</h2><p>Функция позволяет упаковать заклинание один раз и применять его многократно:</p><pre><code>def greet(name):\n    return f\"Добро пожаловать, {name}!\"\n\nprint(greet(\"Воин\"))   # Добро пожаловать, Воин!\nprint(greet(\"Маг\"))    # Добро пожаловать, Маг!</code></pre><p>Ключевые понятия:</p><ul><li><code>def</code> — определяет функцию</li><li>Параметры — в круглых скобках</li><li><code>return</code> возвращает значение вызывающему</li><li>Функции без <code>return</code> неявно возвращают <code>None</code></li></ul><p>Функции могут иметь <strong>аргументы по умолчанию</strong>:</p><pre><code>def attack(target, damage=10):\n    print(f\"{target} получает {damage} урона\")</code></pre>",
+      "data": {},
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 41,
+    "fields": {
+      "mission": 4,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: Functions",
+      "title_ru": "Испытание: Функции",
+      "body_en": "<p>Which keyword is used to define a function in Python?</p>",
+      "body_ru": "<p>Какое ключевое слово используется для определения функции в Python?</p>",
+      "data": {
+        "correct_answer": "def",
+        "options": [
+          {"value": "def",      "label": "def"},
+          {"value": "function", "label": "function"},
+          {"value": "fn",       "label": "fn"},
+          {"value": "func",     "label": "func"}
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 42,
+    "fields": {
+      "mission": 4,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "The Final Spell",
+      "title_ru": "Финальное Заклинание",
+      "body_en": "<p>Write a function <code>power(base, exp)</code> that returns <code>base</code> raised to the power <code>exp</code> <strong>without</strong> using the <code>**</code> operator — use a loop instead.</p><p>Then print: <code>print(power(2, 8))</code> — expected output: <code>256</code></p>",
+      "body_ru": "<p>Напиши функцию <code>power(base, exp)</code>, которая возвращает <code>base</code> в степени <code>exp</code> <strong>без</strong> оператора <code>**</code> — используй цикл.</p><p>Затем выведи: <code>print(power(2, 8))</code> — ожидаемый вывод: <code>256</code></p>",
+      "data": {
+        "language": "python",
+        "starter": "def power(base, exp):\n    result = 1\n    # Умножь base на себя exp раз\n    for _ in range(exp):\n        pass  # замени на нужное действие\n    return result\n\nprint(power(2, 8))\n",
+        "sampleOutput": "256"
+      },
+      "xp_reward": 30,
+      "is_required": true
+    }
+  }
+]

@@ -23,7 +23,7 @@ import {
   Bot,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Profile, getRunnerWsUrl } from "../lib/api";
+import { AIAssist, Profile, getRunnerWsUrl } from "../lib/api";
 import { getTokens } from "../lib/auth";
 
 // xterm uses `window` at import time; load the wrapper client-side only.
@@ -226,9 +226,32 @@ export default function CodeRunnerPanel({
 
   const handleAISummon = async () => {
     const ok = await handleUseItem("ai_summons", "AI Summon");
-    if (ok) {
-      toast(
-        "🤖 AI: Анализирую код... Ошибок в синтаксисе не вижу, но проверьте логику условий!"
+    if (!ok) return;
+
+    // Show a loading indicator in the terminal
+    termRef.current?.writeln(
+      `\r\n${ANSI_CYAN}🔮 Вызываю Мудреца...${ANSI_RESET}`
+    );
+
+    try {
+      const taskDesc =
+        task?.body_ru || task?.body_en || task?.data?.hint || task?.title_ru || "";
+      const { hint } = await AIAssist.getHint(
+        code || "",
+        taskDesc,
+        task?.data?.language || "python"
+      );
+      // Print the AI hint into the terminal with purple colour
+      termRef.current?.writeln(
+        `\r\n\x1b[35m╔══ 🤖 Мудрец говорит ══╗\x1b[0m`
+      );
+      hint.split("\n").forEach((line) => {
+        termRef.current?.writeln(`\x1b[35m║\x1b[0m ${line}`);
+      });
+      termRef.current?.writeln(`\x1b[35m╚══════════════════════╝\x1b[0m\r\n`);
+    } catch {
+      termRef.current?.writeln(
+        `\r\n${ANSI_RED}⚠ Мудрец недоступен. Попробуй ещё раз.${ANSI_RESET}\r\n`
       );
     }
   };

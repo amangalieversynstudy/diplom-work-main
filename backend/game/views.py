@@ -385,5 +385,77 @@ class CodeRunnerView(APIView):
         
         if result["status"] == "error":
             return Response(result, status=400)
-            
+
         return Response(result, status=200)
+
+
+class AIAssistView(APIView):
+    """Gemini-powered AI assistant for quest code tasks.
+
+    POST /api/game/ai-assist/
+    Body: { "code": "...", "task_description": "...", "language": "python" }
+    Returns: { "hint": "..." }
+
+    Requires GEMINI_API_KEY in settings/environment.
+    Gracefully degrades when the key is absent (returns a local fallback hint).
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    _SYSTEM_PROMPT = (
+        "You are Sage — a wise, concise mentor inside an RPG coding academy. "
+        "The student is stuck on a programming task. "
+        "Give ONE clear, actionable hint in 2–4 sentences. "
+        "Do NOT provide the full solution — guide the student to discover it. "
+        "Respond in the same language as the task description (Russian or English). "
+        "Keep a slightly mystical, encouraging RPG tone."
+    )
+
+    def post(self, request):
+        code = request.data.get("code", "").strip()
+        task_description = request.data.get("task_description", "").strip()
+        language = request.data.get("language", "python")
+
+        hint = self._call_gemini(code, task_description, language)
+        return Response({"hint": hint})
+
+    def _call_gemini(self, code: str, description: str, language: str) -> str:
+        import os
+
+        api_key = getattr(
+            __import__("django.conf", fromlist=["settings"]).settings,
+            "GEMINI_API_KEY",
+            None,
+        ) or os.environ.get("GEMINI_API_KEY")
+
+        if not api_key:
+            return (
+                "🔮 Мудрец молчит... Ключ Гемини не настроен. "
+                "Проверь переменную окружения GEMINI_API_KEY."
+            )
+
+        try:
+            import google.generativeai as genai  # noqa: WPS433
+
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel("gemini-1.5-flash")
+
+            user_message = (
+                f"Task:\n{description}\n\n"
+                f"Language: {language}\n\n"
+                f"Student's current code:\n```{language}\n{code}\n```"
+            ) if code else f"Task:\n{description}\n\nLanguage: {language}"
+
+            response = model.generate_content(
+                [self._SYSTEM_PROMPT, user_message],
+                generation_config={"max_output_tokens": 300, "temperature": 0.7},
+            )
+            return response.text.strip()
+
+        except ImportError:
+            return (
+                "📦 Библиотека google-generativeai не установлена. "
+                "Добавь её в requirements.txt: google-generativeai>=0.5"
+            )
+        except Exception as exc:  # noqa: BLE001
+            return f"⚠️ Мудрец недоступен: {exc}"

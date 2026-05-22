@@ -16,8 +16,8 @@ const colorMap = {
 
 export default function MissionStepper({
   tasks = [],
-  activeTaskId,
-  progressMap = {},
+  activeId,
+  progress: progressMap = {},
   onSelect,
 }) {
   if (!tasks.length) return null;
@@ -27,9 +27,9 @@ export default function MissionStepper({
       {tasks.map((task, index) => {
         const Icon = iconMap[task.task_type] || FileText;
         const colorClass = colorMap[task.task_type] || "text-[#cccccc]";
-        const progress = progressMap[task.id];
-        const completed = progress?.status === "completed";
-        const current = task.id === activeTaskId;
+        const taskProg = progressMap[task.id];
+        const completed = taskProg?.status === "completed";
+        const current = task.id === activeId;
         const locked = task.is_required && index > 0 && !progressMap[tasks[index - 1].id]?.status;
 
         return (

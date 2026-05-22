@@ -50,6 +50,15 @@ export default function ChooseClassPage() {
   async function choose(id) {
     const node = TREE.find((n) => n.id === id);
     if (!node || node.locked || choosing) return;
+
+    // ── МЯГКАЯ РЕКОМЕНДАЦИЯ (Soft-lock) ──
+    if (introStatus.locked) {
+      const confirmChoice = window.confirm(
+        "Академия настоятельно рекомендует пройти Вводный курс, чтобы получить базовые навыки! Точно хочешь выбрать класс прямо сейчас?"
+      );
+      if (!confirmChoice) return; // Игрок передумал
+    }
+
     setChoosing(true);
     try {
       const classRoleId = CLASS_ROLE_IDS[id];
@@ -57,10 +66,21 @@ export default function ChooseClassPage() {
         await Profile.update({ class_role: classRoleId });
       }
       setPlayerClass(id);
-      toast.success(dict.classPage.toastSuccess, { duration: 3000 });
+      toast.success(dict.classPage?.toastSuccess || "Класс успешно выбран!", { duration: 3000 });
       router.push("/profile");
     } catch (e) {
-      toast.error("Не удалось сохранить класс. Попробуй ещё раз.", { duration: 4000 });
+      // Умная обработка ошибки бэкенда (на случай пустой БД)
+      console.error("Ошибка сервера:", e.response?.data);
+      let errorMsg = "Не удалось сохранить класс. Попробуй ещё раз.";
+      if (e.response?.data) {
+        const data = e.response.data;
+        if (data.class_role) {
+          errorMsg = Array.isArray(data.class_role) ? data.class_role[0] : data.class_role;
+        } else if (data.detail) {
+          errorMsg = data.detail;
+        }
+      }
+      toast.error(`Ошибка: ${errorMsg}`, { duration: 6000 });
     } finally {
       setChoosing(false);
     }
@@ -80,76 +100,14 @@ export default function ChooseClassPage() {
     );
   }
 
-  // ── Locked (intro not finished) ──
-  if (introStatus.locked) {
-    const info = introStatus.data?.intro_track;
-    const prog = introStatus.data?.progress;
-    const percent = prog && prog.total > 0 ? Math.round((prog.completed / prog.total) * 100) : 0;
-    return (
-      <Layout>
-        <div className="max-w-3xl mx-auto pt-24 pb-16 px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="text-center border border-border bg-surface rounded-[2.5rem] p-10 md:p-14 relative overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent pointer-events-none" />
-            <div className="relative z-10">
-              <div className="w-20 h-20 mx-auto rounded-full bg-panel border border-border flex items-center justify-center mb-6 shadow-inner">
-                <Lock size={32} className="text-muted" />
-              </div>
-              <p className="text-xs uppercase tracking-widest text-primary mb-4 font-bold">
-                {dict.classPage?.locked?.kicker || "Класс пока заблокирован"}
-              </p>
-              <h1 className="text-4xl md:text-5xl font-display font-bold text-text mb-6">
-                {dict.classPage?.locked?.heading || "Сначала пройди Вводный Курс"}
-              </h1>
-              <p className="text-lg text-muted leading-relaxed mb-8">
-                {dict.classPage?.locked?.subheading ||
-                  `Прежде чем выбрать своё призвание, заверши вводный трек${
-                    info?.title ? ` «${info.title}»` : ""
-                  }.`}
-              </p>
-              {prog && (
-                <div className="mb-8 max-w-md mx-auto">
-                  <div className="flex justify-between text-xs text-muted mb-2 uppercase tracking-widest">
-                    <span>{dict.classPage?.locked?.progressLabel || "Прогресс"}</span>
-                    <span>
-                      {prog.completed} / {prog.total}
-                    </span>
-                  </div>
-                  <div className="h-2 rounded-full bg-panel overflow-hidden border border-border">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${percent}%` }}
-                      transition={{ duration: 0.9, ease: "easeOut" }}
-                      className="h-full bg-gradient-to-r from-primary to-accent"
-                    />
-                  </div>
-                </div>
-              )}
-              <Button
-                onClick={() => router.push("/worlds")}
-                className="bg-primary text-white hover:bg-primary-dk shadow-[0_0_20px_var(--primary-selection)]"
-              >
-                {dict.classPage?.locked?.cta || "К вводному курсу"}
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </Layout>
-    );
-  }
-
   // ── Skill Tree ──
-  const classDict = dict.classPage.classes;
+  const classDict = dict.classPage?.classes || {};
   const nodes = TREE.map((n) => ({
     ...n,
-    name: classDict[n.id]?.name,
-    focus: classDict[n.id]?.focus,
-    desc: classDict[n.id]?.desc,
-    crest: classDict[n.id]?.crest,
+    name: classDict[n.id]?.name || n.id,
+    focus: classDict[n.id]?.focus || "База",
+    desc: classDict[n.id]?.desc || "Описание класса",
+    crest: classDict[n.id]?.crest || "⚔️",
     Icon: ICONS[n.id] || Code,
   }));
   const root = nodes.find((n) => n.tier === 0);
@@ -158,10 +116,26 @@ export default function ChooseClassPage() {
   return (
     <Layout>
       <div className="max-w-6xl mx-auto pt-24 pb-16 px-4">
+        
+        {/* Баннер рекомендации, если вводный курс не пройден */}
+        {introStatus.locked && (
+          <div className="bg-panel border border-accent/50 rounded-2xl p-6 mb-12 max-w-3xl mx-auto flex items-start gap-4 shadow-[0_0_20px_rgba(var(--accent-rgb),0.15)]">
+            <div className="bg-accent/20 p-3 rounded-full text-accent">
+              <Sparkles size={24} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-text mb-2">Рекомендация Академии</h3>
+              <p className="text-sm text-muted">
+                Мы видим, что ты еще не завершил Вводный курс. Ты можешь просмотреть древо классов и выбрать свой путь, но для полного понимания механик игры настоятельно рекомендуем сначала пройти базу!
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <header className="mb-12 text-center max-w-3xl mx-auto border-b border-border pb-10">
           <p className="text-xs uppercase tracking-widest text-primary mb-4 font-bold">
-            {dict.classPage.alignment}
+            {dict.classPage?.alignment || "Выравнивание"}
           </p>
           <h1 className="text-4xl md:text-6xl font-display font-bold text-text mb-6">
             Древо Классов
@@ -184,7 +158,7 @@ export default function ChooseClassPage() {
               node={root}
               onSelect={() => choose(root.id)}
               choosing={choosing}
-              cta={dict.classPage.cta}
+              cta={dict.classPage?.cta || "Выбрать класс"}
             />
           </motion.div>
 
@@ -235,7 +209,7 @@ export default function ChooseClassPage() {
                 transition={{ duration: 0.6, delay: 0.95 + i * 0.15, ease: "easeOut" }}
                 className="flex justify-center"
               >
-                <SkillNode node={node} cta={dict.classPage.cta} />
+                <SkillNode node={node} cta={dict.classPage?.cta || "Выбрать класс"} />
               </motion.div>
             ))}
           </div>

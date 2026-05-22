@@ -3,7 +3,7 @@
 from django.db import transaction
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from users.models import Profile
@@ -287,8 +287,19 @@ class TaskProgressViewSet(viewsets.ModelViewSet):
             "task", "task__mission"
         )
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        task = serializer.validated_data.get("task")
+        defaults = {k: v for k, v in serializer.validated_data.items() if k != "task"}
+        obj, created = TaskProgress.objects.update_or_create(
+            user=request.user,
+            task=task,
+            defaults=defaults,
+        )
+        out = self.get_serializer(obj)
+        code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        return Response(out.data, status=code)
 
     def perform_update(self, serializer):
         serializer.save(user=self.request.user)

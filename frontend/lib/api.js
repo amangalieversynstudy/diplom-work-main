@@ -117,10 +117,16 @@ const unwrapList = (data) => {
 };
 
 export const TaskProgressAPI = {
-  list: () => api.get("/task-progress/").then((r) => unwrapList(r.data)),
+  list: (missionId) => 
+    api.get("/task-progress/", { params: { mission: missionId } }).then((r) => unwrapList(r.data)),
+  
   create: (payload) => api.post("/task-progress/", payload).then((r) => r.data),
+  
   update: (id, payload) =>
     api.patch(`/task-progress/${id}/`, payload).then((r) => r.data),
+    
+  submit: (taskId, payload) => 
+    api.post("/task-progress/", { task: taskId, ...payload }).then((r) => r.data),
 };
 
 export const Ranks = {

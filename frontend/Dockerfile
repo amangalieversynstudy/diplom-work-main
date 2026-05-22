@@ -1,9 +1,17 @@
-FROM node:20-bullseye
+FROM node:18-alpine
+
 WORKDIR /app
+
 COPY package*.json ./
-# install dependencies for dev (fallback to npm install if no lock)
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
-# Copy sources (in dev we will override by volume)
+RUN npm ci --omit=dev
+
 COPY . .
-# Default to dev server; docker-compose can override
-CMD ["npm","run","dev"]
+
+ARG NEXT_PUBLIC_API_BASE
+ENV NEXT_PUBLIC_API_BASE=$NEXT_PUBLIC_API_BASE
+
+RUN npm run build
+
+EXPOSE 3000
+
+CMD ["npm", "run", "start"]

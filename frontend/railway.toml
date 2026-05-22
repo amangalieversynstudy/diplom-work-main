@@ -1,6 +1,6 @@
 [build]
 builder = "dockerfile"
-dockerfile = "../Dockerfile.frontend"
+dockerfile = "Dockerfile"
 
 [deploy]
 startCommand = "npm run start"

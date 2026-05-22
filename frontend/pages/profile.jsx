@@ -51,6 +51,7 @@ export default function ProfilePage() {
         ai_summons: profileBlock.ai_summons ?? 0,
         hint_scrolls: profileBlock.hint_scrolls ?? 0,
         skeleton_scrolls: profileBlock.skeleton_scrolls ?? 0,
+        rank: profileBlock.rank ?? null,
       };
 
       setProfile(merged);

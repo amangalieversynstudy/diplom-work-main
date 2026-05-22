@@ -1,21 +1,56 @@
 # ════════════════════════════════════════════════════════════════
-# RPG Academy — PRODUCTION docker-compose
+# RPG Academy — PRODUCTION stack
 # ════════════════════════════════════════════════════════════════
-# Использование:
+# Запуск:
 #   cp .env.example .env.prod   # заполни секретами
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
 #
-# Отличия от dev:
-#   - DJANGO_SETTINGS_MODULE=core.settings.production
-#   - Daphne запущен с несколькими workers (INFRA-07)
-#   - Healthchecks на всех сервисах (INFRA-04)
-#   - Том для бэкапов PostgreSQL (INFRA-08)
-#   - Volumes только read-only где можно
-#   - Нет hot-reload, нет npm run dev
-
-version: '3.8'
+# Сервисы:
+#   nginx     — reverse-proxy, TLS-терминация (443 → backend/frontend)
+#   backend   — Daphne ASGI (Django + Channels WebSocket для песочницы)
+#   celery    — фоновые задачи
+#   frontend  — Next.js production build
+#   db        — PostgreSQL 15
+#   redis     — кэш + брокер Celery + хранилище DRF throttle
+#   db-backup — pg_dump раз в сутки, ротация 14 дней
+#   certbot   — обновление Let's Encrypt сертификатов раз в 12 часов
 
 services:
+  nginx:
+    image: nginx:1.27-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - static-files:/usr/share/nginx/static:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  certbot:
+    image: certbot/certbot:latest
+    restart: always
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: >
+      sh -c "trap exit TERM;
+      while :; do
+        certbot renew --webroot -w /var/www/certbot --quiet;
+        sleep 12h & wait $${!};
+      done"
+
   db:
     image: postgres:15-alpine
     restart: always
@@ -25,7 +60,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ./backups:/backups  # INFRA-08: монтируем папку для дампов
+      - ./backups:/backups
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -36,8 +71,11 @@ services:
   redis:
     image: redis:7-alpine
     restart: always
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis-data:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping || exit 1"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -45,18 +83,15 @@ services:
   backend:
     build: ./backend
     restart: always
-    # INFRA-07: Daphne с несколькими worker-процессами для multi-CPU
-    # Для чистого WSGI можно gunicorn -w 4 core.wsgi:application,
-    # но Daphne нужен из-за Channels/WebSocket runner.
     command: >
       sh -c "python ./scripts/wait_for_postgres.py &&
       python manage.py migrate --noinput &&
       python manage.py collectstatic --noinput &&
       daphne -b 0.0.0.0 -p 8000 --proxy-headers core.asgi:application"
     environment:
-      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
-      REDIS_URL: "redis://redis:6379/0"
-      DJANGO_SETTINGS_MODULE: "core.settings.production"
+      DJANGO_SETTINGS_MODULE: core.settings.production
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379/0
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -66,7 +101,6 @@ services:
       ALLOWED_HOSTS: ${ALLOWED_HOSTS}
       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
       FRONTEND_URL: ${FRONTEND_URL}
-      # Email
       EMAIL_BACKEND: ${EMAIL_BACKEND}
       EMAIL_HOST: ${EMAIL_HOST:-}
       EMAIL_PORT: ${EMAIL_PORT:-587}
@@ -74,13 +108,13 @@ services:
       EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
       DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@example.com}
-      # AI
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      # Monitoring (опционально)
       SENTRY_DSN: ${SENTRY_DSN:-}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
     volumes:
       - static-files:/app/staticfiles
+      # для песочницы — пробрасываем docker daemon хоста
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       db:
         condition: service_healthy
@@ -98,9 +132,14 @@ services:
     restart: always
     command: celery -A core worker -l info --concurrency=4
     environment:
-      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
-      REDIS_URL: "redis://redis:6379/0"
-      DJANGO_SETTINGS_MODULE: "core.settings.production"
+      DJANGO_SETTINGS_MODULE: core.settings.production
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379/0
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
       SECRET_KEY: ${SECRET_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     depends_on:
@@ -118,7 +157,6 @@ services:
   frontend:
     build: ./frontend
     restart: always
-    # В проде Next.js строится один раз и запускается через `next start`
     command: sh -c "npm ci --omit=dev && npm run build && npm run start"
     environment:
       NODE_ENV: production
@@ -133,8 +171,6 @@ services:
       retries: 5
       start_period: 60s
 
-  # INFRA-08: автоматический бэкап PostgreSQL раз в сутки
-  # Дампы складываются в ./backups/ как backup_YYYY-MM-DD.sql.gz
   db-backup:
     image: postgres:15-alpine
     restart: always
@@ -154,11 +190,11 @@ services:
         DATE=$$(date +%Y-%m-%d_%H%M%S);
         echo \"[backup] dumping db at $$DATE\";
         pg_dump --no-owner --no-acl | gzip > /backups/backup_$$DATE.sql.gz;
-        # Оставляем только последние 14 дампов
         ls -t /backups/backup_*.sql.gz 2>/dev/null | tail -n +15 | xargs -r rm -f;
         sleep 86400;
       done"
 
 volumes:
   db-data:
+  redis-data:
   static-files:

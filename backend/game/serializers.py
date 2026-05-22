@@ -1,5 +1,3 @@
-"""Serializers for game models used in API endpoints."""
-
 from rest_framework import serializers
 from users.models import Profile
 
@@ -29,7 +27,7 @@ def _resolve_language(request, default="ru"):
 
 
 class LocalizedSerializerMixin:
-    """Inject localized title/description fields."""
+    """Подставляет локализованные title/description в выдачу."""
 
     language_field_name = "language"
 
@@ -77,8 +75,6 @@ class MissionTaskSerializer(LocalizedSerializerMixin, serializers.ModelSerialize
 
 
 class MissionSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
-    """Serializer for Mission model."""
-
     available = serializers.SerializerMethodField()
     user_progress = serializers.SerializerMethodField()
     prerequisites = serializers.SerializerMethodField()
@@ -86,8 +82,6 @@ class MissionSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
     tasks = MissionTaskSerializer(many=True, read_only=True)
 
     class Meta:
-        """Meta options for MissionSerializer."""
-
         model = Mission
         fields = [
             "id",
@@ -113,7 +107,7 @@ class MissionSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
         ]
 
     def get_available(self, obj):
-        """Mission availability: check level, prerequisites and active flag."""
+        # доступность миссии: активна + level >= min_level + все prerequisites пройдены
         request = self.context.get("request")
         if not obj.is_active:
             return False
@@ -171,16 +165,11 @@ class MissionSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
 
 
 class LocationSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
-    """Serializer for Location, includes nested missions."""
-
     missions = MissionSerializer(many=True, read_only=True)
     track = serializers.SerializerMethodField()
     language = serializers.SerializerMethodField()
-    language = serializers.SerializerMethodField()
 
     class Meta:
-        """Meta options for LocationSerializer."""
-
         model = Location
         fields = [
             "id",
@@ -214,8 +203,6 @@ class LocationSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
 
 
 class TrackSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
-    """Serializer for Track with nested worlds."""
-
     worlds = serializers.SerializerMethodField()
     tagline = serializers.SerializerMethodField()
     language = serializers.SerializerMethodField()
@@ -256,16 +243,9 @@ class TrackSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
     def get_language(self, obj):
         return self._preferred_language()
 
-    def get_language(self, obj):
-        return self._preferred_language()
-
 
 class ProgressSerializer(serializers.ModelSerializer):
-    """Serializer for Progress model."""
-
     class Meta:
-        """Meta options for ProgressSerializer."""
-
         model = Progress
         fields = [
             "id",
@@ -282,8 +262,6 @@ class ProgressSerializer(serializers.ModelSerializer):
 
 
 class TaskProgressSerializer(serializers.ModelSerializer):
-    """Serializer for TaskProgress entries."""
-
     task_detail = MissionTaskSerializer(source="task", read_only=True)
     task = serializers.PrimaryKeyRelatedField(
         queryset=MissionTask.objects.all(), write_only=False

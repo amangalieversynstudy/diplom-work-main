@@ -52,7 +52,7 @@ class ProfileMeView(APIView):
         profile = user.profile
         data = request.data or {}
 
-        # ─── User fields ──────────────────────────────────────────────
+        # User-поля: username / email / display_name
         user_dirty = []
         if "username" in data and data["username"]:
             new_username = str(data["username"]).strip()
@@ -81,7 +81,7 @@ class ProfileMeView(APIView):
         if user_dirty:
             user.save(update_fields=user_dirty)
 
-        # ─── Profile fields (use serializer for class_role validation) ─
+        # Profile-поля — через сериализатор (нужна валидация class_role)
         profile_payload = {k: data[k] for k in ("bio", "class_role") if k in data}
         if profile_payload:
             serializer = ProfileSerializer(

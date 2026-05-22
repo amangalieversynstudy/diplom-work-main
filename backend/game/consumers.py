@@ -1,25 +1,8 @@
-"""WebSocket consumers for the game app.
+"""WebSocket-консьюмер для стриминга выполнения кода в реальном времени.
 
-RunnerConsumer streams Python code execution from a sandboxed Docker
-container to the client in real time. The transport is a single
-JSON-message protocol:
-
-Client → server messages:
-  {"type": "run", "code": "...", "language": "python"}
-
-Server → client events:
-  {"type": "stdout"|"stderr", "data": "..."}
-  {"type": "error", "message": "..."}        # infrastructure/validation
-  {"type": "exit",  "code": <int>, "duration": <seconds>}
-
-Safety:
-  - One run per connection at a time (subsequent ``run`` messages are
-    rejected with an ``error`` event until the previous run finishes).
-  - Code length capped at 100 KB.
-  - Connection close kills any in-flight container via the runner's
-    cooperative stop event.
-  - All sandboxing guarantees (timeout, memory, no-network) come from
-    ``stream_python_code`` in runner.py.
+Протокол: клиент шлёт {"type": "run", "code": "..."}, сервер шлёт обратно
+события stdout/stderr/error/exit. Один запуск на соединение, ограничение
+кода 100 KB. Безопасность держится на песочнице из runner.py.
 """
 
 import asyncio
@@ -34,12 +17,12 @@ MAX_CODE_BYTES = 100_000
 
 
 class RunnerConsumer(AsyncWebsocketConsumer):
-    """Streams sandboxed Python execution over WebSocket."""
+    """Стримит выполнение кода в песочнице через WebSocket."""
 
     async def connect(self):
         user = self.scope.get("user")
         if not user or user.is_anonymous:
-            # 4401 mimics HTTP 401 in the WS application-error range.
+            # 4401 — аналог HTTP 401 в диапазоне WS application errors
             await self.close(code=4401)
             return
         self._running = False
@@ -48,8 +31,7 @@ class RunnerConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, code):
-        # Signal the producer thread (if any) to abandon its work; the
-        # runner watchdog will kill the container.
+        # говорим producer-потоку остановиться; watchdog убьёт контейнер
         if self._stop_event is not None:
             self._stop_event.set()
         if self._run_task is not None and not self._run_task.done():
@@ -86,20 +68,13 @@ class RunnerConsumer(AsyncWebsocketConsumer):
             })
             return
 
-        # Spawn the stream as a background task so ``receive`` returns
-        # immediately and can reject concurrent ``run`` messages with the
-        # busy-error above. Flip ``_running`` *before* scheduling so a
-        # racing second ``receive`` sees the busy state.
+        # ставим _running перед стартом задачи, чтобы параллельный receive
+        # увидел busy и отбил повторный run
         self._running = True
         self._run_task = asyncio.create_task(self._stream_run(code))
 
     async def _stream_run(self, code: str) -> None:
-        """Run the synchronous generator in a thread, forward events asynchronously.
-
-        ``_running`` is set by the caller (``_handle_run``) before scheduling
-        this coroutine, so concurrent ``receive`` calls see the busy flag and
-        reject extra ``run`` messages immediately.
-        """
+        """Гоняет синхронный генератор в треде, асинхронно форвардит события."""
         self._stop_event = threading.Event()
         loop = asyncio.get_running_loop()
         queue: asyncio.Queue = asyncio.Queue()
@@ -110,7 +85,7 @@ class RunnerConsumer(AsyncWebsocketConsumer):
                     if self._stop_event.is_set():
                         break
                     loop.call_soon_threadsafe(queue.put_nowait, event)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 loop.call_soon_threadsafe(
                     queue.put_nowait,
                     {"type": "error", "message": f"Runner crashed: {exc}"},
@@ -128,7 +103,7 @@ class RunnerConsumer(AsyncWebsocketConsumer):
                     break
                 await self._emit(event)
         except asyncio.CancelledError:
-            # Triggered by disconnect(); make sure the producer thread stops.
+            # disconnect() отменил задачу — гасим producer
             if self._stop_event is not None:
                 self._stop_event.set()
             raise

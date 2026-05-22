@@ -1,23 +1,6 @@
-/**
- * Terminal — production-grade xterm.js wrapper.
- *
- * Renders a single xterm instance with FitAddon + WebLinksAddon, themed to
- * match the dark RPG palette of the rest of the app. The component exposes
- * an imperative ref API so a parent (CodeRunnerPanel) can drive output
- * straight from a WebSocket stream without re-rendering on every byte.
- *
- * Ref methods:
- *   write(data)    — write raw bytes/strings (ANSI sequences honoured)
- *   writeln(data)  — same, plus trailing \r\n
- *   clear()        — clear the visible buffer
- *   reset()        — full reset (buffer + scrollback + state)
- *   fit()          — refit to container size
- *   focus()        — focus the terminal
- *
- * Notes
- * - xterm.js needs `\r\n` line endings; callers should normalize.
- * - The xterm CSS is imported once globally in pages/_app.js.
- */
+// Terminal — обёртка над xterm.js под тёмную RPG-палитру.
+// Через ref наружу торчат write/writeln/clear/reset/fit/focus.
+// CSS для xterm подгружается глобально в pages/_app.js.
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 

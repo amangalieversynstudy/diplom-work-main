@@ -3,7 +3,6 @@ builder = "dockerfile"
 dockerfile = "Dockerfile.backend"
 
 [deploy]
-startCommand = "python3 manage.py migrate --noinput && python3 manage.py collectstatic --noinput && python3 manage.py loaddata game/fixtures/ranks.json game/fixtures/class_roles.json game/fixtures/intro_course.json || true && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 60 --access-logfile -"
+startCommand = "python3 manage.py migrate --noinput; python3 manage.py collectstatic --noinput; gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 60 --access-logfile -"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
-healthcheckPath = "/healthz"

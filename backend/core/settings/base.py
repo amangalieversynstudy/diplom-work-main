@@ -134,6 +134,18 @@ REST_FRAMEWORK = {
         "rest_framework.parsers.FormParser",
         "rest_framework.parsers.MultiPartParser",
     ],
+    # Throttling — глобальные классы плюс named scopes для AI и Runner
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "30/min",
+        "user": "120/min",
+        "ai_assist": "10/min",        # Gemini — дорого
+        "code_runner": "20/min",       # Docker sandbox — ресурсоёмко
+        "code_runner_burst": "5/10s",  # Защита от спам-кликов Run
+    },
 }
 
 SIMPLE_JWT = {
@@ -147,6 +159,15 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
+# Redis cache — нужен для DRF throttle (счётчики должны шариться между
+# процессами Daphne, локальный LocMemCache теряет их при каждом forке).
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+    }
+}
 
 # Email for dev (console) - change in production
 EMAIL_BACKEND = os.getenv(

@@ -1,0 +1,17 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Копируем package.json (убедись, что пути правильные)
+COPY frontend/package*.json ./
+RUN npm ci
+
+# Копируем остальной код
+COPY frontend/ ./
+
+# Важно: Railway передаст NEXT_PUBLIC_API_BASE во время сборки
+RUN npm run build
+
+EXPOSE 3000
+
+CMD ["npm", "run", "start"]

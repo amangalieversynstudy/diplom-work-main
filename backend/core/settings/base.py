@@ -82,16 +82,21 @@ CHANNEL_LAYERS = {
     },
 }
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "rpgdb"),
-        "USER": os.getenv("POSTGRES_USER", "rpguser"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "rpgpass"),
-        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
-        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+_DATABASE_URL = os.getenv("DATABASE_URL")
+if _DATABASE_URL:
+    import dj_database_url
+    DATABASES = {"default": dj_database_url.parse(_DATABASE_URL, conn_max_age=600)}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("POSTGRES_DB", "rpgdb"),
+            "USER": os.getenv("POSTGRES_USER", "rpguser"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "rpgpass"),
+            "HOST": os.getenv("POSTGRES_HOST", "localhost"),
+            "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        }
     }
-}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},

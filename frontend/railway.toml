@@ -1,0 +1,7 @@
+[build]
+builder = "dockerfile"
+dockerfile = "../Dockerfile.frontend"
+
+[deploy]
+startCommand = "npm run start"
+restartPolicyType = "ON_FAILURE"

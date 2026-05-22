@@ -20,12 +20,12 @@ def test_register_login_logout():
     # 1. Register — аккаунт создаётся с is_active=False
     resp = client.post(
         register_url,
-        {"username": "u1", "password": "p1", "email": "u1@example.com"},
+        {"username": "u1", "password": "TestPass123!", "email": "u1@example.com"},
     )
     assert resp.status_code == 201
 
     # 2. Логин неактивного пользователя должен упасть
-    resp = client.post(login_url, {"username": "u1", "password": "p1"})
+    resp = client.post(login_url, {"username": "u1", "password": "TestPass123!"})
     assert resp.status_code == 401
 
     # 3. Активация email
@@ -37,7 +37,7 @@ def test_register_login_logout():
     assert resp.status_code == 200
 
     # 4. Теперь логин проходит
-    resp = client.post(login_url, {"username": "u1", "password": "p1"})
+    resp = client.post(login_url, {"username": "u1", "password": "TestPass123!"})
     assert resp.status_code == 200
     data = resp.json()
     assert "access" in data and "refresh" in data
@@ -55,7 +55,7 @@ def test_register_and_verify_email(client):
     # register user
     resp = client.post(
         "/api/auth/register/",
-        {"username": "u2", "password": "p2", "email": "u2@example.com"},
+        {"username": "u2", "password": "TestPass456!", "email": "u2@example.com"},
     )
     assert resp.status_code == 201
     # since email backend is console, we can't read it here; instead, ensure user exists and is_active flag

@@ -1,5 +1,7 @@
 """API viewsets for game models with CodeCombat-like logic."""
 
+import logging
+
 from django.db import transaction
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -8,10 +10,15 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from users.models import Profile
 from rest_framework.views import APIView
-from django.utils.decorators import method_decorator
-from django_ratelimit.decorators import ratelimit
-from django_ratelimit.exceptions import Ratelimited
 from rest_framework.exceptions import APIException
+
+from .throttles import (
+    AIAssistThrottle,
+    CodeRunnerBurstThrottle,
+    CodeRunnerThrottle,
+)
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     LeaderboardEntry,
@@ -397,9 +404,17 @@ class IntroStatusView(APIView):
 
 class CodeRunnerView(APIView):
     """
-    API для безопасного запуска пользовательского кода в песочнице.
+    API для безопасного запуска пользовательского кода в Docker-песочнице.
+
+    Throttling: 20 запусков/мин на юзера + burst 5/10с — защищает контейнер-хост
+    от спам-кликов и DDoS.
     """
+
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [CodeRunnerThrottle, CodeRunnerBurstThrottle]
+
+    # Лимит размера присылаемого исходника — защита от мегабайтных payload-ов
+    MAX_CODE_LENGTH = 10_000
 
     @swagger_auto_schema(
         operation_summary="Execute Python Code",
@@ -415,29 +430,43 @@ class CodeRunnerView(APIView):
     def post(self, request, *args, **kwargs):
         code = request.data.get("code", "")
         if not code:
-            return Response({"status": "error", "output": "Код не предоставлен."}, status=400)
-        
+            return Response(
+                {"status": "error", "output": "Код не предоставлен."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if len(code) > self.MAX_CODE_LENGTH:
+            return Response(
+                {
+                    "status": "error",
+                    "output": f"Код превышает лимит {self.MAX_CODE_LENGTH} символов.",
+                },
+                status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            )
+
         from .runner import execute_python_code
         result = execute_python_code(code)
-        
+
         if result["status"] == "error":
             return Response(result, status=400)
 
         return Response(result, status=200)
 
-class RateLimitException(APIException):
-    status_code = 429
-    default_detail = "Слишком много запросов к Мудрецу. Подожди 1 минуту."
-    default_code = "rate_limit_exceeded"
 
 class AIAssistView(APIView):
     """AI-помощник (Gemini) для code-заданий — выдаёт подсказку, не решение.
 
     POST /api/game/ai-assist/  {code, task_description, language} -> {hint}
-    Если GEMINI_API_KEY не задан — возвращает локальный fallback.
+
+    Throttling: 10 запросов/мин на юзера (Gemini-квота дорогая).
+    Если GEMINI_API_KEY не задан — возвращает локальный fallback вместо 500.
+    Списывает 1 ai_summon из инвентаря пользователя только при УСПЕХЕ.
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AIAssistThrottle]
+
+    MAX_CODE_LENGTH = 8_000
+    MAX_DESCRIPTION_LENGTH = 4_000
 
     _SYSTEM_PROMPT = (
         "You are Sage — a wise, concise mentor inside an RPG coding academy. "
@@ -448,35 +477,110 @@ class AIAssistView(APIView):
         "Keep a slightly mystical, encouraging RPG tone."
     )
 
-    @method_decorator(ratelimit(key="user", rate="10/m", block=True))
+    @swagger_auto_schema(
+        operation_summary="AI Hint (Gemini)",
+        operation_description=(
+            "Выдаёт подсказку по задаче. Списывает 1 ai_summons из инвентаря "
+            "только при успешном ответе. Лимит — 10/мин на юзера."
+        ),
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "code": openapi.Schema(type=openapi.TYPE_STRING),
+                "task_description": openapi.Schema(type=openapi.TYPE_STRING),
+                "language": openapi.Schema(type=openapi.TYPE_STRING, default="python"),
+            },
+            required=["task_description"],
+        ),
+    )
     def post(self, request):
-        code = request.data.get("code", "").strip()
-        task_description = request.data.get("task_description", "").strip()
+        code = (request.data.get("code") or "").strip()
+        task_description = (request.data.get("task_description") or "").strip()
         language = request.data.get("language", "python")
 
-        hint = self._call_gemini(code, task_description, language)
-        return Response({"hint": hint})
+        if not task_description:
+            return Response(
+                {"detail": "task_description is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if len(code) > self.MAX_CODE_LENGTH:
+            return Response(
+                {"detail": f"code превышает лимит {self.MAX_CODE_LENGTH} символов"},
+                status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            )
+        if len(task_description) > self.MAX_DESCRIPTION_LENGTH:
+            return Response(
+                {
+                    "detail": (
+                        f"task_description превышает лимит "
+                        f"{self.MAX_DESCRIPTION_LENGTH} символов"
+                    )
+                },
+                status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            )
 
-    def _call_gemini(self, code: str, description: str, language: str) -> str:
+        profile = request.user.profile
+        if profile.ai_summons <= 0:
+            return Response(
+                {
+                    "detail": (
+                        "Нет вызовов AI-помощника. Заработай новый уровень — "
+                        "получишь больше свитков."
+                    ),
+                    "remaining_summons": 0,
+                },
+                status=status.HTTP_402_PAYMENT_REQUIRED,
+            )
+
+        hint, ok = self._call_gemini(code, task_description, language)
+        if ok:
+            # Списываем расход только при успешном ответе AI
+            profile.use_item("ai_summons")
+
+        return Response(
+            {
+                "hint": hint,
+                "remaining_summons": profile.ai_summons,
+            }
+        )
+
+    def _call_gemini(self, code: str, description: str, language: str):
+        """Возвращает кортеж (text, success_flag).
+
+        success_flag=False — текст это user-friendly fallback, инвентарь НЕ
+        списываем.
+        """
         import os
 
-        api_key = getattr(
-            __import__("django.conf", fromlist=["settings"]).settings,
-            "GEMINI_API_KEY",
-            None,
-        ) or os.environ.get("GEMINI_API_KEY")
+        from django.conf import settings as _settings
+
+        api_key = getattr(_settings, "GEMINI_API_KEY", None) or os.environ.get(
+            "GEMINI_API_KEY"
+        )
 
         if not api_key:
             return (
                 "🔮 Мудрец молчит... Ключ Гемини не настроен. "
-                "Проверь переменную окружения GEMINI_API_KEY."
+                "Проверь переменную окружения GEMINI_API_KEY.",
+                False,
             )
 
         try:
             import google.generativeai as genai
+        except ImportError:
+            logger.warning("google-generativeai не установлен — Gemini выключен")
+            return (
+                "📦 Библиотека google-generativeai не установлена. "
+                "Запусти: pip install google-generativeai>=0.5",
+                False,
+            )
 
+        try:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            model_name = getattr(_settings, "GEMINI_MODEL", None) or os.environ.get(
+                "GEMINI_MODEL", "gemini-1.5-flash"
+            )
+            model = genai.GenerativeModel(model_name)
 
             user_message = (
                 f"Task:\n{description}\n\n"
@@ -488,19 +592,13 @@ class AIAssistView(APIView):
                 [self._SYSTEM_PROMPT, user_message],
                 generation_config={"max_output_tokens": 300, "temperature": 0.7},
             )
-            return response.text.strip()
-
-        except ImportError:
-            return (
-                "📦 Библиотека google-generativeai не установлена. "
-                "Добавь её в requirements.txt: google-generativeai>=0.5"
-            )
+            text = (response.text or "").strip()
+            if not text:
+                return (
+                    "🧙 Наставник задумался... попробуй переформулировать вопрос.",
+                    False,
+                )
+            return text, True
         except Exception as exc:
-            return f"⚠️ Мудрец недоступен: {exc}"
-    def handle_exception(self, exc):
-        if isinstance(exc, Ratelimited):
-            return Response(
-                {"detail": "Слишком много запросов к Мудрецу. Подожди 1 минуту."},
-                status=429
-            )
-        return super().handle_exception(exc)
+            logger.exception("Gemini API call failed")
+            return (f"⚠️ Мудрец недоступен: {exc}", False)

@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import XPBar from "../components/XPBar";
 import Button from "../components/Button";
-import SkillTree from "../components/SkillTree";
 import { clearPlayerClass } from "../lib/class";
 import { Profile as ProfileAPI } from "../lib/api";
 import { toast } from "sonner";
@@ -148,8 +147,11 @@ if (loading) {
                 Уровень {profile?.level || 1}
               </p>
               
-              {/* Полоса опыта */}
-              <XPBar currentXP={profile?.xp || 0} maxXP={(profile?.level || 1) * 1000} />
+              {/* Полоса опыта (100 XP = 1 level) */}
+              <XPBar
+                current={(profile?.xp || 0) % 100}
+                max={100}
+              />
               
               <div className="mt-6 pt-6 border-t border-border space-y-3">
                 <Button onClick={handleResetClass} variant="outline" className="w-full text-sm">
@@ -225,11 +227,6 @@ if (loading) {
               )}
             </div>
           </div>
-        </div>
-
-        {/* ── Древо Навыков (MVP) ── */}
-        <div className="mt-8">
-          <SkillTree currentClassId={profile?.class_role} />
         </div>
       </div>
     </Layout>

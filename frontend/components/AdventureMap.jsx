@@ -1,31 +1,34 @@
 import { motion } from "framer-motion";
 
-// Словарь стилей для разных классов
+// Словарь стилей для разных классов проекта (python / django / devops)
 const classThemes = {
-  warrior: {
-    bg: "bg-gradient-to-br from-red-900/40 via-[#1e1e1e] to-[#0f0f11]",
-    lineStroke: "#ef4444", // Красный путь
-    nodeBase: "bg-red-500/20 border-red-500/50",
-    nodeGlow: "shadow-[0_0_15px_rgba(239,68,68,0.3)]",
+  python: {
+    // Python-спеллблейд — золотисто-фиолетовая магия
+    bg: "bg-gradient-to-br from-purple-900/40 via-[#1e1e1e] to-[#0f0f11]",
+    lineStroke: "#a855f7",
+    nodeBase: "bg-purple-500/20 border-purple-500/50",
+    nodeGlow: "shadow-[0_0_15px_rgba(168,85,247,0.35)]",
   },
-  mage: {
-    bg: "bg-gradient-to-br from-blue-900/40 via-[#1e1e1e] to-[#0f0f11]",
-    lineStroke: "#3b82f6", // Синий путь
-    nodeBase: "bg-blue-500/20 border-blue-500/50",
-    nodeGlow: "shadow-[0_0_15px_rgba(59,130,246,0.3)]",
+  django: {
+    // Арканист Django — изумрудный
+    bg: "bg-gradient-to-br from-emerald-900/40 via-[#1e1e1e] to-[#0f0f11]",
+    lineStroke: "#10b981",
+    nodeBase: "bg-emerald-500/20 border-emerald-500/50",
+    nodeGlow: "shadow-[0_0_15px_rgba(16,185,129,0.35)]",
   },
-  rogue: {
-    bg: "bg-gradient-to-br from-green-900/40 via-[#1e1e1e] to-[#0f0f11]",
-    lineStroke: "#22c55e", // Зеленый путь
-    nodeBase: "bg-green-500/20 border-green-500/50",
-    nodeGlow: "shadow-[0_0_15px_rgba(34,197,94,0.3)]",
+  devops: {
+    // DevOps-рейнджер — циан/металл
+    bg: "bg-gradient-to-br from-cyan-900/40 via-[#1e1e1e] to-[#0f0f11]",
+    lineStroke: "#06b6d4",
+    nodeBase: "bg-cyan-500/20 border-cyan-500/50",
+    nodeGlow: "shadow-[0_0_15px_rgba(6,182,212,0.35)]",
   },
   default: {
-    bg: "bg-[#141418]", // Стандартный темный фон
+    bg: "bg-[#141418]",
     lineStroke: "#6b7280",
     nodeBase: "bg-gray-500/20 border-gray-500/50",
     nodeGlow: "",
-  }
+  },
 };
 
 function Node({ node, delay = 0, theme }) {

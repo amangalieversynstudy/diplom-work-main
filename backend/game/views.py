@@ -398,14 +398,10 @@ class RateLimitException(APIException):
     default_code = "rate_limit_exceeded"
 
 class AIAssistView(APIView):
-    """Gemini-powered AI assistant for quest code tasks.
+    """AI-помощник (Gemini) для code-заданий — выдаёт подсказку, не решение.
 
-    POST /api/game/ai-assist/
-    Body: { "code": "...", "task_description": "...", "language": "python" }
-    Returns: { "hint": "..." }
-
-    Requires GEMINI_API_KEY in settings/environment.
-    Gracefully degrades when the key is absent (returns a local fallback hint).
+    POST /api/game/ai-assist/  {code, task_description, language} -> {hint}
+    Если GEMINI_API_KEY не задан — возвращает локальный fallback.
     """
 
     permission_classes = [permissions.IsAuthenticated]
@@ -419,6 +415,7 @@ class AIAssistView(APIView):
         "Keep a slightly mystical, encouraging RPG tone."
     )
 
+    @method_decorator(ratelimit(key="user", rate="10/m", block=True))
     def post(self, request):
         code = request.data.get("code", "").strip()
         task_description = request.data.get("task_description", "").strip()
@@ -443,7 +440,7 @@ class AIAssistView(APIView):
             )
 
         try:
-            import google.generativeai as genai  # noqa: WPS433
+            import google.generativeai as genai
 
             genai.configure(api_key=api_key)
             model = genai.GenerativeModel("gemini-1.5-flash")
@@ -465,7 +462,7 @@ class AIAssistView(APIView):
                 "📦 Библиотека google-generativeai не установлена. "
                 "Добавь её в requirements.txt: google-generativeai>=0.5"
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             return f"⚠️ Мудрец недоступен: {exc}"
     def handle_exception(self, exc):
         if isinstance(exc, Ratelimited):

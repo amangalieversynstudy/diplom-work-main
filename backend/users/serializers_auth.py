@@ -1,8 +1,4 @@
-"""Authentication-related serializers for user registration and detail views.
-
-Файл содержит минимальные сериализаторы для регистрации и просмотра
-пользователя, используемые в API аутентификации.
-"""
+"""Сериализаторы для регистрации и просмотра пользователя."""
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
@@ -14,38 +10,26 @@ User = get_user_model()
 
 
 class RegisterSerializer(serializers.ModelSerializer):
-    """Serializer used to register new users.
-
-    Fields: id, username, email, password (write-only).
-    """
-
     password = serializers.CharField(write_only=True)
 
     class Meta:
-        """Meta for RegisterSerializer."""
-
         model = User
         fields = ("id", "username", "email", "password")
 
     def validate_email(self, value):
-        """Ensure email is unique across all users."""
         if value and User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("Этот email уже используется.")
         return value
 
     def validate_password(self, value):
-        """Validate password strength using Django's built-in validators."""
         from django.core.exceptions import ValidationError as DjangoValidationError
         try:
             validate_password(value)
         except DjangoValidationError as e:
-            # e.messages is a list; join them with semicolons for the user
             raise serializers.ValidationError("; ".join(e.messages))
         return value
 
     def create(self, validated_data):
-        """Create a new User instance from validated data."""
-        # Ensure username is unique with clear validation error
         username = validated_data["username"]
         if User.objects.filter(username=username).exists():
             raise serializers.ValidationError({"username": "Это имя пользователя уже занято."})
@@ -59,23 +43,15 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
-    """Serializer for Profile used in authentication flows."""
-
     class Meta:
-        """Meta options for ProfileSerializer used in auth."""
-
         model = Profile
         fields = ("xp", "level", "bio")
         ref_name = "AuthProfileSerializer"
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
-    """Detailed user serializer including profile."""
-
     profile = ProfileSerializer(read_only=True)
 
     class Meta:
-        """Meta for user detail serializer."""
-
         model = User
         fields = ("id", "username", "email", "profile")

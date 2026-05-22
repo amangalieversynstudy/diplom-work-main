@@ -1,8 +1,4 @@
-"""Admin registrations for game models.
-
-Optimised for content editors (methodologists) who need a clean CMS-like
-interface to manage tracks, missions, and tasks without touching JSON files.
-"""
+"""Регистрация моделей в админке — CMS-интерфейс для методологов."""
 
 from django.contrib import admin
 from django.utils.html import format_html
@@ -20,7 +16,6 @@ from .models import (
 )
 
 
-# ─── Shared helpers ───────────────────────────────────────────────────────────
 
 class _LocalisedMixin:
     """Show both RU/EN titles in list views."""
@@ -34,7 +29,6 @@ class _LocalisedMixin:
         return obj.title_en or "—"
 
 
-# ─── ClassRole ────────────────────────────────────────────────────────────────
 
 @admin.register(ClassRole)
 class ClassRoleAdmin(admin.ModelAdmin):
@@ -42,7 +36,6 @@ class ClassRoleAdmin(admin.ModelAdmin):
     search_fields = ("name",)
 
 
-# ─── Track ────────────────────────────────────────────────────────────────────
 
 @admin.register(Track)
 class TrackAdmin(_LocalisedMixin, admin.ModelAdmin):
@@ -84,7 +77,6 @@ class TrackAdmin(_LocalisedMixin, admin.ModelAdmin):
         return obj.is_intro
 
 
-# ─── Location ─────────────────────────────────────────────────────────────────
 
 @admin.register(Location)
 class LocationAdmin(_LocalisedMixin, admin.ModelAdmin):
@@ -112,7 +104,6 @@ class LocationAdmin(_LocalisedMixin, admin.ModelAdmin):
     )
 
 
-# ─── MissionTask inline ───────────────────────────────────────────────────────
 
 class MissionTaskInline(admin.StackedInline):
     """Stacked inline so methodologists can see/edit full task bodies."""
@@ -134,7 +125,6 @@ class MissionTaskInline(admin.StackedInline):
     show_change_link = True
 
 
-# ─── Mission ──────────────────────────────────────────────────────────────────
 
 @admin.register(Mission)
 class MissionAdmin(_LocalisedMixin, admin.ModelAdmin):
@@ -177,7 +167,6 @@ class MissionAdmin(_LocalisedMixin, admin.ModelAdmin):
     )
 
 
-# ─── MissionTask (standalone) ─────────────────────────────────────────────────
 
 @admin.register(MissionTask)
 class MissionTaskAdmin(admin.ModelAdmin):
@@ -233,7 +222,6 @@ class MissionTaskAdmin(admin.ModelAdmin):
         )
 
 
-# ─── Progress ─────────────────────────────────────────────────────────────────
 
 @admin.register(Progress)
 class ProgressAdmin(admin.ModelAdmin):
@@ -253,7 +241,6 @@ class TaskProgressAdmin(admin.ModelAdmin):
     readonly_fields = ("user", "task", "attempts", "best_score")
 
 
-# ─── Rank ─────────────────────────────────────────────────────────────────────
 
 @admin.register(Rank)
 class RankAdmin(admin.ModelAdmin):
@@ -262,7 +249,6 @@ class RankAdmin(admin.ModelAdmin):
     search_fields = ("slug", "title_ru", "title_en")
 
 
-# ─── Leaderboard ──────────────────────────────────────────────────────────────
 
 @admin.register(LeaderboardEntry)
 class LeaderboardEntryAdmin(admin.ModelAdmin):

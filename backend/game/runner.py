@@ -1,30 +1,10 @@
-"""Sandboxed Python code execution helpers.
+"""Запуск Python-кода в изолированном Docker-контейнере (sandbox).
 
-Two entry points are exposed:
+Здесь две функции: execute_python_code — синхронный запуск, отдаёт всё разом
+(используется в REST /runner/execute/), и stream_python_code — генератор,
+шлёт события по мере выполнения (используется в WebSocket RunnerConsumer).
 
-* ``execute_python_code(code, timeout=5)`` — synchronous, one-shot. Runs the
-  code in an isolated Alpine container and returns the full stdout/stderr
-  blob together with a status flag. Used by the REST ``/api/runner/execute/``
-  endpoint as a non-streaming fallback (CI / batch / smoke tests).
-
-* ``stream_python_code(code, timeout=15, stop_event=None)`` — generator that
-  yields events as the code runs: ``stdout`` / ``stderr`` chunks, an optional
-  ``error`` message, and a final ``exit`` event with the return code and
-  wall-clock duration. Used by the WebSocket ``RunnerConsumer`` to power the
-  interactive terminal UI.
-
-Both functions rely on the same hardening:
-
-* image:        ``python:3.11-alpine``
-* memory:       128 MB
-* PIDs:         ≤ 64 (fork-bomb mitigation, streaming path only)
-* network:      disabled (``network_mode='none'``)
-* CPU/timeout:  hard kill after ``timeout`` seconds
-* output:       capped at ``MAX_OUTPUT_SIZE`` bytes; container killed if
-                exceeded
-
-Decoding is UTF-8 with ``errors='replace'`` so binary noise can never crash
-the consumer.
+Лимиты: 128 MB RAM, 64 PID, нет сети, hard-kill по таймауту.
 """
 
 import struct
@@ -34,25 +14,16 @@ import time
 import docker
 from requests.exceptions import ReadTimeout
 
-# Hard cap on total bytes of stdout+stderr forwarded to the user. Protects
-# memory on both server and client; users see a single truncation message
-# instead of an OOM.
-MAX_OUTPUT_SIZE = 50 * 1024  # 50 KB
 
+# максимум 50 KB вывода — иначе обрезаем
+MAX_OUTPUT_SIZE = 50 * 1024
 
-# ──────────────────────────────────────────────────────────────────────────
-# Synchronous one-shot runner (REST fallback)
-# ──────────────────────────────────────────────────────────────────────────
 
 def execute_python_code(code: str, timeout: int = 5) -> dict:
-    """Run ``code`` in an isolated container and return the entire output blob.
-
-    Returns ``{"status": "success"|"error", "output": "..."}``. Used by the
-    REST endpoint where streaming is unnecessary.
-    """
+    """Запускает код в контейнере и возвращает весь вывод одним блоком."""
     try:
         client = docker.from_env()
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return {"status": "error", "output": f"Docker недоступен: {e}"}
 
     container = None
@@ -68,10 +39,7 @@ def execute_python_code(code: str, timeout: int = 5) -> dict:
         raw_logs = container.logs(stdout=True, stderr=True)
 
         if len(raw_logs) > MAX_OUTPUT_SIZE:
-            raw_logs = (
-                raw_logs[:MAX_OUTPUT_SIZE]
-                + b"\n\n... [\xd0\x92\xd0\xab\xd0\x92\xd0\x9e\xd0\x94 \xd0\x9e\xd0\x91\xd0\xa0\xd0\x95\xd0\x97\xd0\x90\xd0\x9d] ..."  # noqa: E501
-            )
+            raw_logs = raw_logs[:MAX_OUTPUT_SIZE] + "\n\n... [ВЫВОД ОБРЕЗАН] ...".encode("utf-8")
 
         logs = raw_logs.decode("utf-8", errors="replace")
 
@@ -83,49 +51,39 @@ def execute_python_code(code: str, timeout: int = 5) -> dict:
         if container is not None:
             try:
                 container.kill()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
         return {
             "status": "error",
-            "output": f"Timeout: Код выполнялся дольше {timeout} секунд и был прерван.",
+            "output": f"Timeout: код выполнялся дольше {timeout} сек.",
         }
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         return {"status": "error", "output": f"Ошибка песочницы: {e}"}
     finally:
         if container is not None:
             try:
                 container.remove(force=True)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
 
 
-# ──────────────────────────────────────────────────────────────────────────
-# Streaming runner (WebSocket terminal)
-# ──────────────────────────────────────────────────────────────────────────
-
-# Docker multiplexed stream header: 8 bytes = [stream_type, 0, 0, 0, size(big-endian uint32)]
-# stream_type: 1 = stdout, 2 = stderr.
+# заголовок мультиплексного потока Docker: 8 байт, первый — тип (1=stdout, 2=stderr)
 _FRAME_HEADER = struct.Struct(">BBBBI")
 
 
 def stream_python_code(code: str, timeout: int = 15, stop_event=None):
-    """Generator: yield runtime events as the code executes.
+    """Генератор: выдаёт события по мере выполнения кода.
 
-    Events:
-        ``{"type": "stdout"|"stderr", "data": <str>}``
-        ``{"type": "error", "message": <str>}``  (infrastructure / overflow / timeout)
-        ``{"type": "exit", "code": <int>, "duration": <float seconds>}``
-
-    The generator is fully self-cleaning: container is always removed on exit,
-    even if the caller stops iterating early. If ``stop_event`` is provided
-    and gets set, the container is killed and iteration stops with a final
-    exit event (code -1 if no natural exit was observed).
+    События:
+        {"type": "stdout"|"stderr", "data": ...}
+        {"type": "error", "message": ...}
+        {"type": "exit", "code": int, "duration": float}
     """
     started_at = time.time()
 
     try:
         client = docker.from_env()
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         yield {"type": "error", "message": f"Docker недоступен: {e}"}
         yield {"type": "exit", "code": -1, "duration": time.time() - started_at}
         return
@@ -137,11 +95,10 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
     killed_by_stop = False
 
     try:
-        # Create stopped first so we can attach BEFORE the process starts and
-        # never miss the first lines of output.
+        # создаём контейнер до старта, чтобы успеть подключить сокет
         container = client.containers.create(
             image="python:3.11-alpine",
-            command=["python", "-u", "-c", code],  # -u: unbuffered stdout/stderr
+            command=["python", "-u", "-c", code],  # -u: без буферизации stdout
             mem_limit="128m",
             pids_limit=64,
             network_mode="none",
@@ -153,14 +110,13 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
             container.id,
             params={"stream": 1, "stdout": 1, "stderr": 1, "logs": 0},
         )
-        # docker-py returns either a SocketIO wrapper (has ._sock) or a raw
-        # socket depending on the transport (unix vs npipe). Normalize.
+        # docker-py возвращает либо обёртку с _sock, либо сырой сокет
         raw_sock = getattr(sock, "_sock", sock)
         raw_sock.settimeout(0.5)
 
         container.start()
 
-        # ── Watchdog: hard timeout ────────────────────────────────────────
+        # watchdog для таймаута
         def _watchdog():
             nonlocal killed_by_timeout
             deadline = time.time() + timeout
@@ -170,40 +126,40 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
                     container.reload()
                     if container.status == "exited":
                         return
-                except Exception:  # noqa: BLE001
+                except Exception:
                     return
                 if stop_event is not None and stop_event.is_set():
                     return
             try:
                 container.kill()
                 killed_by_timeout = True
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
 
         threading.Thread(target=_watchdog, daemon=True).start()
 
-        # ── Read & demultiplex stream ─────────────────────────────────────
+        # читаем поток
         buffer = b""
         total_bytes = 0
 
         while True:
-            # Honour cooperative cancellation from the consumer.
+            # проверка на отмену от клиента
             if stop_event is not None and stop_event.is_set():
                 killed_by_stop = True
                 try:
                     container.kill()
-                except Exception:  # noqa: BLE001
+                except Exception:
                     pass
                 break
 
             try:
                 chunk = raw_sock.recv(4096)
             except (TimeoutError, OSError):
-                # recv timeout. Check if container is done; if so, drain and exit.
+                # таймаут recv — смотрим, может контейнер уже закончил
                 try:
                     container.reload()
                     if container.status == "exited":
-                        # One last drain attempt with a slightly longer timeout.
+                        # последняя попытка добрать хвост
                         raw_sock.settimeout(0.1)
                         try:
                             tail = raw_sock.recv(65536)
@@ -212,7 +168,7 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
                         except (TimeoutError, OSError):
                             pass
                         break
-                except Exception:  # noqa: BLE001
+                except Exception:
                     break
                 continue
 
@@ -220,7 +176,7 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
                 break
             buffer += chunk
 
-            # Parse as many complete multiplexed frames as we have.
+            # парсим все целые фреймы из буфера
             while len(buffer) >= 8:
                 stream_type, _, _, _, size = _FRAME_HEADER.unpack(buffer[:8])
                 if len(buffer) < 8 + size:
@@ -236,11 +192,11 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
                     truncated = True
                     yield {
                         "type": "error",
-                        "message": f"Вывод обрезан: превышен лимит {MAX_OUTPUT_SIZE // 1024} KB",
+                        "message": f"Вывод обрезан: лимит {MAX_OUTPUT_SIZE // 1024} KB",
                     }
                     try:
                         container.kill()
-                    except Exception:  # noqa: BLE001
+                    except Exception:
                         pass
                     break
 
@@ -253,7 +209,7 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
             if truncated:
                 break
 
-        # Flush any trailing complete frames we drained after exit.
+        # добиваем хвост буфера если что-то осталось
         while len(buffer) >= 8 and not truncated:
             stream_type, _, _, _, size = _FRAME_HEADER.unpack(buffer[:8])
             if len(buffer) < 8 + size:
@@ -265,7 +221,7 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
                 truncated = True
                 yield {
                     "type": "error",
-                    "message": f"Вывод обрезан: превышен лимит {MAX_OUTPUT_SIZE // 1024} KB",
+                    "message": f"Вывод обрезан: лимит {MAX_OUTPUT_SIZE // 1024} KB",
                 }
                 break
             yield {
@@ -273,11 +229,11 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
                 "data": payload.decode("utf-8", errors="replace"),
             }
 
-        # ── Final exit code ───────────────────────────────────────────────
+        # финальный exit-код
         try:
             result = container.wait(timeout=2)
             exit_code = int(result.get("StatusCode", -1))
-        except Exception:  # noqa: BLE001
+        except Exception:
             exit_code = -1
 
         duration = time.time() - started_at
@@ -289,17 +245,17 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
 
         yield {"type": "exit", "code": exit_code, "duration": duration}
 
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         yield {"type": "error", "message": f"Ошибка песочницы: {e}"}
         yield {"type": "exit", "code": -1, "duration": time.time() - started_at}
     finally:
         if raw_sock is not None:
             try:
                 raw_sock.close()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
         if container is not None:
             try:
                 container.remove(force=True)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass

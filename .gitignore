@@ -5,6 +5,20 @@ node_modules/
 .env.*
 !.env.example
 
+# Production secrets & certificates (НИКОГДА не коммитить!)
+certbot/
+backups/
+*.pem
+*.key
+
+# SSH keys (НИКОГДА не коммитить!)
+diplom
+diplom.pub
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
 # Claude Code harness worktrees / session metadata
 .claude/
 .claude/**

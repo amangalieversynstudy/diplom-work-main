@@ -12,7 +12,7 @@ import {
   Profile, // Импортируем Profile для работы с инвентарем
 } from "../../lib/api";
 import { useEffect, useMemo, useState } from "react";
-import { Sword, Sparkles, Code2, BookOpen } from "lucide-react";
+import { Sword, Sparkles, Code2, BookOpen, Lock, ChevronRight } from "lucide-react";
 
 export default function MissionDetail() {
   const router = useRouter();
@@ -203,6 +203,51 @@ export default function MissionDetail() {
           <div className="text-center space-y-4">
             <div className="w-12 h-12 border-4 border-t-purple-500 border-gray-700 rounded-full animate-spin mx-auto"></div>
             <p className="text-gray-400 tracking-widest text-sm uppercase">Loading Quest Chronicles...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Миссия заблокирована — prerequisites не выполнены
+  if (mission.available === false) {
+    const prereqs = mission.prerequisites || [];
+    return (
+      <Layout>
+        <div className="min-h-screen bg-[#0f0f11] flex items-center justify-center px-4">
+          <div className="max-w-md w-full text-center space-y-6">
+            <div className="w-20 h-20 rounded-full bg-[#1a1a20] border-2 border-[#333] flex items-center justify-center mx-auto">
+              <Lock size={36} className="text-[#555]" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-wide mb-2">
+                Квест заблокирован
+              </h1>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Путь к «{mission.title_ru || mission.title}» ещё закрыт.
+                Для доступа необходимо завершить предыдущие квесты.
+              </p>
+            </div>
+            {prereqs.length > 0 && (
+              <div className="bg-[#141418] border border-[#222] rounded-xl p-4 text-left space-y-2">
+                <p className="text-xs font-mono uppercase tracking-widest text-gray-500 mb-3">
+                  Необходимые квесты:
+                </p>
+                {prereqs.map((pre) => (
+                  <div key={pre.id} className="flex items-center gap-2 text-sm text-gray-300">
+                    <ChevronRight size={14} className="text-purple-400 shrink-0" />
+                    <span>{pre.title}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button
+              variant="secondary"
+              onClick={() => router.push("/worlds")}
+              className="w-full justify-center"
+            >
+              ← Вернуться на карту мира
+            </Button>
           </div>
         </div>
       </Layout>

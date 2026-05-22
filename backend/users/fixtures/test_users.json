@@ -1,0 +1,101 @@
+[
+  {
+    "model": "users.user",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$ZSxx7wDxVRvpNAIV$DhJbB6us/CoznMQzG2BDxWG24SgGzqKHq4c/CWvSpN0=",
+      "last_login": null,
+      "is_superuser": true,
+      "username": "admin",
+      "first_name": "",
+      "last_name": "",
+      "email": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2024-01-01T00:00:00Z",
+      "display_name": "",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "users.user",
+    "pk": 2,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$XLmleXjcikt0mYGv$Cq1mKLcuPGO4/4qPnxyypmhIP3TUxdfkCV1D7pEtDP4=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "smoketest",
+      "first_name": "",
+      "last_name": "",
+      "email": "smoke@test.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2024-01-01T00:00:00Z",
+      "display_name": "Маг Кода",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "users.user",
+    "pk": 3,
+    "fields": {
+      "password": "pbkdf2_sha256$720000$WBaLB2QmsAvpXbjv$kEGEHQNY2CawIaSCFQKZeMJilCae4+SShWhwMRbgqZ8=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "smoke3",
+      "first_name": "",
+      "last_name": "",
+      "email": "smoke3@test.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2024-01-01T00:00:00Z",
+      "display_name": "",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "users.profile",
+    "pk": 1,
+    "fields": {
+      "user": 1,
+      "xp": 0,
+      "level": 1,
+      "bio": "",
+      "class_role": null,
+      "ai_summons": 3,
+      "hint_scrolls": 5,
+      "skeleton_scrolls": 3
+    }
+  },
+  {
+    "model": "users.profile",
+    "pk": 2,
+    "fields": {
+      "user": 2,
+      "xp": 0,
+      "level": 1,
+      "bio": "Путь мага начинается с первой строки кода.",
+      "class_role": 1,
+      "ai_summons": 3,
+      "hint_scrolls": 5,
+      "skeleton_scrolls": 3
+    }
+  },
+  {
+    "model": "users.profile",
+    "pk": 3,
+    "fields": {
+      "user": 3,
+      "xp": 0,
+      "level": 1,
+      "bio": "",
+      "class_role": null,
+      "ai_summons": 3,
+      "hint_scrolls": 5,
+      "skeleton_scrolls": 3
+    }
+  }
+]

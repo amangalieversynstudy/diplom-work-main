@@ -12,7 +12,6 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import {
   Play,
   Square,
@@ -25,9 +24,7 @@ import {
 import { toast } from "sonner";
 import { AIAssist, Profile, getRunnerWsUrl } from "../lib/api";
 import { getTokens } from "../lib/auth";
-
-// xterm uses `window` at import time; load the wrapper client-side only.
-const Terminal = dynamic(() => import("./Terminal"), { ssr: false });
+import Terminal from "./Terminal";
 
 const SYM_OK = "\x1b[32m✔\x1b[0m";
 const SYM_FAIL = "\x1b[31m✘\x1b[0m";

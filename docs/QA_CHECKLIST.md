@@ -10,11 +10,13 @@
 
 ### 0.1 Учётные записи в базе
 
+> Загружаются фикстурой `users/fixtures/test_users.json` (см. 0.5 / 0.6).
+
 | Username | Password | Email | Активен | Заметки |
 |---|---|---|---|---|
 | `admin` | `Admin1234!` | — | ✅ | Superuser, доступ к `/admin/` |
-| `smoketest` | `SmokeTest123!` | smoke@test.com | ✅ | Маг Кода, level 1, есть bio |
-| `smoke3` | `SmokeTest123!` | smoke3@test.com | ✅ | Чистый аккаунт |
+| `smoketest` | `SmokeTest123!` | smoke@test.com | ✅ | Маг Кода (class_role=1), level 1, есть bio |
+| `smoke3` | `SmokeTest123!` | smoke3@test.com | ✅ | Чистый аккаунт, без класса |
 
 ### 0.2 Реквизиты для новых регистраций
 
@@ -60,6 +62,19 @@ while True: pass
 ### 0.5 Полезные команды
 
 ```bash
+# Загрузить тестовых пользователей (admin / smoketest / smoke3)
+# Порядок важен: сначала class_roles, потом test_users
+docker compose exec backend python manage.py loaddata \
+  game/fixtures/class_roles.json \
+  users/fixtures/test_users.json
+
+# Полный сброс и повторная загрузка всех фикстур
+docker compose exec backend python manage.py loaddata \
+  game/fixtures/ranks.json \
+  game/fixtures/class_roles.json \
+  game/fixtures/intro_course.json \
+  users/fixtures/test_users.json
+
 # Активировать пользователя без email-флоу
 docker compose exec backend python manage.py shell -c "
 from users.models import User
@@ -74,15 +89,21 @@ docker compose logs backend 2>&1 | grep "verify-email" | tail -3
 # Создать суперюзера
 docker compose exec backend python manage.py createsuperuser
 
-# Перезагрузить фикстуры
-docker compose exec backend python manage.py loaddata ranks class_roles intro_course
-
 # Сброс XP/level пользователя
 docker compose exec backend python manage.py shell -c "
 from users.models import User
 u = User.objects.get(username='smoketest')
 p = u.profile
 p.xp = 0; p.level = 1; p.save()
+"
+
+# Сброс инвентаря до стартового
+docker compose exec backend python manage.py shell -c "
+from users.models import User
+u = User.objects.get(username='smoketest')
+p = u.profile
+p.ai_summons = 3; p.hint_scrolls = 5; p.skeleton_scrolls = 3; p.save()
+print('инвентарь сброшен')
 "
 ```
 
@@ -92,13 +113,20 @@ p.xp = 0; p.level = 1; p.save()
 docker compose up -d db redis backend frontend
 docker compose ps                            # все должны быть Up (healthy)
 docker compose exec backend python manage.py migrate --noinput
-docker compose exec backend python manage.py loaddata intro_course.json
+
+# Загрузить все фикстуры (порядок обязателен)
+docker compose exec backend python manage.py loaddata \
+  game/fixtures/ranks.json \
+  game/fixtures/class_roles.json \
+  game/fixtures/intro_course.json \
+  users/fixtures/test_users.json
 ```
 
 Проверка:
 - [ ] `http://localhost:8000/healthz` → `{"status":"ok"}`
 - [ ] `http://localhost:3000` → главная открывается
 - [ ] `http://localhost:8000/docs/` → Swagger UI
+- [ ] Логин `smoketest / SmokeTest123!` проходит без ошибок
 
 ---
 
@@ -119,7 +147,7 @@ docker compose exec backend python manage.py loaddata intro_course.json
 - [ ] Toast с ошибкой / поле подсвечивается, backend → 400
 
 ### TC-AUTH-03 Регистрация с занятым email — 🔴 P0
-- [ ] `/register` → `новый_username / smoke@test.com / пароль`
+- [ ] `/register` → `новый_username /  smoke@test.com/ пароль`
 - [ ] Ошибка «Email уже используется»
 
 ### TC-AUTH-04 Короткий пароль — 🟡 P1

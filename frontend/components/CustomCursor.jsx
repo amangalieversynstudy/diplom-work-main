@@ -1,84 +1,91 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 
+// Кастомный RPG-курсор: зелёная точка + отстающий кружок.
+// При наведении на интерактивные элементы точка прячется, кружок зеленеет.
 export default function CustomCursor() {
-  const cursorRef = useRef(null);
-  const followerRef = useRef(null);
+  const dotRef = useRef(null);
+  const ringRef = useRef(null);
+  const stateRef = useRef("default"); // "default" | "hover"
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const cursorEl = cursorRef.current;
-    const followerEl = followerRef.current;
-    if (!cursorEl || !followerEl) return;
+    const dot = dotRef.current;
+    const ring = ringRef.current;
+    if (!dot || !ring) return;
 
-    gsap.set(cursorEl, { xPercent: -50, yPercent: -50 });
-    gsap.set(followerEl, { xPercent: -50, yPercent: -50 });
+    // Стартовая позиция — центр экрана, чтобы не мерцало в углу
+    const cx = window.innerWidth / 2;
+    const cy = window.innerHeight / 2;
+    gsap.set(dot, { x: cx, y: cy, xPercent: -50, yPercent: -50 });
+    gsap.set(ring, { x: cx, y: cy, xPercent: -50, yPercent: -50 });
+
+    const INTERACTIVE = "a, button, input, textarea, select, label, [role='button']";
 
     const onMouseMove = (e) => {
-      gsap.to(cursorEl, { x: e.clientX, y: e.clientY, duration: 0.1, ease: "power2.out" });
-      gsap.to(followerEl, { x: e.clientX, y: e.clientY, duration: 0.6, ease: "power3.out" });
-    };
+      const mx = e.clientX;
+      const my = e.clientY;
 
-    const onMouseEnter = (e) => {
-      if (e.target.closest("a") || e.target.closest("button") || e.target.closest("input")) {
-        gsap.to(cursorEl, { scale: 0, opacity: 0, duration: 0.3 });
-        gsap.to(followerEl, {
-          scale: 1.5,
-          backgroundColor: "rgba(16, 185, 129, 0.15)",
-          borderColor: "rgba(16, 185, 129, 0.6)",
-          duration: 0.3,
+      // Точка следует мгновенно
+      gsap.to(dot, { x: mx, y: my, duration: 0.08, ease: "none" });
+      // Кружок отстаёт
+      gsap.to(ring, { x: mx, y: my, duration: 0.55, ease: "power3.out" });
+
+      // Проверяем, над чем курсор — один раз за mousemove
+      const el = document.elementFromPoint(mx, my);
+      const isInteractive = el && el.closest(INTERACTIVE);
+
+      if (isInteractive && stateRef.current !== "hover") {
+        stateRef.current = "hover";
+        gsap.to(dot, { scale: 0, opacity: 0, duration: 0.2 });
+        gsap.to(ring, {
+          scale: 1.6,
+          borderColor: "rgba(16, 185, 129, 0.8)",
+          backgroundColor: "rgba(16, 185, 129, 0.12)",
+          duration: 0.25,
         });
-      }
-    };
-
-    const onMouseLeave = (e) => {
-      if (e.target.closest("a") || e.target.closest("button") || e.target.closest("input")) {
-        gsap.to(cursorEl, { scale: 1, opacity: 1, duration: 0.3 });
-        gsap.to(followerEl, {
+      } else if (!isInteractive && stateRef.current !== "default") {
+        stateRef.current = "default";
+        gsap.to(dot, { scale: 1, opacity: 1, duration: 0.2 });
+        gsap.to(ring, {
           scale: 1,
+          borderColor: "rgba(148, 163, 184, 0.45)",
           backgroundColor: "transparent",
-          borderColor: "rgba(148, 163, 184, 0.4)",
-          duration: 0.3,
+          duration: 0.25,
         });
       }
     };
 
-    // Split-screen fix: при alt-tab / split-screen показываем системный курсор
-    const onWindowBlur = () => {
-      document.body.classList.add("native-cursor");
-      gsap.to([cursorEl, followerEl], { opacity: 0, duration: 0.15 });
-    };
-    const onWindowFocus = () => {
-      document.body.classList.remove("native-cursor");
-      gsap.to([cursorEl, followerEl], { opacity: 1, duration: 0.15 });
-    };
+    // Скрываем кастомный курсор когда окно теряет фокус
+    const onBlur = () => gsap.to([dot, ring], { opacity: 0, duration: 0.15 });
+    const onFocus = () => gsap.to([dot, ring], { opacity: 1, duration: 0.15 });
 
     window.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseover", onMouseEnter);
-    document.addEventListener("mouseout", onMouseLeave);
-    window.addEventListener("blur", onWindowBlur);
-    window.addEventListener("focus", onWindowFocus);
-
-    if (!document.hasFocus()) {
-      document.body.classList.add("native-cursor");
-      gsap.set([cursorEl, followerEl], { opacity: 0 });
-    }
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("focus", onFocus);
 
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseover", onMouseEnter);
-      document.removeEventListener("mouseout", onMouseLeave);
-      window.removeEventListener("blur", onWindowBlur);
-      window.removeEventListener("focus", onWindowFocus);
-      document.body.classList.remove("native-cursor");
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("focus", onFocus);
     };
   }, []);
 
   return (
     <>
-      <div ref={cursorRef} className="fixed top-0 left-0 w-2 h-2 bg-emerald-500 rounded-full pointer-events-none z-[9999] hidden md:block will-change-transform" />
-      <div ref={followerRef} className="fixed top-0 left-0 w-10 h-10 border-2 border-slate-400/40 rounded-full pointer-events-none z-[9998] hidden md:block will-change-transform" />
+      {/* Зелёная точка */}
+      <div
+        ref={dotRef}
+        className="fixed top-0 left-0 w-3 h-3 bg-emerald-400 rounded-full pointer-events-none z-[9999] hidden md:block will-change-transform"
+        style={{ boxShadow: "0 0 6px rgba(52,211,153,0.7)" }}
+      />
+      {/* Отстающий кружок */}
+      <div
+        ref={ringRef}
+        className="fixed top-0 left-0 w-10 h-10 border-2 rounded-full pointer-events-none z-[9998] hidden md:block will-change-transform"
+        style={{ borderColor: "rgba(148,163,184,0.45)", backgroundColor: "transparent" }}
+      />
     </>
   );
 }

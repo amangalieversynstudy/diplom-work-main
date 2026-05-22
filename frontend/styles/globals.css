@@ -69,6 +69,14 @@ body.native-cursor select {
   }
 }
 
+/* На экранах меньше md (768px) кастомный курсор скрыт (hidden md:block),
+   поэтому возвращаем системный чтобы не было «пустоты» */
+@media (max-width: 767px) {
+  body, body a, body button, body input, body textarea, body select {
+    cursor: auto !important;
+  }
+}
+
 a {
   color: var(--primary);
   text-decoration: none;

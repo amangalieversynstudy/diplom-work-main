@@ -44,7 +44,7 @@ class Command(BaseCommand):
                 "description_ru": "Освой основы Python через серию миров и миссий.",
                 "tagline_en": "Your first quest chain",
                 "tagline_ru": "Твоя первая цепочка квестов",
-                "color_theme": "from-indigo-900/60 via-primary/20 to-sky-500/20",
+                "color_theme": "indigo",
             },
         )
 

@@ -440,7 +440,7 @@ class AIAssistView(APIView):
             )
 
         try:
-            import google.generativeai as genai  # noqa: WPS433
+            import google.generativeai as genai
 
             genai.configure(api_key=api_key)
             model = genai.GenerativeModel("gemini-1.5-flash")

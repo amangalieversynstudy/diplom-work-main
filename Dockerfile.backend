@@ -1,22 +1,15 @@
 FROM python:3.11-slim
 
-# Устанавливаем системные зависимости для PostgreSQL (psycopg2)
-RUN apt-get update && apt-get install -y libpq-dev gcc
+RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Копируем requirements.txt из папки backend и устанавливаем
 COPY backend/requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
-# Обязательно убедись, что gunicorn есть в requirements.txt!
-RUN pip install gunicorn 
 
-# Копируем весь код бэкенда
 COPY backend/ /app/
-
-# Собираем статику
-RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
-CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2"]
+# collectstatic запускается в start command (после того как env vars доступны)
+CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "60"]

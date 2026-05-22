@@ -1,0 +1,7 @@
+[build]
+builder = "dockerfile"
+dockerfile = "Dockerfile.backend"
+
+[deploy]
+startCommand = "cd backend && python manage.py migrate && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 60"
+restartPolicy = "on-failure"

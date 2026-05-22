@@ -39,7 +39,7 @@ def execute_python_code(code: str, timeout: int = 5) -> dict:
         raw_logs = container.logs(stdout=True, stderr=True)
 
         if len(raw_logs) > MAX_OUTPUT_SIZE:
-            raw_logs = raw_logs[:MAX_OUTPUT_SIZE] + b"\n\n... [ВЫВОД ОБРЕЗАН] ..."
+            raw_logs = raw_logs[:MAX_OUTPUT_SIZE] + "\n\n... [ВЫВОД ОБРЕЗАН] ...".encode("utf-8")
 
         logs = raw_logs.decode("utf-8", errors="replace")
 

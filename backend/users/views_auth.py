@@ -1,6 +1,8 @@
 """Authentication views for register, login, logout and email verification."""
 
 from django.contrib.auth import get_user_model
+from django.utils.decorators import method_decorator
+from django_ratelimit.decorators import ratelimit
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -14,6 +16,9 @@ from .serializers_auth import RegisterSerializer, UserDetailSerializer
 User = get_user_model()
 
 
+# MID-02: rate-limiting декоратор для брутфорс-защиты
+# 10 попыток/мин с одного IP — для login и register
+@method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True), name="post")
 class LoginView(TokenObtainPairView):
     """Custom login that accepts either username or email."""
 
@@ -56,6 +61,7 @@ class LoginView(TokenObtainPairView):
         return super().post(request, *args, **kwargs)
 
 
+@method_decorator(ratelimit(key="ip", rate="5/m", method="POST", block=True), name="post")
 class RegisterView(generics.CreateAPIView):
     """Endpoint to register new users and send verification email."""
 

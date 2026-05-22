@@ -2,29 +2,27 @@ import Layout from "../../components/Layout";
 import Button from "../../components/Button";
 import MissionStepper from "../../components/MissionStepper";
 import CodeRunnerPanel from "../../components/CodeRunnerPanel";
-import PaywallModal from "../../components/PaywallModal";
 import { useRouter } from "next/router";
 import { toast } from "sonner";
 import {
   Missions,
   TaskProgressAPI,
-  Payments,
   Profile, // Импортируем Profile для работы с инвентарем
 } from "../../lib/api";
 import { useEffect, useMemo, useState } from "react";
 import { Sword, Sparkles, Code2, BookOpen, Lock, ChevronRight } from "lucide-react";
+import logger from "../../lib/logger";
+import { useI18n } from "../../lib/i18n";
 
 export default function MissionDetail() {
   const router = useRouter();
   const { id } = router.query;
+  const { language } = useI18n();
   const [mission, setMission] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [taskProgress, setTaskProgress] = useState({});
   const [codeDrafts, setCodeDrafts] = useState({});
-  const [paywallOpen, setPaywallOpen] = useState(false);
-  const [paymentState, setPaymentState] = useState(null);
-  const [paymentLoading, setPaymentLoading] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState({});
   const [savingTaskId, setSavingTaskId] = useState(null);
 
@@ -38,12 +36,6 @@ export default function MissionDetail() {
   const activeTask = useMemo(() => {
     return tasks.find((t) => t.id === activeTaskId) || tasks[0] || null;
   }, [tasks, activeTaskId]);
-
-  const requiresPremium = useMemo(() => {
-    if (!mission?.track_is_premium) return false;
-    if (mission?.user_has_premium) return false;
-    return activeTask?.is_required ?? true;
-  }, [mission, activeTask]);
 
   // Загрузка данных миссии и инвентаря пользователя
   useEffect(() => {
@@ -95,14 +87,15 @@ export default function MissionDetail() {
           skeleton_scrolls: p.skeleton_scrolls ?? 0,
         });
       })
-      .catch(() => {
-        console.error("Не удалось загрузить инвентарь игрока.");
+      .catch((err) => {
+        logger.error("Не удалось загрузить инвентарь игрока:", err);
       });
 
     return () => {
       active = false;
     };
-  }, [id]);
+    // MID-06: при смене языка миссия перезагружается с правильными title_ru/title_en
+  }, [id, language]);
 
   // Коллбэк для обновления инвентаря из CodeRunnerPanel
   const handleInventoryUpdate = (itemType, remainingCount) => {
@@ -151,10 +144,30 @@ export default function MissionDetail() {
       if (currentIndex !== -1 && currentIndex < tasks.length - 1) {
         setActiveTaskId(tasks[currentIndex + 1].id);
       } else {
-        // Если это была последняя задача, проверяем статус всей миссии
-        Missions.complete(id)
-          .then(() => toast.success("Поздравляем! Легендарный квест полностью завершен!"))
-          .catch(() => {});
+        // Если это была последняя задача — завершаем миссию и обрабатываем награды
+        try {
+          const result = await Missions.complete(id);
+          // CRIT-03: backend честно шлёт leveled_up/xp_added/new_level
+          if (result?.xp_added > 0) {
+            toast.success(
+              `Поздравляем! Легендарный квест полностью завершен! +${result.xp_added} XP`,
+              { duration: 4000 }
+            );
+          } else {
+            toast.success("Поздравляем! Легендарный квест полностью завершен!");
+          }
+          if (result?.leveled_up) {
+            // Двойной toast: общая победа + level-up отдельно
+            setTimeout(() => {
+              toast.success(
+                `🎉 Уровень повышен! Теперь ты ${result.new_level} уровня!`,
+                { duration: 6000 }
+              );
+            }, 800);
+          }
+        } catch (err) {
+          logger.error("Mission.complete failed:", err);
+        }
       }
     } catch (e) {
       toast.error("Не удалось сохранить прогресс шага.");
@@ -173,26 +186,6 @@ export default function MissionDetail() {
       handleCompleteTask(taskId, { selected: userAnswer }, 100);
     } else {
       toast.error("🛡️ Ответ неверный! Мана поглощена, попробуйте другое заклинание.");
-    }
-  };
-
-  const handleCheckout = async () => {
-    if (!id || paymentLoading) return;
-    setPaymentLoading(true);
-    setPaymentState("initiating");
-    try {
-      const res = await Payments.checkoutTrack(mission?.track_id);
-      if (res.checkout_url) {
-        window.location.href = res.checkout_url;
-      } else {
-        toast.error("Провайдер не вернул шлюз оплаты.");
-        setPaymentState("error");
-      }
-    } catch (e) {
-      toast.error("Ошибка инициализации транзакции.");
-      setPaymentState("error");
-    } finally {
-      setPaymentLoading(false);
     }
   };
 
@@ -373,7 +366,7 @@ export default function MissionDetail() {
 
           {/* Правая панель (Editor + Terminal) */}
           <div className="flex-1 bg-[#1e1e1e] flex flex-col min-w-0">
-            {!requiresPremium && activeTask?.task_type === "code" ? (
+            {activeTask?.task_type === "code" ? (
               <CodeRunnerPanel
                 task={activeTask}
                 code={codeValue}
@@ -394,14 +387,6 @@ export default function MissionDetail() {
           </div>
         </section>
       </div>
-
-      <PaywallModal
-        open={paywallOpen}
-        onClose={() => setPaywallOpen(false)}
-        onCheckout={handleCheckout}
-        loading={paymentLoading}
-        state={paymentState}
-      />
     </Layout>
   );
 }

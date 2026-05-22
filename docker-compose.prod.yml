@@ -1,0 +1,164 @@
+# ════════════════════════════════════════════════════════════════
+# RPG Academy — PRODUCTION docker-compose
+# ════════════════════════════════════════════════════════════════
+# Использование:
+#   cp .env.example .env.prod   # заполни секретами
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#
+# Отличия от dev:
+#   - DJANGO_SETTINGS_MODULE=core.settings.production
+#   - Daphne запущен с несколькими workers (INFRA-07)
+#   - Healthchecks на всех сервисах (INFRA-04)
+#   - Том для бэкапов PostgreSQL (INFRA-08)
+#   - Volumes только read-only где можно
+#   - Нет hot-reload, нет npm run dev
+
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./backups:/backups  # INFRA-08: монтируем папку для дампов
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: always
+    # INFRA-07: Daphne с несколькими worker-процессами для multi-CPU
+    # Для чистого WSGI можно gunicorn -w 4 core.wsgi:application,
+    # но Daphne нужен из-за Channels/WebSocket runner.
+    command: >
+      sh -c "python ./scripts/wait_for_postgres.py &&
+      python manage.py migrate --noinput &&
+      python manage.py collectstatic --noinput &&
+      daphne -b 0.0.0.0 -p 8000 --proxy-headers core.asgi:application"
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+      REDIS_URL: "redis://redis:6379/0"
+      DJANGO_SETTINGS_MODULE: "core.settings.production"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      SECRET_KEY: ${SECRET_KEY}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
+      FRONTEND_URL: ${FRONTEND_URL}
+      # Email
+      EMAIL_BACKEND: ${EMAIL_BACKEND}
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-True}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:-noreply@example.com}
+      # AI
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      # Monitoring (опционально)
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+    volumes:
+      - static-files:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000/healthz >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  celery:
+    build: ./backend
+    restart: always
+    command: celery -A core worker -l info --concurrency=4
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+      REDIS_URL: "redis://redis:6379/0"
+      DJANGO_SETTINGS_MODULE: "core.settings.production"
+      SECRET_KEY: ${SECRET_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A core inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    build: ./frontend
+    restart: always
+    # В проде Next.js строится один раз и запускается через `next start`
+    command: sh -c "npm ci --omit=dev && npm run build && npm run start"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE}
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  # INFRA-08: автоматический бэкап PostgreSQL раз в сутки
+  # Дампы складываются в ./backups/ как backup_YYYY-MM-DD.sql.gz
+  db-backup:
+    image: postgres:15-alpine
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      PGHOST: db
+    volumes:
+      - ./backups:/backups
+    entrypoint: >
+      sh -c "
+      while true; do
+        DATE=$$(date +%Y-%m-%d_%H%M%S);
+        echo \"[backup] dumping db at $$DATE\";
+        pg_dump --no-owner --no-acl | gzip > /backups/backup_$$DATE.sql.gz;
+        # Оставляем только последние 14 дампов
+        ls -t /backups/backup_*.sql.gz 2>/dev/null | tail -n +15 | xargs -r rm -f;
+        sleep 86400;
+      done"
+
+volumes:
+  db-data:
+  static-files:

@@ -3,11 +3,13 @@ import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import Layout from "../components/Layout";
 import Button from "../components/Button";
+import ConfirmModal from "../components/ConfirmModal";
 import { setPlayerClass, getPlayerClass, fetchIntroStatus } from "../lib/class";
 import { Profile } from "../lib/api";
 import { toast } from "sonner";
 import { Code, ServerCog, Share2, Lock, Sparkles, Check } from "lucide-react";
 import { useDictionary } from "../lib/i18n";
+import logger from "../lib/logger";
 
 // Frontend id → backend ClassRole pk (must match fixtures/class_roles.json)
 const CLASS_ROLE_IDS = { python: 1, django: 2, devops: 3 };
@@ -28,6 +30,7 @@ export default function ChooseClassPage() {
   const [introStatus, setIntroStatus] = useState({ loading: true, locked: false, data: null });
   const [choosing, setChoosing] = useState(false);
   const [currentClass, setCurrentClass] = useState(null); // выбранный класс игрока
+  const [confirmData, setConfirmData] = useState(null); // RPG-confirm вместо window.confirm
 
   useEffect(() => {
     // Запоминаем текущий класс, но НЕ редиректим — даём свободно сменить.
@@ -65,12 +68,21 @@ export default function ChooseClassPage() {
     // Показываем confirm только при ПЕРВОМ выборе. При смене класса лишний
     // диалог не нужен — игрок уже в игре и знает, что делает.
     if (introStatus.locked && !hasClass) {
-      const confirmChoice = window.confirm(
-        "Академия настоятельно рекомендует пройти Вводный курс, чтобы получить базовые навыки! Точно хочешь выбрать класс прямо сейчас?"
-      );
-      if (!confirmChoice) return; // Игрок передумал
+      setConfirmData({
+        title: "Сначала Вводный курс?",
+        message:
+          "Академия настоятельно рекомендует пройти Вводный курс — он даст базовые навыки магии. Точно хочешь выбрать класс прямо сейчас?",
+        confirmLabel: "Да, выбрать сейчас",
+        cancelLabel: "К вводному курсу",
+        onConfirm: () => performChoose(id),
+        onCancel: () => router.push("/worlds"),
+      });
+      return;
     }
+    performChoose(id);
+  }
 
+  async function performChoose(id) {
     setChoosing(true);
     try {
       const classRoleId = CLASS_ROLE_IDS[id];
@@ -86,7 +98,7 @@ export default function ChooseClassPage() {
       router.push("/profile");
     } catch (e) {
       // Умная обработка ошибки бэкенда (на случай пустой БД)
-      console.error("Ошибка сервера:", e.response?.data);
+      logger.error("Ошибка сервера:", e.response?.data);
       let errorMsg = "Не удалось сохранить класс. Попробуй ещё раз.";
       if (e.response?.data) {
         const data = e.response.data;
@@ -261,6 +273,8 @@ export default function ChooseClassPage() {
           </motion.p>
         </div>
       </div>
+
+      <ConfirmModal data={confirmData} onClose={() => setConfirmData(null)} />
     </Layout>
   );
 }

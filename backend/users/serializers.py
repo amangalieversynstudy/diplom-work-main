@@ -15,15 +15,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ("xp", "level")
         ref_name = "UsersProfileSerializer"
 
-    def validate_class_role(self, value):
-        # класс выбирается один раз — не разрешаем смену через PATCH
-        profile = getattr(self, "instance", None)
-        if profile and profile.class_role_id:
-            if value is None or value.id != profile.class_role_id:
-                raise serializers.ValidationError(
-                    "Class role can be selected only once for this profile."
-                )
-        return value
+    # Класс можно менять свободно — игроку даём возможность сменить путь
+    # в любой момент (см. frontend/pages/class.jsx → /class).
 
 
 class UserSerializer(serializers.ModelSerializer):

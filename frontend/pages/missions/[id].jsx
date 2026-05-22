@@ -165,6 +165,22 @@ export default function MissionDetail() {
               );
             }, 800);
           }
+
+          // TC-RANK-01: refetch profile to show updated rank on level-up
+          // and update inventory with any rewards granted
+          try {
+            const profileData = await Profile.me();
+            if (profileData) {
+              const p = profileData.profile ?? profileData;
+              setInventory({
+                ai_summons: p.ai_summons ?? 0,
+                hint_scrolls: p.hint_scrolls ?? 0,
+                skeleton_scrolls: p.skeleton_scrolls ?? 0,
+              });
+            }
+          } catch (profileErr) {
+            logger.error("Failed to refetch profile after mission complete:", profileErr);
+          }
         } catch (err) {
           logger.error("Mission.complete failed:", err);
         }

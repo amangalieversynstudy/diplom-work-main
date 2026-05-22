@@ -73,6 +73,13 @@ services:
       - /app/node_modules
     depends_on:
       - backend
+    # INFRA-04: healthcheck для фронта (next dev отвечает на /)
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s  # next dev долго стартует
 
   celery:
     build: ./backend
@@ -81,10 +88,17 @@ services:
       - ./backend:/app
     environment:
       REDIS_URL: "redis://redis:6379/0"
-      DJANGO_SETTINGS_MODULE: "core.settings.production"
+      DJANGO_SETTINGS_MODULE: "core.settings.local"
     depends_on:
       - backend
       - redis
+    # INFRA-04: healthcheck для celery worker
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A core inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 volumes:
   db-data: {}

@@ -12,6 +12,12 @@ export const api = axios.create({ baseURL: API_BASE });
 api.interceptors.request.use((config) => {
   const { access } = getTokens();
   if (access) config.headers.Authorization = `Bearer ${access}`;
+  // MID-06: пробрасываем язык в backend, чтобы он отдавал title_ru/title_en
+  // согласно выбору пользователя.
+  if (typeof window !== "undefined") {
+    const lang = window.localStorage.getItem("ui_language");
+    if (lang) config.headers["Accept-Language"] = lang;
+  }
   return config;
 });
 
@@ -195,21 +201,6 @@ export const ProgressAPI = {
   list: () => api.get("/progress/").then((r) => r.data),
 };
 
-const callLocalApi = async (url, options = {}) => {
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
-  });
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({}));
-    const error = new Error(errBody?.detail || "Local API error");
-    error.status = res.status;
-    error.payload = errBody;
-    throw error;
-  }
-  return res.json();
-};
-
 export const Runner = {
   execute: (code) => api.post("/runner/execute/", { code }),
 };
@@ -257,14 +248,6 @@ export function getRunnerWsUrl(accessToken) {
   const token = accessToken ? `?token=${encodeURIComponent(accessToken)}` : "";
   return `${wsOrigin}/ws/runner/${token}`;
 }
-
-export const Payments = {
-  checkout: (payload) =>
-    callLocalApi("/api/payments/checkout", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
-};
 
 export function missionStatus(mission) {
   // Determine visual status using DRF fields

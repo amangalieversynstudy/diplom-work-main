@@ -164,6 +164,25 @@ class MissionViewSet(viewsets.ModelViewSet):
 
         prog, _ = Progress.objects.get_or_create(user=request.user, mission=mission)
 
+        # MID-05: дедупликация двойных кликов "Завершить миссию".
+        # Если миссия только что была завершена (< 5 секунд назад) — не
+        # начисляем XP повторно, возвращаем актуальное состояние без побочек.
+        from django.utils import timezone
+        from datetime import timedelta
+        if prog.completed and prog.completed_at and (
+            timezone.now() - prog.completed_at < timedelta(seconds=5)
+        ):
+            data = ProgressSerializer(prog).data
+            data.update({
+                "xp_added": 0,
+                "leveled_up": False,
+                "new_level": profile.level,
+                "profile_level": profile.level,
+                "profile_xp": profile.xp,
+                "deduplicated": True,
+            })
+            return Response(data)
+
         base_reward = mission.xp_reward
         xp_gain = 0
         if prog.completed and not mission.repeatable:
@@ -173,21 +192,20 @@ class MissionViewSet(viewsets.ModelViewSet):
         else:
             xp_gain = base_reward
 
-        # ЗАПОМИНАЕМ СТАРЫЙ УРОВЕНЬ
-        old_level = profile.level
-
         prog.complete()
         prog.xp_earned += xp_gain
         stars = int(request.data.get("stars", 0))
         prog.stars = max(0, min(3, stars))
         prog.save()
 
-        # НАЧИСЛЯЕМ ОПЫТ
+        # НАЧИСЛЯЕМ ОПЫТ через add_xp(), который сам возвращает level-up флаг
+        # и инкрементирует инвентарь (MID-07).
+        leveled_up = False
         if xp_gain > 0:
-            profile.add_xp(xp_gain)
+            leveled_up, _old, _new = profile.add_xp(xp_gain)
 
-        # ПРОВЕРЯЕМ, БЫЛ ЛИ ПОВЫШЕН УРОВЕНЬ
-        leveled_up = profile.level > old_level
+        # HIGH-03: обновляем leaderboard асинхронно (signal на Progress.complete)
+        # запустится автоматически из game/signals.py.
 
         data = ProgressSerializer(prog).data
         data.update(
@@ -197,6 +215,10 @@ class MissionViewSet(viewsets.ModelViewSet):
                 "new_level": profile.level,
                 "profile_level": profile.level,
                 "profile_xp": profile.xp,
+                # Свежий инвентарь — если был level-up, фронт его увидит
+                "ai_summons": profile.ai_summons,
+                "hint_scrolls": profile.hint_scrolls,
+                "skeleton_scrolls": profile.skeleton_scrolls,
             }
         )
         return Response(data)

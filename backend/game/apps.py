@@ -8,3 +8,7 @@ class GameConfig(AppConfig):
 
     default_auto_field = "django.db.models.BigAutoField"
     name = "game"
+
+    def ready(self):
+        # HIGH-03: подключаем signals для leaderboard updates
+        from . import signals  # noqa: F401

@@ -42,6 +42,8 @@ class ProfileMeView(APIView):
             "ai_summons": profile.ai_summons,
             "hint_scrolls": profile.hint_scrolls,
             "skeleton_scrolls": profile.skeleton_scrolls,
+            # HIGH-01: ранг пользователя для отображения в профиле
+            "rank": profile.current_rank,
         }
 
     def get(self, request):

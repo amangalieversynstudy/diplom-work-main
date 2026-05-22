@@ -64,13 +64,48 @@ class Profile(models.Model):
         return False
 
     def add_xp(self, amount):
-        """Add XP to the profile and adjust level when thresholds are crossed."""
+        """Add XP to the profile and adjust level when thresholds are crossed.
+
+        Если уровень повысился — пополняем инвентарь как награду за level-up
+        (см. MID-07). Возвращает кортеж (leveled_up, old_level, new_level).
+        """
+        old_level = self.level
         self.xp += amount
         # simple leveling rule: every 100 XP = level up
         new_level = self.xp // 100 + 1
-        if new_level > self.level:
+        leveled_up = new_level > old_level
+        if leveled_up:
             self.level = new_level
+            # Награда за каждый новый уровень: +1 hint, +1 ai_summon
+            levels_gained = new_level - old_level
+            self.hint_scrolls += levels_gained
+            self.ai_summons += levels_gained
         self.save()
+        return leveled_up, old_level, new_level
+
+    @property
+    def current_rank(self):
+        """Find the highest Rank the player qualifies for based on level/xp.
+
+        Lazy-import to avoid circular dependency (game.Rank depends on
+        users via FK chain). Returns dict or None if no ranks configured.
+        """
+        from game.models import Rank
+        rank = (
+            Rank.objects
+            .filter(min_level__lte=self.level, min_xp__lte=self.xp)
+            .order_by("-min_level", "-min_xp")
+            .first()
+        )
+        if not rank:
+            return None
+        return {
+            "slug": rank.slug,
+            "title_ru": rank.title_ru,
+            "title_en": rank.title_en,
+            "min_level": rank.min_level,
+            "min_xp": rank.min_xp,
+        }
 
 
 @receiver(post_save, sender="users.User")

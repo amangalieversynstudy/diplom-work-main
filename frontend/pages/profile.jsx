@@ -5,6 +5,7 @@ import XPBar from "../components/XPBar";
 import Button from "../components/Button";
 import { clearPlayerClass } from "../lib/class";
 import { Profile as ProfileAPI } from "../lib/api";
+import logger from "../lib/logger";
 import { toast } from "sonner";
 import { LogOut, Settings, Mail, User, Shield } from "lucide-react";
 
@@ -58,7 +59,7 @@ export default function ProfilePage() {
         email: merged.email,
       });
     } catch (error) {
-      console.error("Ошибка загрузки профиля:", error);
+      logger.error("Ошибка загрузки профиля:", error);
       toast.error("Не удалось загрузить данные профиля");
     } finally {
       setLoading(false);
@@ -87,7 +88,7 @@ export default function ProfilePage() {
       setIsEditing(false);
       fetchProfile();
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       const detail =
         error?.response?.data?.detail ||
         Object.values(error?.response?.data || {})[0] ||
@@ -143,10 +144,17 @@ if (loading) {
                   {CLASS_NAMES[profile.class_role] || "Класс неизвестен"}
                 </p>
               )}
-              <p className="text-sm text-primary uppercase tracking-widest font-bold mb-4">
-                Уровень {profile?.level || 1}
-              </p>
-              
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <p className="text-sm text-primary uppercase tracking-widest font-bold">
+                  Уровень {profile?.level || 1}
+                </p>
+                {profile?.rank && (
+                  <span className="px-2 py-0.5 text-[10px] uppercase tracking-widest font-bold rounded-full bg-accent/15 border border-accent/40 text-accent">
+                    {profile.rank.title_ru || profile.rank.title_en || profile.rank.slug}
+                  </span>
+                )}
+              </div>
+
               {/* Полоса опыта (100 XP = 1 level) */}
               <XPBar
                 current={(profile?.xp || 0) % 100}

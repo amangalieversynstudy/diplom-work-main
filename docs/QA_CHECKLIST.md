@@ -396,22 +396,22 @@ docker compose exec backend python manage.py loaddata \
 
 ## 🏆 Модуль 8: Ранги и XP
 
-> ⚠️ **Известные дыры (см. `docs/PRODUCTION_AUDIT.md` → HIGH-01, CRIT-03):**
-> - **TC-RANK-01 сейчас не работает** — `Profile` не связан с `Rank`, API `/profile/me/` не возвращает текущий ранг.
-> - **TC-RANK-02 частично сломан** — backend честно отдаёт `leveled_up: true`, но фронтенд этот флаг игнорирует, salute/toast отсутствует.
-> - **TC-RANK-03 (XP-bar)** — починен в текущем коммите: правильные имена пропсов + формула 100 XP/level.
+> ✅ **Полностью починен** в massive-fix коммите. См. `docs/PRODUCTION_AUDIT.md` → HIGH-01, CRIT-03, MID-07.
 
-### TC-RANK-01 Текущий ранг — 🟡 P1 ❌ KNOWN BROKEN
-- [ ] `/profile` показывает «Новичок» (level 1) — **сейчас нет, ранг нигде не отображается**
-- [ ] FIX: добавить `Profile.current_rank` SerializerMethodField
+### TC-RANK-01 Текущий ранг — 🟡 P1 ✅ FIXED
+- [ ] `/profile` показывает чип ранга рядом с уровнем («НОВИЧОК», «УЧЕНИК», и т.д.)
+- [ ] Backend: `GET /api/profile/me/` возвращает поле `rank: {slug, title_ru, title_en, min_level, min_xp}`
+- [ ] При level-up чип меняется на следующий ранг автоматически
 
-### TC-RANK-02 Повышение уровня — 🔴 P0 ⚠️ PARTIAL
-- [ ] Пройди миссию с XP — XP сохраняется в БД, level пересчитывается ✅
-- [ ] XP-полоса заполняется — ✅ после фикса XPBar
-- [ ] 100 XP → level 2 — ✅ бэкенд считает корректно
-- [ ] Ранг «Ученик» — ❌ не показывается (см. TC-RANK-01)
-- [ ] Toast level up — ❌ не реализован на фронте, хотя бэкенд шлёт `leveled_up`
-- [ ] FIX: в `pages/missions/[id].jsx` обработать ответ `Missions.complete()` — показать toast с `xp_added` и `new_level`, запустить confetti
+### TC-RANK-02 Повышение уровня — 🔴 P0 ✅ FIXED
+- [ ] Пройди миссию с XP
+- [ ] Toast: **«Поздравляем! Легендарный квест полностью завершен! +N XP»**
+- [ ] XP-полоса заполняется (по `xp % 100`)
+- [ ] При наборе 100 XP → level 2:
+  - [ ] Toast level-up через ~800ms: **«🎉 Уровень повышен! Теперь ты 2 уровня!»**
+  - [ ] Чип ранга обновляется
+  - [ ] Инвентарь +1 `hint_scrolls` и +1 `ai_summons` (MID-07)
+- [ ] При двойном клике в течение 5 секунд — XP не дублируется (MID-05)
 
 ### TC-RANK-03 XP-полоса — 🟡 P1 ✅ FIXED
 - [x] Показывает текущий / макс до следующего уровня (`xp % 100 / 100`)

@@ -7,6 +7,8 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Missions, missionStatus } from "../../lib/api";
+import logger from "../../lib/logger";
+import { useI18n } from "../../lib/i18n";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -14,6 +16,7 @@ if (typeof window !== "undefined") {
 
 export default function Worlds() {
   const dict = useDictionary();
+  const { language } = useI18n();
   const worldsDict = dict.worldsPage || {};
   
   const [missions, setMissions] = useState([]);
@@ -23,14 +26,16 @@ export default function Worlds() {
   const mapScrollRef = useRef(null);
 
   useEffect(() => {
+    setLoading(true);
     Missions.list()
       .then((data) => {
         const items = Array.isArray(data) ? data : data?.results || [];
         setMissions(items);
       })
-      .catch(console.error)
+      .catch(logger.error)
       .finally(() => setLoading(false));
-  }, []);
+    // MID-06: refetch при смене языка
+  }, [language]);
 
   // Вычисляем хаотичные координаты
   const getCoords = (index, total) => {

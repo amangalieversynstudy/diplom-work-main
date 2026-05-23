@@ -74,10 +74,11 @@ class RegisterView(generics.CreateAPIView):
         from django.conf import settings
 
         user = serializer.save()
-        # В DEBUG-режиме (локальная разработка) — авто-активация,
-        # чтобы можно было сразу логиниться без email-флоу.
-        # На проде DEBUG=False → нужна верификация через ссылку.
-        if getattr(settings, "DEBUG", False):
+        # Авто-активация если DEBUG=True ИЛИ email backend = console
+        # (т.е. реальные письма не уходят, верификация невозможна).
+        email_backend = getattr(settings, "EMAIL_BACKEND", "")
+        is_console_email = "console" in email_backend
+        if getattr(settings, "DEBUG", False) or is_console_email:
             user.is_active = True
         else:
             user.is_active = False

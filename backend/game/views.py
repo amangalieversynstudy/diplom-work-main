@@ -585,17 +585,18 @@ class AIAssistView(APIView):
                 http_options={"api_version": "v1"},
             )
 
-            user_message = (
+            task_block = (
                 f"Task:\n{description}\n\n"
                 f"Language: {language}\n\n"
                 f"Student's current code:\n```{language}\n{code}\n```"
             ) if code else f"Task:\n{description}\n\nLanguage: {language}"
 
+            contents = f"{self._SYSTEM_PROMPT}\n\n{task_block}"
+
             response = client.models.generate_content(
                 model=model_name,
-                contents=user_message,
+                contents=contents,
                 config=types.GenerateContentConfig(
-                    system_instruction=self._SYSTEM_PROMPT,
                     max_output_tokens=300,
                     temperature=0.7,
                 ),

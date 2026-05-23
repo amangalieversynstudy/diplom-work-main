@@ -588,9 +588,21 @@ class AIAssistView(APIView):
                 f"Student's current code:\n```{language}\n{code}\n```"
             ) if code else f"Task:\n{description}\n\nLanguage: {language}"
 
+            # Отключаем safety filters — RPG-тематика (магия/атаки/урон) ложно
+                # триггерит блокировки на образовательном контенте.
+            safety_settings = [
+                {"category": c, "threshold": "BLOCK_NONE"}
+                for c in (
+                    "HARM_CATEGORY_HARASSMENT",
+                    "HARM_CATEGORY_HATE_SPEECH",
+                    "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    "HARM_CATEGORY_DANGEROUS_CONTENT",
+                )
+            ]
             response = model.generate_content(
                 [self._SYSTEM_PROMPT, user_message],
                 generation_config={"max_output_tokens": 300, "temperature": 0.7},
+                safety_settings=safety_settings,
             )
             text = (response.text or "").strip()
             if not text:

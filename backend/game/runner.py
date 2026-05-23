@@ -8,6 +8,8 @@
 """
 
 import struct
+import subprocess
+import sys
 import threading
 import time
 
@@ -19,12 +21,125 @@ from requests.exceptions import ReadTimeout
 MAX_OUTPUT_SIZE = 50 * 1024
 
 
+def _execute_subprocess_fallback(code: str, timeout: int = 5) -> dict:
+    """Fallback без Docker — запускает через subprocess. Используется в средах
+    типа Railway, где Docker-in-Docker недоступен. Песочницы нет, поэтому
+    подходит только для доверенного кода (демо/защита диплома)."""
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            timeout=timeout,
+            text=True,
+        )
+        output = (proc.stdout or "") + (proc.stderr or "")
+        if len(output) > MAX_OUTPUT_SIZE:
+            output = output[:MAX_OUTPUT_SIZE] + "\n\n... [ВЫВОД ОБРЕЗАН] ..."
+        return {
+            "status": "success" if proc.returncode == 0 else "error",
+            "output": output,
+        }
+    except subprocess.TimeoutExpired:
+        return {"status": "error", "output": f"Timeout: код выполнялся дольше {timeout} сек."}
+    except Exception as e:
+        return {"status": "error", "output": f"Ошибка выполнения: {e}"}
+
+
+def _stream_subprocess_fallback(code: str, timeout: int, stop_event, started_at: float):
+    """Fallback стриминга через subprocess — построчно читаем stdout/stderr."""
+    proc = None
+    try:
+        proc = subprocess.Popen(
+            [sys.executable, "-u", "-c", code],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+        )
+
+        killed_by_timeout = False
+        killed_by_stop = False
+        deadline = time.time() + timeout
+        total_bytes = 0
+        truncated = False
+
+        # читаем стрим неблокируясь по таймауту строки
+        import selectors
+        sel = selectors.DefaultSelector()
+        sel.register(proc.stdout, selectors.EVENT_READ, "stdout")
+        sel.register(proc.stderr, selectors.EVENT_READ, "stderr")
+
+        while True:
+            if time.time() > deadline:
+                killed_by_timeout = True
+                proc.kill()
+                break
+            if stop_event is not None and stop_event.is_set():
+                killed_by_stop = True
+                proc.kill()
+                break
+
+            events = sel.select(timeout=0.2)
+            if not events and proc.poll() is not None:
+                break
+
+            for key, _ in events:
+                line = key.fileobj.readline()
+                if not line:
+                    try:
+                        sel.unregister(key.fileobj)
+                    except KeyError:
+                        pass
+                    continue
+                total_bytes += len(line)
+                if total_bytes > MAX_OUTPUT_SIZE and not truncated:
+                    truncated = True
+                    yield {"type": "error", "message": f"Вывод обрезан: лимит {MAX_OUTPUT_SIZE // 1024} KB"}
+                    proc.kill()
+                    break
+                if not truncated:
+                    yield {"type": key.data, "data": line}
+
+            if truncated:
+                break
+
+        # добиваем остатки
+        try:
+            out, err = proc.communicate(timeout=1)
+            if out and not truncated:
+                yield {"type": "stdout", "data": out}
+            if err and not truncated:
+                yield {"type": "stderr", "data": err}
+        except subprocess.TimeoutExpired:
+            proc.kill()
+
+        exit_code = proc.returncode if proc.returncode is not None else -1
+        duration = time.time() - started_at
+
+        if killed_by_timeout:
+            yield {"type": "error", "message": f"Timeout: код прерван после {timeout}с"}
+        elif killed_by_stop:
+            yield {"type": "error", "message": "Сессия остановлена клиентом"}
+
+        yield {"type": "exit", "code": exit_code, "duration": duration}
+
+    except Exception as e:
+        yield {"type": "error", "message": f"Ошибка выполнения: {e}"}
+        yield {"type": "exit", "code": -1, "duration": time.time() - started_at}
+    finally:
+        if proc is not None and proc.poll() is None:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+
+
 def execute_python_code(code: str, timeout: int = 5) -> dict:
     """Запускает код в контейнере и возвращает весь вывод одним блоком."""
     try:
         client = docker.from_env()
-    except Exception as e:
-        return {"status": "error", "output": f"Docker недоступен: {e}"}
+    except Exception:
+        return _execute_subprocess_fallback(code, timeout)
 
     container = None
     try:
@@ -83,9 +198,9 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
 
     try:
         client = docker.from_env()
-    except Exception as e:
-        yield {"type": "error", "message": f"Docker недоступен: {e}"}
-        yield {"type": "exit", "code": -1, "duration": time.time() - started_at}
+    except Exception:
+        # Fallback на subprocess — без песочницы. Стримим построчно.
+        yield from _stream_subprocess_fallback(code, timeout, stop_event, started_at)
         return
 
     container = None

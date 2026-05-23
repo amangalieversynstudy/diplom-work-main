@@ -293,9 +293,9 @@ export default function MissionDetail() {
         </header>
 
         {/* Основной контент */}
-        <section className="flex-1 flex min-h-0 overflow-hidden">
+        <section className="flex-1 flex flex-col xl:flex-row min-h-0 overflow-auto xl:overflow-hidden">
           {/* Левая панель (Explorer / Stepper) */}
-          <div className="w-[360px] bg-[#141418] border-r border-[#222] flex flex-col select-none shadow-2xl z-10">
+          <div className="w-full xl:w-[320px] xl:flex-shrink-0 bg-[#141418] border-r border-[#222] flex flex-col select-none shadow-2xl z-10">
             <div className="px-6 py-4 border-b border-[#222] bg-[#111114]">
               <p className="text-xs font-mono font-bold tracking-widest text-gray-400 uppercase">Quest Logistics</p>
             </div>
@@ -336,7 +336,7 @@ export default function MissionDetail() {
           </div>
 
           {/* Центральная панель (Инструкции / Контент шага) */}
-          <div className="w-[450px] bg-[#111114] flex flex-col border-r border-[#222] min-w-0">
+          <div className="w-full xl:w-[420px] xl:flex-shrink-0 bg-[#111114] flex flex-col border-r border-[#222] min-w-0">
             <div className="px-6 py-4 border-b border-[#222] bg-[#141418] flex items-center gap-2">
               {activeTask?.task_type === "code" ? <Code2 size={16} className="text-blue-400" /> : <BookOpen size={16} className="text-green-400" />}
               <h2 className="text-sm font-bold text-white tracking-wide truncate">
@@ -389,7 +389,7 @@ export default function MissionDetail() {
           </div>
 
           {/* Правая панель (Editor + Terminal) */}
-          <div className="flex-1 bg-[#1e1e1e] flex flex-col min-w-0">
+          <div className="w-full xl:flex-1 min-h-[700px] xl:min-h-0 bg-[#1e1e1e] flex flex-col min-w-0">
             {activeTask?.task_type === "code" ? (
               <CodeRunnerPanel
                 task={activeTask}

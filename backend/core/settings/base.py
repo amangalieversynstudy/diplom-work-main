@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "drf_yasg",
+    "anymail",
     "users",
     "game",
 ]
@@ -187,6 +188,14 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 # Hard 10-second timeout — без него smtplib может висеть до 60с и убивать gunicorn worker.
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+
+# Resend (HTTP API) — Railway блокирует SMTP, поэтому шлём через HTTPS API.
+# Включается установкой RESEND_API_KEY в env. EMAIL_BACKEND автоматически
+# переключается на anymail.backends.resend.EmailBackend.
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+if RESEND_API_KEY:
+    EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
+    ANYMAIL = {"RESEND_API_KEY": RESEND_API_KEY}
 
 # Public URL of the frontend (used in verification links inside emails)
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")

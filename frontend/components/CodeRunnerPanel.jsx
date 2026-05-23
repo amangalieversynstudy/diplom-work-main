@@ -28,8 +28,9 @@ const ANSI_RESET = "\x1b[0m";
 
 const normaliseEol = (s) => (s ?? "").replace(/\r?\n/g, "\r\n");
 
-const MIN_TERMINAL_H = 120;
-const MAX_TERMINAL_H = 600;
+const MIN_TERMINAL_H = 150;
+const MAX_TERMINAL_H = 700;
+const DEFAULT_TERMINAL_H = 380;
 
 export default function CodeRunnerPanel({
   task,
@@ -44,7 +45,7 @@ export default function CodeRunnerPanel({
   const [running, setRunning] = useState(false);
   const [lastExit, setLastExit] = useState(null);
   const [usingItem, setUsingItem] = useState(false);
-  const [termH, setTermH] = useState(280);
+  const [termH, setTermH] = useState(DEFAULT_TERMINAL_H);
   const dragRef = useRef(null);
 
   useEffect(() => {

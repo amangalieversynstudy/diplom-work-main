@@ -1,14 +1,5 @@
 /**
  * CodeRunnerPanel — editor + interactive terminal wired to the WebSocket runner.
- *
- * Replaces the previous REST-based one-shot output rendering with a real
- * streaming session: the panel opens a WebSocket to /ws/runner/, sends the
- * user's code, and writes each stdout/stderr chunk directly into an
- * embedded xterm.js terminal. On a successful (exit 0) run, ``onTestPassed``
- * is invoked so the parent mission page can advance task progress.
- *
- * Inventory toolbar (Scroll / Hint / AI Summon) is preserved — those items
- * still go through the REST profile API.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -20,6 +11,7 @@ import {
   Scroll,
   Lightbulb,
   Bot,
+  GripHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AIAssist, Profile, getRunnerWsUrl } from "../lib/api";
@@ -36,6 +28,9 @@ const ANSI_RESET = "\x1b[0m";
 
 const normaliseEol = (s) => (s ?? "").replace(/\r?\n/g, "\r\n");
 
+const MIN_TERMINAL_H = 120;
+const MAX_TERMINAL_H = 600;
+
 export default function CodeRunnerPanel({
   task,
   code,
@@ -47,30 +42,41 @@ export default function CodeRunnerPanel({
   const termRef = useRef(null);
   const wsRef = useRef(null);
   const [running, setRunning] = useState(false);
-  const [lastExit, setLastExit] = useState(null); // {code, duration}
+  const [lastExit, setLastExit] = useState(null);
   const [usingItem, setUsingItem] = useState(false);
+  const [termH, setTermH] = useState(280);
+  const dragRef = useRef(null);
 
-  // Tear down any open WS on unmount.
   useEffect(() => {
     return () => {
       if (wsRef.current) {
-        try {
-          wsRef.current.close();
-        } catch {
-          /* noop */
-        }
+        try { wsRef.current.close(); } catch { /* noop */ }
         wsRef.current = null;
       }
     };
   }, []);
 
+  // ── Drag-to-resize terminal ───────────────────────────────────────────────
+  const onDragStart = (e) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = termH;
+
+    const onMove = (ev) => {
+      const delta = startY - ev.clientY;
+      setTermH(Math.min(MAX_TERMINAL_H, Math.max(MIN_TERMINAL_H, startH + delta)));
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
   const stopRun = useCallback(() => {
     if (wsRef.current) {
-      try {
-        wsRef.current.close();
-      } catch {
-        /* noop */
-      }
+      try { wsRef.current.close(); } catch { /* noop */ }
       wsRef.current = null;
     }
     setRunning(false);
@@ -117,11 +123,7 @@ export default function CodeRunnerPanel({
 
     ws.onmessage = (ev) => {
       let msg;
-      try {
-        msg = JSON.parse(ev.data);
-      } catch {
-        return;
-      }
+      try { msg = JSON.parse(ev.data); } catch { return; }
       switch (msg.type) {
         case "stdout":
           term?.write(normaliseEol(msg.data));
@@ -141,32 +143,17 @@ export default function CodeRunnerPanel({
           setLastExit({ code: msg.code, duration: msg.duration });
           if (msg.code === 0 && !testPassedFired && onTestPassed) {
             testPassedFired = true;
-            onTestPassed({
-              status: "success",
-              code,
-              exit_code: msg.code,
-              duration: msg.duration,
-            });
+            onTestPassed({ status: "success", code, exit_code: msg.code, duration: msg.duration });
           }
-          // Server closes after exit; client can also close defensively.
-          try {
-            ws.close();
-          } catch {
-            /* noop */
-          }
+          try { ws.close(); } catch { /* noop */ }
           break;
         }
         default:
-          // Unknown event — surface for debugging without crashing.
-          term?.write(
-            `${ANSI_DIM}[unknown event ${JSON.stringify(msg)}]${ANSI_RESET}\r\n`
-          );
+          term?.write(`${ANSI_DIM}[unknown event ${JSON.stringify(msg)}]${ANSI_RESET}\r\n`);
       }
     };
 
-    ws.onerror = () => {
-      term?.write(`\r\n${ANSI_RED}[ws error]${ANSI_RESET}\r\n`);
-    };
+    ws.onerror = () => { term?.write(`\r\n${ANSI_RED}[ws error]${ANSI_RESET}\r\n`); };
 
     ws.onclose = (ev) => {
       wsRef.current = null;
@@ -178,7 +165,7 @@ export default function CodeRunnerPanel({
     };
   }, [running, code, onTestPassed]);
 
-  // ── Inventory handlers (unchanged behaviour, kept for parity) ────────────
+  // ── Inventory handlers ────────────────────────────────────────────────────
   const handleUseItem = useCallback(
     async (itemType, itemName) => {
       if (usingItem) return false;
@@ -190,8 +177,7 @@ export default function CodeRunnerPanel({
         return true;
       } catch (error) {
         toast.error(
-          error.response?.data?.detail ||
-            "Не удалось использовать предмет или он закончился."
+          error.response?.data?.detail || "Не удалось использовать предмет или он закончился."
         );
         return false;
       } finally {
@@ -222,34 +208,40 @@ export default function CodeRunnerPanel({
   };
 
   const handleAISummon = async () => {
-    const ok = await handleUseItem("ai_summons", "AI Summon");
-    if (!ok) return;
+    if (usingItem) return;
+    if (!inventoryCounts?.ai_summons) {
+      toast.error("Нет вызовов AI-помощника.");
+      return;
+    }
 
-    // Show a loading indicator in the terminal
-    termRef.current?.writeln(
-      `\r\n${ANSI_CYAN}🔮 Вызываю Мудреца...${ANSI_RESET}`
-    );
+    setUsingItem(true);
+    termRef.current?.writeln(`\r\n${ANSI_CYAN}🔮 Вызываю Мудреца...${ANSI_RESET}`);
 
     try {
       const taskDesc =
         task?.body_ru || task?.body_en || task?.data?.hint || task?.title_ru || "";
-      const { hint } = await AIAssist.getHint(
+      // Backend handles decrement internally — do NOT call consumeItem separately
+      const { hint, remaining_summons } = await AIAssist.getHint(
         code || "",
         taskDesc,
         task?.data?.language || "python"
       );
-      // Print the AI hint into the terminal with purple colour
-      termRef.current?.writeln(
-        `\r\n\x1b[35m╔══ 🤖 Мудрец говорит ══╗\x1b[0m`
-      );
+      if (onInventoryUpdate && remaining_summons !== undefined) {
+        onInventoryUpdate("ai_summons", remaining_summons);
+      }
+      termRef.current?.writeln(`\r\n\x1b[35m╔══ 🤖 Мудрец говорит ══╗\x1b[0m`);
       hint.split("\n").forEach((line) => {
         termRef.current?.writeln(`\x1b[35m║\x1b[0m ${line}`);
       });
       termRef.current?.writeln(`\x1b[35m╚══════════════════════╝\x1b[0m\r\n`);
-    } catch {
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
       termRef.current?.writeln(
-        `\r\n${ANSI_RED}⚠ Мудрец недоступен. Попробуй ещё раз.${ANSI_RESET}\r\n`
+        `\r\n${ANSI_RED}⚠ ${detail || "Мудрец недоступен. Попробуй ещё раз."}${ANSI_RESET}\r\n`
       );
+      if (detail) toast.error(detail);
+    } finally {
+      setUsingItem(false);
     }
   };
 
@@ -271,7 +263,7 @@ export default function CodeRunnerPanel({
             onClick={handleSkeletonScroll}
             disabled={usingItem || !inventoryCounts?.skeleton_scrolls}
             className={`flex items-center gap-1.5 px-2 py-1 text-[11px] rounded transition-colors ${inventoryCounts?.skeleton_scrolls > 0 ? "text-[#e5c07b] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
-            title="Свиток Архитектора (Вставить каркас кода)"
+            title="Свиток Архитектора"
           >
             <Scroll size={14} />
             <span>{inventoryCounts?.skeleton_scrolls || 0}</span>
@@ -281,7 +273,7 @@ export default function CodeRunnerPanel({
             onClick={handleHintScroll}
             disabled={usingItem || !inventoryCounts?.hint_scrolls}
             className={`flex items-center gap-1.5 px-2 py-1 text-[11px] rounded transition-colors ${inventoryCounts?.hint_scrolls > 0 ? "text-[#98c379] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
-            title="Зелье Ясности (Получить подсказку)"
+            title="Зелье Ясности"
           >
             <Lightbulb size={14} />
             <span>{inventoryCounts?.hint_scrolls || 0}</span>
@@ -324,9 +316,7 @@ export default function CodeRunnerPanel({
       <div className="flex items-center gap-1.5 px-4 py-1.5 text-[11px] text-[#cccccc] bg-[#1e1e1e] border-b border-[#333] border-l select-none shadow-sm z-10">
         <span className="hover:text-white cursor-pointer">rpg-academy</span>
         <span className="opacity-50">&gt;</span>
-        <span className="hover:text-white cursor-pointer">
-          mission-{task?.mission || "X"}
-        </span>
+        <span className="hover:text-white cursor-pointer">mission-{task?.mission || "X"}</span>
         <span className="opacity-50">&gt;</span>
         <span className="hover:text-white cursor-pointer">main.py</span>
       </div>
@@ -335,9 +325,7 @@ export default function CodeRunnerPanel({
       <div className="flex-1 relative bg-[#1e1e1e] flex border-l border-[#333] min-h-0">
         <div className="w-12 bg-[#1e1e1e] border-r border-[#333] flex flex-col items-end py-4 pr-3 text-[#858585] text-xs select-none overflow-hidden font-mono">
           {lineArray.map((n) => (
-            <span key={n} className="leading-6 opacity-50">
-              {n}
-            </span>
+            <span key={n} className="leading-6 opacity-50">{n}</span>
           ))}
         </div>
         <textarea
@@ -349,8 +337,18 @@ export default function CodeRunnerPanel({
         />
       </div>
 
-      {/* Terminal (xterm streaming via WebSocket) */}
-      <div className="h-[280px] flex flex-col bg-[#1e1e1e] border-t border-l border-[#333]">
+      {/* Drag handle */}
+      <div
+        ref={dragRef}
+        onMouseDown={onDragStart}
+        className="h-2 bg-[#252526] border-t border-b border-[#333] flex items-center justify-center cursor-row-resize hover:bg-[#2a2d2e] select-none group"
+        title="Потяни чтобы изменить размер терминала"
+      >
+        <GripHorizontal size={12} className="text-[#555] group-hover:text-[#888]" />
+      </div>
+
+      {/* Terminal — adaptive height */}
+      <div style={{ height: termH }} className="flex flex-col bg-[#1e1e1e] border-l border-[#333] flex-shrink-0">
         <div className="flex items-center gap-4 px-4 pt-2 border-b border-[#333] select-none">
           <span className="text-[11px] uppercase tracking-wider text-white border-b border-white pb-2 font-semibold flex items-center gap-2">
             <TerminalIcon size={14} /> TERMINAL
@@ -362,9 +360,7 @@ export default function CodeRunnerPanel({
             </span>
           )}
           {!running && lastExit && (
-            <span
-              className={`text-[11px] tracking-wider pb-2 ${lastExit.code === 0 ? "text-[#23d18b]" : "text-[#f14c4c]"}`}
-            >
+            <span className={`text-[11px] tracking-wider pb-2 ${lastExit.code === 0 ? "text-[#23d18b]" : "text-[#f14c4c]"}`}>
               exit {lastExit.code} · {Number(lastExit.duration || 0).toFixed(2)}s
             </span>
           )}

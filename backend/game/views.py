@@ -597,11 +597,30 @@ class AIAssistView(APIView):
                 model=model_name,
                 contents=contents,
                 config=types.GenerateContentConfig(
-                    max_output_tokens=300,
+                    max_output_tokens=2048,
                     temperature=0.7,
                 ),
             )
+
+            # Достаём текст из всех parts кандидата — response.text иногда
+            # возвращает только первый part (особенно в gemini-2.5 с thinking).
             text = (response.text or "").strip()
+            if not text and getattr(response, "candidates", None):
+                parts_text = []
+                for cand in response.candidates:
+                    for part in getattr(getattr(cand, "content", None), "parts", []) or []:
+                        if getattr(part, "text", None):
+                            parts_text.append(part.text)
+                text = "".join(parts_text).strip()
+
+            # Логируем причину завершения для диагностики обрезанных ответов
+            finish_reason = None
+            try:
+                finish_reason = str(response.candidates[0].finish_reason)
+            except (AttributeError, IndexError):
+                pass
+            logger.info("Gemini finish_reason=%s, text_len=%d", finish_reason, len(text))
+
             if not text:
                 return (
                     "🧙 Наставник задумался... попробуй переформулировать вопрос.",

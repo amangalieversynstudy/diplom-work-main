@@ -28,6 +28,28 @@ const ANSI_RESET = "\x1b[0m";
 
 const normaliseEol = (s) => (s ?? "").replace(/\r?\n/g, "\r\n");
 
+// Перенос строк по словам — xterm не делает word-wrap для длинных строк.
+// Возвращает массив строк не длиннее `width` символов.
+const wrapWords = (text, width = 70) => {
+  const result = [];
+  for (const paragraph of text.split(/\r?\n/)) {
+    if (!paragraph) { result.push(""); continue; }
+    const words = paragraph.split(/\s+/);
+    let line = "";
+    for (const w of words) {
+      if (!line) { line = w; continue; }
+      if ((line + " " + w).length > width) {
+        result.push(line);
+        line = w;
+      } else {
+        line += " " + w;
+      }
+    }
+    if (line) result.push(line);
+  }
+  return result;
+};
+
 const MIN_TERMINAL_H = 200;
 const MAX_TERMINAL_H = 1000;
 const DEFAULT_TERMINAL_H = 550;
@@ -230,11 +252,11 @@ export default function CodeRunnerPanel({
       if (onInventoryUpdate && remaining_summons !== undefined) {
         onInventoryUpdate("ai_summons", remaining_summons);
       }
-      termRef.current?.writeln(`\r\n\x1b[35m╔══ 🤖 Мудрец говорит ══╗\x1b[0m`);
-      hint.split("\n").forEach((line) => {
-        termRef.current?.writeln(`\x1b[35m║\x1b[0m ${line}`);
+      termRef.current?.writeln(`\r\n\x1b[35m━━━ 🤖 Мудрец говорит ━━━\x1b[0m`);
+      wrapWords(hint, 70).forEach((line) => {
+        termRef.current?.writeln(`\x1b[35m│\x1b[0m ${line}`);
       });
-      termRef.current?.writeln(`\x1b[35m╚══════════════════════╝\x1b[0m\r\n`);
+      termRef.current?.writeln(`\x1b[35m━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m\r\n`);
     } catch (err) {
       const detail = err?.response?.data?.detail;
       termRef.current?.writeln(

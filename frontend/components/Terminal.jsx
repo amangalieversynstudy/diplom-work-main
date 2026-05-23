@@ -118,7 +118,7 @@ const Terminal = forwardRef(function Terminal({ className = "" }, ref) {
   return (
     <div
       ref={containerRef}
-      className={`w-full h-full bg-[#1e1e1e] ${className}`}
+      className={`w-full h-full bg-[#1e1e1e] overflow-auto ${className}`}
     />
   );
 });

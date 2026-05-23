@@ -29,8 +29,8 @@ const ANSI_RESET = "\x1b[0m";
 const normaliseEol = (s) => (s ?? "").replace(/\r?\n/g, "\r\n");
 
 const MIN_TERMINAL_H = 150;
-const MAX_TERMINAL_H = 700;
-const DEFAULT_TERMINAL_H = 380;
+const MAX_TERMINAL_H = 800;
+const DEFAULT_TERMINAL_H = 480;
 
 export default function CodeRunnerPanel({
   task,

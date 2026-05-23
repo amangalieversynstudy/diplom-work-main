@@ -12,6 +12,7 @@
 ### Аутентификация и профиль
 - Регистрация / логин / JWT (access + refresh), смена пароля
 - Email-верификация: письмо при регистрации, `user.is_active=False` до подтверждения
+- Email через **Resend HTTP API** (`django-anymail[resend]`) — Railway блокирует SMTP egress
 - Профиль: XP, уровень, класс героя (Mage / Knight), инвентарь
 - Выбор класса **заблокирован** до прохождения вводного курса (`Track.is_intro=True`)
 - Лидерборд: фильтры по периодам (all_time / weekly / monthly), топ-200
@@ -20,20 +21,29 @@
 - Треки → Локации (карта мира) → Миссии → Задачи (Story → Quiz → Code)
 - **Вводный курс "Основы Python"** (`backend/game/fixtures/intro_course.json`):
   4 миссии × 3 задачи = 12 шагов с реальным учебным контентом RU/EN
+- **Sequential unlock** — Mission 2 разблокируется только после Mission 1, и т.д.
+  (поле `prerequisites` в `Mission`, проверка в `MissionSerializer.get_available()`)
 - Карты миров визуально меняются по классу игрока (`AdventureMap.jsx`)
 - Прогресс синхронизируется через `/api/task-progress/`; attempts, best_score, статус
+- Адаптивный layout страницы миссии: ≥1280px — 3 колонки, иначе стек по вертикали
 
 ### Стриминговый терминал (Phase 4)
 - xterm.js + WebSocket (`ws://host/ws/runner/?token=<JWT>`)
-- Код выполняется в **Docker-песочнице** `python:3.11-alpine` (128MB RAM, no-network, 15s timeout)
+- Код выполняется в **Docker-песочнице** `python:3.11-alpine` (128MB RAM, 64 PID, no-network, 15s timeout)
+- Лимит вывода 50 KB — после `[ВЫВОД ОБРЕЗАН]`
 - Каждая строка stdout/stderr транслируется в реальном времени
 - Кнопка Stop убивает контейнер через cooperative stop-event
+- **Subprocess fallback** — если Docker недоступен (например, Railway без Docker-in-Docker), runner переходит на `subprocess.Popen`. Без песочницы, но рабочий для demo/защиты
+- **Resizable** — высота терминала перетаскивается (150–1000px, default 550px)
 
 ### AI-ассистент
-- Кнопка "AI Summon" в редакторе → расходует предмет инвентаря → POST `/api/game/ai-assist/`
-- Модель: **Gemini 1.5-flash** (настроить `GEMINI_API_KEY` в `.env`)
-- Rate-limit: 10 запросов / минуту / пользователь (django-ratelimit → 429)
-- Graceful fallback: без ключа выводит дружелюбное сообщение в терминал
+- Кнопка "AI Summon" в редакторе → POST `/api/ai-assist/` (бэкенд сам списывает `ai_summons`)
+- Модель: **Gemini 2.5 Flash** через новый SDK `google-genai` (API `v1`)
+- Конфиг: `GEMINI_API_KEY` обязателен; `GEMINI_MODEL` опционален (default — `gemini-2.5-flash`)
+- `max_output_tokens=2048` — учитывает thinking-токены Gemini 2.5
+- Rate-limit: DRF `ai_assist` — 10 запросов/мин/пользователь → 429
+- Word-wrap вывода (70 символов) — длинные подсказки не обрезаются в xterm
+- Graceful fallback: без ключа или при квоте выводит сообщение в терминал
 
 ### Инвентарь (3 предмета)
 | Предмет | Действие |
@@ -48,9 +58,13 @@
 - Словари: `frontend/dictionaries/en.js` + `frontend/dictionaries/ru.js`
 
 ### Инфраструктура
-- **Daphne (ASGI)** обслуживает HTTP и WebSocket в одном процессе
+- **Daphne (ASGI)** обслуживает HTTP и WebSocket в одном процессе (был gunicorn — переехали из-за WS)
 - Django Channels 4 + InMemoryChannelLayer для WS-роутинга
-- Docker Compose: PostgreSQL + Daphne + Next.js
+- Docker Compose локально: PostgreSQL + Daphne + Next.js
+- **Production деплой**:
+  - Backend → **Railway** (`Dockerfile.backend` + `railway.toml`, миграции + collectstatic + loaddata в startCommand)
+  - Frontend → **Vercel** (Next.js, `NEXT_PUBLIC_API_BASE` указывает на Railway-домен)
+  - Email → **Resend** (HTTP API, SMTP закрыт на Railway)
 - Celery + Redis: фоновые задачи (опционально)
 - 26 pytest-тестов включая async WebSocket-тесты через `WebsocketCommunicator`
 
@@ -205,7 +219,7 @@ open http://localhost:3000
 | PATCH | `/api/profile/me/` | Обновление профиля |
 | POST | `/api/profile/use-item/` | Расход предмета инвентаря |
 | GET | `/api/game/intro-status/` | Статус вводного курса (class_unlocked) |
-| POST | `/api/game/ai-assist/` | Gemini hint (10 req/min) |
+| POST | `/api/ai-assist/` | Gemini 2.5 Flash hint (10 req/min, списывает `ai_summons`) |
 | WS | `ws://host/ws/runner/?token=JWT` | Стриминговый Python-раннер |
 | GET | `/api/game/missions/` | Список миссий |
 | POST | `/api/game/missions/{id}/complete/` | Завершить миссию + XP |
@@ -229,8 +243,8 @@ cd frontend && npm run lint && npm run build
 
 - **Степпер** показывает 3 шага (теория → викторина → код) и тянет данные из `/api/mission-tasks/?mission=<id>`. Для каждого шага видны XP, длительность и тип задания.
 - **Синхронизация прогресса** происходит через `/api/task-progress/`: любые действия (прочитать, выбрать ответ, прогнать код) сразу создают/обновляют запись TaskProgress и отображают attempts/best_score.
-- **Код-раннер** отправляет код в локальный `POST /api/runner/execute`, который проверяет ожидаемый сниппет и возвращает stdout/tests. Успешный прогон автоматически отмечает шаг как `completed` и начисляет XP миссии.
-- **Фейковый платёжный поток** закрывает премиум-задачи. Кнопка «Открыть премиум» вызывает `POST /api/payments/checkout`, эмитирует intent и снимает блокировку шага.
+- **Код-раннер** подключается через WebSocket `/ws/runner/?token=<JWT>` и стримит stdout/stderr из Docker-песочницы в xterm.js построчно. На `exit code 0` шаг автоматически отмечается `completed`, начисляется XP. При недоступности Docker задействуется subprocess-fallback.
+- **AI-Мудрец** доступен в редакторе (`/api/ai-assist/`): тратит 1 `ai_summons` из инвентаря, возвращает подсказку от Gemini 2.5 Flash с учётом текущего кода и описания задачи.
 
 Чтобы пощупать механику:
 
@@ -262,21 +276,16 @@ If you want a robust coverage badge, integrate Codecov. The CI now uploads `back
 
 After enabling Codecov and adding the token (if needed), add the Codecov badge URL to the README (placeholder added above).
 
-Проект: обучающая RPG-платформа (аналог CodeCombat), цель — вырастить пользователя до Junior Django Developer.
+Проект: обучающая RPG-платформа (вдохновлена CodeCombat) — дипломная работа.
+Цель — снизить порог входа в Python через игровую механику (миссии-свитки, XP, инвентарь).
 
-Стек:
-
-- Backend: Django + Django REST Framework, JWT, PostgreSQL, Celery + Redis
-- Frontend: Next.js (React) + Tailwind CSS
-- Payments: Stripe
-- DevOps: Docker, docker-compose, GitHub Actions, Render/Railway/AWS для деплоя
-
-Структура репозитория:
-
-- /backend — Django проект
-- /frontend — Next.js приложение
-- docker-compose.yml — локальный стек: db, redis, backend, frontend, celery
-- .github/workflows — CI
+**Актуальный стек** (полное описание выше в README):
+- Backend: Django 4.2 + DRF + Channels 4 (ASGI/Daphne), JWT, PostgreSQL
+- Frontend: Next.js + Tailwind + xterm.js
+- AI: Gemini 2.5 Flash через `google-genai` SDK
+- Email: Resend HTTP API (`django-anymail`)
+- Code Runner: Docker `python:3.11-alpine` sandbox + subprocess fallback
+- DevOps: Docker Compose локально; **Railway** (backend) + **Vercel** (frontend) в production
 
 ## Документация по деплою
 

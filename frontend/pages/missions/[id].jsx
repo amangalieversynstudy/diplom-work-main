@@ -197,7 +197,14 @@ export default function MissionDetail() {
     const currentTask = tasks.find((t) => t.id === taskId);
     if (!currentTask) return;
 
-    const correctAnswer = currentTask.data?.correct_answer;
+    // Поддерживаем 2 формата фикстуры:
+    // 1) data.correct_answer = "break"
+    // 2) data.options = [{ value: "break", isCorrect: true }, ...]
+    let correctAnswer = currentTask.data?.correct_answer;
+    if (!correctAnswer && Array.isArray(currentTask.data?.options)) {
+      const correctOpt = currentTask.data.options.find((o) => o && o.isCorrect);
+      correctAnswer = correctOpt?.value ?? correctOpt?.label;
+    }
     if (String(userAnswer).trim().toLowerCase() === String(correctAnswer).trim().toLowerCase()) {
       handleCompleteTask(taskId, { selected: userAnswer }, 100);
     } else {

@@ -3,6 +3,6 @@ builder = "dockerfile"
 dockerfile = "Dockerfile.backend"
 
 [deploy]
-startCommand = "python3 manage.py migrate --noinput; python3 manage.py collectstatic --noinput; gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 60 --access-logfile -"
+startCommand = "set -x; export DJANGO_SETTINGS_MODULE=core.settings.production; python3 manage.py migrate --noinput && echo 'MIGRATE OK' || echo 'MIGRATE FAILED'; python3 manage.py collectstatic --noinput --verbosity 0 && echo 'STATIC OK' || echo 'STATIC FAILED'; exec gunicorn core.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 60 --access-logfile - --error-logfile - --log-level debug"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

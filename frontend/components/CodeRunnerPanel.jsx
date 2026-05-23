@@ -28,9 +28,9 @@ const ANSI_RESET = "\x1b[0m";
 
 const normaliseEol = (s) => (s ?? "").replace(/\r?\n/g, "\r\n");
 
-const MIN_TERMINAL_H = 150;
-const MAX_TERMINAL_H = 800;
-const DEFAULT_TERMINAL_H = 480;
+const MIN_TERMINAL_H = 200;
+const MAX_TERMINAL_H = 1000;
+const DEFAULT_TERMINAL_H = 550;
 
 export default function CodeRunnerPanel({
   task,
@@ -250,7 +250,7 @@ export default function CodeRunnerPanel({
   const lineArray = Array.from({ length: Math.max(25, lines) }, (_, i) => i + 1);
 
   return (
-    <div className="flex flex-col h-full bg-[#1e1e1e] font-mono overflow-hidden">
+    <div className="flex flex-col h-full bg-[#1e1e1e] font-mono">
       {/* Editor Tabs & Toolbar */}
       <div className="flex items-center bg-[#252526] overflow-x-auto select-none border-l border-[#333]">
         <div className="flex items-center gap-2 bg-[#1e1e1e] px-4 py-2 border-t border-[#3794ff] min-w-max cursor-pointer">

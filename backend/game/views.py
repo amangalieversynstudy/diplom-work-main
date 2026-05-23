@@ -566,21 +566,24 @@ class AIAssistView(APIView):
             )
 
         try:
-            import google.generativeai as genai
+            from google import genai
+            from google.genai import types
         except ImportError:
-            logger.warning("google-generativeai не установлен — Gemini выключен")
+            logger.warning("google-genai не установлен — Gemini выключен")
             return (
-                "📦 Библиотека google-generativeai не установлена. "
-                "Запусти: pip install google-generativeai>=0.5",
+                "📦 Библиотека google-genai не установлена. "
+                "Запусти: pip install google-genai>=0.3",
                 False,
             )
 
         try:
-            genai.configure(api_key=api_key)
             model_name = getattr(_settings, "GEMINI_MODEL", None) or os.environ.get(
-                "GEMINI_MODEL", "gemini-1.5-flash"
+                "GEMINI_MODEL", "gemini-2.0-flash"
             )
-            model = genai.GenerativeModel(model_name)
+            client = genai.Client(
+                api_key=api_key,
+                http_options={"api_version": "v1"},
+            )
 
             user_message = (
                 f"Task:\n{description}\n\n"
@@ -588,21 +591,14 @@ class AIAssistView(APIView):
                 f"Student's current code:\n```{language}\n{code}\n```"
             ) if code else f"Task:\n{description}\n\nLanguage: {language}"
 
-            # Отключаем safety filters — RPG-тематика (магия/атаки/урон) ложно
-                # триггерит блокировки на образовательном контенте.
-            safety_settings = [
-                {"category": c, "threshold": "BLOCK_NONE"}
-                for c in (
-                    "HARM_CATEGORY_HARASSMENT",
-                    "HARM_CATEGORY_HATE_SPEECH",
-                    "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                    "HARM_CATEGORY_DANGEROUS_CONTENT",
-                )
-            ]
-            response = model.generate_content(
-                [self._SYSTEM_PROMPT, user_message],
-                generation_config={"max_output_tokens": 300, "temperature": 0.7},
-                safety_settings=safety_settings,
+            response = client.models.generate_content(
+                model=model_name,
+                contents=user_message,
+                config=types.GenerateContentConfig(
+                    system_instruction=self._SYSTEM_PROMPT,
+                    max_output_tokens=300,
+                    temperature=0.7,
+                ),
             )
             text = (response.text or "").strip()
             if not text:

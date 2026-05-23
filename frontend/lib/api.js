@@ -215,7 +215,7 @@ export const AIAssist = {
    */
   getHint: (code, taskDesc, language = "python") =>
     api
-      .post("/game/ai-assist/", { code, task_description: taskDesc, language })
+      .post("/ai-assist/", { code, task_description: taskDesc, language })
       .then((r) => r.data),
 };
 

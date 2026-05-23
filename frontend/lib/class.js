@@ -33,7 +33,7 @@ export async function fetchIntroStatus() {
   if (typeof window === "undefined") return null;
   const token = getAuthToken();
   if (!token) return null;
-  const base = process.env.NEXT_PUBLIC_API_URL || "/api";
+  const base = process.env.NEXT_PUBLIC_API_BASE || process.env.NEXT_PUBLIC_API_URL || "/api";
   try {
     const res = await fetch(`${base}/intro-status/`, {
       headers: { Authorization: `Bearer ${token}` },

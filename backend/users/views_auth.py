@@ -116,9 +116,10 @@ class RegisterView(generics.CreateAPIView):
                     None,
                     [user.email],
                 )
-        except Exception:
-            # don't fail registration if email backend misconfigured
-            pass
+        except Exception as e:
+            # don't fail registration if email backend misconfigured, but log it
+            import logging
+            logging.error("[REGISTER] Email send failed for %s: %r", user.email, e)
 
     def create(self, request, *args, **kwargs):
         """Return JSON with created user payload and 201 status."""

@@ -75,7 +75,8 @@
       "repeatable": false,
       "repeat_xp_rate": 0,
       "pos_x": 30,
-      "pos_y": 35
+      "pos_y": 35,
+      "prerequisites": [1]
     }
   },
   {
@@ -96,7 +97,8 @@
       "repeatable": false,
       "repeat_xp_rate": 0,
       "pos_x": 55,
-      "pos_y": 60
+      "pos_y": 60,
+      "prerequisites": [2]
     }
   },
   {
@@ -117,7 +119,8 @@
       "repeatable": false,
       "repeat_xp_rate": 0,
       "pos_x": 78,
-      "pos_y": 40
+      "pos_y": 40,
+      "prerequisites": [3]
     }
   },
 

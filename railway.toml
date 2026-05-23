@@ -3,6 +3,6 @@ builder = "dockerfile"
 dockerfile = "Dockerfile.backend"
 
 [deploy]
-startCommand = "sh -c 'export DJANGO_SETTINGS_MODULE=core.settings.production; python3 manage.py migrate --noinput && python3 manage.py collectstatic --noinput && (python3 manage.py loaddata ranks class_roles intro_course mission_tasks_intro || true) && exec gunicorn core.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 60 --access-logfile - --error-logfile -'"
+startCommand = "sh -c 'export DJANGO_SETTINGS_MODULE=core.settings.production; python3 manage.py migrate --noinput && python3 manage.py collectstatic --noinput && (python3 manage.py loaddata ranks class_roles intro_course mission_tasks_intro test_users || true) && exec gunicorn core.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 60 --access-logfile - --error-logfile -'"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

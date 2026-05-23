@@ -63,9 +63,10 @@ export default function MissionDetail() {
         const mapping = {};
         const drafts = {};
         progressList.forEach((p) => {
-          mapping[p.task_id] = p;
+          const tid = p.task_id ?? p.task;
+          mapping[tid] = p;
           if (p.answer && p.answer.code) {
-            drafts[p.task_id] = p.answer.code;
+            drafts[tid] = p.answer.code;
           }
         });
         setTaskProgress(mapping);

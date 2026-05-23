@@ -578,7 +578,7 @@ class AIAssistView(APIView):
 
         try:
             model_name = getattr(_settings, "GEMINI_MODEL", None) or os.environ.get(
-                "GEMINI_MODEL", "gemini-2.0-flash"
+                "GEMINI_MODEL", "gemini-2.5-flash"
             )
             client = genai.Client(
                 api_key=api_key,

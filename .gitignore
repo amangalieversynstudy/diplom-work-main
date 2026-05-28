@@ -40,3 +40,10 @@ backend/staticfiles/
 # Exercises deliverables (PDF exports)
 docs/*.pdf
 .github/copilot-instructions.md
+
+# Claude Code service instruction file (local only, не для команды)
+CLAUDE.md
+
+# Diploma explanatory note (Word docs) — рукопись держится отдельно от кода
+*.docx
+_diplom_chapters/

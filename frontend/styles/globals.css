@@ -9,19 +9,56 @@
 :root {
   color-scheme: light;
   --bg: #fdfbf7;
-  --text: #443c32;
+  --surface: #f5f1e8;
+  --panel: #ffffff;
+  --text: #2a241b;
+  --muted: #6b5f4f;
+  --faint: #9a8b75;
+  --border: #e6dcc7;
   --primary: #2a6f68;
+  --primary-dk: #1e524d;
+  --primary-selection: rgba(42,111,104,0.25);
   --accent: #c07c3a;
   --accent-dk: #9a5f2a;
+  --gold: #d4a24c;
+  --success: #4ade80;
+  --warning: #f59e0b;
+  --error: #dc2626;
+  /* Card / Modal — единый источник правды */
+  --card-bg: #ffffff;
+  --card-border: #e6dcc7;
+  --card-text: #2a241b;
+  --card-text-muted: #6b5f4f;
+  --modal-bg: #ffffff;
+  --modal-text: #2a241b;
+  --modal-overlay: rgba(20,16,10,0.45);
 }
 
 html.dark {
   color-scheme: dark;
   --bg: #06100D;
+  --surface: #0b1a17;
+  --panel: #0f2421;
   --text: #E8F0EA;
-  --primary: #2ECC8A;
+  --muted: #9ab4ac;
+  --faint: #6a8278;
+  --border: rgba(232,240,234,0.12);
+  --primary: #4ade80;
+  --primary-dk: #34d399;
+  --primary-selection: rgba(74,222,128,0.30);
   --accent: #f4a261;
   --accent-dk: #e07b3a;
+  --gold: #d4a24c;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --error: #f87171;
+  --card-bg: #0f2421;
+  --card-border: rgba(232,240,234,0.12);
+  --card-text: #E8F0EA;
+  --card-text-muted: #9ab4ac;
+  --modal-bg: #0f2421;
+  --modal-text: #E8F0EA;
+  --modal-overlay: rgba(0,0,0,0.65);
 }
 
 /* ─── Базовые стили курсора ───────────────────────────────── */

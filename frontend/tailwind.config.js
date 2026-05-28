@@ -28,11 +28,21 @@ module.exports = {
         success:      'var(--success)',
         warning:      'var(--warning)',
         error:        'var(--error)',
+        'card-bg':       'var(--card-bg)',
+        'card-border':   'var(--card-border)',
+        'card-text':     'var(--card-text)',
+        'card-muted':    'var(--card-text-muted)',
+        'modal-bg':      'var(--modal-bg)',
+        'modal-text':    'var(--modal-text)',
+        'modal-overlay': 'var(--modal-overlay)',
       },
       boxShadow: {
         card:   "0 20px 60px rgba(0,0,0,0.55)",
-        glow:   "0 0 40px rgba(46,204,138,0.25)",
-        ember:  "0 0 40px rgba(232,105,58,0.3)",
+        // Eye-friendly glow на новой primary #4ade80 — мягкий ореол,
+        // не неон. Радиус сокращён с 40 → 12px, чтобы убрать «гало».
+        glow:   "0 0 12px rgba(74,222,128,0.30)",
+        'glow-lg': "0 0 24px rgba(74,222,128,0.25)",
+        ember:  "0 0 14px rgba(244,162,97,0.30)",
         inner:  "inset 0 1px 0 rgba(232,240,234,0.08)",
       },
       animation: {

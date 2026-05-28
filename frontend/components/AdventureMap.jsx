@@ -40,12 +40,19 @@ function Node({ node, delay = 0, theme }) {
   if (isCompleted) nodeStyle = "bg-yellow-500/20 border-yellow-500/80 shadow-[0_0_10px_rgba(234,179,8,0.4)]";
   else if (!isLocked) nodeStyle = `bg-[#1e1e1e] border-white ${theme.nodeGlow}`;
 
+  // Туман войны для locked-узлов: opacity 0.4 + blur,
+  // на hover/focus снимаем эффект — узел остаётся доступен глазу и клавиатуре
+  const fogClass = isLocked
+    ? "opacity-40 blur-[2px] hover:opacity-100 hover:blur-0 focus-visible:opacity-100 focus-visible:blur-0"
+    : "";
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay }}
-      className={`absolute w-12 h-12 -ml-6 -mt-6 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all hover:scale-110 ${nodeStyle}`}
+      tabIndex={0}
+      className={`absolute w-12 h-12 -ml-6 -mt-6 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 ${nodeStyle} ${fogClass}`}
       style={{
         left: `${node.x}%`,
         top: `${node.y}%`,
@@ -65,34 +72,44 @@ export default function AdventureMap({ nodes, playerClass }) {
   const theme = classThemes[normalizedClass] || classThemes.default;
 
   return (
-    <div className={`relative w-full h-[600px] border border-[#333] rounded-xl overflow-hidden shadow-2xl ${theme.bg}`}>
-      {/* Рендеринг SVG-линий между нодами */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none">
-        {nodes.map((node, i) => {
-          if (i === 0) return null;
-          const prev = nodes[i - 1];
-          return (
-            <motion.line
-              key={`line-${node.id}`}
-              x1={`${prev.x}%`}
-              y1={`${prev.y}%`}
-              x2={`${node.x}%`}
-              y2={`${node.y}%`}
-              stroke={theme.lineStroke}
-              strokeWidth="2"
-              strokeDasharray="4 4"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 1, delay: i * 0.2 }}
-            />
-          );
-        })}
-      </svg>
+    // Внешняя оболочка: горизонтальный скролл при узком viewport,
+    // padding по краям чтобы крайние узлы (x≈0/100%) не упирались в борт,
+    // overscroll-behavior-x чтобы свайп карты не триггерил back-навигацию.
+    <div
+      className="w-full overflow-x-auto overflow-y-hidden adventure-map-scroll"
+      style={{ overscrollBehaviorX: "contain" }}
+    >
+      <div
+        className={`relative h-[600px] min-w-[900px] mx-2 px-6 border border-[#333] rounded-xl shadow-2xl overflow-hidden ${theme.bg}`}
+      >
+        {/* SVG-линии между нодами */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none">
+          {nodes.map((node, i) => {
+            if (i === 0) return null;
+            const prev = nodes[i - 1];
+            return (
+              <motion.line
+                key={`line-${node.id}`}
+                x1={`${prev.x}%`}
+                y1={`${prev.y}%`}
+                x2={`${node.x}%`}
+                y2={`${node.y}%`}
+                stroke={theme.lineStroke}
+                strokeWidth="2"
+                strokeDasharray="4 4"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 1, delay: i * 0.2 }}
+              />
+            );
+          })}
+        </svg>
 
-      {/* Рендеринг самих нод */}
-      {nodes.map((node, i) => (
-        <Node key={node.id} node={node} delay={i * 0.2} theme={theme} />
-      ))}
+        {/* Сами ноды */}
+        {nodes.map((node, i) => (
+          <Node key={node.id} node={node} delay={i * 0.2} theme={theme} />
+        ))}
+      </div>
     </div>
   );
 }

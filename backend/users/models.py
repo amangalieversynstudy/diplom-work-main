@@ -42,8 +42,20 @@ class Profile(models.Model):
         help_text="Зелья ясности (Hint Scroll - подсветка синтаксиса/ошибок)"
     )
     skeleton_scrolls = models.PositiveIntegerField(
-        default=3, 
+        default=3,
         help_text="Свитки Архитектора (Skeleton Scroll - вставка стартового кода)"
+    )
+    # Серия завершений подряд (Streak). Используется как secondary
+    # tiebreaker в лидерборде после xp_total. Сбрасывается, если
+    # пользователь пропускает день — обновление делает signal на
+    # Progress.complete (см. game/signals.py).
+    current_streak = models.PositiveIntegerField(
+        default=0,
+        help_text="Текущая серия дней с завершённой миссией"
+    )
+    longest_streak = models.PositiveIntegerField(
+        default=0,
+        help_text="Лучшая серия за всё время"
     )
 
     def use_item(self, item_field_name: str) -> bool:

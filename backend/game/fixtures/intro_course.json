@@ -171,14 +171,14 @@
       "mission": 1,
       "order": 3,
       "task_type": "code",
-      "title_en": "Cast Your First Spell",
-      "title_ru": "Первое Заклинание",
-      "body_en": "<p>Declare three variables and print them:</p><ul><li><code>hero</code> = your hero's name (string)</li><li><code>level</code> = starting level (integer, 1)</li><li><code>xp</code> = starting XP (float, 0.0)</li></ul><p>Then print all three with <code>print(hero, level, xp)</code>.</p>",
-      "body_ru": "<p>Объяви три переменные и выведи их:</p><ul><li><code>hero</code> — имя героя (строка)</li><li><code>level</code> — начальный уровень (целое, 1)</li><li><code>xp</code> — начальный опыт (дробное, 0.0)</li></ul><p>Затем выведи все три через <code>print(hero, level, xp)</code>.</p>",
+      "title_en": "Run the Code and See the Magic",
+      "title_ru": "Запусти код и увидь магию",
+      "body_en": "<p>Your very first spell. The starter is ready in the Codex — press <strong>Run Code</strong> and watch the terminal greet the world.</p><p>Once you see the output, the trial is cleared.</p>",
+      "body_ru": "<p>Твоё самое первое заклинание. В Кодексе уже готов шаблон — нажми <strong>Run Code</strong> и посмотри, как терминал приветствует мир.</p><p>Как только увидишь вывод — испытание пройдено.</p>",
       "data": {
         "language": "python",
-        "starter": "# Объяви три переменные\nhero = \"\"\nlevel = 0\nxp = 0.0\n\n# Выведи их\nprint(hero, level, xp)\n",
-        "sampleOutput": "Герой 1 0.0"
+        "starter": "# Напиши своё первое заклинание\nprint(\"Привет, мир!\")\n",
+        "sampleOutput": "Привет, мир!"
       },
       "xp_reward": 10,
       "is_required": true

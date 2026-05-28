@@ -315,7 +315,7 @@ export default function Home() {
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
               <TransitionLink href="/register"
-                className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 md:px-8 md:py-4 bg-primary text-white shadow-lg shadow-[#2a6f68]/25 dark:shadow-emerald-500/40 rounded-2xl font-semibold overflow-hidden transition-all hover:scale-105 active:scale-95 border border-primary-dk"
+                className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 md:px-8 md:py-4 bg-primary text-white shadow-glow rounded-2xl font-semibold overflow-hidden transition-all hover:scale-105 hover:shadow-glow-lg active:scale-95 border border-primary-dk"
               >
                 <Sparkles size={18} /> {homeDict.cta_button1 || "Создать аккаунт"}
                 <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />

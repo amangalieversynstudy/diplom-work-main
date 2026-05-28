@@ -68,12 +68,14 @@ export default function ChooseClassPage() {
     // Показываем confirm только при ПЕРВОМ выборе. При смене класса лишний
     // диалог не нужен — игрок уже в игре и знает, что делает.
     if (introStatus.locked && !hasClass) {
+      const c = dict.classPage?.confirmIntro || {};
       setConfirmData({
-        title: "Сначала Вводный курс?",
+        title: c.title || "Сначала Вводный курс?",
         message:
+          c.message ||
           "Академия настоятельно рекомендует пройти Вводный курс — он даст базовые навыки магии. Точно хочешь выбрать класс прямо сейчас?",
-        confirmLabel: "Да, выбрать сейчас",
-        cancelLabel: "К вводному курсу",
+        confirmLabel: c.confirm || "Да, выбрать сейчас",
+        cancelLabel: c.cancel || "К вводному курсу",
         onConfirm: () => performChoose(id),
         onCancel: () => router.push("/worlds"),
       });
@@ -92,14 +94,13 @@ export default function ChooseClassPage() {
       setPlayerClass(id);
       setCurrentClass(id);
       const successMsg = hasClass
-        ? "Класс изменён! Новые силы пробуждаются..."
-        : dict.classPage?.toastSuccess || "Класс успешно выбран!";
+        ? (dict.classPage?.toastChanged || "Класс изменён! Новые силы пробуждаются...")
+        : (dict.classPage?.toastSuccess || "Класс успешно выбран!");
       toast.success(successMsg, { duration: 3000 });
       router.push("/profile");
     } catch (e) {
-      // Умная обработка ошибки бэкенда (на случай пустой БД)
-      logger.error("Ошибка сервера:", e.response?.data);
-      let errorMsg = "Не удалось сохранить класс. Попробуй ещё раз.";
+      logger.error("classPage save failed:", e.response?.data);
+      let errorMsg = dict.classPage?.toastError || "Не удалось сохранить класс. Попробуй ещё раз.";
       if (e.response?.data) {
         const data = e.response.data;
         if (data.class_role) {
@@ -132,23 +133,22 @@ export default function ChooseClassPage() {
   const classDict = dict.classPage?.classes || {};
   const nodes = TREE.map((n) => ({
     ...n,
-    // Если класс УЖЕ выбран — открываем все ветви для свободной смены.
     locked: hasClass ? false : n.locked,
     isCurrent: n.id === currentClass,
     name: classDict[n.id]?.name || n.id,
-    focus: classDict[n.id]?.focus || "База",
-    desc: classDict[n.id]?.desc || "Описание класса",
+    focus: classDict[n.id]?.focus || dict.classPage?.focusFallback || "База",
+    desc: classDict[n.id]?.desc || dict.classPage?.descFallback || "Описание класса",
     crest: classDict[n.id]?.crest || "⚔️",
     Icon: ICONS[n.id] || Code,
   }));
   const root = nodes.find((n) => n.tier === 0);
   const branches = nodes.filter((n) => n.tier === 1);
 
-  // CTA меняется в зависимости от состояния
+  // CTA — три состояния: current / change / fresh
   const baseCta = dict.classPage?.cta || "Принять клятву";
   const ctaFor = (node) => {
-    if (node.isCurrent) return "✓ Текущий класс";
-    if (hasClass) return "Сменить на этот класс";
+    if (node.isCurrent) return `✓ ${dict.classPage?.changePath || "Текущий класс"}`;
+    if (hasClass) return dict.classPage?.ctaChange || "Сменить на этот класс";
     return baseCta;
   };
 
@@ -163,7 +163,7 @@ export default function ChooseClassPage() {
               <Sparkles size={24} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-text mb-2">Рекомендация Академии</h3>
+              <h3 className="text-lg font-bold text-text mb-2">{dict.classPage?.recommendation || "Рекомендация Академии"}</h3>
               <p className="text-sm text-muted">
                 Мы видим, что ты еще не завершил Вводный курс. Ты можешь просмотреть древо классов и выбрать свой путь, но для полного понимания механик игры настоятельно рекомендуем сначала пройти базу!
               </p>
@@ -174,15 +174,15 @@ export default function ChooseClassPage() {
         {/* Header */}
         <header className="mb-12 text-center max-w-3xl mx-auto border-b border-border pb-10">
           <p className="text-xs uppercase tracking-widest text-primary mb-4 font-bold">
-            {hasClass ? "Смена пути" : (dict.classPage?.alignment || "Выравнивание")}
+            {hasClass ? (dict.classPage?.changePath || "Смена пути") : (dict.classPage?.alignment || "Выравнивание")}
           </p>
           <h1 className="text-4xl md:text-6xl font-display font-bold text-text mb-6">
-            {hasClass ? "Сменить класс" : "Древо Классов"}
+            {hasClass ? (dict.classPage?.changeClass || "Сменить класс") : (dict.classPage?.tree || "Древо Классов")}
           </h1>
           <p className="text-lg text-muted leading-relaxed">
             {hasClass
-              ? "Перевыбери свой путь. Все ветви открыты — выбирай, во что хочешь развиваться дальше."
-              : "Начни с базовой магии Python. Ветви Django и DevOps откроются после освоения корня."}
+              ? (dict.classPage?.treeChange || "Перевыбери свой путь. Все ветви открыты — выбирай, во что хочешь развиваться дальше.")
+              : (dict.classPage?.treeFresh || "Начни с базовой магии Python. Ветви Django и DevOps откроются после освоения корня.")}
           </p>
         </header>
 
@@ -200,6 +200,7 @@ export default function ChooseClassPage() {
               onSelect={() => choose(root.id)}
               choosing={choosing}
               cta={ctaFor(root)}
+              labels={dict.classPage}
             />
           </motion.div>
 
@@ -255,6 +256,7 @@ export default function ChooseClassPage() {
                   onSelect={() => choose(node.id)}
                   choosing={choosing}
                   cta={ctaFor(node)}
+                  labels={dict.classPage}
                 />
               </motion.div>
             ))}
@@ -268,8 +270,8 @@ export default function ChooseClassPage() {
             className="text-xs text-muted text-center mt-10 italic max-w-md"
           >
             {hasClass
-              ? "Сменить класс можно в любой момент. Прогресс по миссиям сохраняется."
-              : "Ветви Django и DevOps откроются после прохождения базовой магии Python."}
+              ? (dict.classPage?.noteChange || "Сменить класс можно в любой момент. Прогресс по миссиям сохраняется.")
+              : (dict.classPage?.noteFresh || "Ветви Django и DevOps откроются после прохождения базовой магии Python.")}
           </motion.p>
         </div>
       </div>
@@ -279,10 +281,16 @@ export default function ChooseClassPage() {
   );
 }
 
-function SkillNode({ node, onSelect, choosing, cta }) {
+function SkillNode({ node, onSelect, choosing, cta, labels = {} }) {
   const Icon = node.Icon;
   const isLocked = node.locked;
   const isCurrent = node.isCurrent;
+
+  const lblLocked = labels.badgeLocked || "Заблокировано";
+  const lblSelected = labels.badgeSelected || "Выбранный путь";
+  const lblStart = labels.badgeStart || "Стартовая ветвь";
+  const lblAvail = labels.badgeAvailable || "Доступная ветвь";
+  const lblRequires = labels.requiresBase || "Требуется база Python";
 
   const handleKey = (e) => {
     if (isLocked) return;
@@ -304,10 +312,10 @@ function SkillNode({ node, onSelect, choosing, cta }) {
       aria-disabled={isLocked}
       aria-label={
         isLocked
-          ? `${node.name} — заблокировано`
+          ? `${node.name} — ${lblLocked}`
           : isCurrent
-          ? `${node.name} — текущий класс`
-          : `Выбрать ${node.name}`
+          ? `${node.name} — ${lblSelected}`
+          : `${cta} ${node.name}`
       }
       className={`group relative w-full max-w-[300px] rounded-[2rem] border-2 p-6 overflow-hidden transition-all duration-500 outline-none focus-visible:ring-2 focus-visible:ring-primary
         ${
@@ -320,7 +328,7 @@ function SkillNode({ node, onSelect, choosing, cta }) {
     >
       {isCurrent && (
         <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-accent/20 border border-accent/60 text-accent text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full">
-          <Check size={10} /> Текущий
+          <Check size={10} /> {lblSelected}
         </div>
       )}
       {!isLocked && (
@@ -364,12 +372,12 @@ function SkillNode({ node, onSelect, choosing, cta }) {
           ${isLocked ? "text-muted" : isCurrent ? "text-accent" : "text-primary"}`}
         >
           {isLocked
-            ? "Заблокировано"
+            ? lblLocked
             : isCurrent
-            ? "Выбранный путь"
+            ? lblSelected
             : node.tier === 0
-            ? "Стартовая ветвь"
-            : "Доступная ветвь"}
+            ? lblStart
+            : lblAvail}
         </p>
         <h3 className="text-xl font-display font-bold text-text mb-2">{node.name}</h3>
         <p className="text-[10px] font-bold uppercase tracking-widest text-accent mb-3">
@@ -380,7 +388,7 @@ function SkillNode({ node, onSelect, choosing, cta }) {
         {isLocked ? (
           <div className="flex items-center gap-2 text-xs text-muted">
             <Lock size={12} />
-            <span className="uppercase tracking-wider">Требуется база Python</span>
+            <span className="uppercase tracking-wider">{lblRequires}</span>
           </div>
         ) : isCurrent ? (
           <div className="w-full text-center bg-accent/20 text-accent border border-accent/60 rounded-xl py-3 font-semibold cursor-default">

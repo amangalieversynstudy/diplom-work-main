@@ -6,10 +6,12 @@ import { useEffect, useState } from "react";
 import { Locations, Profile as ProfileAPI } from "../../lib/api";
 import AdventureMap from "../../components/AdventureMap";
 import { toast } from "sonner";
+import { useI18n } from "../../lib/i18n";
 
 export default function WorldDetail() {
   const router = useRouter();
   const { id } = router.query;
+  const { t } = useI18n();
   const [world, setWorld] = useState(null);
   const [loading, setLoading] = useState(true);
   const [playerClass, setPlayerClass] = useState(null); // Стейт для класса игрока
@@ -35,7 +37,7 @@ export default function WorldDetail() {
         setPlayerClass(userDoc?.profile?.class_role?.name || userDoc?.profile?.class_role);
       })
       .catch(() => {
-        toast.error("Не удалось загрузить данные локации.");
+        toast.error(t("worldsPage.toasts.locationFail"));
       })
       .finally(() => {
         if (active) setLoading(false);

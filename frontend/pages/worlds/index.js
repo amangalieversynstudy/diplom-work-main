@@ -257,10 +257,10 @@ export default function Worlds() {
 
                       <div className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 group-hover:ml-3 group-hover:pr-4 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
                         <p className={`text-sm font-display font-bold tracking-wide ${isLocked ? 'text-[#5c3a21]' : 'text-[#3e2723]'}`}>
-                          {mission.title || mission.name || "Миссия"}
+                          {mission.title || mission.name || worldsDict.missionFallback || "Миссия"}
                         </p>
                         <p className={`text-[10px] font-bold uppercase tracking-widest mt-0.5 ${isLocked ? 'text-[#8b5a2b]' : 'text-[#8e1d1d]'}`}>
-                          {mission.chapter || mission.tier || "Глава"}
+                          {mission.chapter || mission.tier || worldsDict.chapterFallback || "Глава"}
                         </p>
                       </div>
                     </div>

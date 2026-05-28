@@ -15,9 +15,11 @@ import Layout from "../components/Layout";
 import api from "../lib/api";
 import { Sparkles, Mail, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useI18n } from "../lib/i18n";
 
 export default function VerifyEmail() {
   const router = useRouter();
+  const { t } = useI18n();
   const [status, setStatus] = useState("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -27,7 +29,7 @@ export default function VerifyEmail() {
     const { uid, token } = router.query;
     if (!uid || !token) {
       setStatus("error");
-      setErrorMessage("Ссылка повреждена: отсутствует uid или token.");
+      setErrorMessage(t("auth.verify.badLink"));
       return;
     }
 
@@ -35,17 +37,17 @@ export default function VerifyEmail() {
       .get("/auth/verify-email/", { params: { uid, token } })
       .then(() => {
         setStatus("success");
-        toast.success("Магическая печать снята! Добро пожаловать.");
+        toast.success(t("auth.verify.successToast"));
         setTimeout(() => router.push("/login"), 3000);
       })
       .catch((err) => {
         setStatus("error");
         const detail =
-          err?.response?.data?.detail || "Свиток поврежден или уже использован.";
+          err?.response?.data?.detail || t("auth.verify.invalidScroll");
         setErrorMessage(detail);
         toast.error(detail);
       });
-  }, [router.isReady, router.query, router]);
+  }, [router.isReady, router.query, router, t]);
 
   return (
     <Layout>
@@ -61,10 +63,11 @@ export default function VerifyEmail() {
           >
             <div className="absolute inset-0 bg-gradient-to-b from-primary/15 via-transparent to-transparent pointer-events-none" />
             <div className="relative z-10">
-              {status === "loading" && <LoadingState />}
-              {status === "success" && <SuccessState />}
+              {status === "loading" && <LoadingState t={t} />}
+              {status === "success" && <SuccessState t={t} />}
               {status === "error" && (
                 <ErrorState
+                  t={t}
                   message={errorMessage}
                   onBack={() => router.push("/login")}
                 />
@@ -77,7 +80,7 @@ export default function VerifyEmail() {
   );
 }
 
-function LoadingState() {
+function LoadingState({ t }) {
   return (
     <>
       <motion.div
@@ -88,17 +91,17 @@ function LoadingState() {
         <Sparkles size={36} className="text-primary opacity-80" />
       </motion.div>
       <p className="text-xs uppercase tracking-widest text-primary mb-3 font-bold">
-        Активация
+        {t("auth.verify.loadingKicker")}
       </p>
       <h1 className="text-3xl md:text-4xl font-display font-bold text-text mb-3">
-        Расшифровка свитка...
+        {t("auth.verify.loadingTitle")}
       </h1>
-      <p className="text-muted">Подожди, пока мы проверим твои печати.</p>
+      <p className="text-muted">{t("auth.verify.loadingBody")}</p>
     </>
   );
 }
 
-function SuccessState() {
+function SuccessState({ t }) {
   return (
     <>
       <motion.div
@@ -115,7 +118,7 @@ function SuccessState() {
         transition={{ delay: 0.3, duration: 0.4 }}
         className="text-xs uppercase tracking-widest text-primary mb-3 font-bold"
       >
-        Печать снята
+        {t("auth.verify.successKicker")}
       </motion.p>
       <motion.h1
         initial={{ opacity: 0, y: 8 }}
@@ -123,7 +126,7 @@ function SuccessState() {
         transition={{ delay: 0.4, duration: 0.4 }}
         className="text-3xl md:text-4xl font-display font-bold text-text mb-4"
       >
-        Путь открыт!
+        {t("auth.verify.successTitle")}
       </motion.h1>
       <motion.p
         initial={{ opacity: 0 }}
@@ -131,7 +134,7 @@ function SuccessState() {
         transition={{ delay: 0.5, duration: 0.4 }}
         className="text-muted text-lg"
       >
-        Перенаправляем в зал входа...
+        {t("auth.verify.successBody")}
       </motion.p>
       <motion.div
         initial={{ width: 0 }}
@@ -144,26 +147,26 @@ function SuccessState() {
   );
 }
 
-function ErrorState({ message, onBack }) {
+function ErrorState({ t, message, onBack }) {
   return (
     <>
       <div className="w-20 h-20 mx-auto rounded-full bg-red-500/10 border border-red-500/40 flex items-center justify-center mb-6 shadow-inner">
         <Mail size={36} className="text-red-400" />
       </div>
       <p className="text-xs uppercase tracking-widest text-red-400 mb-3 font-bold">
-        Свиток повреждён
+        {t("auth.verify.errorKicker")}
       </p>
       <h1 className="text-3xl md:text-4xl font-display font-bold text-text mb-3">
-        Тёмная магия вмешалась
+        {t("auth.verify.errorTitle")}
       </h1>
       <p className="text-muted mb-8">
-        {message || "Ссылка недействительна. Запроси новую через таверну."}
+        {message || t("auth.verify.invalidGeneric")}
       </p>
       <button
         onClick={onBack}
         className="px-6 py-3 bg-primary text-white rounded-2xl font-semibold hover:scale-105 transition-transform shadow-[0_0_15px_var(--primary-selection)]"
       >
-        Вернуться к таверне
+        {t("auth.verify.backToLogin")}
       </button>
     </>
   );

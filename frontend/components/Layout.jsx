@@ -54,12 +54,13 @@ function LanguageToggle() {
 
 function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
+  const { t } = useI18n();
 
   const options = [
     {
       id: "light",
       icon: Sun,
-      label: "Светлая тема",
+      label: t("layout.themeLight"),
       activeBg: "bg-surface",
       activeIcon: "text-accent",
       glow: "0 0 18px var(--primary-selection)",
@@ -68,7 +69,7 @@ function ThemeSwitcher() {
     {
       id: "dark",
       icon: Moon,
-      label: "Тёмная тема",
+      label: t("layout.themeDark"),
       activeBg: "bg-primary",
       activeIcon: "text-white",
       glow: "0 0 22px var(--primary)",
@@ -246,8 +247,8 @@ export default function Layout({ children, hideFooter, noBottomPadding }) {
       <div
         role="button"
         tabIndex={isMenuOpen ? 0 : -1}
-        aria-label="Закрыть меню"
-        className={`fixed inset-0 z-[90] bg-black/20 backdrop-blur-sm transition-opacity duration-500 ${
+        aria-label={t("layout.closeMenu")}
+        className={`fixed inset-0 z-[90] bg-modal-overlay backdrop-blur-sm transition-opacity duration-500 ${
           isMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={() => setIsMenuOpen(false)}
@@ -265,7 +266,7 @@ export default function Layout({ children, hideFooter, noBottomPadding }) {
           className="relative z-10 w-full h-full flex flex-col pointer-events-auto"
         >
           <div className="flex-1 overflow-y-auto pt-24 px-8 flex flex-col gap-6">
-            <span className="text-sm font-semibold text-faint uppercase tracking-wider">Навигация</span>
+            <span className="text-sm font-semibold text-faint uppercase tracking-wider">{t("layout.nav")}</span>
             <div className="flex flex-col gap-6">
             {translatedNavLinks.map((item) => (
               <TransitionLink
@@ -286,10 +287,10 @@ export default function Layout({ children, hideFooter, noBottomPadding }) {
             {!isAuthenticated ? (
               <div className="flex flex-col gap-3">
                 <TransitionLink href="/login" onClick={() => setIsMenuOpen(false)} className="w-full py-3 rounded-xl border border-border text-muted font-semibold text-center hover:bg-panel transition-colors">
-                  Вход
+                  {t("layout.login")}
                 </TransitionLink>
-                <TransitionLink href="/register" onClick={() => setIsMenuOpen(false)} className="w-full py-3 rounded-xl bg-primary text-white shadow-lg shadow-[#2a6f68]/25 dark:shadow-emerald-500/25 font-semibold text-center hover:scale-[1.02] transition-transform">
-                  Регистрация
+                <TransitionLink href="/register" onClick={() => setIsMenuOpen(false)} className="w-full py-3 rounded-xl bg-primary text-white shadow-glow font-semibold text-center hover:scale-[1.02] transition-transform">
+                  {t("layout.register")}
                 </TransitionLink>
               </div>
             ) : (
@@ -303,7 +304,7 @@ export default function Layout({ children, hideFooter, noBottomPadding }) {
                   }}
                   className="w-full py-3 rounded-xl border border-border text-muted font-semibold text-center hover:bg-panel hover:text-error transition-colors"
                 >
-                  Выйти
+                  {t("layout.logout")}
                 </button>
               </div>
             )}

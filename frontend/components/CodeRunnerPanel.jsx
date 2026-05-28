@@ -12,6 +12,7 @@ import {
   Lightbulb,
   Bot,
   GripHorizontal,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AIAssist, Profile, getRunnerWsUrl } from "../lib/api";
@@ -69,6 +70,24 @@ export default function CodeRunnerPanel({
   const [usingItem, setUsingItem] = useState(false);
   const [termH, setTermH] = useState(DEFAULT_TERMINAL_H);
   const dragRef = useRef(null);
+
+  // Снимок оригинального starter-кода задачи — обновляется ТОЛЬКО при смене
+  // task.id. Reset-кнопка ниже всегда восстанавливает код из этого снимка
+  // и не тратит инвентарь (в отличие от Skeleton Scroll, который добавляет
+  // boilerplate сверх текущего кода и расходует item).
+  const initialCodeRef = useRef("");
+  useEffect(() => {
+    if (!task?.id) return;
+    initialCodeRef.current = task?.data?.starter || "";
+  }, [task?.id]);
+
+  const handleResetCode = useCallback(() => {
+    onChange(initialCodeRef.current || "");
+    toast(
+      `${initialCodeRef.current ? "↻ Код возвращён к исходному" : "↻ Редактор очищен"}`,
+      { duration: 2000 }
+    );
+  }, [onChange]);
 
   useEffect(() => {
     return () => {
@@ -222,11 +241,24 @@ export default function CodeRunnerPanel({
 
   const handleHintScroll = async () => {
     const ok = await handleUseItem("hint_scrolls", "Зелье Ясности");
-    if (ok) {
-      const hint =
-        task?.data?.hint ||
-        "Проверьте правильность отступов и синтаксис объявления функций.";
-      toast(`💡 Подсказка: ${hint}`, { duration: 6000 });
+    if (!ok) return;
+
+    const hint =
+      task?.data?.hint ||
+      "Проверьте правильность отступов и синтаксис объявления функций.";
+
+    // Подсказку выводим прямо в терминал редактора — он всегда
+    // привязан к панели и виден на любой ширине экрана (на 32:9
+    // top-right toast визуально «уходит за экран»). Если терминал
+    // ещё не смонтирован — фоллбэк на тост.
+    if (termRef.current?.writeln) {
+      termRef.current.writeln(`\r\n${ANSI_YELLOW}━━━ 💡 Зелье Ясности ━━━${ANSI_RESET}`);
+      wrapWords(hint, 70).forEach((line) => {
+        termRef.current.writeln(`${ANSI_YELLOW}│${ANSI_RESET} ${line}`);
+      });
+      termRef.current.writeln(`${ANSI_YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━${ANSI_RESET}\r\n`);
+    } else {
+      toast(`💡 ${hint}`, { duration: 6000 });
     }
   };
 
@@ -315,6 +347,17 @@ export default function CodeRunnerPanel({
 
         <div className="flex-1" />
         <div className="px-3 flex items-center gap-2 bg-[#252526]">
+          {/* Reset code — всегда активна, не тратит инвентарь.
+              Возвращает к initialCodeRef (стартеру задачи). */}
+          <button
+            onClick={handleResetCode}
+            title="Вернуть код задачи к исходному"
+            className="flex items-center gap-1.5 px-3 py-1 rounded bg-[#3c3c3c] hover:bg-[#4a4a4a] text-[#cccccc] hover:text-white text-xs transition-colors"
+          >
+            <RotateCcw size={11} />
+            Reset
+          </button>
+
           {running ? (
             <button
               onClick={stopRun}

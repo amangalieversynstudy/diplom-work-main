@@ -10,14 +10,14 @@ import {
   Profile, // Импортируем Profile для работы с инвентарем
 } from "../../lib/api";
 import { useEffect, useMemo, useState } from "react";
-import { Sword, Sparkles, Code2, BookOpen, Lock, ChevronRight } from "lucide-react";
+import { Sword, Sparkles, Code2, BookOpen, Lock, ChevronRight, ScrollText } from "lucide-react";
 import logger from "../../lib/logger";
 import { useI18n } from "../../lib/i18n";
 
 export default function MissionDetail() {
   const router = useRouter();
   const { id } = router.query;
-  const { language } = useI18n();
+  const { language, t } = useI18n();
   const [mission, setMission] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [activeTaskId, setActiveTaskId] = useState(null);
@@ -53,7 +53,7 @@ export default function MissionDetail() {
         }
       })
       .catch(() => {
-        toast.error("Не удалось загрузить данные квеста.");
+        toast.error(t("missionPage.toasts.loadFail"));
       });
 
     // 2. Загружаем прогресс задач
@@ -120,7 +120,7 @@ export default function MissionDetail() {
     if (!activeTask) return;
     const codeToRun =
       codeDrafts[activeTask.id] ?? activeTask.data?.starter ?? payload?.code ?? "";
-    toast.success("Испытание пройдено! Отправка отчёта на сервер...");
+    toast.success(t("missionPage.toasts.passed"));
     await handleCompleteTask(activeTask.id, { code: codeToRun }, 100);
   };
 
@@ -138,7 +138,7 @@ export default function MissionDetail() {
         [taskId]: updatedProgress,
       }));
 
-      toast.success("Шаг квеста успешно зафиксирован!");
+      toast.success(t("missionPage.toasts.stepSaved"));
 
       // Автоматический переход на следующий шаг
       const currentIndex = tasks.findIndex((t) => t.id === taskId);
@@ -151,17 +151,17 @@ export default function MissionDetail() {
           // CRIT-03: backend честно шлёт leveled_up/xp_added/new_level
           if (result?.xp_added > 0) {
             toast.success(
-              `Поздравляем! Легендарный квест полностью завершен! +${result.xp_added} XP`,
+              t("missionPage.toasts.questDoneXp").replace("{xp}", result.xp_added),
               { duration: 4000 }
             );
           } else {
-            toast.success("Поздравляем! Легендарный квест полностью завершен!");
+            toast.success(t("missionPage.toasts.questDone"));
           }
           if (result?.leveled_up) {
             // Двойной toast: общая победа + level-up отдельно
             setTimeout(() => {
               toast.success(
-                `🎉 Уровень повышен! Теперь ты ${result.new_level} уровня!`,
+                t("missionPage.toasts.levelUp").replace("{level}", result.new_level),
                 { duration: 6000 }
               );
             }, 800);
@@ -187,7 +187,7 @@ export default function MissionDetail() {
         }
       }
     } catch (e) {
-      toast.error("Не удалось сохранить прогресс шага.");
+      toast.error(t("missionPage.toasts.saveFail"));
     } finally {
       setSavingTaskId(false);
     }
@@ -274,16 +274,21 @@ export default function MissionDetail() {
   return (
     <Layout>
       <div className="min-h-screen bg-[#0f0f11] text-gray-200 font-sans flex flex-col">
-        {/* Квест-Линия Шапка */}
-        <header className="bg-[#141418] border-b border-[#222] px-8 py-4 flex items-center justify-between select-none shadow-md">
+        {/* Квест-шапка в RPG-стиле: deep-wood band + scroll icon + Melodrama */}
+        <header className="border-b border-[#5c3a21]/40 px-8 py-4 flex items-center justify-between select-none shadow-md bg-gradient-to-r from-[#2b1d11] via-[#3a2818] to-[#2b1d11]">
           <div className="flex items-center gap-4">
-            <div className="p-2.5 bg-purple-900/30 border border-purple-500/40 rounded-xl text-purple-400">
-              <Sword size={22} className="animate-pulse" />
+            <div className="p-2.5 bg-[#8b5a2b]/25 border border-[#d4a24c]/60 rounded-xl text-[#fde68a] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <ScrollText size={22} />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-white tracking-wide">{mission.title_ru || mission.title}</h1>
-              <p className="text-xs text-purple-400/80 font-mono mt-0.5 uppercase tracking-wider">
-                Reward: <span className="text-white font-bold">{mission.xp_reward}</span> XP Gained
+              <h1 className="font-display text-2xl font-bold text-[#fde68a] tracking-wide drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
+                {(language === "en"
+                  ? mission.title_en || mission.title_ru
+                  : mission.title_ru || mission.title_en) ||
+                  mission.title}
+              </h1>
+              <p className="text-xs text-[#d4a24c] font-mono mt-0.5 uppercase tracking-wider">
+                {t("missionPage.rewardLabel")}: <span className="text-[#fde68a] font-bold">{mission.xp_reward}</span> {t("missionPage.xpGained")}
               </p>
             </div>
           </div>
@@ -294,10 +299,27 @@ export default function MissionDetail() {
 
         {/* Основной контент */}
         <section className="flex-1 flex flex-col xl:flex-row min-h-0 overflow-auto xl:overflow-hidden">
-          {/* Левая панель (Explorer / Stepper) */}
-          <div className="w-full xl:w-[320px] xl:flex-shrink-0 bg-[#141418] border-r border-[#222] flex flex-col select-none shadow-2xl z-10">
-            <div className="px-6 py-4 border-b border-[#222] bg-[#111114]">
-              <p className="text-xs font-mono font-bold tracking-widest text-gray-400 uppercase">Quest Logistics</p>
+          {/* Левая панель (Quest Scrolls) — пергаментный фон.
+              Текстура: base parchment color + 3 radial overlays (имитируют
+              пятна и потёртости) + лёгкое sepia-tint поверх. Никаких
+              файлов-текстур — чистый CSS, переживёт любую сборку. */}
+          <div
+            className="w-full xl:w-[320px] xl:flex-shrink-0 border-r-4 border-[#5c3a21]/60 flex flex-col select-none shadow-2xl z-10 relative"
+            style={{
+              backgroundColor: "#d4ad75",
+              backgroundImage:
+                "radial-gradient(circle at 15% 20%, rgba(60,30,10,0.18), transparent 35%)," +
+                "radial-gradient(circle at 85% 70%, rgba(40,20,10,0.16), transparent 40%)," +
+                "radial-gradient(circle at 50% 95%, rgba(80,40,15,0.10), transparent 50%)," +
+                "linear-gradient(180deg, #dcb98a 0%, #d4ad75 50%, #c39858 100%)",
+            }}
+          >
+            {/* Заголовок-баннер */}
+            <div className="px-6 py-4 border-b-2 border-[#5c3a21]/40 bg-gradient-to-r from-[#3a2818]/95 via-[#5c3a21]/90 to-[#3a2818]/95 flex items-center gap-2">
+              <ScrollText size={16} className="text-[#fde68a]" />
+              <p className="font-display text-sm font-bold tracking-widest text-[#fde68a] uppercase">
+                {t("missionPage.questLog")}
+              </p>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4">
@@ -308,26 +330,27 @@ export default function MissionDetail() {
                 onSelect={(taskId) => {
                   setActiveTaskId(taskId);
                 }}
+                variant="parchment"
               />
             </div>
 
-            {/* Статистика текущей ноды */}
-            <div className="p-4 bg-[#111114] border-t border-[#222] font-mono text-xs text-gray-400">
+            {/* Статистика текущей ноды — на тёмной полосе под пергаментом */}
+            <div className="p-4 border-t-2 border-[#5c3a21]/40 bg-gradient-to-r from-[#3a2818]/95 via-[#5c3a21]/90 to-[#3a2818]/95 font-mono text-xs text-[#d4a24c]">
               {activeTask && (
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Тип файла:</span>
-                    <span className="text-purple-400 uppercase font-semibold">{activeTask.task_type}</span>
+                    <span className="text-[#fde68a] uppercase font-semibold">{activeTask.task_type}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Оценка времени:</span>
-                    <span className="text-white">{activeTask.estimated_minutes} мин</span>
+                    <span className="text-[#fde68a]">{activeTask.estimated_minutes} мин</span>
                   </div>
                   {taskProgress[activeTask.id] && (
-                    <div className="mt-2 pt-2 border-t border-[#222] space-y-1">
-                      <p>Статус: <span className="text-green-400 font-bold">Выполнено</span></p>
+                    <div className="mt-2 pt-2 border-t border-[#5c3a21]/40 space-y-1">
+                      <p>Статус: <span className="text-[#a3e635] font-bold">Выполнено</span></p>
                       <p>Попыток: {taskProgress[activeTask.id].attempts || 1}</p>
-                      <p>Рекорд: <span className="text-yellow-400 font-bold">{taskProgress[activeTask.id].best_score || 0}</span></p>
+                      <p>Рекорд: <span className="text-[#fde68a] font-bold">{taskProgress[activeTask.id].best_score || 0}</span></p>
                     </div>
                   )}
                 </div>
@@ -335,34 +358,67 @@ export default function MissionDetail() {
             </div>
           </div>
 
-          {/* Центральная панель (Инструкции / Контент шага) */}
-          <div className="w-full xl:w-[420px] xl:flex-shrink-0 bg-[#111114] flex flex-col border-r border-[#222] min-w-0">
-            <div className="px-6 py-4 border-b border-[#222] bg-[#141418] flex items-center gap-2">
-              {activeTask?.task_type === "code" ? <Code2 size={16} className="text-blue-400" /> : <BookOpen size={16} className="text-green-400" />}
-              <h2 className="text-sm font-bold text-white tracking-wide truncate">
-                {activeTask?.title_ru || activeTask?.title || "Описание свитка"}
+          {/* Центральная панель (Свиток инструкций) — parchment под стать левой панели */}
+          <div
+            className="w-full xl:w-[420px] xl:flex-shrink-0 flex flex-col border-r-4 border-[#5c3a21]/60 min-w-0 relative"
+            style={{
+              backgroundColor: "#dcb98a",
+              backgroundImage:
+                "radial-gradient(circle at 80% 15%, rgba(60,30,10,0.16), transparent 35%)," +
+                "radial-gradient(circle at 20% 60%, rgba(40,20,10,0.14), transparent 40%)," +
+                "radial-gradient(circle at 50% 95%, rgba(80,40,15,0.10), transparent 50%)," +
+                "linear-gradient(180deg, #dcb98a 0%, #d4ad75 60%, #c39858 100%)",
+            }}
+          >
+            {/* Header-баннер: тёмное дерево, иконка типа, fantasy title */}
+            <div className="px-6 py-4 border-b-2 border-[#5c3a21]/40 bg-gradient-to-r from-[#3a2818]/95 via-[#5c3a21]/90 to-[#3a2818]/95 flex items-center gap-2">
+              {activeTask?.task_type === "code"
+                ? <Code2 size={16} className="text-[#d4a24c]" />
+                : <BookOpen size={16} className="text-[#a3e635]" />}
+              <h2 className="font-display text-base font-bold text-[#fde68a] tracking-wide truncate drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
+                {(language === "en"
+                  ? activeTask?.title_en || activeTask?.title_ru
+                  : activeTask?.title_ru || activeTask?.title_en) ||
+                  activeTask?.title ||
+                  t("missionPage.scrollTitleFallback")}
               </h2>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 prose prose-invert max-w-none text-sm text-gray-300 leading-relaxed space-y-4">
-              <div dangerouslySetInnerHTML={{ __html: activeTask?.body_ru || activeTask?.body || "" }} />
+            {/* Тело свитка: тёмно-коричневый текст на пергаменте.
+                `prose-invert` снят — у нас светлый фон. Цвета через явные классы,
+                чтобы prose не пытался применить ни тёмную, ни системную палитру. */}
+            <div className="flex-1 overflow-y-auto p-6 prose max-w-none text-sm text-[#3e2723] leading-relaxed space-y-4
+              prose-headings:font-display prose-headings:text-[#3e2723]
+              prose-strong:text-[#3e2723]
+              prose-code:bg-[#5c3a21]/15 prose-code:text-[#5c3a21] prose-code:px-1 prose-code:rounded
+              prose-pre:bg-[#3a2818] prose-pre:text-[#fde68a]
+              prose-a:text-[#8e1d1d] prose-li:marker:text-[#5c3a21]">
+              <div dangerouslySetInnerHTML={{
+                __html: (language === "en"
+                  ? activeTask?.body_en || activeTask?.body_ru
+                  : activeTask?.body_ru || activeTask?.body_en) ||
+                  activeTask?.body ||
+                  "",
+              }} />
 
-              {/* Рендеринг Квиза / Теста */}
+              {/* Квиз — карточка в тон пергамента, тёмное дерево по рамке */}
               {activeTask?.task_type === "quiz" && (
-                <div className="mt-8 p-4 bg-[#141418] border border-[#26262b] rounded-xl space-y-4 shadow-inner">
-                  <p className="font-mono text-xs font-bold uppercase text-purple-400 tracking-wider">Выберите верный ответ:</p>
+                <div className="mt-8 p-4 bg-[#c5a572]/50 border-2 border-[#5c3a21]/40 rounded-xl space-y-4 shadow-inner">
+                  <p className="font-display text-xs font-bold uppercase text-[#5c3a21] tracking-wider">
+                    {t("missionPage.pickAnswer")}
+                  </p>
                   <div className="space-y-2">
                     {activeTask.data?.options?.map((opt, i) => (
-                      <label key={i} className="flex items-start gap-3 p-3 bg-[#1a1a20] hover:bg-[#202029] border border-[#26262b] rounded-lg cursor-pointer transition-colors group">
+                      <label key={i} className="flex items-start gap-3 p-3 bg-[#dcb98a]/70 hover:bg-[#dcb98a] border-2 border-[#5c3a21]/30 hover:border-[#5c3a21]/60 rounded-lg cursor-pointer transition-colors group">
                         <input
                           type="radio"
                           name={`quiz-${activeTask.id}`}
                           value={opt.value ?? opt}
                           checked={quizAnswers[activeTask.id] === (opt.value ?? opt)}
                           onChange={(e) => setQuizAnswers((prev) => ({ ...prev, [activeTask.id]: e.target.value }))}
-                          className="mt-1 text-purple-500 focus:ring-purple-500 focus:ring-offset-0 bg-[#141418] border-[#333]"
+                          className="mt-1 accent-[#8e1d1d]"
                         />
-                        <span className="text-gray-300 group-hover:text-white transition-colors">{opt.label ?? opt}</span>
+                        <span className="text-[#3e2723] group-hover:text-[#2a1810] font-medium transition-colors">{opt.label ?? opt}</span>
                       </label>
                     ))}
                   </div>
@@ -372,16 +428,16 @@ export default function MissionDetail() {
                     className="w-full justify-center mt-2 shadow-lg"
                     size="sm"
                   >
-                    {savingTaskId === activeTask.id ? "Применение..." : "Произнести ответ"}
+                    {savingTaskId === activeTask.id ? t("missionPage.submitting") : t("missionPage.submit")}
                   </Button>
                 </div>
               )}
 
-              {/* Рендеринг Теории (Кнопка завершения) */}
+              {/* Кнопка завершения story-таска: rebranded в RPG-call-to-action */}
               {activeTask?.task_type === "story" && !taskProgress[activeTask.id] && (
                 <div className="mt-8 pt-4">
                   <Button onClick={() => handleCompleteTask(activeTask.id, {}, 100)} className="w-full justify-center shadow-md" icon={Sparkles}>
-                    Материал усвоен +Продолжить
+                    {t("missionPage.acceptChallenge")}
                   </Button>
                 </div>
               )}
@@ -401,11 +457,70 @@ export default function MissionDetail() {
               />
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#1e1e1e] border-l border-[#333]">
-                <Code2 size={80} className="text-[#333] mb-6" />
-                <p className="text-2xl font-bold text-[#858585] mb-2">Editor Standby</p>
-                <p className="text-sm text-[#555] max-w-sm text-center">
-                  Select a &ldquo;Code&rdquo; file from the Explorer on the left to open the editor and terminal.
-                </p>
+                {/* RPG-свиток с анимированной руной. Чистый CSS,
+                    без motion-библиотек — анимации через @keyframes ниже. */}
+                <div className="relative max-w-md w-full">
+                  {/* Капы свитка слева/справа — закрученные края */}
+                  <div className="absolute left-0 top-0 bottom-0 w-3 -translate-x-2 rounded-l-full bg-gradient-to-r from-[#3a2818] via-[#5c3a21] to-[#3a2818] shadow-[inset_-1px_0_2px_rgba(0,0,0,0.5)]" />
+                  <div className="absolute right-0 top-0 bottom-0 w-3 translate-x-2 rounded-r-full bg-gradient-to-l from-[#3a2818] via-[#5c3a21] to-[#3a2818] shadow-[inset_1px_0_2px_rgba(0,0,0,0.5)]" />
+
+                  {/* Полотно пергамента */}
+                  <div className="relative px-10 py-12 bg-gradient-to-br from-[#dcb98a] via-[#d4ad75] to-[#c39858] border-y-2 border-[#8b5a2b]/60 shadow-2xl text-center">
+                    {/* Шум/потёртости */}
+                    <div
+                      className="absolute inset-0 opacity-20 pointer-events-none"
+                      style={{
+                        backgroundImage:
+                          "radial-gradient(circle at 20% 30%, rgba(60,30,10,0.4), transparent 40%), radial-gradient(circle at 80% 70%, rgba(40,20,10,0.3), transparent 35%)",
+                      }}
+                    />
+
+                    {/* Анимированная руна */}
+                    <div className="relative mx-auto w-24 h-24 mb-6">
+                      {/* Внешнее кольцо — медленное вращение */}
+                      <svg className="absolute inset-0 w-full h-full animate-[rune-spin_12s_linear_infinite]" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="46" fill="none" stroke="#5c3a21" strokeWidth="1.5" strokeDasharray="3 5" opacity="0.7"/>
+                        <circle cx="50" cy="50" r="46" fill="none" stroke="#8e1d1d" strokeWidth="0.5" opacity="0.5"/>
+                      </svg>
+                      {/* Внутреннее кольцо — обратное вращение */}
+                      <svg className="absolute inset-0 w-full h-full animate-[rune-spin-reverse_8s_linear_infinite]" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="34" fill="none" stroke="#3e2723" strokeWidth="1" strokeDasharray="2 8"/>
+                        {/* Четыре опорные точки руны */}
+                        <circle cx="50" cy="16" r="2" fill="#8e1d1d"/>
+                        <circle cx="84" cy="50" r="2" fill="#8e1d1d"/>
+                        <circle cx="50" cy="84" r="2" fill="#8e1d1d"/>
+                        <circle cx="16" cy="50" r="2" fill="#8e1d1d"/>
+                      </svg>
+                      {/* Центральный пульс */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="relative inline-flex">
+                          <span className="absolute inline-flex h-8 w-8 rounded-full bg-[#8e1d1d]/40 animate-ping" />
+                          <span className="relative inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#5c3a21] text-[#fde68a] text-lg font-display font-bold shadow-[0_0_12px_rgba(142,29,29,0.6)]">
+                            ✦
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="font-display text-2xl font-bold text-[#3e2723] mb-3 tracking-wide">
+                      {t("missionPage.standby.title")}
+                    </p>
+                    <p className="text-sm text-[#5c3a21] leading-relaxed">
+                      {t("missionPage.standby.body")}
+                    </p>
+                  </div>
+                </div>
+
+                <style jsx>{`
+                  @keyframes rune-spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                  }
+                  @keyframes rune-spin-reverse {
+                    from { transform: rotate(360deg); }
+                    to { transform: rotate(0deg); }
+                  }
+                `}</style>
               </div>
             )}
           </div>

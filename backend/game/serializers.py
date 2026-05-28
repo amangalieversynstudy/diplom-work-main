@@ -321,6 +321,15 @@ class RankSerializer(serializers.ModelSerializer):
 class LeaderboardEntrySerializer(serializers.ModelSerializer):
     user_display = serializers.SerializerMethodField()
     track = serializers.SerializerMethodField()
+    # Плоские поля для фронта (frontend/pages/leaderboard.jsx читает их
+    # напрямую: user.xp, user.level, user.streak, user.username,
+    # user.class_role). Дублируют user_display, чтобы не ломать
+    # обратную совместимость с другими клиентами API.
+    username = serializers.SerializerMethodField()
+    level = serializers.SerializerMethodField()
+    xp = serializers.SerializerMethodField()
+    streak = serializers.SerializerMethodField()
+    class_role = serializers.SerializerMethodField()
 
     class Meta:
         model = LeaderboardEntry
@@ -328,6 +337,11 @@ class LeaderboardEntrySerializer(serializers.ModelSerializer):
             "id",
             "user",
             "user_display",
+            "username",
+            "level",
+            "xp",
+            "streak",
+            "class_role",
             "track",
             "scope",
             "period_label",
@@ -336,16 +350,43 @@ class LeaderboardEntrySerializer(serializers.ModelSerializer):
             "snapshot_at",
         ]
 
+    def _profile(self, obj):
+        return getattr(obj.user, "profile", None)
+
     def get_user_display(self, obj):
         user = obj.user
-        profile = getattr(user, "profile", None)
+        profile = self._profile(obj)
         return {
             "id": user.id,
             "username": user.username,
             "display_name": getattr(user, "display_name", "") or user.username,
             "level": profile.level if profile else None,
             "xp": profile.xp if profile else None,
+            "streak": getattr(profile, "current_streak", 0) if profile else 0,
         }
+
+    def get_username(self, obj):
+        return getattr(obj.user, "display_name", "") or obj.user.username
+
+    def get_level(self, obj):
+        p = self._profile(obj)
+        return p.level if p else 1
+
+    def get_xp(self, obj):
+        # xp_total отражает снепшот лидерборда, который может
+        # отставать от текущего Profile.xp на пару секунд.
+        # Берём максимум — фронту виден актуальный счёт сразу.
+        p = self._profile(obj)
+        return max(obj.xp_total or 0, p.xp if p else 0)
+
+    def get_streak(self, obj):
+        p = self._profile(obj)
+        return getattr(p, "current_streak", 0) if p else 0
+
+    def get_class_role(self, obj):
+        p = self._profile(obj)
+        cr = getattr(p, "class_role", None)
+        return cr.name if cr else None
 
     def get_track(self, obj):
         track = obj.track

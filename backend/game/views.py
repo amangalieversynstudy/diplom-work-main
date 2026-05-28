@@ -359,7 +359,16 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(period_label=period)
         else:
             qs = qs.filter(period_label="all_time")
-        return qs.order_by("position", "-xp_total")[:200]
+        # XP primary, streak secondary, username tertiary tiebreaker —
+        # стабильная сортировка чтобы карточки не прыгали между запросами.
+        # position берётся первым только если он явно проставлен (>0),
+        # иначе фоллбэк на XP+streak. Это даёт «честный» ленинг даже
+        # пока periodic-task с position не отработал.
+        return qs.order_by(
+            "-xp_total",
+            "-user__profile__current_streak",
+            "user__username",
+        )[:200]
 
 class IntroStatusView(APIView):
     """Reports whether the current user has unlocked class selection.

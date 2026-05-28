@@ -12,6 +12,7 @@ export default function Leaderboard() {
   const [period, setPeriod] = useState("all_time");
   const dict = useDictionary();
   const copy = dict.leaderboard;
+  const worldsCopy = dict.worldsPage || {};
 
   const loadData = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -138,14 +139,14 @@ export default function Leaderboard() {
                   {/* Информация об игроке */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold text-text truncate group-hover:text-primary transition-colors">
-                      {user.username || user.player || "Неизвестный герой"}
+                      {user.username || user.player || worldsCopy.heroFallback || "Неизвестный герой"}
                     </h3>
                     <div className="flex items-center gap-3 text-xs md:text-sm text-muted mt-1">
                       <span className="flex items-center gap-1">
                         <User size={14} className="opacity-70" /> {copy.columns.level} {user.level || 1}
                       </span>
                       <span className="w-1 h-1 rounded-full bg-border" />
-                      <span className="truncate">{user.class_role || "Академик"}</span>
+                      <span className="truncate">{user.class_role || worldsCopy.classFallback || "Академик"}</span>
                     </div>
                   </div>
 

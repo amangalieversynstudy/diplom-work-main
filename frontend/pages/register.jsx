@@ -28,7 +28,8 @@ export default function Register() {
       clearPlayerClass();
 
       toast.success(
-        "Аккаунт создан! Проверь почту — мы отправили ссылку для активации."
+        dict.auth.registerExtra?.successWithEmail ||
+          "Аккаунт создан! Проверь почту — мы отправили ссылку для активации."
       );
       router.push(`/login?pending_verify=${encodeURIComponent(email)}`);
     } catch (err) {

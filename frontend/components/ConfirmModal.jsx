@@ -49,7 +49,7 @@ export default function ConfirmModal({ data, onClose }) {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
           onClick={handleCancel}
-          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-modal-overlay backdrop-blur-sm px-4"
         >
           <motion.div
             initial={{ scale: 0.92, y: 16, opacity: 0 }}
@@ -57,11 +57,11 @@ export default function ConfirmModal({ data, onClose }) {
             exit={{ scale: 0.95, y: 10, opacity: 0 }}
             transition={{ type: "spring", stiffness: 320, damping: 28 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative bg-surface border-2 border-border rounded-3xl p-8 max-w-md w-full shadow-[0_20px_60px_-15px_rgba(0,0,0,0.9)]"
+            className="relative bg-modal-bg text-modal-text border-2 border-card-border rounded-3xl p-8 max-w-md w-full shadow-[0_20px_60px_-15px_rgba(0,0,0,0.45)] dark:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.9)]"
           >
             <button
               onClick={handleCancel}
-              className="absolute top-4 right-4 text-muted hover:text-text transition-colors"
+              className="absolute top-4 right-4 text-card-muted hover:text-modal-text transition-colors"
               aria-label="Закрыть"
             >
               <X size={18} />
@@ -72,11 +72,11 @@ export default function ConfirmModal({ data, onClose }) {
                 <AlertTriangle size={22} />
               </div>
               <div>
-                <h2 className="text-xl font-display font-bold text-text mb-2">
+                <h2 className="text-xl font-display font-bold text-modal-text mb-2">
                   {data?.title || "Подтверди действие"}
                 </h2>
                 {data?.message && (
-                  <p className="text-sm text-muted leading-relaxed">
+                  <p className="text-sm text-card-muted leading-relaxed">
                     {data.message}
                   </p>
                 )}
@@ -87,7 +87,7 @@ export default function ConfirmModal({ data, onClose }) {
               <Button
                 variant="ghost"
                 onClick={handleCancel}
-                className="text-muted hover:text-text"
+                className="text-card-muted hover:text-modal-text"
               >
                 {data?.cancelLabel || "Отмена"}
               </Button>

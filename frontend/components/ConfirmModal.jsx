@@ -16,8 +16,10 @@ import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, X } from "lucide-react";
 import Button from "./Button";
+import { useI18n } from "../lib/i18n";
 
 export default function ConfirmModal({ data, onClose }) {
+  const { t } = useI18n();
   const open = Boolean(data);
 
   // Esc закрывает модал
@@ -62,7 +64,7 @@ export default function ConfirmModal({ data, onClose }) {
             <button
               onClick={handleCancel}
               className="absolute top-4 right-4 text-card-muted hover:text-modal-text transition-colors"
-              aria-label="Закрыть"
+              aria-label={t("confirm.close")}
             >
               <X size={18} />
             </button>
@@ -73,7 +75,7 @@ export default function ConfirmModal({ data, onClose }) {
               </div>
               <div>
                 <h2 className="text-xl font-display font-bold text-modal-text mb-2">
-                  {data?.title || "Подтверди действие"}
+                  {data?.title || t("confirm.title")}
                 </h2>
                 {data?.message && (
                   <p className="text-sm text-card-muted leading-relaxed">
@@ -89,13 +91,13 @@ export default function ConfirmModal({ data, onClose }) {
                 onClick={handleCancel}
                 className="text-card-muted hover:text-modal-text"
               >
-                {data?.cancelLabel || "Отмена"}
+                {data?.cancelLabel || t("confirm.cancel")}
               </Button>
               <Button
                 variant={data?.danger ? "danger" : "primary"}
                 onClick={handleConfirm}
               >
-                {data?.confirmLabel || "Да, продолжить"}
+                {data?.confirmLabel || t("confirm.ok")}
               </Button>
             </div>
           </motion.div>

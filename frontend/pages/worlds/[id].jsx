@@ -11,7 +11,7 @@ import { useI18n } from "../../lib/i18n";
 export default function WorldDetail() {
   const router = useRouter();
   const { id } = router.query;
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [world, setWorld] = useState(null);
   const [loading, setLoading] = useState(true);
   const [playerClass, setPlayerClass] = useState(null); // Стейт для класса игрока
@@ -52,7 +52,7 @@ export default function WorldDetail() {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-screen text-white font-mono">
-          Загрузка карты мира...
+          {t("worldsPage.loadingLocation")}
         </div>
       </Layout>
     );
@@ -62,12 +62,16 @@ export default function WorldDetail() {
     <Layout>
       <div className="p-8 max-w-6xl mx-auto space-y-8">
         <header className="space-y-4">
-          <Badge>Локация</Badge>
+          <Badge>{t("worldsPage.locationBadge")}</Badge>
           <h1 className="text-4xl font-bold text-white tracking-wider">
-            {world.title_ru || world.title}
+            {(language === "en"
+              ? world.title_en || world.title_ru
+              : world.title_ru || world.title_en) || world.title}
           </h1>
           <p className="text-gray-400 max-w-2xl leading-relaxed">
-            {world.description_ru || world.description}
+            {(language === "en"
+              ? world.description_en || world.description_ru
+              : world.description_ru || world.description_en) || world.description}
           </p>
         </header>
 
@@ -79,7 +83,7 @@ export default function WorldDetail() {
         {/* Кнопка возврата или список миссий текстом */}
         <div className="flex justify-start">
            <Button variant="secondary" onClick={() => router.push('/worlds')}>
-              Вернуться к списку миров
+              {t("worldsPage.backToWorlds")}
            </Button>
         </div>
       </div>

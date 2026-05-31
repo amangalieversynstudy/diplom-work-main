@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import {
   Map, Swords, User2, Crown, Sparkles, Trophy,
-  Languages, ArrowUpRight, Sun, Moon, X
+  ArrowUpRight, Sun, Moon, X
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n, languages as supportedLanguages } from "../lib/i18n";
@@ -30,24 +30,31 @@ function LanguageToggle() {
   const { language, setLanguage } = useI18n();
 
   return (
-    <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full border border-border bg-surface shadow-sm">
-      <Languages size={16} className="text-primary" />
-      <div className="inline-flex rounded-full border border-border overflow-hidden">
-        {supportedLanguages.map((lang) => (
+    <div className="relative p-1 rounded-full border border-border bg-panel flex items-center gap-1">
+      {supportedLanguages.map((lang) => {
+        const isActive = language === lang.id;
+        return (
           <button
             key={lang.id}
             type="button"
             onClick={() => setLanguage(lang.id)}
-            className={`px-3 py-1 text-xs font-semibold transition-all ${
-              language === lang.id
-                ? "bg-primary text-white"
-                : "bg-transparent text-muted hover:text-text hover:bg-panel"
+            aria-pressed={isActive}
+            className={`relative h-10 px-4 rounded-full text-xs font-bold uppercase tracking-wide transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+              isActive ? "text-white" : "text-muted hover:text-text"
             }`}
           >
-            {lang.label}
+            {isActive && (
+              <motion.span
+                layoutId="lang-switcher-pill"
+                className="absolute inset-0 rounded-full bg-primary"
+                style={{ boxShadow: "0 0 18px var(--primary-selection)" }}
+                transition={{ type: "spring", stiffness: 380, damping: 28 }}
+              />
+            )}
+            <span className="relative z-10">{lang.label}</span>
           </button>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }

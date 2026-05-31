@@ -50,6 +50,7 @@ module.exports = {
         pulseSlow: "pulse 5s ease-in-out infinite",
         drift:     "drift 30s linear infinite",
         shimmer:   "shimmer 2.5s linear infinite",
+        flicker:   "flicker 2.8s ease-in-out infinite",
       },
       keyframes: {
         float: {
@@ -62,6 +63,13 @@ module.exports = {
         },
         shimmer: {
           "100%": { transform: "translateX(100%)" },
+        },
+        // Свеча-фитиль: лёгкое дрожание пламени для атмосферы кабинета мага.
+        flicker: {
+          "0%, 100%": { opacity: "1", transform: "scaleY(1) translateX(0)" },
+          "25%":      { opacity: "0.86", transform: "scaleY(1.08) translateX(-0.3px)" },
+          "50%":      { opacity: "0.96", transform: "scaleY(0.93) translateX(0.3px)" },
+          "75%":      { opacity: "0.9",  transform: "scaleY(1.05) translateX(-0.2px)" },
         },
       },
     },

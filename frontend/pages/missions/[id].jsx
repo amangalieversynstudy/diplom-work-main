@@ -209,7 +209,7 @@ export default function MissionDetail() {
     if (String(userAnswer).trim().toLowerCase() === String(correctAnswer).trim().toLowerCase()) {
       handleCompleteTask(taskId, { selected: userAnswer }, 100);
     } else {
-      toast.error("🛡️ Ответ неверный! Мана поглощена, попробуйте другое заклинание.");
+      toast.error(t("missionPage.quizWrong"));
     }
   };
 
@@ -218,8 +218,8 @@ export default function MissionDetail() {
       <Layout fullBleed hideFooter>
         <div className="h-screen pt-24 bg-[#0f0f11] flex items-center justify-center text-white font-mono">
           <div className="text-center space-y-4">
-            <div className="w-12 h-12 border-4 border-t-purple-500 border-gray-700 rounded-full animate-spin mx-auto"></div>
-            <p className="text-gray-400 tracking-widest text-sm uppercase">Loading Quest Chronicles...</p>
+            <div className="w-12 h-12 border-4 border-t-[#d4a24c] border-[#3a2818] rounded-full animate-spin mx-auto"></div>
+            <p className="text-[#d4a24c] tracking-widest text-sm uppercase">{t("missionPage.loading")}</p>
           </div>
         </div>
       </Layout>
@@ -238,17 +238,23 @@ export default function MissionDetail() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white tracking-wide mb-2">
-                Квест заблокирован
+                {t("missionPage.locked.title")}
               </h1>
               <p className="text-gray-400 text-sm leading-relaxed">
-                Путь к «{mission.title_ru || mission.title}» ещё закрыт.
-                Для доступа необходимо завершить предыдущие квесты.
+                {t("missionPage.locked.body").replace(
+                  "{title}",
+                  (language === "en"
+                    ? mission.title_en || mission.title_ru
+                    : mission.title_ru || mission.title_en) ||
+                    mission.title ||
+                    ""
+                )}
               </p>
             </div>
             {prereqs.length > 0 && (
               <div className="bg-[#141418] border border-[#222] rounded-xl p-4 text-left space-y-2">
                 <p className="text-xs font-mono uppercase tracking-widest text-gray-500 mb-3">
-                  Необходимые квесты:
+                  {t("missionPage.locked.prereqs")}
                 </p>
                 {prereqs.map((pre) => (
                   <div key={pre.id} className="flex items-center gap-2 text-sm text-gray-300">
@@ -263,7 +269,7 @@ export default function MissionDetail() {
               onClick={() => router.push("/worlds")}
               className="w-full justify-center"
             >
-              ← Вернуться на карту мира
+              {t("missionPage.locked.back")}
             </Button>
           </div>
         </div>
@@ -293,7 +299,7 @@ export default function MissionDetail() {
             </div>
           </div>
           <Button variant="secondary" size="sm" onClick={() => router.push("/worlds")}>
-            &larr; На карту мира
+            {t("missionPage.backToMap")}
           </Button>
         </header>
 
@@ -320,6 +326,17 @@ export default function MissionDetail() {
               <p className="font-display text-sm font-bold tracking-widest text-[#fde68a] uppercase">
                 {t("missionPage.questLog")}
               </p>
+              {/* Свеча на столе мага — мягко мерцающее пламя (чистый SVG + Tailwind) */}
+              <svg width="14" height="24" viewBox="0 0 14 24" className="ml-auto shrink-0" aria-hidden="true">
+                <ellipse cx="7" cy="22" rx="4.5" ry="1.4" fill="#1c120a" opacity="0.5" />
+                <rect x="4.5" y="9" width="5" height="13" rx="1.2" fill="#f3e2c0" />
+                <rect x="4.6" y="9" width="1.7" height="13" rx="0.8" fill="#ffffff" opacity="0.35" />
+                <rect x="6.6" y="6" width="0.8" height="3" fill="#3e2723" />
+                <g className="animate-flicker" style={{ transformOrigin: "7px 7px" }}>
+                  <path d="M7 0c1.7 1.8 2.5 3.2 2.5 4.6A2.5 2.5 0 0 1 7 7.1 2.5 2.5 0 0 1 4.5 4.6C4.5 3.2 5.3 1.8 7 0Z" fill="#ffb338" />
+                  <path d="M7 2c.9 1 1.3 2 1.3 2.8A1.3 1.3 0 0 1 7 6.1 1.3 1.3 0 0 1 5.7 4.8C5.7 4 6.1 3 7 2Z" fill="#fff3c4" />
+                </g>
+              </svg>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4">
@@ -339,18 +356,18 @@ export default function MissionDetail() {
               {activeTask && (
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Тип файла:</span>
+                    <span>{t("missionPage.stats.fileType")}</span>
                     <span className="text-[#fde68a] uppercase font-semibold">{activeTask.task_type}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Оценка времени:</span>
-                    <span className="text-[#fde68a]">{activeTask.estimated_minutes} мин</span>
+                    <span>{t("missionPage.stats.timeEstimate")}</span>
+                    <span className="text-[#fde68a]">{activeTask.estimated_minutes} {t("missionPage.stats.minutesShort")}</span>
                   </div>
                   {taskProgress[activeTask.id] && (
                     <div className="mt-2 pt-2 border-t border-[#5c3a21]/40 space-y-1">
-                      <p>Статус: <span className="text-[#a3e635] font-bold">Выполнено</span></p>
-                      <p>Попыток: {taskProgress[activeTask.id].attempts || 1}</p>
-                      <p>Рекорд: <span className="text-[#fde68a] font-bold">{taskProgress[activeTask.id].best_score || 0}</span></p>
+                      <p>{t("missionPage.stats.status")} <span className="text-[#a3e635] font-bold">{t("missionPage.stats.done")}</span></p>
+                      <p>{t("missionPage.stats.attempts")} {taskProgress[activeTask.id].attempts || 1}</p>
+                      <p>{t("missionPage.stats.best")} <span className="text-[#fde68a] font-bold">{taskProgress[activeTask.id].best_score || 0}</span></p>
                     </div>
                   )}
                 </div>
@@ -368,6 +385,8 @@ export default function MissionDetail() {
                 "radial-gradient(circle at 20% 60%, rgba(40,20,10,0.14), transparent 40%)," +
                 "radial-gradient(circle at 50% 95%, rgba(80,40,15,0.10), transparent 50%)," +
                 "linear-gradient(180deg, #dcb98a 0%, #d4ad75 60%, #c39858 100%)",
+              // Тень-сгиб «разворота книги» по левому краю страницы инструкций
+              boxShadow: "inset 16px 0 30px -16px rgba(40,20,8,0.6)",
             }}
           >
             {/* Header-баннер: тёмное дерево, иконка типа, fantasy title */}
@@ -382,6 +401,17 @@ export default function MissionDetail() {
                   activeTask?.title ||
                   t("missionPage.scrollTitleFallback")}
               </h2>
+            </div>
+
+            {/* Орнаментальный разделитель главы — перо + росчерк (чистый SVG) */}
+            <div className="flex items-center gap-3 px-6 pt-4 pb-1 select-none" aria-hidden="true">
+              <span className="h-px flex-1 bg-gradient-to-r from-transparent via-[#5c3a21]/40 to-[#5c3a21]/60" />
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="shrink-0 text-[#5c3a21]">
+                <path d="M4 20c4.5-1 7-3.2 10-7.3 2.2-3 3.8-6.4 6-11.7-5.6 1.8-9 4-12 7.3C5 11 4.6 15 4 20Z" fill="currentColor" opacity="0.5" />
+                <path d="M4.2 19.8 9 15" stroke="#3e2723" strokeWidth="1" strokeLinecap="round" opacity="0.7" />
+                <circle cx="12.6" cy="10.8" r="0.9" fill="#8e1d1d" />
+              </svg>
+              <span className="h-px flex-1 bg-gradient-to-l from-transparent via-[#5c3a21]/40 to-[#5c3a21]/60" />
             </div>
 
             {/* Тело свитка: тёмно-коричневый текст на пергаменте.

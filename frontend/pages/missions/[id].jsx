@@ -215,8 +215,8 @@ export default function MissionDetail() {
 
   if (!mission) {
     return (
-      <Layout>
-        <div className="min-h-screen bg-[#0f0f11] flex items-center justify-center text-white font-mono">
+      <Layout fullBleed hideFooter>
+        <div className="h-screen pt-24 bg-[#0f0f11] flex items-center justify-center text-white font-mono">
           <div className="text-center space-y-4">
             <div className="w-12 h-12 border-4 border-t-purple-500 border-gray-700 rounded-full animate-spin mx-auto"></div>
             <p className="text-gray-400 tracking-widest text-sm uppercase">Loading Quest Chronicles...</p>
@@ -230,8 +230,8 @@ export default function MissionDetail() {
   if (mission.available === false) {
     const prereqs = mission.prerequisites || [];
     return (
-      <Layout>
-        <div className="min-h-screen bg-[#0f0f11] flex items-center justify-center px-4">
+      <Layout fullBleed hideFooter>
+        <div className="h-screen pt-24 bg-[#0f0f11] flex items-center justify-center px-4">
           <div className="max-w-md w-full text-center space-y-6">
             <div className="w-20 h-20 rounded-full bg-[#1a1a20] border-2 border-[#333] flex items-center justify-center mx-auto">
               <Lock size={36} className="text-[#555]" />
@@ -272,8 +272,8 @@ export default function MissionDetail() {
   }
 
   return (
-    <Layout>
-      <div className="min-h-screen bg-[#0f0f11] text-gray-200 font-sans flex flex-col">
+    <Layout fullBleed hideFooter>
+      <div className="h-screen pt-24 bg-[#0f0f11] text-gray-200 font-sans flex flex-col">
         {/* Квест-шапка в RPG-стиле: deep-wood band + scroll icon + Melodrama */}
         <header className="border-b border-[#5c3a21]/40 px-8 py-4 flex items-center justify-between select-none shadow-md bg-gradient-to-r from-[#2b1d11] via-[#3a2818] to-[#2b1d11]">
           <div className="flex items-center gap-4">

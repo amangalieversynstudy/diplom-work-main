@@ -120,7 +120,7 @@ function ThemeSwitcher() {
   );
 }
 
-export default function Layout({ children, hideFooter, noBottomPadding }) {
+export default function Layout({ children, hideFooter, noBottomPadding, fullBleed }) {
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [scrollDir, setScrollDir] = useState("up");
@@ -199,8 +199,8 @@ export default function Layout({ children, hideFooter, noBottomPadding }) {
 
       <header
         className={`fixed top-0 inset-x-0 z-[110] transition-all duration-500 ${
-          scrolled && !isMenuOpen
-            ? `bg-surface/80 backdrop-blur-md border-b border-border shadow-sm pointer-events-auto ${isShrunk ? "py-2" : "py-4"}`
+          (scrolled || fullBleed) && !isMenuOpen
+            ? `bg-surface/90 backdrop-blur-md border-b border-border shadow-sm pointer-events-auto ${isShrunk ? "py-2" : "py-4"}`
             : "bg-transparent py-5 " + (isMenuOpen ? "pointer-events-none" : "pointer-events-auto")
         }`}
       >
@@ -239,7 +239,7 @@ export default function Layout({ children, hideFooter, noBottomPadding }) {
         </div>
       </header>
 
-      <main className={`max-w-7xl mx-auto px-6 relative ${noBottomPadding ? "pt-10 pb-0" : "py-10"}`}>
+      <main className={fullBleed ? "relative" : `max-w-7xl mx-auto px-6 relative ${noBottomPadding ? "pt-10 pb-0" : "py-10"}`}>
         {children}
       </main>
 

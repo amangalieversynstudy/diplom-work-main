@@ -74,7 +74,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 429) {
-      const detail = error.response.data?.detail || "Слишком много запросов. Подождите.";
+      const detail = error.response.data?.detail || "Too many requests. Please wait.";
       throw new Error(detail);
     }
     return Promise.reject(error);

@@ -137,10 +137,11 @@ export default function Worlds() {
             <span>{worldsDict.atlasTitle || "Атлас"}</span>
           </div>
           <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-text mb-6">
-            Карта миров
+            {worldsDict.mapTitle || "Карта миров"}
           </h1>
           <p className="text-muted text-lg max-w-2xl leading-relaxed">
-            Каждый архипелаг таит в себе знания и опасности. Следуйте по чернильным тропам, чтобы найти сокровища кода.
+            {worldsDict.mapSubtitle ||
+              "Каждый архипелаг таит в себе знания и опасности. Следуйте по чернильным тропам, чтобы найти сокровища кода."}
           </p>
         </div>
       </div>
@@ -151,13 +152,13 @@ export default function Worlds() {
         {/* ИСПРАВЛЕНО: Оверлеи состояний теперь зафиксированы по центру экрана и не улетают при прокрутке */}
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center text-[#5c3a21] font-display text-2xl font-bold tracking-widest uppercase animate-pulse z-20 pointer-events-none">
-            Разворачиваем пергамент...
+            {worldsDict.mapLoading || "Разворачиваем пергамент..."}
           </div>
         )}
 
         {!loading && missions.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-[#5c3a21] font-display text-xl font-bold z-20 pointer-events-none">
-            Пираты украли карту. Задания не найдены.
+            {worldsDict.mapEmpty || "Пираты украли карту. Задания не найдены."}
           </div>
         )}
 

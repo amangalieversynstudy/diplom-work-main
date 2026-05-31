@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import {
   Map, Swords, User2, Crown, Sparkles, Trophy,
-  Languages, ArrowUpRight, Sun, Moon
+  Languages, ArrowUpRight, Sun, Moon, X
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n, languages as supportedLanguages } from "../lib/i18n";
@@ -229,12 +229,13 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
           </TransitionLink>
 
           <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className={`relative z-[110] pointer-events-auto rounded-full bg-surface border border-border shadow-sm flex flex-col justify-center items-center gap-1.5 hover:bg-panel transition-all duration-500 active:scale-95 ${isShrunk ? "w-10 h-10" : "w-12 h-12"}`}
+            onClick={() => setIsMenuOpen(true)}
+            aria-label={t("layout.nav")}
+            className={`relative z-[110] rounded-full bg-surface border border-border shadow-sm flex flex-col justify-center items-center gap-1.5 hover:bg-panel transition-all duration-500 active:scale-95 ${isShrunk ? "w-10 h-10" : "w-12 h-12"} ${isMenuOpen ? "opacity-0 pointer-events-none" : "pointer-events-auto"}`}
           >
-            <span className={`block w-5 h-[2px] bg-text transition-all duration-300 ${isMenuOpen ? "rotate-45 translate-y-[8px]" : ""}`} />
-            <span className={`block w-5 h-[2px] bg-text transition-all duration-300 ${isMenuOpen ? "opacity-0" : ""}`} />
-            <span className={`block w-5 h-[2px] bg-text transition-all duration-300 ${isMenuOpen ? "-rotate-45 -translate-y-[8px]" : ""}`} />
+            <span className="block w-5 h-[2px] bg-text" />
+            <span className="block w-5 h-[2px] bg-text" />
+            <span className="block w-5 h-[2px] bg-text" />
           </button>
         </div>
       </header>
@@ -265,6 +266,13 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
         <div
           className="relative z-10 w-full h-full flex flex-col pointer-events-auto"
         >
+          <button
+            onClick={() => setIsMenuOpen(false)}
+            aria-label={t("layout.closeMenu")}
+            className="absolute top-6 right-6 z-20 w-11 h-11 rounded-full border border-border bg-panel text-text flex items-center justify-center hover:text-primary hover:rotate-90 transition-all duration-300 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          >
+            <X size={20} strokeWidth={2.5} />
+          </button>
           <div className="flex-1 overflow-y-auto pt-24 px-8 flex flex-col gap-6">
             <span className="text-sm font-semibold text-faint uppercase tracking-wider">{t("layout.nav")}</span>
             <div className="flex flex-col gap-6">

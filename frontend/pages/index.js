@@ -308,7 +308,7 @@ export default function Home() {
             <p className="text-xs font-bold uppercase tracking-widest text-primary mb-4">{homeDict.cta_eyebrow || "Готов начать?"}</p>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-text mb-6 leading-tight">
               {homeDict.cta_headline_1 || "Твой путь героя"}<br />
-              начинается <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{homeDict.cta_headline_2 || "прямо сейчас."}</span>
+              {homeDict.cta_headline_mid || "начинается "}<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{homeDict.cta_headline_2 || "прямо сейчас."}</span>
             </h2>
             <p className="text-muted text-base sm:text-lg leading-relaxed mb-10 max-w-lg mx-auto">
               {homeDict.cta_desc || "Присоединяйся к тысячам учеников, превращающих изучение Python в реальный опыт разработки — миссия за миссией."}

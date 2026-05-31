@@ -310,6 +310,69 @@ export const en = {
         ],
       },
     },
+    home: {
+      stats: {
+        totalMissions: "Total missions",
+        learningWorlds: "Learning worlds",
+        heroClasses: "Hero classes",
+      },
+      tracks: [
+        {
+          label: "Fundamentals",
+          title: "Python Fundamentals",
+          desc: "Learn variables, loops, functions and data structures through hands-on quests on the Novice Isles.",
+        },
+        {
+          label: "Intermediate",
+          title: "OOP & Algorithms",
+          desc: "Discover object-oriented design and master sorting, searching and recursion on the Adept Frontier.",
+        },
+        {
+          label: "Advanced",
+          title: "Django & REST API",
+          desc: "Build real web apps, REST endpoints and deploy your first backend in the Mythic Expanse.",
+        },
+        {
+          label: "Elite",
+          title: "Junior-Ready",
+          desc: "Docker, CI/CD, testing and system design — everything you need for your first Django job.",
+        },
+      ],
+      howItWorks: [
+        {
+          title: "Choose your hero class",
+          body: "Pick a Warrior, Mage or Rogue — each class shapes your learning path and unlocks unique missions.",
+        },
+        {
+          title: "Explore the world map",
+          body: "Travel through beautifully illustrated learning worlds. Each island holds themed missions that build on one another.",
+        },
+        {
+          title: "Run Story → Quiz → Code",
+          body: "Every mission follows the same three-step cycle: read the story, answer the theory questions, then run real code.",
+        },
+        {
+          title: "Earn XP and level up",
+          body: "Every action is rewarded with experience. Climb the leaderboard and unlock new content as you grow from Novice to Elite.",
+        },
+      ],
+      tracks_eyebrow: "Learning Tracks",
+      tracks_headline_1: "Four worlds.",
+      tracks_headline_2: "One goal.",
+      tracks_desc: "Each world is a structured track that takes you from the basics to a production-ready Django developer.",
+      howitworks_eyebrow: "Process",
+      howitworks_headline_1: "How the adventure",
+      howitworks_headline_2: "unfolds.",
+      howitworks_desc: "The loop is simple, but the journey is breathtaking. Every mechanic is built to keep you writing code.",
+      howitworks_cta: "Start exploring",
+      cta_eyebrow: "Ready to begin?",
+      cta_headline_1: "Your hero's journey",
+      cta_headline_mid: "begins ",
+      cta_headline_2: "right now.",
+      cta_desc: "Join thousands of learners turning Python study into real development experience — mission by mission.",
+      cta_button1: "Create account",
+      cta_button2: "World map",
+    },
     missionPage: {
       toasts: {
         loadFail: "Failed to load quest data.",
@@ -524,6 +587,9 @@ export const en = {
         "🌋 Boss world unlocking at 75% completion",
       ],
       mapTitle: "World Map",
+      mapSubtitle: "Every archipelago hides knowledge and danger. Follow the ink trails to find the treasures of code.",
+      mapLoading: "Unfurling the parchment...",
+      mapEmpty: "Pirates stole the map. No quests found.",
       nextMilestoneLabel: "Next milestone",
       progressLabel: "Progress",
       tiers: ["Novice Isles", "Adept Frontier", "Mythic Expanse", "Elder Rift"],

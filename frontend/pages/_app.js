@@ -47,9 +47,9 @@ export default function MyApp({ Component, pageProps }) {
     <>
       <Head>
         <title>RPG Academy</title>
-        <meta name="description" content="Геймифицированная платформа обучения программированию." />
+        <meta name="description" content="A gamified platform for learning programming." />
         <meta property="og:title" content="RPG Academy" />
-        <meta property="og:description" content="Изучай код через прохождение миссий и сражения!" />
+        <meta property="og:description" content="Learn to code by completing missions and battles!" />
         <meta property="og:image" content="/og-image.png" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />

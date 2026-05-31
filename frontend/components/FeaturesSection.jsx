@@ -3,38 +3,29 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Target, Zap, Trophy } from "lucide-react";
+import { useI18n } from "../lib/i18n";
 
 // Регистрируем плагин только на стороне клиента
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-const features = [
-  {
-    title: "Интерактивные миссии",
-    desc: "Решай реальные задачи, пиши код и сразу видь результат. Никаких скучных лекций.",
-    icon: Target,
-    color: "text-emerald-500",
-    bg: "bg-emerald-500/10",
-  },
-  {
-    title: "Прокачка навыков",
-    desc: "Получай опыт (XP) за каждое успешное задание и открывай новые, более сложные уровни.",
-    icon: Zap,
-    color: "text-amber-500",
-    bg: "bg-amber-500/10",
-  },
-  {
-    title: "Таблица лидеров",
-    desc: "Соревнуйся с другими игроками, повышай свой рейтинг и стань легендой среди разработчиков.",
-    icon: Trophy,
-    color: "text-sky-500",
-    bg: "bg-sky-500/10",
-  },
+// Визуальная мета (иконка/цвет) статична — тексты приходят из словаря.
+const featureMeta = [
+  { icon: Target, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  { icon: Zap, color: "text-amber-500", bg: "bg-amber-500/10" },
+  { icon: Trophy, color: "text-sky-500", bg: "bg-sky-500/10" },
 ];
 
 export default function FeaturesSection() {
   const container = useRef(null);
+  const { t } = useI18n();
+  const items = t("features.items");
+  const features = featureMeta.map((meta, i) => ({
+    ...meta,
+    title: Array.isArray(items) ? items[i]?.title : "",
+    desc: Array.isArray(items) ? items[i]?.desc : "",
+  }));
 
   useGSAP(
     () => {
@@ -61,7 +52,7 @@ export default function FeaturesSection() {
     <section ref={container} className="relative py-32 bg-transparent text-white px-4 border-t border-white/10">
       <div className="max-w-6xl mx-auto z-10 relative">
         <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 text-white">
-          Как это работает?
+          {t("features.heading")}
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

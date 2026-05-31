@@ -3,9 +3,11 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import Link from "next/link";
 import { ArrowRight, Code, Sparkles } from "lucide-react";
+import { useI18n } from "../lib/i18n";
 
 export default function AnimatedHero() {
   const container = useRef(null);
+  const { t } = useI18n();
 
   useGSAP(
     () => {
@@ -55,20 +57,19 @@ export default function AnimatedHero() {
         <div className="hero-badge inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface border border-border shadow-sm mb-8 backdrop-blur-md transition-colors duration-300">
           <Sparkles className="w-4 h-4 text-gold" />
           <span className="text-sm font-medium tracking-wide text-muted">
-            Новая эра обучения
+            {t("landing.badge")}
           </span>
         </div>
 
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 overflow-hidden">
-          <div className="hero-title-line text-text">Изучай код через</div>
+          <div className="hero-title-line text-text">{t("landing.titleLine1")}</div>
           <div className="hero-title-line text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent pb-2">
-            эпические приключения
+            {t("landing.titleLine2")}
           </div>
         </h1>
 
         <p className="hero-desc text-lg md:text-xl text-muted mb-10 max-w-2xl transition-colors duration-300">
-          Проходи миссии, решай алгоритмические задачи и прокачивай своего
-          персонажа. Твой путь от новичка до легендарного разработчика начинается здесь.
+          {t("landing.subtitle")}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
@@ -76,7 +77,7 @@ export default function AnimatedHero() {
             href="/register"
             className="hero-btn group relative inline-flex items-center justify-center gap-2 px-8 py-4 bg-primary text-white shadow-glow rounded-2xl font-semibold overflow-hidden transition-all hover:scale-105 hover:shadow-glow-lg active:scale-95 border border-primary-dk"
           >
-            <span className="relative z-10">Начать игру</span>
+            <span className="relative z-10">{t("landing.primaryCta")}</span>
             <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
           </Link>
 
@@ -85,7 +86,7 @@ export default function AnimatedHero() {
             className="hero-btn inline-flex items-center justify-center gap-2 px-8 py-4 bg-surface border border-border hover:bg-panel text-text shadow-sm rounded-2xl font-semibold transition-all active:scale-95 backdrop-blur-sm"
           >
             <Code className="w-5 h-5" />
-            Карта миров
+            {t("landing.secondaryCta")}
           </Link>
         </div>
       </div>

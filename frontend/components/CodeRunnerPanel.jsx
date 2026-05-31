@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { AIAssist, Profile, getRunnerWsUrl } from "../lib/api";
 import { getTokens } from "../lib/auth";
+import { useI18n } from "../lib/i18n";
 import Terminal from "./Terminal";
 
 const SYM_OK = "\x1b[32m✔\x1b[0m";
@@ -63,6 +64,7 @@ export default function CodeRunnerPanel({
   inventoryCounts = { ai_summons: 0, hint_scrolls: 0, skeleton_scrolls: 0 },
   onInventoryUpdate,
 }) {
+  const { t } = useI18n();
   const termRef = useRef(null);
   const wsRef = useRef(null);
   const [running, setRunning] = useState(false);
@@ -84,10 +86,12 @@ export default function CodeRunnerPanel({
   const handleResetCode = useCallback(() => {
     onChange(initialCodeRef.current || "");
     toast(
-      `${initialCodeRef.current ? "↻ Код возвращён к исходному" : "↻ Редактор очищен"}`,
+      initialCodeRef.current
+        ? t("codeRunner.resetReverted")
+        : t("codeRunner.resetCleared"),
       { duration: 2000 }
     );
-  }, [onChange]);
+  }, [onChange, t]);
 
   useEffect(() => {
     return () => {
@@ -129,13 +133,13 @@ export default function CodeRunnerPanel({
 
     const { access } = getTokens();
     if (!access) {
-      toast.error("Войдите в систему, чтобы запустить код.");
+      toast.error(t("codeRunner.authRequired"));
       return;
     }
 
     const wsUrl = getRunnerWsUrl(access);
     if (!wsUrl) {
-      toast.error("Не удалось вычислить адрес раннера.");
+      toast.error(t("codeRunner.noRunnerUrl"));
       return;
     }
 
@@ -202,10 +206,10 @@ export default function CodeRunnerPanel({
       setRunning(false);
       if (ev.code === 4401) {
         term?.write(`\r\n${ANSI_RED}[auth required — refresh login]${ANSI_RESET}\r\n`);
-        toast.error("Сессия истекла. Войдите снова.");
+        toast.error(t("codeRunner.sessionExpired"));
       }
     };
-  }, [running, code, onTestPassed]);
+  }, [running, code, onTestPassed, t]);
 
   // ── Inventory handlers ────────────────────────────────────────────────────
   const handleUseItem = useCallback(
@@ -214,45 +218,49 @@ export default function CodeRunnerPanel({
       setUsingItem(true);
       try {
         const res = await Profile.consumeItem(itemType);
-        toast.success(`${itemName} использован! Осталось: ${res.remaining}`);
+        toast.success(
+          t("codeRunner.itemUsed")
+            .replace("{item}", itemName)
+            .replace("{count}", res.remaining)
+        );
         if (onInventoryUpdate) onInventoryUpdate(itemType, res.remaining);
         return true;
       } catch (error) {
         toast.error(
-          error.response?.data?.detail || "Не удалось использовать предмет или он закончился."
+          error.response?.data?.detail || t("codeRunner.itemFail")
         );
         return false;
       } finally {
         setUsingItem(false);
       }
     },
-    [usingItem, onInventoryUpdate]
+    [usingItem, onInventoryUpdate, t]
   );
 
   const handleSkeletonScroll = async () => {
-    const ok = await handleUseItem("skeleton_scrolls", "Свиток Архитектора");
+    const ok = await handleUseItem("skeleton_scrolls", t("codeRunner.items.architect"));
     if (ok) {
       const boilerplate =
         task?.data?.starter ||
-        "# Напишите свой код ниже\ndef main():\n    pass\n\nif __name__ == '__main__':\n    main()\n";
+        `${t("codeRunner.starterComment")}\ndef main():\n    pass\n\nif __name__ == '__main__':\n    main()\n`;
       onChange(code ? `${code}\n\n${boilerplate}` : boilerplate);
     }
   };
 
   const handleHintScroll = async () => {
-    const ok = await handleUseItem("hint_scrolls", "Зелье Ясности");
+    const ok = await handleUseItem("hint_scrolls", t("codeRunner.items.clarity"));
     if (!ok) return;
 
     const hint =
       task?.data?.hint ||
-      "Проверьте правильность отступов и синтаксис объявления функций.";
+      t("codeRunner.hintFallback");
 
     // Подсказку выводим прямо в терминал редактора — он всегда
     // привязан к панели и виден на любой ширине экрана (на 32:9
     // top-right toast визуально «уходит за экран»). Если терминал
     // ещё не смонтирован — фоллбэк на тост.
     if (termRef.current?.writeln) {
-      termRef.current.writeln(`\r\n${ANSI_YELLOW}━━━ 💡 Зелье Ясности ━━━${ANSI_RESET}`);
+      termRef.current.writeln(`\r\n${ANSI_YELLOW}${t("codeRunner.clarityHeader")}${ANSI_RESET}`);
       wrapWords(hint, 70).forEach((line) => {
         termRef.current.writeln(`${ANSI_YELLOW}│${ANSI_RESET} ${line}`);
       });
@@ -265,12 +273,12 @@ export default function CodeRunnerPanel({
   const handleAISummon = async () => {
     if (usingItem) return;
     if (!inventoryCounts?.ai_summons) {
-      toast.error("Нет вызовов AI-помощника.");
+      toast.error(t("codeRunner.noSummons"));
       return;
     }
 
     setUsingItem(true);
-    termRef.current?.writeln(`\r\n${ANSI_CYAN}🔮 Вызываю Мудреца...${ANSI_RESET}`);
+    termRef.current?.writeln(`\r\n${ANSI_CYAN}${t("codeRunner.sageSummon")}${ANSI_RESET}`);
 
     try {
       const taskDesc =
@@ -284,7 +292,7 @@ export default function CodeRunnerPanel({
       if (onInventoryUpdate && remaining_summons !== undefined) {
         onInventoryUpdate("ai_summons", remaining_summons);
       }
-      termRef.current?.writeln(`\r\n\x1b[35m━━━ 🤖 Мудрец говорит ━━━\x1b[0m`);
+      termRef.current?.writeln(`\r\n\x1b[35m${t("codeRunner.sageHeader")}\x1b[0m`);
       wrapWords(hint, 70).forEach((line) => {
         termRef.current?.writeln(`\x1b[35m│\x1b[0m ${line}`);
       });
@@ -292,7 +300,7 @@ export default function CodeRunnerPanel({
     } catch (err) {
       const detail = err?.response?.data?.detail;
       termRef.current?.writeln(
-        `\r\n${ANSI_RED}⚠ ${detail || "Мудрец недоступен. Попробуй ещё раз."}${ANSI_RESET}\r\n`
+        `\r\n${ANSI_RED}⚠ ${detail || t("codeRunner.sageUnavailable")}${ANSI_RESET}\r\n`
       );
       if (detail) toast.error(detail);
     } finally {
@@ -318,7 +326,7 @@ export default function CodeRunnerPanel({
             onClick={handleSkeletonScroll}
             disabled={usingItem || !inventoryCounts?.skeleton_scrolls}
             className={`flex items-center gap-1.5 px-2 py-1 text-[11px] rounded transition-colors ${inventoryCounts?.skeleton_scrolls > 0 ? "text-[#e5c07b] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
-            title="Свиток Архитектора"
+            title={t("codeRunner.items.architect")}
           >
             <Scroll size={14} />
             <span>{inventoryCounts?.skeleton_scrolls || 0}</span>
@@ -328,7 +336,7 @@ export default function CodeRunnerPanel({
             onClick={handleHintScroll}
             disabled={usingItem || !inventoryCounts?.hint_scrolls}
             className={`flex items-center gap-1.5 px-2 py-1 text-[11px] rounded transition-colors ${inventoryCounts?.hint_scrolls > 0 ? "text-[#98c379] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
-            title="Зелье Ясности"
+            title={t("codeRunner.items.clarity")}
           >
             <Lightbulb size={14} />
             <span>{inventoryCounts?.hint_scrolls || 0}</span>
@@ -338,7 +346,7 @@ export default function CodeRunnerPanel({
             onClick={handleAISummon}
             disabled={usingItem || !inventoryCounts?.ai_summons}
             className={`flex items-center gap-1.5 px-2 py-1 text-[11px] rounded transition-colors ${inventoryCounts?.ai_summons > 0 ? "text-[#c678dd] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
-            title="Вызвать AI-помощника"
+            title={t("codeRunner.items.aiSummon")}
           >
             <Bot size={14} />
             <span>{inventoryCounts?.ai_summons || 0}</span>
@@ -351,7 +359,7 @@ export default function CodeRunnerPanel({
               Возвращает к initialCodeRef (стартеру задачи). */}
           <button
             onClick={handleResetCode}
-            title="Вернуть код задачи к исходному"
+            title={t("codeRunner.resetTitle")}
             className="flex items-center gap-1.5 px-3 py-1 rounded bg-[#3c3c3c] hover:bg-[#4a4a4a] text-[#cccccc] hover:text-white text-xs transition-colors"
           >
             <RotateCcw size={11} />
@@ -399,7 +407,7 @@ export default function CodeRunnerPanel({
           onChange={(e) => onChange(e.target.value)}
           spellCheck="false"
           className="w-full h-full p-4 bg-transparent text-[13px] font-mono text-[#d4d4d4] resize-none focus:outline-none focus:ring-0 leading-6"
-          placeholder="# Напиши свой код здесь..."
+          placeholder={t("codeRunner.placeholder")}
         />
       </div>
 
@@ -408,7 +416,7 @@ export default function CodeRunnerPanel({
         ref={dragRef}
         onMouseDown={onDragStart}
         className="h-2 bg-[#252526] border-t border-b border-[#333] flex items-center justify-center cursor-row-resize hover:bg-[#2a2d2e] select-none group"
-        title="Потяни чтобы изменить размер терминала"
+        title={t("codeRunner.resizeTitle")}
       >
         <GripHorizontal size={12} className="text-[#555] group-hover:text-[#888]" />
       </div>

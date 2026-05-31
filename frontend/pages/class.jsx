@@ -109,7 +109,7 @@ export default function ChooseClassPage() {
           errorMsg = data.detail;
         }
       }
-      toast.error(`Ошибка: ${errorMsg}`, { duration: 6000 });
+      toast.error(errorMsg, { duration: 6000 });
     } finally {
       setChoosing(false);
     }
@@ -165,7 +165,8 @@ export default function ChooseClassPage() {
             <div>
               <h3 className="text-lg font-bold text-text mb-2">{dict.classPage?.recommendation || "Рекомендация Академии"}</h3>
               <p className="text-sm text-muted">
-                Мы видим, что ты еще не завершил Вводный курс. Ты можешь просмотреть древо классов и выбрать свой путь, но для полного понимания механик игры настоятельно рекомендуем сначала пройти базу!
+                {dict.classPage?.recommendationBody ||
+                  "Мы видим, что ты ещё не завершил Вводный курс. Ты можешь просмотреть древо классов и выбрать свой путь, но для полного понимания механик игры настоятельно рекомендуем сначала пройти базу!"}
               </p>
             </div>
           </div>

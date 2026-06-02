@@ -64,6 +64,17 @@ html.dark {
 /* ─── Базовые стили курсора ───────────────────────────────── */
 html, body, #__next { height: 100%; }
 
+/* ─── Lenis smooth-scroll ──────────────────────────────────────
+   Когда Lenis активен, он вешает классы lenis/lenis-smooth на <html>.
+   Жёсткая height:100% выше обрезает реальную высоту документа, из-за чего
+   страница «перестаёт скроллиться» где-то на середине. Возвращаем
+   документу height:auto, чтобы скролл доходил до самого низа. */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+
 body {
   font-family: "General Sans", system-ui, sans-serif;
   background-color: var(--bg) !important;

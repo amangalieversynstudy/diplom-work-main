@@ -216,7 +216,7 @@ export default function Home() {
           STATS STRIP
       ══════════════════════════════════════════ */}
       <section className="stats-strip py-14 border-y border-border bg-panel/50 transition-colors duration-300">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 max-w-6xl 2xl:max-w-[80rem] 3xl:max-w-[92rem] 4xl:max-w-[110rem] mx-auto px-4 sm:px-6">
           {STATS.map((s, i) => (
             <StatCard key={s.label} {...s} delay={i * 120} />
           ))}
@@ -227,7 +227,7 @@ export default function Home() {
           LEARNING TRACKS / PROGRAMS
       ══════════════════════════════════════════ */}
       <section className="tracks-section py-20 bg-surface transition-colors duration-300">
-        <div className="mb-12 md:mb-16 max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="mb-12 md:mb-16 max-w-6xl 2xl:max-w-[80rem] 3xl:max-w-[92rem] 4xl:max-w-[110rem] mx-auto px-4 sm:px-6">
           <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">{homeDict.tracks_eyebrow || "Учебные Треки"}</p>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-text leading-tight max-w-lg">
@@ -240,7 +240,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 max-w-6xl 2xl:max-w-[80rem] 3xl:max-w-[92rem] 4xl:max-w-[110rem] mx-auto px-4 sm:px-6">
           {TRACKS.map((track) => (
             <TrackCard key={track.id} track={track} />
           ))}
@@ -251,7 +251,7 @@ export default function Home() {
           HOW IT WORKS
       ══════════════════════════════════════════ */}
       <section className="hiw-section py-20 border-t border-border bg-panel/50 transition-colors duration-300">
-        <div className="grid md:grid-cols-[0.9fr,1.1fr] gap-12 md:gap-16 items-start max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="grid md:grid-cols-[0.9fr,1.1fr] gap-12 md:gap-16 items-start max-w-6xl 2xl:max-w-[80rem] 3xl:max-w-[92rem] 4xl:max-w-[110rem] mx-auto px-4 sm:px-6">
           {/* Left sticky label */}
           <div className="md:sticky md:top-28">
             <p className="text-xs font-bold uppercase tracking-widest text-accent mb-3">{homeDict.howitworks_eyebrow || "Процесс"}</p>
@@ -295,7 +295,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════
           CTA SECTION
       ══════════════════════════════════════════ */}
-      <section className="cta-section py-20 px-4 sm:px-6 max-w-6xl mx-auto">
+      <section className="cta-section py-20 px-4 sm:px-6 max-w-6xl 2xl:max-w-[80rem] 3xl:max-w-[92rem] 4xl:max-w-[110rem] mx-auto">
         <div className="cta-inner relative rounded-[2.5rem] border border-border bg-panel shadow-xl shadow-slate-200/50 dark:shadow-black/20 overflow-hidden text-center px-6 py-16 sm:px-8 sm:py-20 transition-colors duration-300">
           {/* Decorative orbs inside CTA */}
           <div className="absolute -top-20 -left-20 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none animate-float" />

@@ -211,7 +211,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
             : "bg-transparent py-5 " + (isMenuOpen ? "pointer-events-none" : "pointer-events-auto")
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between relative">
+        <div className="max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 flex items-center justify-between relative">
           {/* Пустой блок слева для балансировки флекс-контейнера */}
           <div className={`transition-all duration-500 ${isShrunk ? "w-10" : "w-12"}`} />
 
@@ -247,7 +247,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
         </div>
       </header>
 
-      <main className={fullBleed ? "relative" : `max-w-7xl mx-auto px-6 relative ${noBottomPadding ? "pt-10 pb-0" : "py-10"}`}>
+      <main className={fullBleed ? "relative" : `max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 relative ${noBottomPadding ? "pt-10 pb-0" : "py-10"}`}>
         {children}
       </main>
 
@@ -334,7 +334,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
 
       {!hideFooter && (
         <footer className="border-t border-border bg-surface/50 backdrop-blur-xl mt-20 transition-colors duration-300">
-          <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 py-6">
             <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-muted">
               <div className="flex items-center gap-3">
                 <div className="w-6 h-6 rounded-lg border-primary/20 bg-primary/10 flex items-center justify-center">

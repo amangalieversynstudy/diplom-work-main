@@ -15,10 +15,11 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
-import { AIAssist, Profile, getRunnerWsUrl } from "../lib/api";
+import { Profile, getRunnerWsUrl } from "../lib/api";
 import { getTokens } from "../lib/auth";
 import { useI18n } from "../lib/i18n";
 import Terminal from "./Terminal";
+import AIMentorChat from "./AIMentorChat";
 
 const SYM_OK = "\x1b[32m✔\x1b[0m";
 const SYM_FAIL = "\x1b[31m✘\x1b[0m";
@@ -71,6 +72,7 @@ export default function CodeRunnerPanel({
   const [lastExit, setLastExit] = useState(null);
   const [usingItem, setUsingItem] = useState(false);
   const [termH, setTermH] = useState(DEFAULT_TERMINAL_H);
+  const [mentorOpen, setMentorOpen] = useState(false);
   const dragRef = useRef(null);
 
   // Снимок оригинального starter-кода задачи — обновляется ТОЛЬКО при смене
@@ -270,44 +272,6 @@ export default function CodeRunnerPanel({
     }
   };
 
-  const handleAISummon = async () => {
-    if (usingItem) return;
-    if (!inventoryCounts?.ai_summons) {
-      toast.error(t("codeRunner.noSummons"));
-      return;
-    }
-
-    setUsingItem(true);
-    termRef.current?.writeln(`\r\n${ANSI_CYAN}${t("codeRunner.sageSummon")}${ANSI_RESET}`);
-
-    try {
-      const taskDesc =
-        task?.body_ru || task?.body_en || task?.data?.hint || task?.title_ru || "";
-      // Backend handles decrement internally — do NOT call consumeItem separately
-      const { hint, remaining_summons } = await AIAssist.getHint(
-        code || "",
-        taskDesc,
-        task?.data?.language || "python"
-      );
-      if (onInventoryUpdate && remaining_summons !== undefined) {
-        onInventoryUpdate("ai_summons", remaining_summons);
-      }
-      termRef.current?.writeln(`\r\n\x1b[35m${t("codeRunner.sageHeader")}\x1b[0m`);
-      wrapWords(hint, 70).forEach((line) => {
-        termRef.current?.writeln(`\x1b[35m│\x1b[0m ${line}`);
-      });
-      termRef.current?.writeln(`\x1b[35m━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m\r\n`);
-    } catch (err) {
-      const detail = err?.response?.data?.detail;
-      termRef.current?.writeln(
-        `\r\n${ANSI_RED}⚠ ${detail || t("codeRunner.sageUnavailable")}${ANSI_RESET}\r\n`
-      );
-      if (detail) toast.error(detail);
-    } finally {
-      setUsingItem(false);
-    }
-  };
-
   const lines = code ? code.split("\n").length : 1;
   const lineArray = Array.from({ length: Math.max(25, lines) }, (_, i) => i + 1);
 
@@ -343,10 +307,9 @@ export default function CodeRunnerPanel({
           </button>
 
           <button
-            onClick={handleAISummon}
-            disabled={usingItem || !inventoryCounts?.ai_summons}
-            className={`flex items-center gap-1.5 px-2 py-1 text-[11px] rounded transition-colors ${inventoryCounts?.ai_summons > 0 ? "text-[#c678dd] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
-            title={t("codeRunner.items.aiSummon")}
+            onClick={() => setMentorOpen(true)}
+            className="flex items-center gap-1.5 px-2 py-1 text-[11px] rounded transition-colors text-[#c678dd] hover:bg-[#333] cursor-pointer"
+            title={t("codeRunner.mentor.open")}
           >
             <Bot size={14} />
             <span>{inventoryCounts?.ai_summons || 0}</span>
@@ -443,6 +406,16 @@ export default function CodeRunnerPanel({
           <Terminal ref={termRef} />
         </div>
       </div>
+
+      {/* AI-наставник (Sage) — контекстный чат, выезжает справа */}
+      <AIMentorChat
+        open={mentorOpen}
+        onClose={() => setMentorOpen(false)}
+        task={task}
+        code={code}
+        summons={inventoryCounts?.ai_summons || 0}
+        onInventoryUpdate={onInventoryUpdate}
+      />
     </div>
   );
 }

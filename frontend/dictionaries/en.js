@@ -653,6 +653,20 @@ export const en = {
       placeholder: "# Write your code here...",
       starterComment: "# Write your code below",
       resizeTitle: "Drag to resize the terminal",
+      mentor: {
+        title: "The Sage",
+        subtitle: "AI mentor",
+        open: "Consult the Sage",
+        greeting:
+          "Greetings, apprentice. I can see your task and the code you've written. Ask me anything — I will guide your thinking, not hand you the answer.",
+        placeholder: "Ask the Sage about your code…",
+        send: "Send",
+        thinking: "The Sage is pondering…",
+        mana: "Mana",
+        noMana: "Your mana is spent. Finish a level to refill your scrolls.",
+        error: "The Sage is unavailable. Try again.",
+        close: "Close",
+      },
     },
     confirm: {
       close: "Close",

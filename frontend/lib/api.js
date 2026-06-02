@@ -217,6 +217,30 @@ export const AIAssist = {
     api
       .post("/ai-assist/", { code, task_description: taskDesc, language })
       .then((r) => r.data),
+
+  /**
+   * Hold a conversation with the AI mentor (Sage).
+   *
+   * The backend is stateless — pass the full running history each turn.
+   * The current editor code and task description are sent as grounding
+   * context so the mentor's advice stays specific to what the student
+   * is writing. Each successful reply costs 1 ai_summon (mana).
+   *
+   * @param {Array<{role: 'user'|'assistant', content: string}>} messages
+   * @param {string} code      Current code in the editor
+   * @param {string} taskDesc  Task description (body_ru or body_en)
+   * @param {string} language  Programming language ("python")
+   * @returns {Promise<{reply: string, remaining_summons: number}>}
+   */
+  mentor: (messages, code, taskDesc, language = "python") =>
+    api
+      .post("/ai-mentor/", {
+        messages,
+        code,
+        task_description: taskDesc,
+        language,
+      })
+      .then((r) => r.data),
 };
 
 /**

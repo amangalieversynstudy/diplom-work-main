@@ -335,8 +335,23 @@ export default function MissionDetail() {
                 "linear-gradient(180deg, #dcb98a 0%, #d4ad75 50%, #c39858 100%)",
             }}
           >
+            {/* Череп-тотем со стола мага — выцветший водяной знак (из мокапа
+                Codemancer). Лежит позади контента, читаемость не трогает. */}
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-24 z-0 flex justify-center opacity-[0.07]"
+              aria-hidden="true"
+            >
+              <svg viewBox="0 0 200 200" className="w-44 h-44 text-[#2a1810]">
+                <path d="M100 30c-38 0-66 28-66 64 0 22 12 36 22 46v22c0 6 4 10 10 10h12v-14h14v14h16v-14h14v14h12c6 0 10-4 10-10v-22c10-10 22-24 22-46 0-36-28-64-66-64z" fill="currentColor" />
+                <ellipse cx="74" cy="110" rx="18" ry="22" fill="#dcb98a" />
+                <ellipse cx="126" cy="110" rx="18" ry="22" fill="#dcb98a" />
+                <path d="M100 130l-10 18h20z" fill="#dcb98a" />
+                <path d="M86 160h6v10h-6zM100 160h6v10h-6zM114 160h6v10h-6z" fill="#dcb98a" />
+              </svg>
+            </div>
+
             {/* Заголовок-баннер */}
-            <div className="px-6 py-4 border-b-2 border-[#5c3a21]/40 bg-gradient-to-r from-[#3a2818]/95 via-[#5c3a21]/90 to-[#3a2818]/95 flex items-center gap-2">
+            <div className="relative z-10 px-6 py-4 border-b-2 border-[#5c3a21]/40 bg-gradient-to-r from-[#3a2818]/95 via-[#5c3a21]/90 to-[#3a2818]/95 flex items-center gap-2">
               <ScrollText size={16} className="text-[#fde68a]" />
               <p className="font-display text-sm font-bold tracking-widest text-[#fde68a] uppercase">
                 {t("missionPage.questLog")}
@@ -354,7 +369,7 @@ export default function MissionDetail() {
               </svg>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="relative z-10 flex-1 overflow-y-auto p-4">
               <MissionStepper
                 tasks={tasks}
                 activeId={activeTaskId}
@@ -367,7 +382,7 @@ export default function MissionDetail() {
             </div>
 
             {/* Статистика текущей ноды — на тёмной полосе под пергаментом */}
-            <div className="p-4 border-t-2 border-[#5c3a21]/40 bg-gradient-to-r from-[#3a2818]/95 via-[#5c3a21]/90 to-[#3a2818]/95 font-mono text-xs text-[#d4a24c]">
+            <div className="relative z-10 p-4 border-t-2 border-[#5c3a21]/40 bg-gradient-to-r from-[#3a2818]/95 via-[#5c3a21]/90 to-[#3a2818]/95 font-mono text-xs text-[#d4a24c]">
               {activeTask && (
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -409,13 +424,24 @@ export default function MissionDetail() {
               {activeTask?.task_type === "code"
                 ? <Code2 size={16} className="text-[#d4a24c]" />
                 : <BookOpen size={16} className="text-[#a3e635]" />}
-              <h2 className="font-display text-base font-bold text-[#fde68a] tracking-wide truncate drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
+              <h2 className="min-w-0 flex-1 font-display text-base font-bold text-[#fde68a] tracking-wide truncate drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
                 {(language === "en"
                   ? activeTask?.title_en || activeTask?.title_ru
                   : activeTask?.title_ru || activeTask?.title_en) ||
                   activeTask?.title ||
                   t("missionPage.scrollTitleFallback")}
               </h2>
+              {/* Свеча — пара со столом квест-лога; единый «огонёк мага» */}
+              <svg width="14" height="24" viewBox="0 0 14 24" className="ml-auto shrink-0" aria-hidden="true">
+                <ellipse cx="7" cy="22" rx="4.5" ry="1.4" fill="#1c120a" opacity="0.5" />
+                <rect x="4.5" y="9" width="5" height="13" rx="1.2" fill="#f3e2c0" />
+                <rect x="4.6" y="9" width="1.7" height="13" rx="0.8" fill="#ffffff" opacity="0.35" />
+                <rect x="6.6" y="6" width="0.8" height="3" fill="#3e2723" />
+                <g className="animate-flicker" style={{ transformOrigin: "7px 7px" }}>
+                  <path d="M7 0c1.7 1.8 2.5 3.2 2.5 4.6A2.5 2.5 0 0 1 7 7.1 2.5 2.5 0 0 1 4.5 4.6C4.5 3.2 5.3 1.8 7 0Z" fill="#ffb338" />
+                  <path d="M7 2c.9 1 1.3 2 1.3 2.8A1.3 1.3 0 0 1 7 6.1 1.3 1.3 0 0 1 5.7 4.8C5.7 4 6.1 3 7 2Z" fill="#fff3c4" />
+                </g>
+              </svg>
             </div>
 
             {/* Орнаментальный разделитель главы — перо + росчерк (чистый SVG) */}

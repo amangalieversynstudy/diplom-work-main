@@ -320,10 +320,12 @@ export default function CodeRunnerPanel({
         <div className="px-3 flex items-center gap-2 bg-[#252526]">
           {/* Reset code — всегда активна, не тратит инвентарь.
               Возвращает к initialCodeRef (стартеру задачи). */}
+          {/* Кнопки в стиле мокапа Codemancer: «самоцветы» с фаской —
+              RUN зелёный, RESET красно-коричневый, STOP глубокий багровый. */}
           <button
             onClick={handleResetCode}
             title={t("codeRunner.resetTitle")}
-            className="flex items-center gap-1.5 px-3 py-1 rounded bg-[#3c3c3c] hover:bg-[#4a4a4a] text-[#cccccc] hover:text-white text-xs transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1 rounded border border-[#a0432a] bg-gradient-to-b from-[#7a2b1a] to-[#3a0d06] hover:from-[#8e3420] hover:to-[#4a1208] text-[#f3e6c2] text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,220,140,0.2)]"
           >
             <RotateCcw size={11} />
             Reset
@@ -332,7 +334,7 @@ export default function CodeRunnerPanel({
           {running ? (
             <button
               onClick={stopRun}
-              className="flex items-center gap-1.5 px-3 py-1 rounded bg-[#a31515] hover:bg-[#c41a1a] text-white text-xs transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1 rounded border border-[#d14a4a] bg-gradient-to-b from-[#a31515] to-[#5e0c0c] hover:from-[#c41a1a] hover:to-[#6e0e0e] text-white text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,200,200,0.2)]"
             >
               <Square size={11} fill="currentColor" />
               Stop
@@ -340,7 +342,7 @@ export default function CodeRunnerPanel({
           ) : (
             <button
               onClick={runCode}
-              className="flex items-center gap-1.5 px-3 py-1 rounded bg-[#0e639c] hover:bg-[#1177bb] text-white text-xs transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1 rounded border border-[#5a8a2a] bg-gradient-to-b from-[#3a6a22] to-[#1b3a0e] hover:from-[#46802a] hover:to-[#224a12] text-[#f1ffd6] text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,220,140,0.25)]"
             >
               <Play size={12} fill="currentColor" />
               Run Code

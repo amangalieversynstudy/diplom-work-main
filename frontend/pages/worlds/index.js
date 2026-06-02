@@ -129,7 +129,7 @@ export default function Worlds() {
 
   return (
     <Layout hideFooter noBottomPadding>
-      <div className="max-w-7xl mx-auto px-6 pt-24 pb-4">
+      <div className="max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 pt-24 pb-4">
         {/* ── Заголовок ── */}
         <div className="mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-4">

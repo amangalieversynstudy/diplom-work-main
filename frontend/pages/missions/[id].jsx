@@ -2,6 +2,7 @@ import Layout from "../../components/Layout";
 import Button from "../../components/Button";
 import MissionStepper from "../../components/MissionStepper";
 import CodeRunnerPanel from "../../components/CodeRunnerPanel";
+import CodemancerStage from "../../components/CodemancerStage";
 import { useRouter } from "next/router";
 import { toast } from "sonner";
 import {
@@ -32,6 +33,9 @@ export default function MissionDetail() {
     hint_scrolls: 0,
     skeleton_scrolls: 0,
   });
+
+  // Уровень игрока для HUD игровой сцены (Codemancer)
+  const [playerLevel, setPlayerLevel] = useState(1);
 
   const activeTask = useMemo(() => {
     return tasks.find((t) => t.id === activeTaskId) || tasks[0] || null;
@@ -87,6 +91,7 @@ export default function MissionDetail() {
           hint_scrolls: p.hint_scrolls ?? 0,
           skeleton_scrolls: p.skeleton_scrolls ?? 0,
         });
+        setPlayerLevel(p.level ?? 1);
       })
       .catch((err) => {
         logger.error("Не удалось загрузить инвентарь игрока:", err);
@@ -178,6 +183,7 @@ export default function MissionDetail() {
                 hint_scrolls: p.hint_scrolls ?? 0,
                 skeleton_scrolls: p.skeleton_scrolls ?? 0,
               });
+              setPlayerLevel(p.level ?? 1);
             }
           } catch (profileErr) {
             logger.error("Failed to refetch profile after mission complete:", profileErr);
@@ -303,6 +309,14 @@ export default function MissionDetail() {
             {t("missionPage.backToMap")}
           </Button>
         </header>
+
+        {/* Игровая сцена Codemancer: пиксель-арт + HUD (HP/MP/Level).
+            MP завязана на ai_summons (мана для AI-призывов), HP — флейвор. */}
+        <CodemancerStage
+          level={playerLevel}
+          hpPct={100}
+          mpPct={Math.min(100, (inventory.ai_summons || 0) * 20)}
+        />
 
         {/* Основной контент */}
         <section className="flex-1 flex flex-col xl:flex-row min-h-0 overflow-auto xl:overflow-hidden">

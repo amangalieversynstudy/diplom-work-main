@@ -13,7 +13,15 @@ async function initSmoothScroll() {
     import("gsap/ScrollTrigger"),
   ]);
   gsap.registerPlugin(ScrollTrigger);
-  const lenis = new Lenis({ duration: 1.2, orientation: "vertical", smoothWheel: true });
+  // Меньше длительность + cubic ease-out = ощутимо «резче», без потери плавности.
+  const lenis = new Lenis({
+    duration: 0.8,
+    easing: (t) => 1 - Math.pow(1 - t, 3),
+    orientation: "vertical",
+    smoothWheel: true,
+    wheelMultiplier: 1.1,
+    touchMultiplier: 1.8,
+  });
   lenis.on("scroll", ScrollTrigger.update);
   gsap.ticker.add((time) => { lenis.raf(time * 1000); });
   gsap.ticker.lagSmoothing(0);

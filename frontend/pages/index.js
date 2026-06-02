@@ -40,7 +40,7 @@ function useCountUp(target, duration = 1400, delay = 0) {
 function StatCard({ value, label, icon: Icon, delay }) {
   const counted = useCountUp(value, 1200, delay);
   return (
-    <div className="stat-item flex flex-col items-center gap-2 p-4 sm:p-6 rounded-3xl border border-border bg-surface shadow-sm hover:shadow-md transition-shadow text-center">
+    <div className="stat-item flex flex-col items-center gap-2 p-4 sm:p-6 rounded-3xl border border-border bg-panel shadow-sm hover:shadow-md transition-shadow text-center">
       <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-2 text-primary">
         <Icon size={20} />
       </div>
@@ -57,7 +57,7 @@ function StatCard({ value, label, icon: Icon, delay }) {
 function TrackCard({ track }) {
   const Icon = track.icon;
   return (
-    <TransitionLink href="/worlds" className="track-card block text-left cursor-pointer group relative rounded-3xl border border-border bg-surface transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/20">
+    <TransitionLink href="/worlds" className="track-card block text-left cursor-pointer group relative rounded-3xl border border-border bg-panel transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/20">
       {/* Top line accent */}
       <div className="absolute top-0 left-0 right-0 h-1 opacity-70"
         style={{ background: `linear-gradient(90deg, transparent, ${track.dot}, transparent)` }} />
@@ -275,7 +275,7 @@ export default function Home() {
             {HOW_IT_WORKS.map((step) => (
               <div
                 key={step.num}
-                className="hiw-item group flex gap-4 sm:gap-5 p-4 sm:p-6 rounded-3xl border border-border bg-surface shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
+                className="hiw-item group flex gap-4 sm:gap-5 p-4 sm:p-6 rounded-3xl border border-border bg-panel shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
               >
                 <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border border-sky-100 dark:border-sky-500/20 bg-sky-50 dark:bg-sky-500/10 flex items-center justify-center">
                   <span className="font-mono text-lg font-bold text-sky-600">{step.num}</span>
@@ -296,7 +296,7 @@ export default function Home() {
           CTA SECTION
       ══════════════════════════════════════════ */}
       <section className="cta-section py-20 px-4 sm:px-6 max-w-6xl mx-auto">
-        <div className="cta-inner relative rounded-[2.5rem] border border-border bg-surface shadow-xl shadow-slate-200/50 dark:shadow-black/20 overflow-hidden text-center px-6 py-16 sm:px-8 sm:py-20 transition-colors duration-300">
+        <div className="cta-inner relative rounded-[2.5rem] border border-border bg-panel shadow-xl shadow-slate-200/50 dark:shadow-black/20 overflow-hidden text-center px-6 py-16 sm:px-8 sm:py-20 transition-colors duration-300">
           {/* Decorative orbs inside CTA */}
           <div className="absolute -top-20 -left-20 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none animate-float" />
           <div className="absolute -bottom-20 -right-20 w-64 h-64 rounded-full bg-accent/10 blur-3xl pointer-events-none animate-float" style={{ animationDelay: "3s" }} />

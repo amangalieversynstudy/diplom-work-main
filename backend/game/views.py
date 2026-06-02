@@ -639,3 +639,239 @@ class AIAssistView(APIView):
         except Exception as exc:
             logger.exception("Gemini API call failed")
             return (f"⚠️ Мудрец недоступен: {exc}", False)
+
+
+def _call_gemini_chat(system_instruction: str, history: list):
+    """Многоходовой вызов Gemini для AI-наставника.
+
+    history — список реплик [{"role": "user"|"model", "content": str}].
+    Возвращает кортеж (text, success_flag); при success_flag=False text — это
+    user-friendly fallback, и ману (ai_summons) списывать НЕ нужно.
+
+    Логика разрешения ключа/модели и устойчивого извлечения текста повторяет
+    AIAssistView._call_gemini, но передаёт всю историю диалога и системную
+    инструкцию с контекстом задачи и текущего кода ученика.
+    """
+    import os
+
+    from django.conf import settings as _settings
+
+    api_key = getattr(_settings, "GEMINI_API_KEY", None) or os.environ.get(
+        "GEMINI_API_KEY"
+    )
+    if not api_key:
+        return (
+            "🔮 Мудрец молчит... Ключ Гемини не настроен. "
+            "Проверь переменную окружения GEMINI_API_KEY.",
+            False,
+        )
+
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError:
+        logger.warning("google-genai не установлен — Gemini выключен")
+        return (
+            "📦 Библиотека google-genai не установлена. "
+            "Запусти: pip install google-genai>=0.3",
+            False,
+        )
+
+    try:
+        model_name = getattr(_settings, "GEMINI_MODEL", None) or os.environ.get(
+            "GEMINI_MODEL", "gemini-2.5-flash"
+        )
+        client = genai.Client(
+            api_key=api_key,
+            http_options={"api_version": "v1"},
+        )
+
+        contents = [
+            types.Content(
+                role=turn["role"],
+                parts=[types.Part(text=turn["content"])],
+            )
+            for turn in history
+        ]
+
+        response = client.models.generate_content(
+            model=model_name,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                max_output_tokens=2048,
+                temperature=0.7,
+            ),
+        )
+
+        text = (response.text or "").strip()
+        if not text and getattr(response, "candidates", None):
+            parts_text = []
+            for cand in response.candidates:
+                for part in getattr(getattr(cand, "content", None), "parts", []) or []:
+                    if getattr(part, "text", None):
+                        parts_text.append(part.text)
+            text = "".join(parts_text).strip()
+
+        finish_reason = None
+        try:
+            finish_reason = str(response.candidates[0].finish_reason)
+        except (AttributeError, IndexError):
+            pass
+        logger.info(
+            "Gemini(mentor) finish_reason=%s, text_len=%d", finish_reason, len(text)
+        )
+
+        if not text:
+            return (
+                "🧙 Наставник задумался... попробуй переформулировать вопрос.",
+                False,
+            )
+        return text, True
+    except Exception as exc:
+        logger.exception("Gemini mentor call failed")
+        return (f"⚠️ Мудрец недоступен: {exc}", False)
+
+
+class AIMentorView(APIView):
+    """Контекстный AI-наставник (Sage) — диалог, а не одна подсказка.
+
+    POST /api/game/ai-mentor/
+        {messages: [{role, content}], code, task_description, language}
+        -> {reply, remaining_summons}
+
+    Backend stateless: история диалога приходит с фронта. Каждый УСПЕШНЫЙ
+    ответ Мудреца списывает 1 ai_summon (ману) — та же экономика, что и у
+    разового хинта, но теперь это полноценная беседа с памятью о контексте.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AIAssistThrottle]
+
+    MAX_CODE_LENGTH = 8_000
+    MAX_DESCRIPTION_LENGTH = 4_000
+    MAX_MESSAGE_LENGTH = 2_000
+    MAX_HISTORY = 24  # последних реплик хватает, ограничивает токен-расход
+
+    _SYSTEM_PROMPT = (
+        "You are Sage — a wise, patient mentor inside an RPG coding academy. "
+        "You are in an ongoing conversation with a student who is solving a "
+        "programming task. Answer their questions and guide their thinking with "
+        "hints, leading questions, concept explanations and bug spotting — but do "
+        "NOT hand over a complete, ready-to-paste solution; lead the student to "
+        "discover it themselves. Keep replies concise (2–6 sentences) unless the "
+        "student explicitly asks you to go deeper. Always reply in the same "
+        "language the student writes in (Russian or English). Keep a slightly "
+        "mystical, encouraging RPG tone while staying technically accurate."
+    )
+
+    @swagger_auto_schema(
+        operation_summary="AI Mentor chat (Gemini)",
+        operation_description=(
+            "Контекстный диалог с AI-наставником. Принимает историю сообщений, "
+            "текущий код и описание задачи. Списывает 1 ai_summons за каждый "
+            "успешный ответ. Лимит — 10/мин на юзера."
+        ),
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "messages": openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            "role": openapi.Schema(type=openapi.TYPE_STRING),
+                            "content": openapi.Schema(type=openapi.TYPE_STRING),
+                        },
+                    ),
+                ),
+                "code": openapi.Schema(type=openapi.TYPE_STRING),
+                "task_description": openapi.Schema(type=openapi.TYPE_STRING),
+                "language": openapi.Schema(type=openapi.TYPE_STRING, default="python"),
+            },
+            required=["messages"],
+        ),
+    )
+    def post(self, request):
+        raw_messages = request.data.get("messages")
+        code = (request.data.get("code") or "").strip()
+        task_description = (request.data.get("task_description") or "").strip()
+        language = request.data.get("language", "python")
+
+        if not isinstance(raw_messages, list) or not raw_messages:
+            return Response(
+                {"detail": "messages must be a non-empty list"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Берём только последние MAX_HISTORY реплик и нормализуем роли:
+        # фронт шлёт "assistant", Gemini ждёт "model".
+        history = []
+        for item in raw_messages[-self.MAX_HISTORY :]:
+            if not isinstance(item, dict):
+                continue
+            role = item.get("role")
+            content = (item.get("content") or "").strip()
+            if not content or role not in ("user", "assistant", "model"):
+                continue
+            history.append(
+                {
+                    "role": "user" if role == "user" else "model",
+                    "content": content[: self.MAX_MESSAGE_LENGTH],
+                }
+            )
+
+        if not history or history[-1]["role"] != "user":
+            return Response(
+                {"detail": "last message must come from the user"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if len(code) > self.MAX_CODE_LENGTH:
+            return Response(
+                {"detail": f"code превышает лимит {self.MAX_CODE_LENGTH} символов"},
+                status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            )
+        if len(task_description) > self.MAX_DESCRIPTION_LENGTH:
+            return Response(
+                {
+                    "detail": (
+                        f"task_description превышает лимит "
+                        f"{self.MAX_DESCRIPTION_LENGTH} символов"
+                    )
+                },
+                status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            )
+
+        profile = request.user.profile
+        if profile.ai_summons <= 0:
+            return Response(
+                {
+                    "detail": (
+                        "Мана иссякла — нет вызовов Мудреца. Заверши уровень, "
+                        "чтобы пополнить запас свитков."
+                    ),
+                    "remaining_summons": 0,
+                },
+                status=status.HTTP_402_PAYMENT_REQUIRED,
+            )
+
+        # Системная инструкция = персона + контекст задачи + текущий код ученика.
+        system_instruction = self._SYSTEM_PROMPT
+        if task_description:
+            system_instruction += f"\n\n# Current task\n{task_description}"
+        system_instruction += f"\n\n# Language\n{language}"
+        if code:
+            system_instruction += (
+                f"\n\n# Student's current code\n```{language}\n{code}\n```"
+            )
+
+        reply, ok = _call_gemini_chat(system_instruction, history)
+        if ok:
+            profile.use_item("ai_summons")
+
+        return Response(
+            {
+                "reply": reply,
+                "remaining_summons": profile.ai_summons,
+            }
+        )

@@ -216,10 +216,10 @@ export default function MissionDetail() {
   if (!mission) {
     return (
       <Layout fullBleed hideFooter>
-        <div className="h-screen pt-24 bg-[#0f0f11] flex items-center justify-center text-white font-mono">
+        <div className="h-screen pt-24 bg-bg dark:bg-[#0f0f11] flex items-center justify-center font-mono">
           <div className="text-center space-y-4">
-            <div className="w-12 h-12 border-4 border-t-[#d4a24c] border-[#3a2818] rounded-full animate-spin mx-auto"></div>
-            <p className="text-[#d4a24c] tracking-widest text-sm uppercase">{t("missionPage.loading")}</p>
+            <div className="w-12 h-12 border-4 border-t-[#d4a24c] border-[#c9b48a] dark:border-[#3a2818] rounded-full animate-spin mx-auto"></div>
+            <p className="text-accent dark:text-[#d4a24c] tracking-widest text-sm uppercase">{t("missionPage.loading")}</p>
           </div>
         </div>
       </Layout>
@@ -231,16 +231,16 @@ export default function MissionDetail() {
     const prereqs = mission.prerequisites || [];
     return (
       <Layout fullBleed hideFooter>
-        <div className="h-screen pt-24 bg-[#0f0f11] flex items-center justify-center px-4">
+        <div className="h-screen pt-24 bg-bg dark:bg-[#0f0f11] flex items-center justify-center px-4">
           <div className="max-w-md w-full text-center space-y-6">
-            <div className="w-20 h-20 rounded-full bg-[#1a1a20] border-2 border-[#333] flex items-center justify-center mx-auto">
-              <Lock size={36} className="text-[#555]" />
+            <div className="w-20 h-20 rounded-full bg-surface dark:bg-[#1a1a20] border-2 border-border dark:border-[#333] flex items-center justify-center mx-auto">
+              <Lock size={36} className="text-faint dark:text-[#555]" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-wide mb-2">
+              <h1 className="text-2xl font-bold text-text dark:text-white tracking-wide mb-2">
                 {t("missionPage.locked.title")}
               </h1>
-              <p className="text-gray-400 text-sm leading-relaxed">
+              <p className="text-muted dark:text-gray-400 text-sm leading-relaxed">
                 {t("missionPage.locked.body").replace(
                   "{title}",
                   (language === "en"
@@ -252,12 +252,12 @@ export default function MissionDetail() {
               </p>
             </div>
             {prereqs.length > 0 && (
-              <div className="bg-[#141418] border border-[#222] rounded-xl p-4 text-left space-y-2">
-                <p className="text-xs font-mono uppercase tracking-widest text-gray-500 mb-3">
+              <div className="bg-panel dark:bg-[#141418] border border-border dark:border-[#222] rounded-xl p-4 text-left space-y-2">
+                <p className="text-xs font-mono uppercase tracking-widest text-muted dark:text-gray-500 mb-3">
                   {t("missionPage.locked.prereqs")}
                 </p>
                 {prereqs.map((pre) => (
-                  <div key={pre.id} className="flex items-center gap-2 text-sm text-gray-300">
+                  <div key={pre.id} className="flex items-center gap-2 text-sm text-text dark:text-gray-300">
                     <ChevronRight size={14} className="text-purple-400 shrink-0" />
                     <span>{pre.title}</span>
                   </div>
@@ -279,22 +279,23 @@ export default function MissionDetail() {
 
   return (
     <Layout fullBleed hideFooter>
-      <div className="h-screen pt-24 bg-[#0f0f11] text-gray-200 font-sans flex flex-col">
-        {/* Квест-шапка в RPG-стиле: deep-wood band + scroll icon + Melodrama */}
-        <header className="border-b border-[#5c3a21]/40 px-8 py-4 flex items-center justify-between select-none shadow-md bg-gradient-to-r from-[#2b1d11] via-[#3a2818] to-[#2b1d11]">
+      <div className="h-screen pt-24 bg-bg dark:bg-[#0f0f11] text-text dark:text-gray-200 font-sans flex flex-col">
+        {/* Квест-шапка в RPG-стиле: deep-wood band + scroll icon + Melodrama.
+            Светлая тема — чистая surface-полоса; тёмная — глубокое дерево. */}
+        <header className="border-b border-border dark:border-[#5c3a21]/40 px-8 py-4 flex items-center justify-between select-none shadow-md bg-surface dark:bg-gradient-to-r dark:from-[#2b1d11] dark:via-[#3a2818] dark:to-[#2b1d11]">
           <div className="flex items-center gap-4">
-            <div className="p-2.5 bg-[#8b5a2b]/25 border border-[#d4a24c]/60 rounded-xl text-[#fde68a] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <div className="p-2.5 bg-primary/10 dark:bg-[#8b5a2b]/25 border border-primary/20 dark:border-[#d4a24c]/60 rounded-xl text-primary dark:text-[#fde68a] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
               <ScrollText size={22} />
             </div>
             <div>
-              <h1 className="font-display text-2xl font-bold text-[#fde68a] tracking-wide drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
+              <h1 className="font-display text-2xl font-bold text-text dark:text-[#fde68a] tracking-wide dark:drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
                 {(language === "en"
                   ? mission.title_en || mission.title_ru
                   : mission.title_ru || mission.title_en) ||
                   mission.title}
               </h1>
-              <p className="text-xs text-[#d4a24c] font-mono mt-0.5 uppercase tracking-wider">
-                {t("missionPage.rewardLabel")}: <span className="text-[#fde68a] font-bold">{mission.xp_reward}</span> {t("missionPage.xpGained")}
+              <p className="text-xs text-accent dark:text-[#d4a24c] font-mono mt-0.5 uppercase tracking-wider">
+                {t("missionPage.rewardLabel")}: <span className="text-text dark:text-[#fde68a] font-bold">{mission.xp_reward}</span> {t("missionPage.xpGained")}
               </p>
             </div>
           </div>
@@ -475,7 +476,7 @@ export default function MissionDetail() {
           </div>
 
           {/* Правая панель (Editor + Terminal) */}
-          <div className="w-full xl:flex-1 min-h-[700px] xl:min-h-0 bg-[#1e1e1e] flex flex-col min-w-0">
+          <div className="w-full xl:flex-1 min-h-[700px] xl:min-h-0 bg-surface dark:bg-[#1e1e1e] flex flex-col min-w-0">
             {activeTask?.task_type === "code" ? (
               <CodeRunnerPanel
                 task={activeTask}
@@ -486,7 +487,7 @@ export default function MissionDetail() {
                 onInventoryUpdate={handleInventoryUpdate}
               />
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#1e1e1e] border-l border-[#333]">
+              <div className="flex-1 flex flex-col items-center justify-center p-8 bg-surface dark:bg-[#1e1e1e] border-l border-border dark:border-[#333]">
                 {/* RPG-свиток с анимированной руной. Чистый CSS,
                     без motion-библиотек — анимации через @keyframes ниже. */}
                 <div className="relative max-w-md w-full">

@@ -78,7 +78,9 @@ class RegisterView(generics.CreateAPIView):
         # (т.е. реальные письма не уходят, верификация невозможна).
         email_backend = getattr(settings, "EMAIL_BACKEND", "")
         is_console_email = "console" in email_backend
-        if getattr(settings, "DEBUG", False) or is_console_email:
+        # Активируем сразу, если: DEBUG, console-backend ИЛИ пользователь не указал email.
+        # Без почты верификация невозможна — иначе аккаунт остался бы заблокирован навсегда.
+        if getattr(settings, "DEBUG", False) or is_console_email or not user.email:
             user.is_active = True
         else:
             user.is_active = False

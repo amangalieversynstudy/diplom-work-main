@@ -20,18 +20,25 @@ export default function Register() {
   async function onSubmit(e) {
     e.preventDefault();
     setLoading(true);
+    const trimmedEmail = email.trim();
     try {
-      await registerUser({ username, email, password });
+      await registerUser({ username, email: trimmedEmail, password });
 
-      // Аккаунт создан, но is_active=False до подтверждения email.
-      // Авто-логин делать НЕЛЬЗЯ — он вернёт 401 "No active account".
       clearPlayerClass();
 
-      toast.success(
-        dict.auth.registerExtra?.successWithEmail ||
-          "Аккаунт создан! Проверь почту — мы отправили ссылку для активации."
-      );
-      router.push(`/login?pending_verify=${encodeURIComponent(email)}`);
+      if (trimmedEmail) {
+        // Email указан → аккаунт is_active=False до подтверждения по ссылке.
+        // Авто-логин делать НЕЛЬЗЯ — он вернёт 401 "No active account".
+        toast.success(
+          dict.auth.registerExtra?.successWithEmail ||
+            "Аккаунт создан! Проверь почту — мы отправили ссылку для активации."
+        );
+        router.push(`/login?pending_verify=${encodeURIComponent(trimmedEmail)}`);
+      } else {
+        // Email не указан → аккаунт активируется сразу, ведём прямо ко входу.
+        toast.success(copy.success);
+        router.push("/login");
+      }
     } catch (err) {
       const detail = err?.response?.data || {};
       const msg =

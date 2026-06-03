@@ -35,6 +35,16 @@ LOGGING = {
     "disable_existing_loggers": True,
 }
 
+# Tests must not require an external Redis server. base.py points the cache at
+# Redis (needed in prod for shared throttle counters), but the suite should run
+# anywhere — so use a local in-memory cache. DRF throttling and django-ratelimit
+# both rely on the cache; LocMemCache keeps them working without a broker.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    }
+}
+
 # Run Celery tasks eagerly in tests (no broker/worker needed)
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True

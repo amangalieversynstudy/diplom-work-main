@@ -218,12 +218,12 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
           {/* Центрированный интерактивный логотип */}
           <TransitionLink
             href="/"
-            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 group flex items-center px-4 py-2 transition-all duration-500 ${isMenuOpen ? "pointer-events-none opacity-40 blur-md" : "pointer-events-auto"}`}
+            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 group flex items-center px-2 sm:px-4 py-2 transition-all duration-500 ${isMenuOpen ? "pointer-events-none opacity-40 blur-md" : "pointer-events-auto"}`}
           >
-            <div className={`relative rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-110 group-hover:shadow-[0_0_20px_var(--primary-selection)] mr-3 ${isShrunk ? "w-6 h-6 md:w-8 md:h-8" : "w-8 h-8 md:w-10 md:h-10"}`}>
+            <div className={`relative rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-110 group-hover:shadow-[0_0_20px_var(--primary-selection)] mr-2 sm:mr-3 ${isShrunk ? "w-6 h-6 md:w-8 md:h-8" : "w-8 h-8 md:w-10 md:h-10"}`}>
               <Sparkles size={18} className={`text-primary relative z-10 transition-transform duration-700 group-hover:rotate-180 ${isShrunk ? "scale-75" : "scale-100"}`} />
             </div>
-            <div className={`font-display font-bold tracking-tighter uppercase flex items-center text-text transition-all duration-500 ${isShrunk ? "text-2xl md:text-3xl" : "text-3xl md:text-4xl"}`}>
+            <div className={`font-display font-bold tracking-tighter uppercase flex items-center text-text transition-all duration-500 ${isShrunk ? "text-base sm:text-xl md:text-3xl" : "text-lg sm:text-2xl md:text-4xl"}`}>
               {"RPG ACADEMY".split("").map((char, index) => (
                 <span
                   key={index}

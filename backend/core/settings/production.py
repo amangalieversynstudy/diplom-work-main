@@ -2,10 +2,41 @@
 
 import logging
 
+from django.core.exceptions import ImproperlyConfigured
+
 from .base import *  # noqa: F401,F403
 
 DEBUG = False
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
+
+# ─── CRIT: SECRET_KEY must be set explicitly in production ─────────────────
+# base.py falls back to the insecure literal "dev-secret"; refuse to boot prod
+# with it so sessions/JWTs cannot be forged with a public, predictable key.
+if os.getenv("DJANGO_SECRET_KEY", "") in ("", "dev-secret"):
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY must be set to a strong, unique value in production. "
+        "Set it as a Railway/host environment variable."
+    )
+
+# ─── CRIT: CORS — never allow all origins in production ───────────────────
+# Lock the API down to the known frontend origin(s). Falls back to FRONTEND_URL
+# (already configured for email links) so an existing deployment keeps working.
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
+]
+_frontend_origin = os.getenv("FRONTEND_URL", "").strip().rstrip("/")
+if not CORS_ALLOWED_ORIGINS and _frontend_origin:
+    CORS_ALLOWED_ORIGINS = [_frontend_origin]
+CORS_ALLOW_CREDENTIALS = True
+
+# ─── CRIT: code runner — forbid the unsandboxed subprocess fallback ───────
+# On hosts without Docker (e.g. Railway) the runner would otherwise execute
+# arbitrary user Python directly in the app process. Disallow that here; the
+# Docker-sandboxed path still works wherever Docker is available.
+RUNNER_ALLOW_UNSAFE_FALLBACK = os.getenv(
+    "RUNNER_ALLOW_UNSAFE_FALLBACK", "False"
+).lower() in {"1", "true", "yes", "on"}
 
 # Cloudflare Tunnel / nginx ставят запрос как https, но к Daphne приходит http.
 # Это говорит Django доверять заголовку X-Forwarded-Proto от прокси.

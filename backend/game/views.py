@@ -636,9 +636,13 @@ class AIAssistView(APIView):
                     False,
                 )
             return text, True
-        except Exception as exc:
+        except Exception:
             logger.exception("Gemini API call failed")
-            return (f"⚠️ Мудрец недоступен: {exc}", False)
+            return (
+                "🌫️ Мудрец сейчас в глубокой медитации и не может ответить. "
+                "Попробуй спросить чуть позже.",
+                False,
+            )
 
 
 def _call_gemini_chat(system_instruction: str, history: list):
@@ -686,19 +690,39 @@ def _call_gemini_chat(system_instruction: str, history: list):
             http_options={"api_version": "v1"},
         )
 
-        contents = [
-            types.Content(
-                role=turn["role"],
-                parts=[types.Part(text=turn["content"])],
+        # ВАЖНО: v1-эндпоинт generateContent НЕ знает поля systemInstruction
+        # (это фича v1beta) — передача system_instruction в конфиге роняет
+        # запрос с 400 "Unknown name systemInstruction". Поэтому, как и в
+        # рабочем AIAssistView._call_gemini, вплетаем системную инструкцию в
+        # текст первой реплики пользователя и остаёмся на проверенном v1.
+        contents = []
+        injected = False
+        for turn in history:
+            text = turn["content"]
+            if not injected and turn["role"] == "user":
+                text = f"{system_instruction}\n\n---\n\n{text}"
+                injected = True
+            contents.append(
+                types.Content(
+                    role=turn["role"],
+                    parts=[types.Part(text=text)],
+                )
             )
-            for turn in history
-        ]
+        if not injected:
+            # пограничный случай: первая реплика не от user — добавим контекст
+            # отдельной user-репликой в начало диалога.
+            contents.insert(
+                0,
+                types.Content(
+                    role="user",
+                    parts=[types.Part(text=system_instruction)],
+                ),
+            )
 
         response = client.models.generate_content(
             model=model_name,
             contents=contents,
             config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
                 max_output_tokens=2048,
                 temperature=0.7,
             ),
@@ -728,9 +752,13 @@ def _call_gemini_chat(system_instruction: str, history: list):
                 False,
             )
         return text, True
-    except Exception as exc:
+    except Exception:
         logger.exception("Gemini mentor call failed")
-        return (f"⚠️ Мудрец недоступен: {exc}", False)
+        return (
+            "🌫️ Мудрец сейчас в глубокой медитации и не может ответить. "
+            "Попробуй задать вопрос чуть позже.",
+            False,
+        )
 
 
 class AIMentorView(APIView):

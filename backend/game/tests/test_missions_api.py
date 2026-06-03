@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 from game.models import Location, Mission, Progress
 from rest_framework.test import APIClient
 from users.models import User
@@ -108,6 +111,15 @@ def test_complete_awards_xp_first_time_and_handles_repeat(api_client, user, cont
     assert r3.status_code == 200
     d3 = r3.json()
     assert d3["xp_added"] == 50
+
+    # The MID-05 anti-double-click guard zeroes out a completion that lands
+    # within 5s of the previous one. A *legitimate* repeat happens much later
+    # (the player has to redo the mission), so backdate the first completion
+    # past that window to exercise the real repeat-XP path.
+    prog = Progress.objects.get(user=user, mission=m3)
+    prog.completed_at = timezone.now() - timedelta(seconds=10)
+    prog.save(update_fields=["completed_at"])
+
     r4 = api_client.post(reverse("mission-complete", args=[m3.id]))
     assert r4.status_code == 200
     d4 = r4.json()

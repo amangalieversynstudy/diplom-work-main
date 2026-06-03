@@ -14,7 +14,7 @@ def test_profile_requires_authentication():
 
 
 @pytest.mark.django_db
-def test_profile_get_and_patch_once():
+def test_profile_get_and_change_class_freely():
     user = get_user_model().objects.create_user(username="hero", password="pass")
     client = APIClient()
     client.force_authenticate(user=user)
@@ -26,7 +26,7 @@ def test_profile_get_and_patch_once():
     assert data["level"] == 1
     assert data["class_role"] is None
 
-    # first PATCH allows selecting a class and updating bio
+    # first PATCH selects a class and updates bio
     warrior = ClassRole.objects.create(name="Warrior")
     resp = client.patch(
         "/api/profile",
@@ -38,23 +38,26 @@ def test_profile_get_and_patch_once():
     assert data["bio"] == "Ready to learn"
     assert data["class_role"] == warrior.id
 
-    # second PATCH attempting to change class should fail
+    # by design the class is NOT locked: the player may switch paths at any
+    # time (see users/serializers.py + frontend/pages/class.jsx), so a second
+    # PATCH that changes the class must succeed.
     mage = ClassRole.objects.create(name="Mage")
     resp = client.patch(
         "/api/profile",
         {"class_role": mage.id},
         format="json",
     )
-    assert resp.status_code == 400
-    assert "Class role can be selected only once" in resp.json()["class_role"][0]
+    assert resp.status_code == 200
+    assert resp.json()["class_role"] == mage.id
 
-    # cannot reset to null either
+    # and it may be cleared back to null
     resp = client.patch(
         "/api/profile",
         {"class_role": None},
         format="json",
     )
-    assert resp.status_code == 400
+    assert resp.status_code == 200
+    assert resp.json()["class_role"] is None
 
 
 @pytest.mark.django_db

@@ -28,6 +28,19 @@ CORS_ALLOWED_ORIGINS = [
 _frontend_origin = os.getenv("FRONTEND_URL", "").strip().rstrip("/")
 if not CORS_ALLOWED_ORIGINS and _frontend_origin:
     CORS_ALLOWED_ORIGINS = [_frontend_origin]
+
+# Vercel rotates the preview subdomain hash on every deploy, so pinning a single
+# origin is brittle. Match this project's Vercel URLs by regex instead — scoped
+# to the project name so arbitrary *.vercel.app sites are NOT allowed.
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://diplom-work-main-[a-z0-9-]+\.vercel\.app$",
+    r"^https://diplom-work-main\.vercel\.app$",
+]
+CORS_ALLOWED_ORIGIN_REGEXES += [
+    r.strip()
+    for r in os.getenv("CORS_ALLOWED_ORIGIN_REGEXES", "").split(",")
+    if r.strip()
+]
 CORS_ALLOW_CREDENTIALS = True
 
 # ─── CRIT: code runner — forbid the unsandboxed subprocess fallback ───────

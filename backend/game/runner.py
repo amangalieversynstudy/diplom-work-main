@@ -20,6 +20,42 @@ from requests.exceptions import ReadTimeout
 # максимум 50 KB вывода — иначе обрезаем
 MAX_OUTPUT_SIZE = 50 * 1024
 
+# ограничения Docker-песочницы (общие для sync и streaming путей)
+_SANDBOX_KWARGS = dict(
+    mem_limit="128m",
+    pids_limit=64,
+    network_mode="none",
+    read_only=True,                       # корневой ФС только на чтение
+    tmpfs={"/tmp": "size=16m,mode=1777"},  # /tmp в памяти, чтобы код мог писать врем. файлы
+    cap_drop=["ALL"],                     # снимаем все Linux capabilities
+    security_opt=["no-new-privileges"],   # запрет эскалации прав
+    nano_cpus=500_000_000,                # 0.5 CPU
+)
+
+_RUNNER_DISABLED_MSG = (
+    "Запуск кода недоступен в этом окружении: безопасной Docker-песочницы нет, "
+    "а небезопасный режим отключён (RUNNER_ALLOW_UNSAFE_FALLBACK=False)."
+)
+
+
+def _unsafe_fallback_allowed() -> bool:
+    """Subprocess-фолбэк запускает код БЕЗ изоляции. На проде он запрещён,
+    чтобы исключить RCE; локально и в тестах по умолчанию разрешён."""
+    try:
+        from django.conf import settings
+        return bool(getattr(settings, "RUNNER_ALLOW_UNSAFE_FALLBACK", True))
+    except Exception:
+        return True
+
+
+def _runner_disabled_result() -> dict:
+    return {"status": "error", "output": _RUNNER_DISABLED_MSG}
+
+
+def _runner_disabled_stream(started_at: float):
+    yield {"type": "error", "message": _RUNNER_DISABLED_MSG}
+    yield {"type": "exit", "code": -1, "duration": time.time() - started_at}
+
 
 def _execute_subprocess_fallback(code: str, timeout: int = 5) -> dict:
     """Fallback без Docker — запускает через subprocess. Используется в средах
@@ -139,6 +175,8 @@ def execute_python_code(code: str, timeout: int = 5) -> dict:
     try:
         client = docker.from_env()
     except Exception:
+        if not _unsafe_fallback_allowed():
+            return _runner_disabled_result()
         return _execute_subprocess_fallback(code, timeout)
 
     container = None
@@ -147,8 +185,7 @@ def execute_python_code(code: str, timeout: int = 5) -> dict:
             image="python:3.11-alpine",
             command=["python", "-c", code],
             detach=True,
-            mem_limit="128m",
-            network_mode="none",
+            **_SANDBOX_KWARGS,
         )
         result = container.wait(timeout=timeout)
         raw_logs = container.logs(stdout=True, stderr=True)
@@ -199,7 +236,10 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
     try:
         client = docker.from_env()
     except Exception:
-        # Fallback на subprocess — без песочницы. Стримим построчно.
+        # Docker недоступен. Subprocess-фолбэк не изолирован — на проде запрещён.
+        if not _unsafe_fallback_allowed():
+            yield from _runner_disabled_stream(started_at)
+            return
         yield from _stream_subprocess_fallback(code, timeout, stop_event, started_at)
         return
 
@@ -214,11 +254,9 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
         container = client.containers.create(
             image="python:3.11-alpine",
             command=["python", "-u", "-c", code],  # -u: без буферизации stdout
-            mem_limit="128m",
-            pids_limit=64,
-            network_mode="none",
             stdin_open=False,
             tty=False,
+            **_SANDBOX_KWARGS,
         )
 
         sock = client.api.attach_socket(

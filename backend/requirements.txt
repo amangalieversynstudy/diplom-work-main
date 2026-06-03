@@ -32,3 +32,7 @@ django-ratelimit>=4.1
 
 # Email via HTTP API (Railway blocks SMTP egress)
 django-anymail[resend]>=10.0
+
+# Error monitoring (optional, activated only when SENTRY_DSN is set) — see
+# core/settings/production.py. Listed so the guarded import actually works.
+sentry-sdk>=2.0

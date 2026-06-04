@@ -56,3 +56,8 @@ LANGUAGE_CODE = "en-us"
 # ALLOWED_HOSTS. Channels' test communicator does not send one, so we
 # permit all origins under the test settings only.
 ALLOWED_HOSTS = ["*"]
+
+# The runner's Piston hop makes an outbound HTTP call. Tests must stay offline
+# and deterministic, so disable it here — the suite exercises the Docker path
+# (mocked) and the local fallback gate without touching the network.
+RUNNER_PISTON_URL = ""

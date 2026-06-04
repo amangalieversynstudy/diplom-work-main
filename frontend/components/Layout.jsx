@@ -7,6 +7,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useI18n, languages as supportedLanguages } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
+import { Profile as ProfileAPI } from "../lib/api";
 import CustomCursor from "./CustomCursor";
 import TransitionLink from "./TransitionLink";
 import { useGSAP } from "@gsap/react";
@@ -133,6 +134,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
   const [scrollDir, setScrollDir] = useState("up");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isStaff, setIsStaff] = useState(false);
   const { t } = useI18n();
 
   const translatedNavLinks = useMemo(
@@ -167,6 +169,14 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
     // Проверяем наличие токена авторизации
     const token = localStorage.getItem("access") || localStorage.getItem("token") || localStorage.getItem("access_token");
     setIsAuthenticated(!!token);
+    // Ссылку на аналитику показываем только staff. Профиль запрашиваем
+    // лишь при наличии токена — чтобы у анонимных посетителей публичных
+    // страниц не дёргать API и не словить редирект на /login.
+    if (token) {
+      ProfileAPI.me()
+        .then((me) => setIsStaff(!!(me?.is_staff ?? me?.user?.is_staff)))
+        .catch(() => setIsStaff(false));
+    }
   }, []);
 
   useEffect(() => {
@@ -296,6 +306,20 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
                 </div>
               </TransitionLink>
             ))}
+            {isStaff && (
+              <TransitionLink
+                href="/analytics"
+                onClick={() => setIsMenuOpen(false)}
+                className="group flex items-center gap-4 text-3xl font-bold text-text hover:text-primary transition-colors"
+              >
+                <span className="group-hover:text-[var(--primary)] transition-colors">
+                  {t("analytics.title")}
+                </span>
+                <div className="w-8 h-8 rounded-full bg-[var(--primary)] text-white flex items-center justify-center opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                  <ArrowUpRight className="w-5 h-5" />
+                </div>
+              </TransitionLink>
+            )}
           </div>
 
           <div className="mt-auto pb-10 border-t border-border pt-6 flex flex-col gap-4">

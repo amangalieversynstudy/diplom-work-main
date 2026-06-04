@@ -35,6 +35,8 @@ class ProfileMeView(APIView):
             "username": user.username,
             "email": user.email,
             "display_name": user.display_name,
+            # staff видит аналитику/кабинет преподавателя (гейтинг на фронте)
+            "is_staff": user.is_staff,
             "xp": profile.xp,
             "level": profile.level,
             "bio": profile.bio,

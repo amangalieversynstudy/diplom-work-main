@@ -22,6 +22,51 @@ export const en = {
     toggleLabel: "Language",
     footerNote: "Made for the Diploma questline",
   },
+  analytics: {
+    title: "Learning analytics",
+    subtitle:
+      "Platform-wide metrics — engagement, completion and mission difficulty.",
+    staffOnly: "Available to staff only",
+    staffOnlyHint:
+      "This page shows aggregate statistics across all learners and is visible only to accounts with staff (teacher) permissions.",
+    backHome: "Back home",
+    units: {
+      min: "min",
+      days: "d",
+      learners: "learners",
+    },
+    cards: {
+      completion: "Completion rate",
+      attempted: "attempts",
+      avgAttempts: "Avg attempts",
+      avgMinutes: "Avg time per mission",
+      totalMissions: "Active missions",
+      activeLearners: "Active learners",
+      activeWeek: "in last 7 days",
+      activeStreaks: "Active streaks",
+      bestStreak: "best",
+      totalUsers: "Total users",
+      totalXp: "Total XP awarded",
+    },
+    hardest: {
+      title: "Where students get stuck",
+      subtitle: "Missions with the highest average number of attempts.",
+      colMission: "Mission",
+      colAttempts: "Avg attempts",
+      colCompletion: "Completion",
+      empty: "No data yet — no mission attempts recorded.",
+    },
+    taskTypes: {
+      title: "Completion by task type",
+      subtitle: "Share of completed tasks by type: code, quiz, story.",
+      empty: "No task submissions yet.",
+      types: {
+        code: "Code",
+        quiz: "Quiz",
+        story: "Story",
+      },
+    },
+  },
   hero: {
       cardTitle: "Command Console",
       cardSubtitle: "You stand before the Academy sanctum",

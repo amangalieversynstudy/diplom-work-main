@@ -194,6 +194,26 @@ export default function MissionDetail() {
             }, 800);
           }
 
+          // Достижения: backend возвращает слаги только что открытых бейджей.
+          // Показываем отдельный toast на каждый, стагерим, чтобы не наслаивались
+          // на победный/level-up toast.
+          if (
+            Array.isArray(result?.new_achievements) &&
+            result.new_achievements.length
+          ) {
+            result.new_achievements.forEach((slug, i) => {
+              setTimeout(() => {
+                toast.success(
+                  (t("achievements.unlockToast") || "").replace(
+                    "{title}",
+                    t(`achievements.items.${slug}.title`)
+                  ),
+                  { duration: 6000 }
+                );
+              }, 1500 + i * 700);
+            });
+          }
+
           // TC-RANK-01: refetch profile to show updated rank on level-up
           // and update inventory with any rewards granted
           try {

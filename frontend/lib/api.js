@@ -244,6 +244,13 @@ export const Analytics = {
   get: () => api.get("/analytics/").then((r) => r.data),
 };
 
+// Достижения текущего игрока. Каталог (иконки/условия) живёт на бэкенде в
+// game/achievements.py; ответ — список {slug, icon, target, current, earned,
+// earned_at}. Заголовки/описания локализуются на фронте по slug.
+export const Achievements = {
+  list: () => api.get("/achievements/").then((r) => r.data),
+};
+
 export const AIAssist = {
   /**
    * Ask Gemini for a hint on the current task.

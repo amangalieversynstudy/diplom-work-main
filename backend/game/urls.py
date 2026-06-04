@@ -4,6 +4,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    AchievementsView,
     AIAssistView,
     AIMentorView,
     AnalyticsView,
@@ -37,4 +38,5 @@ urlpatterns = [
     path("ai-assist/", AIAssistView.as_view(), name="ai_assist"),
     path("ai-mentor/", AIMentorView.as_view(), name="ai_mentor"),
     path("analytics/", AnalyticsView.as_view(), name="analytics"),
+    path("achievements/", AchievementsView.as_view(), name="achievements"),
 ]

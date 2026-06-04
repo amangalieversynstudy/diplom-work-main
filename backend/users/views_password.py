@@ -26,18 +26,54 @@ class PasswordResetRequestView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data["email"]
+        # Один и тот же ответ независимо от того, есть ли такой email —
+        # чтобы не раскрывать, какие адреса зарегистрированы.
+        generic = Response(
+            {
+                "detail": (
+                    "Если такой email зарегистрирован, "
+                    "мы отправили ссылку для сброса пароля."
+                )
+            }
+        )
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
-            return Response(
-                {"detail": "If the email exists, a reset link will be sent."}
-            )
+            return generic
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
-        reset_link = f"/reset-password-confirm/?uid={uid}&token={token}"
-        send_mail("Password reset", f"Reset link: {reset_link}", None, [email])
-        return Response({"detail": "If the email exists, a reset link will be sent."})
+
+        import os
+
+        from django.conf import settings
+
+        frontend_url = (
+            getattr(settings, "FRONTEND_URL", None)
+            or os.environ.get("FRONTEND_URL")
+            or "http://localhost:3000"
+        )
+        reset_link = (
+            f"{frontend_url.rstrip('/')}/reset-password-confirm?uid={uid}&token={token}"
+        )
+        try:
+            send_mail(
+                "Сброс пароля — RPG Academy",
+                (
+                    f"Привет, {user.username}!\n\n"
+                    "Кто-то запросил сброс пароля для твоего аккаунта.\n"
+                    "Перейди по ссылке, чтобы задать новый пароль:\n"
+                    f"{reset_link}\n\n"
+                    "Если это был не ты — просто проигнорируй письмо, "
+                    "пароль останется прежним."
+                ),
+                None,
+                [email],
+            )
+        except Exception as e:
+            import logging
+            logging.error("[PASSWORD-RESET] Email send failed for %s: %r", email, e)
+        return generic
 
 
 class PasswordResetConfirmView(generics.GenericAPIView):

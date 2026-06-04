@@ -58,8 +58,15 @@ export default function Login() {
         router.push("/worlds");
       }
     } catch (err) {
-      const detail = err?.response?.data?.detail || "";
-      if (detail.toLowerCase().includes("no active account")) {
+      const data = err?.response?.data || {};
+      const detail = data.detail || "";
+      // Бэк отдаёт code:"account_inactive" для неактивного аккаунта — надёжно
+      // и не зависит от локали. Строковый матч оставлен fallback'ом на случай
+      // старого бэка / гонки деплоя Vercel↔Railway.
+      const inactive =
+        data.code === "account_inactive" ||
+        detail.toLowerCase().includes("no active account");
+      if (inactive) {
         setShowResend(true);
         toast.error(
           copy.notActivated || "Account not activated. Check your email.",

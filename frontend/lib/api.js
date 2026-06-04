@@ -246,6 +246,12 @@ export const Analytics = {
   get: () => api.get("/analytics/").then((r) => r.data),
 };
 
+// Кабинет преподавателя (только для staff): список учеников с прогрессом и
+// флагом «застрял». Ответ — {students: [...], summary: {...}}.
+export const Teacher = {
+  students: () => api.get("/teacher/students/").then((r) => r.data),
+};
+
 // Достижения текущего игрока. Каталог (иконки/условия) живёт на бэкенде в
 // game/achievements.py; ответ — список {slug, icon, target, current, earned,
 // earned_at}. Заголовки/описания локализуются на фронте по slug.

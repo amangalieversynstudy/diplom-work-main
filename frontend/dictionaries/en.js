@@ -67,6 +67,43 @@ export const en = {
       },
     },
   },
+  teacher: {
+    title: "Teacher cabinet",
+    subtitle: "Every learner — progress, activity, and who is stuck.",
+    staffOnly: "Available to staff only",
+    staffOnlyHint:
+      "This section shows every learner's progress and is visible only to accounts with teacher (staff) rights.",
+    backHome: "Back home",
+    summary: {
+      students: "Learners",
+      stuck: "Stuck",
+      activeWeek: "Active in 7 days",
+    },
+    table: {
+      student: "Learner",
+      level: "Lvl",
+      xp: "XP",
+      completed: "Completed",
+      inProgress: "In progress",
+      lastActive: "Activity",
+      status: "Status",
+    },
+    status: {
+      ok: "On track",
+      stuck: "Stuck",
+      inactive: "Inactive",
+      manyAttempts: "Many attempts",
+    },
+    attemptsHint: "{n} attempts on an unfinished mission",
+    lastActive: {
+      today: "today",
+      yesterday: "yesterday",
+      daysAgo: "{n} days ago",
+      never: "never active",
+    },
+    empty: "No learners yet — once someone registers, they'll show up here.",
+    loadError: "Couldn't load the learner list.",
+  },
   hero: {
       cardTitle: "Command Console",
       cardSubtitle: "You stand before the Academy sanctum",

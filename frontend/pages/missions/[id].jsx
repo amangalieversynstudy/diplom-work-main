@@ -37,6 +37,11 @@ export default function MissionDetail() {
   // Уровень игрока для HUD игровой сцены (Codemancer)
   const [playerLevel, setPlayerLevel] = useState(1);
 
+  // Боевая фаза сцены, завязанная на действия игрока в задаче:
+  // idle | casting (код выполняется) | victory (тест пройден) | defeat (ошибка).
+  // tick перезапускает one-shot анимации (снаряд, вспышка) при каждом событии.
+  const [stage, setStage] = useState({ phase: "idle", tick: 0 });
+
   const activeTask = useMemo(() => {
     return tasks.find((t) => t.id === activeTaskId) || tasks[0] || null;
   }, [tasks, activeTaskId]);
@@ -102,6 +107,23 @@ export default function MissionDetail() {
     };
     // MID-06: при смене языка миссия перезагружается с правильными title_ru/title_en
   }, [id, language]);
+
+  // Сцена сама возвращается в покой после реакции на запуск кода.
+  useEffect(() => {
+    if (stage.phase === "idle") return;
+    const ms =
+      stage.phase === "casting" ? 20000 : stage.phase === "victory" ? 1100 : 800;
+    const timer = setTimeout(() => setStage((s) => ({ ...s, phase: "idle" })), ms);
+    return () => clearTimeout(timer);
+  }, [stage.phase, stage.tick]);
+
+  // CodeRunnerPanel сообщает фазу запуска кода → герой колдует / бьёт голема /
+  // отшатывается. Это и есть интерактивность, завязанная на выполнение задания.
+  const handleRunState = (state) => {
+    const phase =
+      state === "running" ? "casting" : state === "success" ? "victory" : "defeat";
+    setStage((s) => ({ phase, tick: s.tick + 1 }));
+  };
 
   // Коллбэк для обновления инвентаря из CodeRunnerPanel
   const handleInventoryUpdate = (itemType, remainingCount) => {
@@ -316,6 +338,8 @@ export default function MissionDetail() {
           level={playerLevel}
           hpPct={100}
           mpPct={Math.min(100, (inventory.ai_summons || 0) * 20)}
+          phase={stage.phase}
+          tick={stage.tick}
         />
 
         {/* Основной контент */}
@@ -523,6 +547,7 @@ export default function MissionDetail() {
                 code={codeValue}
                 onChange={(val) => setCodeDrafts((prev) => ({ ...prev, [activeTask.id]: val }))}
                 onTestPassed={handleTestPassed}
+                onRunStateChange={handleRunState}
                 inventoryCounts={inventory}
                 onInventoryUpdate={handleInventoryUpdate}
               />

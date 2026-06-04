@@ -652,6 +652,10 @@ export const ru = {
       placeholder: "# Напиши свой код здесь...",
       starterComment: "# Напишите свой код ниже",
       resizeTitle: "Потяни чтобы изменить размер терминала",
+      fullscreen: "Развернуть редактор на весь экран",
+      exitFullscreen: "Свернуть редактор",
+      terminalCollapse: "Свернуть терминал",
+      terminalExpand: "Развернуть терминал",
       mentor: {
         title: "Мудрец",
         subtitle: "AI-наставник",

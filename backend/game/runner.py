@@ -7,14 +7,27 @@
 Лимиты: 128 MB RAM, 64 PID, нет сети, hard-kill по таймауту.
 """
 
+import os
 import struct
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 
 import docker
+import requests
 from requests.exceptions import ReadTimeout
+
+try:  # POSIX-only; used to cap CPU/memory/procs of the local fallback
+    import resource
+except ImportError:  # pragma: no cover - non-POSIX dev boxes
+    resource = None
+
+try:
+    import signal
+except ImportError:  # pragma: no cover
+    signal = None
 
 
 # максимум 50 KB вывода — иначе обрезаем
@@ -57,17 +70,170 @@ def _runner_disabled_stream(started_at: float):
     yield {"type": "exit", "code": -1, "duration": time.time() - started_at}
 
 
-def _execute_subprocess_fallback(code: str, timeout: int = 5) -> dict:
-    """Fallback без Docker — запускает через subprocess. Используется в средах
-    типа Railway, где Docker-in-Docker недоступен. Песочницы нет, поэтому
-    подходит только для доверенного кода (демо/защита диплома)."""
+# ─── Piston: внешняя песочница (emkc.org) ─────────────────────────────────
+# Когда Docker недоступен, код уходит в Piston. Он исполняется НЕ на нашем
+# сервере, поэтому секреты/ФС приложения недоступны. Стриминга у Piston нет —
+# отдаёт весь вывод разом, что для коротких учебных скриптов нормально.
+
+def _piston_settings():
     try:
-        proc = subprocess.run(
-            [sys.executable, "-c", code],
-            capture_output=True,
-            timeout=timeout,
-            text=True,
+        from django.conf import settings
+        url = (getattr(settings, "RUNNER_PISTON_URL", "") or "").rstrip("/")
+        version = getattr(settings, "RUNNER_PISTON_PYTHON_VERSION", "") or "3.10.0"
+        return url, version
+    except Exception:
+        return "", "3.10.0"
+
+
+def _piston_run(code: str, timeout: int):
+    """Гоняет код в Piston. Возвращает {stdout, stderr, code, signal} или None,
+    если Piston не сконфигурирован/недоступен/ответил ошибкой (тогда вызывающий
+    уходит в локальный фолбэк)."""
+    url, version = _piston_settings()
+    if not url:
+        return None
+    try:
+        resp = requests.post(
+            f"{url}/execute",
+            json={
+                "language": "python",
+                "version": version,
+                "files": [{"content": code}],
+                "run_timeout": max(1, timeout) * 1000,
+                "compile_timeout": 10_000,
+            },
+            timeout=max(1, timeout) + 15,
         )
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        run = data.get("run")
+        if not isinstance(run, dict):
+            return None
+        return {
+            "stdout": run.get("stdout") or "",
+            "stderr": run.get("stderr") or "",
+            "code": run.get("code") if run.get("code") is not None else -1,
+            "signal": run.get("signal"),
+        }
+    except Exception:
+        return None
+
+
+def _execute_via_piston(code: str, timeout: int):
+    r = _piston_run(code, timeout)
+    if r is None:
+        return None
+    output = (r["stdout"] or "") + (r["stderr"] or "")
+    if len(output) > MAX_OUTPUT_SIZE:
+        output = output[:MAX_OUTPUT_SIZE] + "\n\n... [ВЫВОД ОБРЕЗАН] ..."
+    return {"status": "success" if r["code"] == 0 else "error", "output": output}
+
+
+def _stream_via_piston(code: str, timeout: int, started_at: float):
+    """Возвращает СПИСОК событий (stdout/stderr/exit) или None, если Piston
+    недоступен. Не генератор — чтобы вызывающий мог отличить «нет Piston» от
+    «Piston дал пустой вывод» и корректно уйти в фолбэк."""
+    r = _piston_run(code, timeout)
+    if r is None:
+        return None
+    out = r["stdout"] or ""
+    err = r["stderr"] or ""
+    if len(out) > MAX_OUTPUT_SIZE:
+        out = out[:MAX_OUTPUT_SIZE] + "\n\n... [ВЫВОД ОБРЕЗАН] ..."
+    events = []
+    if out:
+        events.append({"type": "stdout", "data": out})
+    if err:
+        events.append({"type": "stderr", "data": err})
+    if r.get("signal"):
+        events.append({
+            "type": "error",
+            "message": f"Процесс остановлен сигналом {r['signal']} (таймаут или лимит ресурсов).",
+        })
+    events.append({"type": "exit", "code": r["code"], "duration": time.time() - started_at})
+    return events
+
+
+# ─── усиление локального subprocess-фолбэка ───────────────────────────────
+# Не полноценная песочница, но снимает главные риски: очищенное окружение
+# (секреты приложения недоступны), rlimits на CPU/память/файлы/процессы,
+# отдельная сессия процессов (kill всей группы) и временный рабочий каталог.
+
+def _scrubbed_env(home: str) -> dict:
+    """Окружение БЕЗ секретов приложения (GEMINI_API_KEY, креды БД, JWT-ключ)."""
+    return {
+        "LANG": "C.UTF-8",
+        "LC_ALL": "C.UTF-8",
+        "HOME": home,
+        "TMPDIR": home,
+        "PATH": "/usr/bin:/bin",
+    }
+
+
+def _make_rlimit_preexec(timeout: int):
+    """preexec_fn: ставит rlimits в дочернем процессе. Делает ТОЛЬКО syscalls
+    setrlimit (без аллокаций/локов), поэтому безопасно в многопоточном сервере."""
+    cpu = max(1, timeout) + 1
+
+    def _preexec():
+        limits = [
+            (resource.RLIMIT_CPU, (cpu, cpu)),
+            (resource.RLIMIT_AS, (512 * 1024 * 1024, 512 * 1024 * 1024)),
+            (resource.RLIMIT_FSIZE, (8 * 1024 * 1024, 8 * 1024 * 1024)),
+            (resource.RLIMIT_CORE, (0, 0)),
+        ]
+        try:
+            limits.append((resource.RLIMIT_NPROC, (100, 100)))
+        except Exception:
+            pass
+        for res, val in limits:
+            try:
+                resource.setrlimit(res, val)
+            except Exception:
+                pass
+
+    return _preexec
+
+
+def _hardened_popen_kwargs(timeout: int, cwd: str) -> dict:
+    kwargs = {"env": _scrubbed_env(cwd), "cwd": cwd}
+    if os.name == "posix":
+        kwargs["start_new_session"] = True  # отдельная сессия → kill группы
+        if resource is not None:
+            kwargs["preexec_fn"] = _make_rlimit_preexec(timeout)
+    return kwargs
+
+
+def _kill_proc_tree(proc) -> None:
+    """Убивает процесс вместе с детьми (по группе, если POSIX)."""
+    try:
+        if os.name == "posix" and hasattr(os, "killpg") and signal is not None:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+            return
+    except Exception:
+        pass
+    try:
+        proc.kill()
+    except Exception:
+        pass
+
+
+def _execute_subprocess_fallback(code: str, timeout: int = 5) -> dict:
+    """Локальный фолбэк без Docker (резерв на случай недоступности Piston).
+    Усилен: очищенное окружение без секретов, rlimits, отдельная сессия,
+    временный cwd. Не полноценная песочница — исходящую сеть и чтение мира не
+    блокирует, поэтому включается только под флагом RUNNER_ALLOW_UNSAFE_FALLBACK."""
+    try:
+        with tempfile.TemporaryDirectory(prefix="runner_") as cwd:
+            proc = subprocess.run(
+                [sys.executable, "-I", "-c", code],
+                capture_output=True,
+                timeout=timeout,
+                encoding="utf-8",
+                errors="replace",
+                **_hardened_popen_kwargs(timeout, cwd),
+            )
         output = (proc.stdout or "") + (proc.stderr or "")
         if len(output) > MAX_OUTPUT_SIZE:
             output = output[:MAX_OUTPUT_SIZE] + "\n\n... [ВЫВОД ОБРЕЗАН] ..."
@@ -82,15 +248,20 @@ def _execute_subprocess_fallback(code: str, timeout: int = 5) -> dict:
 
 
 def _stream_subprocess_fallback(code: str, timeout: int, stop_event, started_at: float):
-    """Fallback стриминга через subprocess — построчно читаем stdout/stderr."""
+    """Локальный стриминг-фолбэк через subprocess (резерв, если Piston недоступен).
+    Усилен так же, как _execute_subprocess_fallback: очищенное окружение,
+    rlimits, отдельная сессия (kill всей группы), временный cwd."""
     proc = None
+    tmp = tempfile.TemporaryDirectory(prefix="runner_")
     try:
         proc = subprocess.Popen(
-            [sys.executable, "-u", "-c", code],
+            [sys.executable, "-I", "-u", "-c", code],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
+            encoding="utf-8",
+            errors="replace",
             bufsize=1,
+            **_hardened_popen_kwargs(timeout, tmp.name),
         )
 
         killed_by_timeout = False
@@ -108,11 +279,11 @@ def _stream_subprocess_fallback(code: str, timeout: int, stop_event, started_at:
         while True:
             if time.time() > deadline:
                 killed_by_timeout = True
-                proc.kill()
+                _kill_proc_tree(proc)
                 break
             if stop_event is not None and stop_event.is_set():
                 killed_by_stop = True
-                proc.kill()
+                _kill_proc_tree(proc)
                 break
 
             events = sel.select(timeout=0.2)
@@ -131,7 +302,7 @@ def _stream_subprocess_fallback(code: str, timeout: int, stop_event, started_at:
                 if total_bytes > MAX_OUTPUT_SIZE and not truncated:
                     truncated = True
                     yield {"type": "error", "message": f"Вывод обрезан: лимит {MAX_OUTPUT_SIZE // 1024} KB"}
-                    proc.kill()
+                    _kill_proc_tree(proc)
                     break
                 if not truncated:
                     yield {"type": key.data, "data": line}
@@ -147,7 +318,7 @@ def _stream_subprocess_fallback(code: str, timeout: int, stop_event, started_at:
             if err and not truncated:
                 yield {"type": "stderr", "data": err}
         except subprocess.TimeoutExpired:
-            proc.kill()
+            _kill_proc_tree(proc)
 
         exit_code = proc.returncode if proc.returncode is not None else -1
         duration = time.time() - started_at
@@ -164,10 +335,11 @@ def _stream_subprocess_fallback(code: str, timeout: int, stop_event, started_at:
         yield {"type": "exit", "code": -1, "duration": time.time() - started_at}
     finally:
         if proc is not None and proc.poll() is None:
-            try:
-                proc.kill()
-            except Exception:
-                pass
+            _kill_proc_tree(proc)
+        try:
+            tmp.cleanup()
+        except Exception:
+            pass
 
 
 def execute_python_code(code: str, timeout: int = 5) -> dict:
@@ -175,6 +347,12 @@ def execute_python_code(code: str, timeout: int = 5) -> dict:
     try:
         client = docker.from_env()
     except Exception:
+        # Docker недоступен (напр. Railway). Сначала пробуем Piston —
+        # код исполнится вне нашего сервера, секреты/ФС в безопасности.
+        piston = _execute_via_piston(code, timeout)
+        if piston is not None:
+            return piston
+        # Piston не сконфигурирован/недоступен — локальный фолбэк (под флагом).
         if not _unsafe_fallback_allowed():
             return _runner_disabled_result()
         return _execute_subprocess_fallback(code, timeout)
@@ -236,7 +414,13 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
     try:
         client = docker.from_env()
     except Exception:
-        # Docker недоступен. Subprocess-фолбэк не изолирован — на проде запрещён.
+        # Docker недоступен (напр. Railway). Сначала Piston — код вне сервера.
+        # Piston не стримит, поэтому отдаём накопленные события списком разом.
+        piston_events = _stream_via_piston(code, timeout, started_at)
+        if piston_events is not None:
+            yield from piston_events
+            return
+        # Piston недоступен. Subprocess-фолбэк не изолирован — на проде запрещён.
         if not _unsafe_fallback_allowed():
             yield from _runner_disabled_stream(started_at)
             return

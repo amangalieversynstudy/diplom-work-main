@@ -43,12 +43,16 @@ CORS_ALLOWED_ORIGIN_REGEXES += [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-# ─── CRIT: code runner — forbid the unsandboxed subprocess fallback ───────
-# On hosts without Docker (e.g. Railway) the runner would otherwise execute
-# arbitrary user Python directly in the app process. Disallow that here; the
-# Docker-sandboxed path still works wherever Docker is available.
+# ─── code runner on Docker-less hosts (Railway) ───────────────────────────
+# Primary path here is the external Piston sandbox (RUNNER_PISTON_URL, inherited
+# from base) — code runs OFF this server, so app secrets/filesystem stay safe.
+# The local subprocess fallback only triggers if Piston is unreachable; it is
+# now hardened (scrubbed env without secrets, CPU/mem/proc rlimits, own session
+# + process-group kill, temp cwd). We keep it ENABLED so a live demo still works
+# if Piston is briefly down. Set RUNNER_ALLOW_UNSAFE_FALLBACK=False to force
+# Piston-only (no local execution).
 RUNNER_ALLOW_UNSAFE_FALLBACK = os.getenv(
-    "RUNNER_ALLOW_UNSAFE_FALLBACK", "False"
+    "RUNNER_ALLOW_UNSAFE_FALLBACK", "True"
 ).lower() in {"1", "true", "yes", "on"}
 
 # Cloudflare Tunnel / nginx ставят запрос как https, но к Daphne приходит http.

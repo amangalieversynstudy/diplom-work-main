@@ -11,11 +11,16 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret")
 # Gemini AI — set in .env or environment; leave empty to disable AI hints
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
-# Code runner: when Docker is unavailable the runner falls back to a plain
-# subprocess that executes user code WITHOUT a sandbox. That is fine locally
-# (trusted developer) but is an RCE risk on a public host. This flag controls
-# whether that unsafe fallback is permitted. Default True for local/dev/tests;
-# production.py overrides it to False.
+# Code runner execution backends, in priority order:
+#   1) Docker sandbox — used wherever a Docker daemon is reachable;
+#   2) Piston — external sandbox API (emkc.org), used when Docker is absent
+#      (e.g. Railway). Code runs OFF our server, so app secrets/FS stay safe;
+#   3) local subprocess fallback — hardened (scrubbed env, rlimits, own session,
+#      temp cwd) but NOT a true sandbox; gated by RUNNER_ALLOW_UNSAFE_FALLBACK.
+# Set RUNNER_PISTON_URL="" to disable the Piston hop (tests do this to stay offline).
+RUNNER_PISTON_URL = os.getenv("RUNNER_PISTON_URL", "https://emkc.org/api/v2/piston")
+RUNNER_PISTON_PYTHON_VERSION = os.getenv("RUNNER_PISTON_PYTHON_VERSION", "3.10.0")
+
 RUNNER_ALLOW_UNSAFE_FALLBACK = os.getenv(
     "RUNNER_ALLOW_UNSAFE_FALLBACK", "True"
 ).lower() in {"1", "true", "yes", "on"}

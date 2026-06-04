@@ -27,8 +27,17 @@ let queue = [];
 api.interceptors.response.use(
   (r) => r,
   async (error) => {
-    const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
+    const original = error.config || {};
+    // 401 от самих auth-эндпоинтов (вход / refresh) — это «неверные или
+    // неактивные данные», а НЕ протухшая сессия. Не запускаем здесь
+    // refresh-redirect: иначе жёсткий window.location='/login' перезагружал
+    // страницу входа и стирал баннер «переотправить активацию». Пусть такой
+    // 401 уходит в catch вызывающего кода (страница логина сама подскажет).
+    const reqUrl = original.url || "";
+    const isAuthEntry =
+      reqUrl.includes("/auth/jwt/create") ||
+      reqUrl.includes("/auth/jwt/refresh");
+    if (error.response?.status === 401 && !original._retry && !isAuthEntry) {
       original._retry = true;
       const { refresh } = getTokens();
       if (!refresh) {

@@ -222,6 +222,22 @@ export const en = {
         invalidGeneric: "Link invalid. Request a new one at the tavern.",
         backToLogin: "Back to the tavern",
       },
+      confirm: {
+        loadingKicker: "Confirmation",
+        loadingTitle: "Checking the seal...",
+        loadingBody: "Hold on while we verify your new address.",
+        successKicker: "Address confirmed",
+        successTitle: "Email updated!",
+        successBody: "Redirecting to your profile...",
+        successToast: "New email confirmed.",
+        errorKicker: "Scroll damaged",
+        errorTitle: "Couldn't confirm",
+        badLink: "Link is broken: token missing.",
+        invalidScroll: "Link is invalid or has expired.",
+        invalidGeneric:
+          "Link invalid. Request the email change again from your profile.",
+        backToProfile: "Back to profile",
+      },
       registerExtra: {
         successWithEmail: "Account created! Check your email — we sent an activation link.",
       },
@@ -369,6 +385,8 @@ export const en = {
         classReset: "Class reset. Pick your new path!",
         saved: "Profile saved successfully!",
         saveError: "Failed to save profile",
+        emailPending:
+          "Confirmation sent to {email}. Your old address stays active until you confirm.",
       },
       title: "Character Sheet",
       account: "Account",

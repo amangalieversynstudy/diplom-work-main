@@ -213,6 +213,11 @@ export const Auth = {
   // Повторная отправка письма активации для неактивированного аккаунта.
   resendVerification: (email) =>
     api.post("/auth/resend-verification/", { email }).then((r) => r.data),
+
+  // Подтверждение смены email по подписанному токену из письма.
+  // Старый адрес остаётся активным, пока ссылка не открыта.
+  confirmEmailChange: (token) =>
+    api.get("/auth/confirm-email/", { params: { token } }).then((r) => r.data),
 };
 
 export const Locations = {

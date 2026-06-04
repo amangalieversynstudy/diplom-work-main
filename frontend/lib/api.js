@@ -186,12 +186,14 @@ export const Profile = {
   },
 };
 
-export async function registerUser({ username, email, password }) {
+export async function registerUser({ username, email, password, teacher_code }) {
   // DRF: POST /api/auth/register/
+  // teacher_code необязателен: верный код → бэкенд выдаёт is_staff (учитель).
   const { data } = await api.post("/auth/register/", {
     username,
     email,
     password,
+    ...(teacher_code ? { teacher_code } : {}),
   });
   return data;
 }

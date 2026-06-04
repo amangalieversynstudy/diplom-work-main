@@ -240,6 +240,10 @@ export const en = {
       },
       registerExtra: {
         successWithEmail: "Account created! Check your email — we sent an activation link.",
+        teacherToggle: "Registering as a teacher?",
+        teacherCodeLabel: "Teacher code",
+        teacherCodePlaceholder: "Enter the code issued by your administrator",
+        teacherCancel: "I'm a student",
       },
       register: {
         title: "Join the Guild",

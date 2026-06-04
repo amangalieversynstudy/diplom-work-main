@@ -85,6 +85,21 @@ class LoginView(TokenObtainPairView):
         if not user:
             user = User.objects.filter(email__iexact=identifier).first()
 
+        # Аккаунт найден, не активирован, и пароль верный → отдаём явный,
+        # независимый от локали код, чтобы фронт показал баннер
+        # «переотправить активацию». Пароль проверяем сами: иначе при неверном
+        # пароле мы бы палили статус активации чужого аккаунта. 403 ещё и
+        # обходит фронтовый перехватчик 401-сессий.
+        password = request.data.get("password", "")
+        if user and not user.is_active and password and user.check_password(password):
+            return Response(
+                {
+                    "detail": "Аккаунт не активирован. Проверьте почту для активации.",
+                    "code": "account_inactive",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         # If user found, replace identifier with actual username in request
         if user:
             from django.http import QueryDict

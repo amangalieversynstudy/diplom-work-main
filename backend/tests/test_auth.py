@@ -24,8 +24,14 @@ def test_register_login_logout():
     )
     assert resp.status_code == 201
 
-    # 2. Логин неактивного пользователя должен упасть
+    # 2. Логин неактивного пользователя с ВЕРНЫМ паролем → 403 + code,
+    #    чтобы фронт показал баннер «переотправить активацию».
     resp = client.post(login_url, {"username": "u1", "password": "TestPass123!"})
+    assert resp.status_code == 403
+    assert resp.json().get("code") == "account_inactive"
+
+    # 2b. Неверный пароль НЕ должен палить статус активации — обычный 401.
+    resp = client.post(login_url, {"username": "u1", "password": "WrongPass999!"})
     assert resp.status_code == 401
 
     # 3. Активация email

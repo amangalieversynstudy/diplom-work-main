@@ -1,4 +1,8 @@
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { Lock, CheckCircle, Compass, ChevronRight } from "lucide-react";
+import { missionStatus } from "../lib/api";
+import { useI18n } from "../lib/i18n";
 
 // Словарь стилей для разных классов проекта (python / django / devops)
 const classThemes = {
@@ -32,8 +36,11 @@ const classThemes = {
 };
 
 function Node({ node, delay = 0, theme }) {
-  const isLocked = node.status === "locked";
-  const isCompleted = node.status === "completed";
+  // Статус берём из DRF-полей миссии (user_progress/available),
+  // т.к. сериализатор не отдаёт плоское поле status.
+  const status = missionStatus(node);
+  const isLocked = status === "locked";
+  const isCompleted = status === "completed";
 
   // Стилизуем узлы в зависимости от их статуса и темы класса
   let nodeStyle = theme.nodeBase;
@@ -54,8 +61,8 @@ function Node({ node, delay = 0, theme }) {
       tabIndex={0}
       className={`absolute w-12 h-12 -ml-6 -mt-6 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 ${nodeStyle} ${fogClass}`}
       style={{
-        left: `${node.x}%`,
-        top: `${node.y}%`,
+        left: `${node.pos_x}%`,
+        top: `${node.pos_y}%`,
       }}
       title={node.title}
     >
@@ -67,16 +74,19 @@ function Node({ node, delay = 0, theme }) {
 }
 
 export default function AdventureMap({ nodes, playerClass }) {
+  const { t, language } = useI18n();
   // Определяем тему, приводя класс к нижнему регистру (или берем дефолт)
   const normalizedClass = playerClass ? playerClass.toLowerCase() : "default";
   const theme = classThemes[normalizedClass] || classThemes.default;
 
   return (
-    // Внешняя оболочка: горизонтальный скролл при узком viewport,
-    // padding по краям чтобы крайние узлы (x≈0/100%) не упирались в борт,
-    // overscroll-behavior-x чтобы свайп карты не триггерил back-навигацию.
+    <>
+    {/* Десктоп: интерактивная карта-схема. Горизонтальный скролл при узком
+        viewport, overscroll-behavior-x чтобы свайп карты не триггерил
+        back-навигацию. На тач-экранах (<lg) скрыта — узлы раскрывают подпись
+        только по hover, поэтому ниже отдаём тапабельный список. */}
     <div
-      className="w-full overflow-x-auto overflow-y-hidden adventure-map-scroll"
+      className="hidden lg:block w-full overflow-x-auto overflow-y-hidden adventure-map-scroll"
       style={{ overscrollBehaviorX: "contain" }}
     >
       <div
@@ -90,10 +100,10 @@ export default function AdventureMap({ nodes, playerClass }) {
             return (
               <motion.line
                 key={`line-${node.id}`}
-                x1={`${prev.x}%`}
-                y1={`${prev.y}%`}
-                x2={`${node.x}%`}
-                y2={`${node.y}%`}
+                x1={`${prev.pos_x}%`}
+                y1={`${prev.pos_y}%`}
+                x2={`${node.pos_x}%`}
+                y2={`${node.pos_y}%`}
                 stroke={theme.lineStroke}
                 strokeWidth="2"
                 strokeDasharray="4 4"
@@ -111,5 +121,74 @@ export default function AdventureMap({ nodes, playerClass }) {
         ))}
       </div>
     </div>
+
+    {/* Мобильный список миссий: на тач-экранах карта-схема нечитаема
+        (подписи узлов только по hover, нужен горизонтальный скролл),
+        поэтому показываем простой тапабельный список со статусом. */}
+    <div className="lg:hidden">
+      {nodes.length === 0 ? (
+        <div className="text-center text-muted py-10 font-mono text-sm">
+          {t("worldsPage.mapEmpty")}
+        </div>
+      ) : (
+        <ol className="space-y-3">
+          {nodes.map((node) => {
+            const status = missionStatus(node);
+            const isCompleted = status === "completed";
+            const isLocked = status === "locked";
+            const Icon = isCompleted ? CheckCircle : isLocked ? Lock : Compass;
+            const title =
+              (language === "en"
+                ? node.title_en || node.title_ru
+                : node.title_ru || node.title_en) ||
+              node.title ||
+              t("worldsPage.missionFallback");
+            const statusLabel = isCompleted
+              ? t("worldsPage.statusCompleted")
+              : isLocked
+              ? t("worldsPage.statusLocked")
+              : t("worldsPage.statusAvailable");
+            return (
+              <li key={node.id}>
+                <Link
+                  href={isLocked ? "#" : `/missions/${node.id}`}
+                  onClick={(e) => isLocked && e.preventDefault()}
+                  aria-disabled={isLocked}
+                  className={`flex items-center gap-3 rounded-2xl border p-3 transition-colors ${
+                    isLocked
+                      ? "border-border bg-panel/60 opacity-70 cursor-default"
+                      : "border-border bg-surface hover:border-primary/50 active:scale-[0.99]"
+                  }`}
+                >
+                  <span
+                    className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl border ${
+                      isCompleted
+                        ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+                        : isLocked
+                        ? "bg-panel border-border text-muted"
+                        : "bg-primary/10 border-primary/30 text-primary"
+                    }`}
+                  >
+                    <Icon size={20} strokeWidth={2.2} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-bold text-text">
+                      {title}
+                    </span>
+                    <span className="block text-[11px] font-bold uppercase tracking-widest text-muted mt-0.5">
+                      {statusLabel}
+                    </span>
+                  </span>
+                  {!isLocked && (
+                    <ChevronRight size={18} className="shrink-0 text-muted" />
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+    </>
   );
 }

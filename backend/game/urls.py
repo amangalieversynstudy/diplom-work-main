@@ -17,6 +17,7 @@ from .views import (
     ProgressViewSet,
     RankViewSet,
     TaskProgressViewSet,
+    TeacherStudentsView,
     TrackViewSet,
 )
 
@@ -39,4 +40,9 @@ urlpatterns = [
     path("ai-mentor/", AIMentorView.as_view(), name="ai_mentor"),
     path("analytics/", AnalyticsView.as_view(), name="analytics"),
     path("achievements/", AchievementsView.as_view(), name="achievements"),
+    path(
+        "teacher/students/",
+        TeacherStudentsView.as_view(),
+        name="teacher_students",
+    ),
 ]

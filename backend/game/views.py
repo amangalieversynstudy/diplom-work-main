@@ -1093,3 +1093,129 @@ class AchievementsView(APIView):
         from .achievements import achievements_for
 
         return Response(achievements_for(request.user))
+
+
+# Студент считается «застрявшим», если у него есть незавершённая (взятая в
+# работу) миссия И при этом либо он давно не заходил, либо уже бьётся над ней
+# слишком много раз. Пороги вынесены в константы, чтобы преподавателю было
+# понятно правило и его можно было подкрутить одним местом.
+STUCK_INACTIVE_DAYS = 7
+STUCK_ATTEMPTS = 5
+
+
+class TeacherStudentsView(APIView):
+    """Сводка по всем ученикам для кабинета преподавателя (staff-only).
+
+    Отвечает на вопрос «кому нужна помощь прямо сейчас?»: по каждому ученику —
+    уровень/XP, сколько миссий завершено и сколько в работе, как давно он был
+    активен, и флаг «застрял» (с причиной), чтобы преподаватель видел узкие
+    места без ручного разбора прогресса.
+
+    GET /api/teacher/students/ -> {students: [...], summary: {...}}
+    """
+
+    permission_classes = [permissions.IsAdminUser]
+
+    @swagger_auto_schema(
+        operation_summary="Teacher cabinet: per-student progress (staff)",
+        operation_description=(
+            "Список учеников (не-staff) с уровнем/XP, числом завершённых и "
+            "взятых в работу миссий, последней активностью и флагом «застрял». "
+            "Доступно только staff."
+        ),
+    )
+    def get(self, request):
+        now = timezone.now()
+        week_ago = now - timedelta(days=7)
+        inactive_before = now - timedelta(days=STUCK_INACTIVE_DAYS)
+        User = get_user_model()
+
+        # Одним запросом: считаем по каждому ученику завершённые / открытые
+        # миссии, максимум попыток на незавершённой и время последней активности.
+        # Все агрегаты идут по одному JOIN к progress, поэтому distinct=True на
+        # Count обязателен, чтобы строки не двоились.
+        rows = (
+            User.objects.filter(is_staff=False)
+            .select_related("profile")
+            .annotate(
+                completed_count=Count(
+                    "progress",
+                    filter=Q(progress__completed=True),
+                    distinct=True,
+                ),
+                in_progress_count=Count(
+                    "progress",
+                    filter=Q(
+                        progress__completed=False,
+                        progress__status="in_progress",
+                    ),
+                    distinct=True,
+                ),
+                max_open_attempts=Max(
+                    "progress__attempts",
+                    filter=Q(progress__completed=False),
+                ),
+                last_completed=Max("progress__completed_at"),
+                last_started=Max("progress__last_started_at"),
+            )
+            .order_by("-profile__xp", "username")
+        )
+
+        students = []
+        stuck_count = 0
+        active_week = 0
+        for s in rows:
+            profile = getattr(s, "profile", None)
+            last_active = max(
+                [t for t in (s.last_completed, s.last_started) if t],
+                default=None,
+            )
+            open_count = s.in_progress_count or 0
+            max_attempts = s.max_open_attempts or 0
+
+            # Правило «застрял»: только при наличии незавершённой миссии.
+            many_attempts = open_count > 0 and max_attempts >= STUCK_ATTEMPTS
+            inactive = open_count > 0 and (
+                last_active is None or last_active < inactive_before
+            )
+            stuck = many_attempts or inactive
+            # Много попыток — более «действенный» сигнал борьбы, чем простое
+            # бездействие, поэтому он в приоритете при выборе причины.
+            stuck_reason = (
+                "many_attempts"
+                if many_attempts
+                else ("inactive" if inactive else None)
+            )
+
+            if stuck:
+                stuck_count += 1
+            if last_active and last_active >= week_ago:
+                active_week += 1
+
+            students.append(
+                {
+                    "id": s.id,
+                    "username": s.username,
+                    "display_name": s.display_name or "",
+                    "level": getattr(profile, "level", 1),
+                    "xp": getattr(profile, "xp", 0),
+                    "current_streak": getattr(profile, "current_streak", 0),
+                    "completed_count": s.completed_count or 0,
+                    "in_progress_count": open_count,
+                    "max_attempts": max_attempts,
+                    "last_active": last_active.isoformat() if last_active else None,
+                    "stuck": stuck,
+                    "stuck_reason": stuck_reason,
+                }
+            )
+
+        return Response(
+            {
+                "students": students,
+                "summary": {
+                    "total_students": len(students),
+                    "stuck_count": stuck_count,
+                    "active_week": active_week,
+                },
+            }
+        )

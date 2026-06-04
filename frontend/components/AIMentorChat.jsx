@@ -89,6 +89,16 @@ export default function AIMentorChat({
     }
   }, [open, hasMana]);
 
+  // Esc закрывает свиток Мудреца (запасной выход помимо крестика).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   const send = async () => {
     const content = draft.trim();
     if (!content || loading) return;
@@ -138,7 +148,7 @@ export default function AIMentorChat({
 
   return (
     <div
-      className={`fixed inset-y-0 right-0 z-[70] flex w-full max-w-md flex-col border-l border-[#d9a441]/30 bg-gradient-to-b from-[#101a30] to-[#0a1322] shadow-[-16px_0_50px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${
+      className={`fixed inset-y-0 right-0 z-[120] flex w-full max-w-md flex-col border-l border-[#d9a441]/30 bg-gradient-to-b from-[#101a30] to-[#0a1322] shadow-[-16px_0_50px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${
         open ? "translate-x-0" : "pointer-events-none translate-x-full"
       }`}
       role="dialog"
@@ -174,7 +184,8 @@ export default function AIMentorChat({
         <button
           onClick={onClose}
           aria-label={t("codeRunner.mentor.close")}
-          className="ml-1 grid h-8 w-8 place-items-center rounded-lg text-[#c9d3e6] transition-colors hover:bg-white/10 hover:text-white"
+          title={t("codeRunner.mentor.close")}
+          className="ml-1 grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/5 text-[#c9d3e6] transition-colors hover:border-[#d9a441]/50 hover:bg-white/10 hover:text-white"
         >
           <X size={18} />
         </button>

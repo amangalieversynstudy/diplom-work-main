@@ -1,5 +1,8 @@
 """Сериализаторы для регистрации и просмотра пользователя."""
 
+import hmac
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
@@ -11,10 +14,15 @@ User = get_user_model()
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    # Необязательный код преподавателя. Верный код → аккаунт получает is_staff
+    # (доступ к аналитике и кабинету). Никогда не возвращается в ответе.
+    teacher_code = serializers.CharField(
+        write_only=True, required=False, allow_blank=True
+    )
 
     class Meta:
         model = User
-        fields = ("id", "username", "email", "password")
+        fields = ("id", "username", "email", "password", "teacher_code")
 
     def validate_email(self, value):
         if value and User.objects.filter(email__iexact=value).exists():
@@ -30,15 +38,32 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        teacher_code = (validated_data.pop("teacher_code", "") or "").strip()
         username = validated_data["username"]
         if User.objects.filter(username=username).exists():
             raise serializers.ValidationError({"username": "Это имя пользователя уже занято."})
         email = validated_data.get("email") or ""
+
+        # Если указан код преподавателя — он должен совпасть с серверным
+        # секретом. Пустой серверный код = регистрация преподавателей выключена,
+        # поэтому любой переданный код отвергаем (нельзя выдать is_staff молча).
+        is_teacher = False
+        if teacher_code:
+            expected = getattr(settings, "TEACHER_INVITE_CODE", "") or ""
+            if not expected or not hmac.compare_digest(teacher_code, expected):
+                raise serializers.ValidationError(
+                    {"teacher_code": "Неверный код преподавателя."}
+                )
+            is_teacher = True
+
         user = User.objects.create_user(
             username=username,
             email=email,
             password=validated_data["password"],
         )
+        if is_teacher:
+            user.is_staff = True
+            user.save(update_fields=["is_staff"])
         return user
 
 

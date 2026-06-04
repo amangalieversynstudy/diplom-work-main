@@ -32,6 +32,12 @@ RUNNER_ALLOW_UNSAFE_FALLBACK = os.getenv(
 # Frontend URL — used in email verification links
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
+# Teacher registration: a shared invite code. A user who supplies the correct
+# code at registration is granted is_staff (teacher) access. An EMPTY code
+# (the default) disables teacher self-registration entirely — no one can gain
+# staff via the public endpoint unless this is explicitly configured in env.
+TEACHER_INVITE_CODE = os.getenv("TEACHER_INVITE_CODE", "")
+
 # Debug flag (enable via env DEBUG=True/False)
 DEBUG = os.getenv("DEBUG", "True").lower() in {"1", "true", "yes", "on"}
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0").split(",")

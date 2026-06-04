@@ -240,6 +240,10 @@ export const ru = {
       },
       registerExtra: {
         successWithEmail: "Аккаунт создан! Проверь почту — мы отправили ссылку для активации.",
+        teacherToggle: "Регистрируетесь как преподаватель?",
+        teacherCodeLabel: "Код преподавателя",
+        teacherCodePlaceholder: "Введите код, выданный администратором",
+        teacherCancel: "Я студент",
       },
       register: {
         title: "Присоединиться к гильдии",

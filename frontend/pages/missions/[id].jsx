@@ -310,13 +310,13 @@ export default function MissionDetail() {
       <div className="h-screen pt-24 bg-bg dark:bg-[#0f0f11] text-text dark:text-gray-200 font-sans flex flex-col">
         {/* Квест-шапка в RPG-стиле: deep-wood band + scroll icon + Melodrama.
             Светлая тема — чистая surface-полоса; тёмная — глубокое дерево. */}
-        <header className="border-b border-border dark:border-[#5c3a21]/40 px-8 py-4 flex items-center justify-between select-none shadow-md bg-surface dark:bg-gradient-to-r dark:from-[#2b1d11] dark:via-[#3a2818] dark:to-[#2b1d11]">
-          <div className="flex items-center gap-4">
-            <div className="p-2.5 bg-primary/10 dark:bg-[#8b5a2b]/25 border border-primary/20 dark:border-[#d4a24c]/60 rounded-xl text-primary dark:text-[#fde68a] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+        <header className="border-b border-border dark:border-[#5c3a21]/40 px-4 sm:px-8 py-4 flex items-center justify-between gap-3 select-none shadow-md bg-surface dark:bg-gradient-to-r dark:from-[#2b1d11] dark:via-[#3a2818] dark:to-[#2b1d11]">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="shrink-0 p-2.5 bg-primary/10 dark:bg-[#8b5a2b]/25 border border-primary/20 dark:border-[#d4a24c]/60 rounded-xl text-primary dark:text-[#fde68a] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
               <ScrollText size={22} />
             </div>
-            <div>
-              <h1 className="font-display text-2xl font-bold text-text dark:text-[#fde68a] tracking-wide dark:drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
+            <div className="min-w-0">
+              <h1 className="font-display text-xl sm:text-2xl font-bold text-text dark:text-[#fde68a] tracking-wide truncate dark:drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
                 {(language === "en"
                   ? mission.title_en || mission.title_ru
                   : mission.title_ru || mission.title_en) ||
@@ -327,7 +327,7 @@ export default function MissionDetail() {
               </p>
             </div>
           </div>
-          <Button variant="secondary" size="sm" onClick={() => router.push("/worlds")}>
+          <Button variant="secondary" size="sm" className="shrink-0" onClick={() => router.push("/worlds")}>
             {t("missionPage.backToMap")}
           </Button>
         </header>

@@ -6,6 +6,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     AIAssistView,
     AIMentorView,
+    AnalyticsView,
     CodeRunnerView,
     IntroStatusView,
     LeaderboardViewSet,
@@ -35,4 +36,5 @@ urlpatterns = [
     path("intro-status/", IntroStatusView.as_view(), name="intro_status"),
     path("ai-assist/", AIAssistView.as_view(), name="ai_assist"),
     path("ai-mentor/", AIMentorView.as_view(), name="ai_mentor"),
+    path("analytics/", AnalyticsView.as_view(), name="analytics"),
 ]

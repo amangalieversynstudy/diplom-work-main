@@ -1,8 +1,21 @@
 """API viewsets for game models with CodeCombat-like logic."""
 
 import logging
+from datetime import timedelta
 
+from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.db.models import (
+    Avg,
+    Count,
+    DurationField,
+    ExpressionWrapper,
+    F,
+    Max,
+    Q,
+    Sum,
+)
+from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions, status, viewsets
@@ -901,5 +914,157 @@ class AIMentorView(APIView):
             {
                 "reply": reply,
                 "remaining_summons": profile.ai_summons,
+            }
+        )
+
+
+class AnalyticsView(APIView):
+    """Platform-wide learning analytics (staff-only).
+
+    Отвечает на главный вопрос оценки эффективности — «как мы измеряем,
+    что платформа реально учит?» — сводными сигналами вовлечённости,
+    прохождения, сложности и привычки (стрики) по всем ученикам.
+
+    GET /api/game/analytics/ -> {users, missions, streaks, total_xp,
+                                 hardest_missions, task_types}
+    """
+
+    permission_classes = [permissions.IsAdminUser]
+
+    @swagger_auto_schema(
+        operation_summary="Platform learning analytics (staff)",
+        operation_description=(
+            "Сводные метрики по всей платформе: вовлечённость, процент "
+            "прохождения, средние попытки/время, активные стрики и самые "
+            "сложные миссии. Доступно только staff."
+        ),
+    )
+    def get(self, request):
+        now = timezone.now()
+        week_ago = now - timedelta(days=7)
+        User = get_user_model()
+
+        progress = Progress.objects.all()
+        attempted = progress.count()
+        completed = progress.filter(completed=True).count()
+        completion_rate = round(100 * completed / attempted, 1) if attempted else 0.0
+
+        avg_attempts = round(
+            progress.filter(attempts__gt=0).aggregate(v=Avg("attempts"))["v"] or 0, 1
+        )
+
+        avg_duration = (
+            progress.filter(
+                completed=True,
+                started_at__isnull=False,
+                completed_at__isnull=False,
+            )
+            .annotate(
+                dur=ExpressionWrapper(
+                    F("completed_at") - F("started_at"),
+                    output_field=DurationField(),
+                )
+            )
+            .aggregate(v=Avg("dur"))["v"]
+        )
+        avg_minutes = (
+            round(avg_duration.total_seconds() / 60, 1) if avg_duration else 0.0
+        )
+
+        active_learners = progress.values("user_id").distinct().count()
+        active_week = (
+            progress.filter(last_started_at__gte=week_ago)
+            .values("user_id")
+            .distinct()
+            .count()
+        )
+
+        profiles = Profile.objects.all()
+        streak_agg = profiles.aggregate(
+            best_current=Max("current_streak"),
+            best_ever=Max("longest_streak"),
+        )
+
+        # Самые «застревающие» миссии — по среднему числу попыток.
+        hardest = []
+        for row in (
+            progress.values(
+                "mission_id",
+                "mission__title",
+                "mission__title_ru",
+                "mission__title_en",
+            )
+            .annotate(
+                learners=Count("user_id", distinct=True),
+                avg_attempts=Avg("attempts"),
+                comp=Count("id", filter=Q(completed=True)),
+                att=Count("id"),
+            )
+            .filter(att__gt=0)
+            .order_by("-avg_attempts", "-att")[:8]
+        ):
+            att = row["att"] or 0
+            title = (
+                row["mission__title_ru"]
+                or row["mission__title"]
+                or row["mission__title_en"]
+                or f"#{row['mission_id']}"
+            )
+            hardest.append(
+                {
+                    "mission_id": row["mission_id"],
+                    "title": title,
+                    "learners": row["learners"],
+                    "avg_attempts": round(row["avg_attempts"] or 0, 1),
+                    "completion_rate": (
+                        round(100 * (row["comp"] or 0) / att, 1) if att else 0.0
+                    ),
+                }
+            )
+
+        # Прохождение по типам заданий (code / quiz / story).
+        task_types = []
+        for row in (
+            TaskProgress.objects.values("task__task_type")
+            .annotate(
+                total=Count("id"),
+                done=Count("id", filter=Q(status="completed")),
+            )
+            .order_by("-total")
+        ):
+            total = row["total"] or 0
+            task_types.append(
+                {
+                    "task_type": row["task__task_type"] or "—",
+                    "total": total,
+                    "completion_rate": (
+                        round(100 * (row["done"] or 0) / total, 1) if total else 0.0
+                    ),
+                }
+            )
+
+        return Response(
+            {
+                "users": {
+                    "total": User.objects.count(),
+                    "active_learners": active_learners,
+                    "active_week": active_week,
+                },
+                "missions": {
+                    "total": Mission.objects.filter(is_active=True).count(),
+                    "attempted": attempted,
+                    "completed": completed,
+                    "completion_rate": completion_rate,
+                    "avg_attempts": avg_attempts,
+                    "avg_minutes": avg_minutes,
+                },
+                "streaks": {
+                    "active": profiles.filter(current_streak__gt=0).count(),
+                    "best_current": streak_agg["best_current"] or 0,
+                    "best_ever": streak_agg["best_ever"] or 0,
+                },
+                "total_xp": profiles.aggregate(v=Sum("xp"))["v"] or 0,
+                "hardest_missions": hardest,
+                "task_types": task_types,
             }
         )

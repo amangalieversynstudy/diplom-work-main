@@ -205,6 +205,12 @@ export const Runner = {
   execute: (code) => api.post("/runner/execute/", { code }),
 };
 
+// Сводная аналитика платформы (только для staff). Отвечает на вопрос
+// комиссии «как вы измеряете эффективность обучения».
+export const Analytics = {
+  get: () => api.get("/analytics/").then((r) => r.data),
+};
+
 export const AIAssist = {
   /**
    * Ask Gemini for a hint on the current task.

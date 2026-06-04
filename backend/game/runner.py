@@ -70,75 +70,95 @@ def _runner_disabled_stream(started_at: float):
     yield {"type": "exit", "code": -1, "duration": time.time() - started_at}
 
 
-# ─── Piston: внешняя песочница (emkc.org) ─────────────────────────────────
-# Когда Docker недоступен, код уходит в Piston. Он исполняется НЕ на нашем
-# сервере, поэтому секреты/ФС приложения недоступны. Стриминга у Piston нет —
-# отдаёт весь вывод разом, что для коротких учебных скриптов нормально.
+# ─── Judge0: внешняя песочница (ce.judge0.com) ────────────────────────────
+# Когда Docker недоступен, код уходит в Judge0 CE. Он исполняется НЕ на нашем
+# сервере, поэтому секреты/ФС приложения недоступны. Публичный инстанс
+# ce.judge0.com работает без ключа; для надёжности можно указать RapidAPI-ключ
+# (RUNNER_JUDGE0_KEY) или адрес своего инстанса (RUNNER_JUDGE0_URL). Стриминга
+# нет — отдаёт весь вывод разом, что для коротких учебных скриптов нормально.
 
-def _piston_settings():
+_JUDGE0_STATUS_ACCEPTED = 3   # код отработал успешно
+_JUDGE0_STATUS_TLE = 5        # Time Limit Exceeded
+
+
+def _judge0_settings():
     try:
         from django.conf import settings
-        url = (getattr(settings, "RUNNER_PISTON_URL", "") or "").rstrip("/")
-        version = getattr(settings, "RUNNER_PISTON_PYTHON_VERSION", "") or "3.10.0"
-        return url, version
+        url = (getattr(settings, "RUNNER_JUDGE0_URL", "") or "").rstrip("/")
+        key = getattr(settings, "RUNNER_JUDGE0_KEY", "") or ""
+        host = getattr(settings, "RUNNER_JUDGE0_HOST", "") or "judge0-ce.p.rapidapi.com"
+        lang = int(getattr(settings, "RUNNER_JUDGE0_LANGUAGE_ID", 71) or 71)
+        return url, key, host, lang
     except Exception:
-        return "", "3.10.0"
+        return "", "", "judge0-ce.p.rapidapi.com", 71
 
 
-def _piston_run(code: str, timeout: int):
-    """Гоняет код в Piston. Возвращает {stdout, stderr, code, signal} или None,
-    если Piston не сконфигурирован/недоступен/ответил ошибкой (тогда вызывающий
-    уходит в локальный фолбэк)."""
-    url, version = _piston_settings()
+def _judge0_run(code: str, timeout: int):
+    """Гоняет код в Judge0. Возвращает разобранный ответ или None, если Judge0
+    не сконфигурирован/недоступен/ответил ошибкой (тогда вызывающий уходит в
+    локальный фолбэк)."""
+    url, key, host, lang = _judge0_settings()
     if not url:
         return None
+    headers = {"Content-Type": "application/json"}
+    if key:  # RapidAPI-режим (или self-host с ключом)
+        headers["X-RapidAPI-Key"] = key
+        headers["X-RapidAPI-Host"] = host
     try:
         resp = requests.post(
-            f"{url}/execute",
+            f"{url}/submissions?base64_encoded=false&wait=true",
             json={
-                "language": "python",
-                "version": version,
-                "files": [{"content": code}],
-                "run_timeout": max(1, timeout) * 1000,
-                "compile_timeout": 10_000,
+                "source_code": code,
+                "language_id": lang,
+                "cpu_time_limit": max(1, timeout),
+                "wall_time_limit": max(1, timeout) + 5,
             },
-            timeout=max(1, timeout) + 15,
+            headers=headers,
+            timeout=max(1, timeout) + 20,
         )
-        if resp.status_code != 200:
+        if resp.status_code not in (200, 201):
             return None
         data = resp.json()
-        run = data.get("run")
-        if not isinstance(run, dict):
-            return None
+        status = data.get("status") or {}
         return {
-            "stdout": run.get("stdout") or "",
-            "stderr": run.get("stderr") or "",
-            "code": run.get("code") if run.get("code") is not None else -1,
-            "signal": run.get("signal"),
+            "stdout": data.get("stdout") or "",
+            "stderr": data.get("stderr") or "",
+            "compile_output": data.get("compile_output") or "",
+            "status_id": status.get("id"),
         }
     except Exception:
         return None
 
 
-def _execute_via_piston(code: str, timeout: int):
-    r = _piston_run(code, timeout)
+def _judge0_streams(r) -> tuple:
+    """(stdout, stderr) из ответа Judge0; compile_output клеим к stderr."""
+    out = r.get("stdout") or ""
+    err = (r.get("compile_output") or "") + (r.get("stderr") or "")
+    return out, err
+
+
+def _execute_via_judge0(code: str, timeout: int):
+    r = _judge0_run(code, timeout)
     if r is None:
         return None
-    output = (r["stdout"] or "") + (r["stderr"] or "")
+    out, err = _judge0_streams(r)
+    output = out + err
+    if r.get("status_id") == _JUDGE0_STATUS_TLE:
+        output += "\nTimeout: превышен лимит времени выполнения."
     if len(output) > MAX_OUTPUT_SIZE:
         output = output[:MAX_OUTPUT_SIZE] + "\n\n... [ВЫВОД ОБРЕЗАН] ..."
-    return {"status": "success" if r["code"] == 0 else "error", "output": output}
+    ok = r.get("status_id") == _JUDGE0_STATUS_ACCEPTED
+    return {"status": "success" if ok else "error", "output": output}
 
 
-def _stream_via_piston(code: str, timeout: int, started_at: float):
-    """Возвращает СПИСОК событий (stdout/stderr/exit) или None, если Piston
-    недоступен. Не генератор — чтобы вызывающий мог отличить «нет Piston» от
-    «Piston дал пустой вывод» и корректно уйти в фолбэк."""
-    r = _piston_run(code, timeout)
+def _stream_via_judge0(code: str, timeout: int, started_at: float):
+    """Возвращает СПИСОК событий (stdout/stderr/exit) или None, если Judge0
+    недоступен. Не генератор — чтобы вызывающий мог отличить «нет Judge0» от
+    «Judge0 дал пустой вывод» и корректно уйти в фолбэк."""
+    r = _judge0_run(code, timeout)
     if r is None:
         return None
-    out = r["stdout"] or ""
-    err = r["stderr"] or ""
+    out, err = _judge0_streams(r)
     if len(out) > MAX_OUTPUT_SIZE:
         out = out[:MAX_OUTPUT_SIZE] + "\n\n... [ВЫВОД ОБРЕЗАН] ..."
     events = []
@@ -146,12 +166,10 @@ def _stream_via_piston(code: str, timeout: int, started_at: float):
         events.append({"type": "stdout", "data": out})
     if err:
         events.append({"type": "stderr", "data": err})
-    if r.get("signal"):
-        events.append({
-            "type": "error",
-            "message": f"Процесс остановлен сигналом {r['signal']} (таймаут или лимит ресурсов).",
-        })
-    events.append({"type": "exit", "code": r["code"], "duration": time.time() - started_at})
+    if r.get("status_id") == _JUDGE0_STATUS_TLE:
+        events.append({"type": "error", "message": "Timeout: превышен лимит времени выполнения."})
+    code_val = 0 if r.get("status_id") == _JUDGE0_STATUS_ACCEPTED else 1
+    events.append({"type": "exit", "code": code_val, "duration": time.time() - started_at})
     return events
 
 
@@ -220,7 +238,7 @@ def _kill_proc_tree(proc) -> None:
 
 
 def _execute_subprocess_fallback(code: str, timeout: int = 5) -> dict:
-    """Локальный фолбэк без Docker (резерв на случай недоступности Piston).
+    """Локальный фолбэк без Docker (резерв на случай недоступности Judge0).
     Усилен: очищенное окружение без секретов, rlimits, отдельная сессия,
     временный cwd. Не полноценная песочница — исходящую сеть и чтение мира не
     блокирует, поэтому включается только под флагом RUNNER_ALLOW_UNSAFE_FALLBACK."""
@@ -248,7 +266,7 @@ def _execute_subprocess_fallback(code: str, timeout: int = 5) -> dict:
 
 
 def _stream_subprocess_fallback(code: str, timeout: int, stop_event, started_at: float):
-    """Локальный стриминг-фолбэк через subprocess (резерв, если Piston недоступен).
+    """Локальный стриминг-фолбэк через subprocess (резерв, если Judge0 недоступен).
     Усилен так же, как _execute_subprocess_fallback: очищенное окружение,
     rlimits, отдельная сессия (kill всей группы), временный cwd."""
     proc = None
@@ -347,12 +365,12 @@ def execute_python_code(code: str, timeout: int = 5) -> dict:
     try:
         client = docker.from_env()
     except Exception:
-        # Docker недоступен (напр. Railway). Сначала пробуем Piston —
+        # Docker недоступен (напр. Railway). Сначала пробуем Judge0 —
         # код исполнится вне нашего сервера, секреты/ФС в безопасности.
-        piston = _execute_via_piston(code, timeout)
-        if piston is not None:
-            return piston
-        # Piston не сконфигурирован/недоступен — локальный фолбэк (под флагом).
+        judge0 = _execute_via_judge0(code, timeout)
+        if judge0 is not None:
+            return judge0
+        # Judge0 не сконфигурирован/недоступен — локальный фолбэк (под флагом).
         if not _unsafe_fallback_allowed():
             return _runner_disabled_result()
         return _execute_subprocess_fallback(code, timeout)
@@ -414,13 +432,13 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
     try:
         client = docker.from_env()
     except Exception:
-        # Docker недоступен (напр. Railway). Сначала Piston — код вне сервера.
-        # Piston не стримит, поэтому отдаём накопленные события списком разом.
-        piston_events = _stream_via_piston(code, timeout, started_at)
-        if piston_events is not None:
-            yield from piston_events
+        # Docker недоступен (напр. Railway). Сначала Judge0 — код вне сервера.
+        # Judge0 не стримит, поэтому отдаём накопленные события списком разом.
+        judge0_events = _stream_via_judge0(code, timeout, started_at)
+        if judge0_events is not None:
+            yield from judge0_events
             return
-        # Piston недоступен. Subprocess-фолбэк не изолирован — на проде запрещён.
+        # Judge0 недоступен. Subprocess-фолбэк не изолирован — на проде запрещён.
         if not _unsafe_fallback_allowed():
             yield from _runner_disabled_stream(started_at)
             return

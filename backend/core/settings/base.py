@@ -13,13 +13,17 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
 # Code runner execution backends, in priority order:
 #   1) Docker sandbox — used wherever a Docker daemon is reachable;
-#   2) Piston — external sandbox API (emkc.org), used when Docker is absent
-#      (e.g. Railway). Code runs OFF our server, so app secrets/FS stay safe;
+#   2) Judge0 — external sandbox API (ce.judge0.com), used when Docker is absent
+#      (e.g. Railway). Code runs OFF our server, so app secrets/FS stay safe.
+#      The public instance works keyless; set RUNNER_JUDGE0_KEY (RapidAPI) or
+#      RUNNER_JUDGE0_URL (self-hosted) for a more reliable/private endpoint;
 #   3) local subprocess fallback — hardened (scrubbed env, rlimits, own session,
 #      temp cwd) but NOT a true sandbox; gated by RUNNER_ALLOW_UNSAFE_FALLBACK.
-# Set RUNNER_PISTON_URL="" to disable the Piston hop (tests do this to stay offline).
-RUNNER_PISTON_URL = os.getenv("RUNNER_PISTON_URL", "https://emkc.org/api/v2/piston")
-RUNNER_PISTON_PYTHON_VERSION = os.getenv("RUNNER_PISTON_PYTHON_VERSION", "3.10.0")
+# Set RUNNER_JUDGE0_URL="" to disable the Judge0 hop (tests do this to stay offline).
+RUNNER_JUDGE0_URL = os.getenv("RUNNER_JUDGE0_URL", "https://ce.judge0.com")
+RUNNER_JUDGE0_KEY = os.getenv("RUNNER_JUDGE0_KEY", "")
+RUNNER_JUDGE0_HOST = os.getenv("RUNNER_JUDGE0_HOST", "judge0-ce.p.rapidapi.com")
+RUNNER_JUDGE0_LANGUAGE_ID = int(os.getenv("RUNNER_JUDGE0_LANGUAGE_ID", "71"))
 
 RUNNER_ALLOW_UNSAFE_FALLBACK = os.getenv(
     "RUNNER_ALLOW_UNSAFE_FALLBACK", "True"

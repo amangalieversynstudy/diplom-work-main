@@ -19,6 +19,8 @@ export default function CodemancerStage({
   hpPct = 100,
   mpPct = 100,
   heroName = "Alaric",
+  phase = "idle", // idle | casting | victory | defeat — реакция на запуск кода
+  tick = 0, // меняется на каждое событие, перезапускает one-shot анимации
 }) {
   const clamp = (n) => Math.max(0, Math.min(100, Number(n) || 0));
   const hp = clamp(hpPct);
@@ -195,8 +197,19 @@ export default function CodemancerStage({
           </g>
         </g>
 
-        {/* hero (Alaric) */}
-        <g className="cm-hero" transform="translate(300 290)">
+        {/* hero (Alaric) — реагирует на запуск кода: cast / win / hurt */}
+        <g
+          className={`cm-hero${
+            phase === "casting"
+              ? " cm-cast"
+              : phase === "victory"
+              ? " cm-win"
+              : phase === "defeat"
+              ? " cm-hurt"
+              : ""
+          }`}
+          transform="translate(300 290)"
+        >
           <ellipse cx="20" cy="110" rx="34" ry="6" fill="#000" opacity=".45" />
           <rect x="6" y="78" width="12" height="22" fill="#3a2814" />
           <rect x="22" y="78" width="12" height="22" fill="#3a2814" />
@@ -220,10 +233,29 @@ export default function CodemancerStage({
             <rect x="-2" y="10" width="10" height="3" fill="#caa05a" />
             <polygon points="3,12 0,50 6,50" fill="#e6ebf2" stroke="#7a8090" strokeWidth="1" />
           </g>
+          {/* заряд заклинания у руки — горит, пока выполняется код игрока */}
+          {phase === "casting" && (
+            <g transform="translate(42 50)">
+              <g className="cm-charge">
+                <circle r="8" fill="url(#cm-golemGlow)" />
+                <circle r="3" fill="#ffe9a8" />
+                <circle r="1.3" fill="#fffaf0" />
+              </g>
+            </g>
+          )}
         </g>
 
-        {/* golem */}
-        <g transform="translate(470 270)">
+        {/* golem — вздрагивает при успехе игрока, наступает при его ошибке */}
+        <g
+          transform="translate(470 270)"
+          className={`cm-golem${
+            phase === "victory"
+              ? " cm-golem-hit"
+              : phase === "defeat"
+              ? " cm-golem-roar"
+              : ""
+          }`}
+        >
           <circle cx="42" cy="60" r="80" fill="url(#cm-golemGlow)" className="cm-golem-glow" />
           <ellipse cx="42" cy="128" rx="40" ry="7" fill="#000" opacity=".45" />
           <rect x="10" y="40" width="64" height="60" fill="#9c7a3a" />
@@ -242,6 +274,37 @@ export default function CodemancerStage({
           <path d="M 24 50 l 8 14 l -4 14" stroke="#5a3a14" strokeWidth="1.5" fill="none" />
           <path d="M 56 56 l -6 18" stroke="#5a3a14" strokeWidth="1.5" fill="none" />
         </g>
+
+        {/* успех: снаряд героя летит в голема + вспышка попадания */}
+        {phase === "victory" && (
+          <g key={`hit-${tick}`}>
+            <g transform="translate(338 340)">
+              <g className="cm-bolt">
+                <circle r="7" fill="url(#cm-golemGlow)" />
+                <circle r="3" fill="#ffe9a8" />
+                <circle r="1.3" fill="#fffaf0" />
+              </g>
+            </g>
+            <g
+              className="cm-impact"
+              style={{ animationDelay: "0.42s" }}
+              transform="translate(510 334)"
+            >
+              <circle r="20" fill="none" stroke="#ffe9a8" strokeWidth="3" />
+            </g>
+          </g>
+        )}
+
+        {/* ошибка: заклинание срывается у руки героя */}
+        {phase === "defeat" && (
+          <g
+            key={`fizz-${tick}`}
+            className="cm-impact"
+            transform="translate(338 340)"
+          >
+            <circle r="12" fill="none" stroke="#9aa3b2" strokeWidth="2.5" />
+          </g>
+        )}
       </svg>
 
       {/* нижний фейд — мягкий стык с тёмным доком страницы */}
@@ -308,11 +371,76 @@ export default function CodemancerStage({
         }
         .cm-hero {
           transform-box: view-box;
-          animation: cm-bob 2.8s ease-in-out infinite;
+          animation: cm-bob 2.4s ease-in-out infinite;
         }
         @keyframes cm-bob {
           0%, 100% { transform: translate(300px, 290px); }
-          50% { transform: translate(300px, 286px); }
+          50% { transform: translate(300px, 281px); }
+        }
+        /* ── боевые реакции, завязанные на запуск кода игроком ── */
+        .cm-hero.cm-cast { animation: cm-cast 0.7s ease-in-out infinite; }
+        @keyframes cm-cast {
+          0%, 100% { transform: translate(300px, 288px); }
+          50% { transform: translate(305px, 285px); }
+        }
+        .cm-hero.cm-win { animation: cm-win 1s ease; }
+        @keyframes cm-win {
+          0% { transform: translate(300px, 290px); }
+          25% { transform: translate(300px, 273px); }
+          45% { transform: translate(300px, 284px); }
+          68% { transform: translate(300px, 278px); }
+          100% { transform: translate(300px, 290px); }
+        }
+        .cm-hero.cm-hurt { animation: cm-hurt 0.7s ease; }
+        @keyframes cm-hurt {
+          0% { transform: translate(300px, 290px); }
+          20% { transform: translate(288px, 291px); }
+          45% { transform: translate(303px, 289px); }
+          70% { transform: translate(298px, 290px); }
+          100% { transform: translate(300px, 290px); }
+        }
+        .cm-charge {
+          transform-box: fill-box;
+          transform-origin: center;
+          animation: cm-charge 0.7s ease-in-out infinite;
+        }
+        @keyframes cm-charge {
+          0%, 100% { transform: scale(0.7); opacity: 0.5; }
+          50% { transform: scale(1.25); opacity: 1; }
+        }
+        .cm-bolt {
+          transform-box: fill-box;
+          animation: cm-bolt 0.5s ease-in both;
+        }
+        @keyframes cm-bolt {
+          0% { transform: translate(0, 0) scale(0.7); opacity: 0; }
+          20% { opacity: 1; }
+          85% { opacity: 1; }
+          100% { transform: translate(172px, -2px) scale(0.6); opacity: 0; }
+        }
+        .cm-impact {
+          transform-box: fill-box;
+          transform-origin: center;
+          animation: cm-impact 0.55s ease-out both;
+        }
+        @keyframes cm-impact {
+          0% { transform: scale(0.2); opacity: 0.9; }
+          100% { transform: scale(2); opacity: 0; }
+        }
+        .cm-golem { transform-box: view-box; }
+        .cm-golem.cm-golem-hit { animation: cm-golem-hit 0.85s ease; }
+        @keyframes cm-golem-hit {
+          0%, 45%, 100% { transform: translate(470px, 270px); }
+          55% { transform: translate(479px, 272px); }
+          67% { transform: translate(463px, 270px); }
+          79% { transform: translate(476px, 271px); }
+          90% { transform: translate(467px, 270px); }
+        }
+        .cm-golem.cm-golem-roar { animation: cm-golem-roar 0.7s ease; }
+        @keyframes cm-golem-roar {
+          0%, 100% { transform: translate(470px, 270px); }
+          35% { transform: translate(452px, 265px); }
+          55% { transform: translate(458px, 267px); }
         }
         .cm-golem-glow {
           animation: cm-glow 4s ease-in-out infinite;
@@ -333,8 +461,16 @@ export default function CodemancerStage({
           .cm-stars circle,
           .cm-axe,
           .cm-hero,
+          .cm-hero.cm-cast,
+          .cm-hero.cm-win,
+          .cm-hero.cm-hurt,
+          .cm-charge,
+          .cm-bolt,
+          .cm-impact,
           .cm-golem-glow,
-          .cm-golem-eye {
+          .cm-golem-eye,
+          .cm-golem.cm-golem-hit,
+          .cm-golem.cm-golem-roar {
             animation: none;
           }
         }

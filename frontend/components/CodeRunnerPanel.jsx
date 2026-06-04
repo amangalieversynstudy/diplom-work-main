@@ -13,6 +13,10 @@ import {
   Bot,
   GripHorizontal,
   RotateCcw,
+  Maximize2,
+  Minimize2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Profile, getRunnerWsUrl } from "../lib/api";
@@ -53,15 +57,16 @@ const wrapWords = (text, width = 70) => {
   return result;
 };
 
-const MIN_TERMINAL_H = 200;
+const MIN_TERMINAL_H = 160;
 const MAX_TERMINAL_H = 1000;
-const DEFAULT_TERMINAL_H = 550;
+const DEFAULT_TERMINAL_H = 320;
 
 export default function CodeRunnerPanel({
   task,
   code,
   onChange,
   onTestPassed,
+  onRunStateChange,
   inventoryCounts = { ai_summons: 0, hint_scrolls: 0, skeleton_scrolls: 0 },
   onInventoryUpdate,
 }) {
@@ -73,6 +78,8 @@ export default function CodeRunnerPanel({
   const [usingItem, setUsingItem] = useState(false);
   const [termH, setTermH] = useState(DEFAULT_TERMINAL_H);
   const [mentorOpen, setMentorOpen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [termCollapsed, setTermCollapsed] = useState(false);
   const dragRef = useRef(null);
 
   // Снимок оригинального starter-кода задачи — обновляется ТОЛЬКО при смене
@@ -103,6 +110,14 @@ export default function CodeRunnerPanel({
       }
     };
   }, []);
+
+  // Esc выходит из полноэкранного режима редактора.
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e) => { if (e.key === "Escape") setFullscreen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fullscreen]);
 
   // ── Drag-to-resize terminal ───────────────────────────────────────────────
   const onDragStart = (e) => {
@@ -153,6 +168,7 @@ export default function CodeRunnerPanel({
 
     setRunning(true);
     setLastExit(null);
+    onRunStateChange?.("running");
 
     let ws;
     try {
@@ -189,6 +205,7 @@ export default function CodeRunnerPanel({
               `${sym} exit ${msg.code} · ${Number(msg.duration || 0).toFixed(2)}s\r\n`
           );
           setLastExit({ code: msg.code, duration: msg.duration });
+          onRunStateChange?.(msg.code === 0 ? "success" : "error");
           if (msg.code === 0 && !testPassedFired && onTestPassed) {
             testPassedFired = true;
             onTestPassed({ status: "success", code, exit_code: msg.code, duration: msg.duration });
@@ -211,7 +228,7 @@ export default function CodeRunnerPanel({
         toast.error(t("codeRunner.sessionExpired"));
       }
     };
-  }, [running, code, onTestPassed, t]);
+  }, [running, code, onTestPassed, onRunStateChange, t]);
 
   // ── Inventory handlers ────────────────────────────────────────────────────
   const handleUseItem = useCallback(
@@ -276,7 +293,11 @@ export default function CodeRunnerPanel({
   const lineArray = Array.from({ length: Math.max(25, lines) }, (_, i) => i + 1);
 
   return (
-    <div className="flex flex-col h-full bg-[#1e1e1e] font-mono">
+    <div
+      className={`flex flex-col font-mono bg-[#1e1e1e] ${
+        fullscreen ? "fixed inset-0 z-[60]" : "h-full"
+      }`}
+    >
       {/* Editor Tabs & Toolbar */}
       <div className="flex items-center bg-[#252526] overflow-x-auto select-none border-l border-[#333]">
         <div className="flex items-center gap-2 bg-[#1e1e1e] px-4 py-2 border-t border-[#3794ff] min-w-max cursor-pointer">
@@ -318,6 +339,16 @@ export default function CodeRunnerPanel({
 
         <div className="flex-1" />
         <div className="px-3 flex items-center gap-2 bg-[#252526]">
+          {/* Развернуть редактор на весь экран / свернуть обратно. */}
+          <button
+            onClick={() => setFullscreen((v) => !v)}
+            title={fullscreen ? t("codeRunner.exitFullscreen") : t("codeRunner.fullscreen")}
+            aria-label={fullscreen ? t("codeRunner.exitFullscreen") : t("codeRunner.fullscreen")}
+            className="grid h-7 w-7 place-items-center rounded border border-[#3a3a3a] bg-[#2d2d2d] text-[#cccccc] hover:bg-[#3a3a3a] hover:text-white transition-colors"
+          >
+            {fullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+          </button>
+
           {/* Reset code — всегда активна, не тратит инвентарь.
               Возвращает к initialCodeRef (стартеру задачи). */}
           {/* Кнопки в стиле мокапа Codemancer: «самоцветы» с фаской —
@@ -376,18 +407,23 @@ export default function CodeRunnerPanel({
         />
       </div>
 
-      {/* Drag handle */}
-      <div
-        ref={dragRef}
-        onMouseDown={onDragStart}
-        className="h-2 bg-[#252526] border-t border-b border-[#333] flex items-center justify-center cursor-row-resize hover:bg-[#2a2d2e] select-none group"
-        title={t("codeRunner.resizeTitle")}
-      >
-        <GripHorizontal size={12} className="text-[#555] group-hover:text-[#888]" />
-      </div>
+      {/* Drag handle — только когда терминал развёрнут */}
+      {!termCollapsed && (
+        <div
+          ref={dragRef}
+          onMouseDown={onDragStart}
+          className="h-2 bg-[#252526] border-t border-b border-[#333] flex items-center justify-center cursor-row-resize hover:bg-[#2a2d2e] select-none group"
+          title={t("codeRunner.resizeTitle")}
+        >
+          <GripHorizontal size={12} className="text-[#555] group-hover:text-[#888]" />
+        </div>
+      )}
 
-      {/* Terminal — adaptive height */}
-      <div style={{ height: termH }} className="flex flex-col bg-[#1e1e1e] border-l border-[#333] flex-shrink-0">
+      {/* Terminal — adaptive height, сворачиваемый (xterm остаётся смонтирован) */}
+      <div
+        style={termCollapsed ? undefined : { height: termH }}
+        className="flex flex-col bg-[#1e1e1e] border-l border-[#333] flex-shrink-0"
+      >
         <div className="flex items-center gap-4 px-4 pt-2 border-b border-[#333] select-none">
           <span className="text-[11px] uppercase tracking-wider text-white border-b border-white pb-2 font-semibold flex items-center gap-2">
             <TerminalIcon size={14} /> TERMINAL
@@ -403,8 +439,17 @@ export default function CodeRunnerPanel({
               exit {lastExit.code} · {Number(lastExit.duration || 0).toFixed(2)}s
             </span>
           )}
+          <div className="flex-1" />
+          <button
+            onClick={() => setTermCollapsed((v) => !v)}
+            title={termCollapsed ? t("codeRunner.terminalExpand") : t("codeRunner.terminalCollapse")}
+            aria-label={termCollapsed ? t("codeRunner.terminalExpand") : t("codeRunner.terminalCollapse")}
+            className="mb-1 grid h-6 w-6 place-items-center rounded text-[#888] hover:bg-[#333] hover:text-white transition-colors"
+          >
+            {termCollapsed ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+          </button>
         </div>
-        <div className="flex-1 min-h-0 p-2">
+        <div className={`min-h-0 ${termCollapsed ? "h-0 overflow-hidden p-0" : "flex-1 p-2"}`}>
           <Terminal ref={termRef} />
         </div>
       </div>

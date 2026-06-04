@@ -653,6 +653,10 @@ export const en = {
       placeholder: "# Write your code here...",
       starterComment: "# Write your code below",
       resizeTitle: "Drag to resize the terminal",
+      fullscreen: "Expand editor to full screen",
+      exitFullscreen: "Exit full screen",
+      terminalCollapse: "Collapse terminal",
+      terminalExpand: "Expand terminal",
       mentor: {
         title: "The Sage",
         subtitle: "AI mentor",

@@ -16,6 +16,45 @@ from .serializers_auth import RegisterSerializer, UserDetailSerializer
 User = get_user_model()
 
 
+def _send_verification_email(user):
+    """Send the account-activation email with a uid+token link.
+
+    Reused by :class:`RegisterView` (on signup) and
+    :class:`ResendVerificationView` (when the user requests a fresh link).
+    No-op when the user has no email. Raises on send failure so callers can
+    decide whether to swallow the error.
+    """
+    if not user.email:
+        return
+    import os
+
+    from django.conf import settings
+    from django.contrib.auth.tokens import default_token_generator
+    from django.core.mail import send_mail
+    from django.utils.encoding import force_bytes
+    from django.utils.http import urlsafe_base64_encode
+
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    frontend_url = (
+        getattr(settings, "FRONTEND_URL", None)
+        or os.environ.get("FRONTEND_URL")
+        or "http://localhost:3000"
+    )
+    verify_link = f"{frontend_url.rstrip('/')}/verify-email?uid={uid}&token={token}"
+    send_mail(
+        "Подтверждение email — RPG Academy",
+        (
+            f"Привет, {user.username}!\n\n"
+            "Перейди по ссылке, чтобы активировать аккаунт:\n"
+            f"{verify_link}\n\n"
+            "Если ты не регистрировался — проигнорируй это письмо."
+        ),
+        None,
+        [user.email],
+    )
+
+
 # MID-02: rate-limiting декоратор для брутфорс-защиты
 # 10 попыток/мин с одного IP — для login и register
 @method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True), name="post")
@@ -88,36 +127,7 @@ class RegisterView(generics.CreateAPIView):
 
         # send verification email (console backend in dev)
         try:
-            import os
-
-            from django.conf import settings
-            from django.contrib.auth.tokens import default_token_generator
-            from django.core.mail import send_mail
-            from django.utils.encoding import force_bytes
-            from django.utils.http import urlsafe_base64_encode
-
-            if user.email:
-                uid = urlsafe_base64_encode(force_bytes(user.pk))
-                token = default_token_generator.make_token(user)
-                frontend_url = (
-                    getattr(settings, "FRONTEND_URL", None)
-                    or os.environ.get("FRONTEND_URL")
-                    or "http://localhost:3000"
-                )
-                verify_link = (
-                    f"{frontend_url.rstrip('/')}/verify-email?uid={uid}&token={token}"
-                )
-                send_mail(
-                    "Подтверждение email — RPG Academy",
-                    (
-                        f"Привет, {user.username}!\n\n"
-                        "Перейди по ссылке, чтобы активировать аккаунт:\n"
-                        f"{verify_link}\n\n"
-                        "Если ты не регистрировался — проигнорируй это письмо."
-                    ),
-                    None,
-                    [user.email],
-                )
+            _send_verification_email(user)
         except Exception as e:
             # don't fail registration if email backend misconfigured, but log it
             import logging
@@ -190,3 +200,39 @@ class VerifyEmailView(APIView):
             user.save()
             return Response({"detail": "Email verified"})
         return Response({"detail": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@method_decorator(
+    ratelimit(key="ip", rate="5/m", method="POST", block=True), name="post"
+)
+class ResendVerificationView(APIView):
+    """Re-send the activation email for an inactive account.
+
+    Always returns the same generic response regardless of whether the email
+    exists or is already active — this avoids leaking which addresses are
+    registered. Uses the same uid+token flow as :class:`VerifyEmailView`.
+    """
+
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request):
+        """Issue a fresh activation link if the email maps to an inactive user."""
+        email = (request.data.get("email") or "").strip()
+        generic = Response(
+            {
+                "detail": (
+                    "Если аккаунт существует и ещё не активирован, "
+                    "мы отправили новое письмо."
+                )
+            }
+        )
+        if not email:
+            return generic
+        user = User.objects.filter(email__iexact=email).first()
+        if user and not user.is_active:
+            try:
+                _send_verification_email(user)
+            except Exception as e:
+                import logging
+                logging.error("[RESEND] Email send failed for %s: %r", email, e)
+        return generic

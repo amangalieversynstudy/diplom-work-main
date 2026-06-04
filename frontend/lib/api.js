@@ -187,6 +187,25 @@ export async function registerUser({ username, email, password }) {
   return data;
 }
 
+// Восстановление доступа: сброс пароля и повторная отправка письма активации.
+// Все ответы намеренно «обезличены» на бэкенде (не раскрывают, есть ли email),
+// поэтому фронт всегда показывает один и тот же успех.
+export const Auth = {
+  // Запрос ссылки на сброс пароля по email.
+  requestPasswordReset: (email) =>
+    api.post("/auth/password-reset/", { email }).then((r) => r.data),
+
+  // Подтверждение нового пароля по uid+token из письма.
+  confirmPasswordReset: ({ uid, token, new_password }) =>
+    api
+      .post("/auth/password-reset-confirm/", { uid, token, new_password })
+      .then((r) => r.data),
+
+  // Повторная отправка письма активации для неактивированного аккаунта.
+  resendVerification: (email) =>
+    api.post("/auth/resend-verification/", { email }).then((r) => r.data),
+};
+
 export const Locations = {
   list: () => api.get("/locations/").then((r) => r.data),
   get: (id) => api.get(`/locations/${id}/`).then((r) => r.data),

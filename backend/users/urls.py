@@ -2,9 +2,7 @@
 
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from .views import UseItemView
-from .views import EmailVerifyView, ResendVerifyView
-from .views import ProfileMeView, UserViewSet
+from .views import ProfileMeView, UseItemView, UserViewSet
 
 router = DefaultRouter()
 router.register(r"users", UserViewSet)
@@ -15,6 +13,4 @@ urlpatterns = [
     path("profile", ProfileMeView.as_view(), name="profile"),
     path("profile/me/", ProfileMeView.as_view(), name="profile-me"),
     path('profile/use-item/', UseItemView.as_view(), name='use-item'),
-    path("auth/verify/<uuid:token_id>/", EmailVerifyView.as_view(), name="verify-email"),
-    path("auth/resend-verify/", ResendVerifyView.as_view(), name="resend-verify"),
 ]

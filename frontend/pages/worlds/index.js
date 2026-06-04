@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Layout from "../../components/Layout";
 import { useDictionary } from "../../lib/i18n";
-import { Lock, CheckCircle, X as XIcon, Compass } from "lucide-react";
+import { Lock, CheckCircle, X as XIcon, Compass, ChevronRight } from "lucide-react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -147,7 +147,7 @@ export default function Worlds() {
       </div>
 
       {/* ── Контейнер карты ── */}
-      <div ref={pinContainerRef} className="w-full h-screen overflow-hidden flex flex-col justify-center bg-bg relative">
+      <div ref={pinContainerRef} className="hidden lg:flex w-full h-screen overflow-hidden flex-col justify-center bg-bg relative">
         
         {/* ИСПРАВЛЕНО: Оверлеи состояний теперь зафиксированы по центру экрана и не улетают при прокрутке */}
         {loading && (
@@ -271,6 +271,86 @@ export default function Worlds() {
             </>
           )}
         </div>
+      </div>
+
+      {/* ── Мобильный список миссий ──
+          GSAP-пиннинг + горизонтальный скролл карты на тач-экранах не работает
+          (и подписи узлов раскрываются только по hover), поэтому на узких
+          экранах показываем простой тапабельный список с названиями и статусом. */}
+      <div className="lg:hidden px-6 pt-2 pb-16">
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-[68px] rounded-2xl bg-panel border border-border animate-pulse"
+              />
+            ))}
+          </div>
+        ) : missions.length === 0 ? (
+          <div className="text-center text-muted py-12 font-display font-bold">
+            {worldsDict.mapEmpty || "Пираты украли карту. Задания не найдены."}
+          </div>
+        ) : (
+          <ol className="space-y-3">
+            {missions.map((mission) => {
+              const statusVal = missionStatus(mission);
+              const isCompleted = statusVal === "completed";
+              const isLocked = statusVal === "locked";
+              const Icon = isCompleted ? CheckCircle : isLocked ? Lock : Compass;
+              const title =
+                (language === "en"
+                  ? mission.title_en || mission.title_ru
+                  : mission.title_ru || mission.title_en) ||
+                mission.title ||
+                mission.name ||
+                worldsDict.missionFallback ||
+                "Миссия";
+              const statusLabel = isCompleted
+                ? worldsDict.statusCompleted || "Пройдено"
+                : isLocked
+                ? worldsDict.statusLocked || "Закрыто"
+                : worldsDict.statusAvailable || "Доступно";
+              return (
+                <li key={mission.id}>
+                  <Link
+                    href={isLocked ? "#" : `/missions/${mission.id}`}
+                    onClick={(e) => isLocked && e.preventDefault()}
+                    aria-disabled={isLocked}
+                    className={`flex items-center gap-3 rounded-2xl border p-3 transition-colors ${
+                      isLocked
+                        ? "border-border bg-panel/60 opacity-70 cursor-default"
+                        : "border-border bg-surface hover:border-primary/50 active:scale-[0.99]"
+                    }`}
+                  >
+                    <span
+                      className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl border ${
+                        isCompleted
+                          ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400"
+                          : isLocked
+                          ? "bg-panel border-border text-muted"
+                          : "bg-primary/10 border-primary/30 text-primary"
+                      }`}
+                    >
+                      <Icon size={20} strokeWidth={2.2} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-display font-bold text-text">
+                        {title}
+                      </span>
+                      <span className="block text-[11px] font-bold uppercase tracking-widest text-muted mt-0.5">
+                        {statusLabel}
+                      </span>
+                    </span>
+                    {!isLocked && (
+                      <ChevronRight size={18} className="shrink-0 text-muted" />
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        )}
       </div>
     </Layout>
   );

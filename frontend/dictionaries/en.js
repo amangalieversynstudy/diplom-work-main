@@ -798,4 +798,36 @@ export const en = {
       identifier: "Identifier",
       errorBackend: "Check backend availability",
     },
+    achievements: {
+      title: "Achievements",
+      empty: "Nothing yet — complete your first mission to unlock a badge.",
+      earnedLabel: "Earned",
+      unlockToast: "Achievement unlocked: {title}",
+      items: {
+        first_mission: {
+          title: "First Steps",
+          desc: "Complete your first mission.",
+        },
+        five_missions: {
+          title: "Hero's Five",
+          desc: "Complete five missions.",
+        },
+        ten_missions: {
+          title: "Legend's Ten",
+          desc: "Complete ten missions.",
+        },
+        track_complete: {
+          title: "Path Cleared",
+          desc: "Fully complete one track.",
+        },
+        level_5: {
+          title: "Level Five",
+          desc: "Reach level 5.",
+        },
+        streak_7: {
+          title: "Week of Fire",
+          desc: "Keep a daily streak for 7 days straight.",
+        },
+      },
+    },
 };

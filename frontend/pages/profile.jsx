@@ -3,8 +3,9 @@ import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import XPBar from "../components/XPBar";
 import Button from "../components/Button";
+import AchievementsPanel from "../components/AchievementsPanel";
 import { clearPlayerClass } from "../lib/class";
-import { Profile as ProfileAPI } from "../lib/api";
+import { Profile as ProfileAPI, Achievements as AchievementsAPI } from "../lib/api";
 import logger from "../lib/logger";
 import { toast } from "sonner";
 import { LogOut, Settings, Mail, User, Shield } from "lucide-react";
@@ -14,6 +15,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const { t } = useI18n();
   const [profile, setProfile] = useState(null);
+  const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   
@@ -24,7 +26,19 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetchProfile();
+    fetchAchievements();
   }, []);
+
+  const fetchAchievements = async () => {
+    try {
+      const data = await AchievementsAPI.list();
+      setAchievements(Array.isArray(data) ? data : []);
+    } catch (error) {
+      // Достижения — украшение профиля, а не критичный путь: при ошибке просто
+      // не показываем секцию, не роняя страницу.
+      logger.error("Achievements load failed:", error);
+    }
+  };
 
   const fetchProfile = async () => {
     try {
@@ -245,6 +259,8 @@ if (loading) {
             </div>
           </div>
         </div>
+
+        <AchievementsPanel items={achievements} />
       </div>
     </Layout>
   );

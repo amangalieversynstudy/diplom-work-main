@@ -227,6 +227,11 @@ class MissionViewSet(viewsets.ModelViewSet):
         # HIGH-03: обновляем leaderboard асинхронно (signal на Progress.complete)
         # запустится автоматически из game/signals.py.
 
+        # Достижения: пересчитываем после начисления XP/level и возвращаем
+        # только что разблокированные, чтобы фронт показал toast-уведомление.
+        from .achievements import evaluate_achievements
+        new_achievements = evaluate_achievements(request.user)
+
         data = ProgressSerializer(prog).data
         data.update(
             {
@@ -239,6 +244,8 @@ class MissionViewSet(viewsets.ModelViewSet):
                 "ai_summons": profile.ai_summons,
                 "hint_scrolls": profile.hint_scrolls,
                 "skeleton_scrolls": profile.skeleton_scrolls,
+                # Слаги новых достижений (фронт локализует и покажет toast)
+                "new_achievements": new_achievements,
             }
         )
         return Response(data)
@@ -1068,3 +1075,21 @@ class AnalyticsView(APIView):
                 "task_types": task_types,
             }
         )
+
+
+class AchievementsView(APIView):
+    """The signed-in user's achievement catalog with earned status + progress.
+
+    GET /api/achievements/ -> [{slug, icon, target, current, earned, earned_at}]
+
+    The catalog lives in :mod:`game.achievements` (code, not DB); this endpoint
+    just annotates each entry with the caller's progress. Titles/descriptions
+    are localized on the frontend by slug.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from .achievements import achievements_for
+
+        return Response(achievements_for(request.user))

@@ -408,3 +408,27 @@ class Progress(models.Model):
             self.status = "completed"
             self.completed_at = timezone.now()
             self.save()
+
+
+class UserAchievement(models.Model):
+    """A single achievement unlocked by a user.
+
+    Only the *unlock fact* is persisted (user + slug + timestamp). The
+    achievement catalog itself — titles, descriptions, icons, conditions —
+    lives in code (``game/achievements.py``) and is localized on the frontend.
+    This keeps the feature migration-light: adding a new achievement never
+    touches the database, and conditions can be tuned without data migrations.
+    """
+
+    user = models.ForeignKey(
+        "users.User", on_delete=models.CASCADE, related_name="achievements"
+    )
+    slug = models.CharField(max_length=64)
+    earned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "slug")
+        ordering = ["earned_at"]
+
+    def __str__(self):
+        return f"{self.user_id}:{self.slug}"

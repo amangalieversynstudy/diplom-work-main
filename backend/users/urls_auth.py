@@ -4,6 +4,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views_auth import (
+    ConfirmEmailChangeView,
     LoginView,
     LogoutView,
     MeView,
@@ -27,5 +28,10 @@ urlpatterns = [
         "auth/resend-verification/",
         ResendVerificationView.as_view(),
         name="auth-resend-verification",
+    ),
+    path(
+        "auth/confirm-email/",
+        ConfirmEmailChangeView.as_view(),
+        name="auth-confirm-email",
     ),
 ]

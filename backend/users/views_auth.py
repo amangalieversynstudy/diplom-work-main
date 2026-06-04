@@ -55,6 +55,45 @@ def _send_verification_email(user):
     )
 
 
+def _send_email_change_email(user, new_email):
+    """Send a confirmation link to a *new* email address during a profile change.
+
+    Stateless: the pending change lives entirely inside a signed token
+    (``django.core.signing``) — no DB field, no migration. The old email stays
+    active until the user clicks the link, so a typo can never lock anyone out.
+    The link is sent to the NEW address, so following it proves the user
+    controls that inbox. Raises on send failure so the caller can react.
+    """
+    if not new_email:
+        return
+    import os
+
+    from django.conf import settings
+    from django.core import signing
+    from django.core.mail import send_mail
+
+    token = signing.dumps({"uid": user.pk, "email": new_email}, salt="email-change")
+    frontend_url = (
+        getattr(settings, "FRONTEND_URL", None)
+        or os.environ.get("FRONTEND_URL")
+        or "http://localhost:3000"
+    )
+    confirm_link = f"{frontend_url.rstrip('/')}/confirm-email?token={token}"
+    send_mail(
+        "Подтверждение нового email — RPG Academy",
+        (
+            f"Привет, {user.username}!\n\n"
+            "Ты запросил смену email в профиле. Перейди по ссылке, чтобы "
+            "подтвердить новый адрес:\n"
+            f"{confirm_link}\n\n"
+            "Пока ты не перейдёшь по ссылке, остаётся активным старый адрес.\n"
+            "Если это был не ты — просто проигнорируй письмо."
+        ),
+        None,
+        [new_email],
+    )
+
+
 # MID-02: rate-limiting декоратор для брутфорс-защиты
 # 10 попыток/мин с одного IP — для login и register
 @method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True), name="post")
@@ -251,3 +290,65 @@ class ResendVerificationView(APIView):
                 import logging
                 logging.error("[RESEND] Email send failed for %s: %r", email, e)
         return generic
+
+
+class ConfirmEmailChangeView(APIView):
+    """Apply a pending email change from a signed confirmation link.
+
+    The token (issued by :func:`_send_email_change_email`) carries the user id
+    and the new address. We re-check uniqueness at confirm time because another
+    account could have claimed the address while the link sat in the inbox.
+    """
+
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request):
+        from django.core import signing
+
+        token = request.query_params.get("token")
+        if not token:
+            return Response(
+                {"detail": "Missing token"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            # 3 дня на подтверждение — дальше токен протухает.
+            payload = signing.loads(
+                token, salt="email-change", max_age=60 * 60 * 24 * 3
+            )
+        except signing.SignatureExpired:
+            return Response(
+                {"detail": "Срок действия ссылки истёк. Запросите смену email заново."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except signing.BadSignature:
+            return Response(
+                {"detail": "Ссылка недействительна."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        new_email = (payload.get("email") or "").strip().lower()
+        if not new_email:
+            return Response(
+                {"detail": "Ссылка недействительна."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            user = User.objects.get(pk=payload.get("uid"))
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "Пользователь не найден."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        # Кто-то мог занять адрес, пока письмо лежало в почте.
+        if (
+            User.objects.exclude(pk=user.pk)
+            .filter(email__iexact=new_email)
+            .exists()
+        ):
+            return Response(
+                {"detail": "Этот email уже используется другим аккаунтом."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user.email = new_email
+        user.save(update_fields=["email"])
+        return Response({"detail": "Email обновлён", "email": new_email})

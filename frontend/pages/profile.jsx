@@ -78,8 +78,20 @@ export default function ProfilePage() {
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     try {
-      await ProfileAPI.update(formData);
-      toast.success(t("profile.toasts.saved"));
+      const updated = await ProfileAPI.update(formData);
+      // Смена email не применяется сразу: бэк шлёт ссылку-подтверждение на новый
+      // адрес и возвращает email_change_pending. Старый адрес активен до клика.
+      if (updated?.email_change_pending) {
+        toast.success(
+          (t("profile.toasts.emailPending") || "").replace(
+            "{email}",
+            updated.email_change_pending
+          ),
+          { duration: 6000 }
+        );
+      } else {
+        toast.success(t("profile.toasts.saved"));
+      }
       setIsEditing(false);
       fetchProfile();
     } catch (error) {

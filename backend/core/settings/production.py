@@ -66,7 +66,7 @@ CSRF_TRUSTED_ORIGINS = os.getenv(
     "https://*.trycloudflare.com,https://*.duckdns.org,https://*.loca.lt",
 ).split(",")
 
-# ─── MID-04: Security headers ─────────────────────────────────────────────
+# ─── Security headers ─────────────────────────────────────────────
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
@@ -83,7 +83,7 @@ CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 
-# ─── CRIT-02: Email backend для production ────────────────────────────────
+# ─── Email backend для production ────────────────────────────────
 # По умолчанию base.py = console (письма в логи). В проде ОБЯЗАТЕЛЬНО
 # переопределить через env:
 #   EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
@@ -97,7 +97,7 @@ if EMAIL_BACKEND == "django.core.mail.backends.console.EmailBackend":  # noqa: F
         "не уходят на реальный SMTP. Установи переменные EMAIL_* в .env.prod."
     )
 
-# ─── MID-01: Sentry (опционально, включается переменной SENTRY_DSN) ──────
+# ─── Sentry (опционально, включается переменной SENTRY_DSN) ──────
 SENTRY_DSN = os.getenv("SENTRY_DSN", "")
 if SENTRY_DSN:
     try:

@@ -12,7 +12,7 @@ export const api = axios.create({ baseURL: API_BASE });
 api.interceptors.request.use((config) => {
   const { access } = getTokens();
   if (access) config.headers.Authorization = `Bearer ${access}`;
-  // MID-06: пробрасываем язык в backend, чтобы он отдавал title_ru/title_en
+  // пробрасываем язык в backend, чтобы он отдавал title_ru/title_en
   // согласно выбору пользователя.
   if (typeof window !== "undefined") {
     const lang = window.localStorage.getItem("ui_language");

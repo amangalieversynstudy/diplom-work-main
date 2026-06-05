@@ -10,7 +10,7 @@ class GameConfig(AppConfig):
     name = "game"
 
     def ready(self):
-        # HIGH-03: подключаем signals для leaderboard updates
+        # подключаем signals для leaderboard updates
         from . import signals  # noqa: F401
 
         # Ежедневное email-напоминание о стрике без отдельного Railway-сервиса:

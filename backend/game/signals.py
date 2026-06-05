@@ -1,6 +1,6 @@
 """Signals: keep leaderboard entries fresh when progress changes.
 
-HIGH-03: Раньше модель `LeaderboardEntry` существовала, но никто её
+Раньше модель `LeaderboardEntry` существовала, но никто её
 не создавал — `/leaderboard/` всегда возвращал пустой список.
 Теперь при каждом `Progress.complete()` мы апдейтим entry с
 актуальным XP-тоталом и пересчитываем позиции в global-таблице.

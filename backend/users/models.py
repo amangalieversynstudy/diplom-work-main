@@ -96,8 +96,8 @@ class Profile(models.Model):
     def add_xp(self, amount):
         """Add XP to the profile and adjust level when thresholds are crossed.
 
-        Если уровень повысился — пополняем инвентарь как награду за level-up
-        (см. MID-07). Возвращает кортеж (leveled_up, old_level, new_level).
+        Если уровень повысился — пополняем инвентарь как награду за level-up.
+        Возвращает кортеж (leveled_up, old_level, new_level).
         """
         old_level = self.level
         self.xp += amount

@@ -184,7 +184,7 @@ class MissionViewSet(viewsets.ModelViewSet):
 
         prog, _ = Progress.objects.get_or_create(user=request.user, mission=mission)
 
-        # MID-05: дедупликация двойных кликов "Завершить миссию".
+        # дедупликация двойных кликов "Завершить миссию".
         # Если миссия только что была завершена (< 5 секунд назад) — не
         # начисляем XP повторно, возвращаем актуальное состояние без побочек.
         from django.utils import timezone
@@ -219,12 +219,12 @@ class MissionViewSet(viewsets.ModelViewSet):
         prog.save()
 
         # НАЧИСЛЯЕМ ОПЫТ через add_xp(), который сам возвращает level-up флаг
-        # и инкрементирует инвентарь (MID-07).
+        # и инкрементирует инвентарь.
         leveled_up = False
         if xp_gain > 0:
             leveled_up, _old, _new = profile.add_xp(xp_gain)
 
-        # HIGH-03: обновляем leaderboard асинхронно (signal на Progress.complete)
+        # обновляем leaderboard асинхронно (signal на Progress.complete)
         # запустится автоматически из game/signals.py.
 
         # Достижения: пересчитываем после начисления XP/level и возвращаем

@@ -112,7 +112,7 @@ def test_complete_awards_xp_first_time_and_handles_repeat(api_client, user, cont
     d3 = r3.json()
     assert d3["xp_added"] == 50
 
-    # The MID-05 anti-double-click guard zeroes out a completion that lands
+    # The anti-double-click guard zeroes out a completion that lands
     # within 5s of the previous one. A *legitimate* repeat happens much later
     # (the player has to redo the mission), so backdate the first completion
     # past that window to exercise the real repeat-XP path.

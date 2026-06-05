@@ -621,5 +621,65 @@
       "xp_reward": 20,
       "is_required": true
     }
+  },
+
+  {
+    "model": "game.mission",
+    "pk": 8,
+    "fields": {
+      "location": 1,
+      "title": "Гримуар Героев",
+      "title_en": "Scroll VIII: The Heroes' Grimoire",
+      "title_ru": "Свиток VIII: Гримуар Героев",
+      "description": "Final project — combine everything you've learned.",
+      "description_en": "The final trial: bring together variables, loops, lists, dicts and functions.",
+      "description_ru": "Финальное испытание: собери воедино переменные, циклы, списки, словари и функции.",
+      "xp_reward": 80,
+      "order": 7,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 25,
+      "pos_y": 70,
+      "prerequisites": [7]
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 80,
+    "fields": {
+      "mission": 8,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "The Final Trial",
+      "title_ru": "Финальное испытание",
+      "body_en": "<h2>One Spell to Bind Them</h2><p>Time to combine everything: <strong>lists</strong>, <strong>dictionaries</strong>, <strong>loops</strong>, <strong>conditionals</strong> and <strong>functions</strong>.</p><p>You'll get a party of heroes (a list of dicts) and must find the strongest one. Read the task, write the function, and run it until the output matches.</p>",
+      "body_ru": "<h2>Заклинание, что свяжет всё</h2><p>Пора собрать всё вместе: <strong>списки</strong>, <strong>словари</strong>, <strong>циклы</strong>, <strong>условия</strong> и <strong>функции</strong>.</p><p>Тебе дадут отряд героев (список словарей) — найди самого сильного. Прочитай задачу, напиши функцию и запускай, пока вывод не совпадёт.</p>",
+      "data": {},
+      "xp_reward": 20,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 81,
+    "fields": {
+      "mission": 8,
+      "order": 2,
+      "task_type": "code",
+      "title_en": "Find the Champion",
+      "title_ru": "Найди чемпиона",
+      "body_en": "<p>Write a function <code>champion(heroes)</code> that takes a list of dicts with keys <code>name</code> and <code>hp</code>, and returns the string <code>\"Champion: NAME (HP)\"</code> for the hero with the highest hp.</p><p>For the given party, <code>print(champion(party))</code> should print <code>Champion: Mira (120)</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>champion(heroes)</code>, которая принимает список словарей с ключами <code>name</code> и <code>hp</code> и возвращает строку <code>\"Champion: ИМЯ (HP)\"</code> для героя с наибольшим hp.</p><p>Для данного отряда <code>print(champion(party))</code> должно вывести <code>Champion: Mira (120)</code>.</p>",
+      "data": {
+        "language": "python",
+        "starter": "party = [\n    {\"name\": \"Aidan\", \"hp\": 80},\n    {\"name\": \"Mira\", \"hp\": 120},\n    {\"name\": \"Bo\", \"hp\": 95},\n]\n\ndef champion(heroes):\n    # Найди героя с наибольшим hp и верни \"Champion: name (hp)\"\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(champion(party))\n",
+        "sampleOutput": "Champion: Mira (120)",
+        "expected_output": "Champion: Mira (120)"
+      },
+      "xp_reward": 40,
+      "is_required": true
+    }
   }
 ]

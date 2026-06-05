@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     # daphne must come first so it overrides runserver with the ASGI server,
     # ensuring WebSocket support during `manage.py runserver`.
     "daphne",
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -220,3 +221,58 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 # drf-yasg: silence compat renderer deprecation
 SWAGGER_USE_COMPAT_RENDERERS = False
+
+# ── Jazzmin: брендированная админка под стиль RPG Academy ───────────────────
+# CMS для руководителей курсов: правка Track → Location → Mission → MissionTask.
+JAZZMIN_SETTINGS = {
+    "site_title": "RPG Academy",
+    "site_header": "RPG Academy",
+    "site_brand": "RPG Academy",
+    "welcome_sign": "Панель управления курсами",
+    "copyright": "RPG Academy",
+    "search_model": ["game.Track", "game.Mission", "users.User"],
+    "topmenu_links": [
+        {"name": "Курсы", "model": "game.track"},
+        {"name": "На сайт", "url": FRONTEND_URL, "new_window": True},
+    ],
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.Group": "fas fa-users",
+        "users.User": "fas fa-user",
+        "users.Profile": "fas fa-id-badge",
+        "game.Track": "fas fa-book-open",
+        "game.Location": "fas fa-map-marked-alt",
+        "game.Mission": "fas fa-scroll",
+        "game.MissionTask": "fas fa-tasks",
+        "game.Rank": "fas fa-medal",
+        "game.ClassRole": "fas fa-hat-wizard",
+        "game.Progress": "fas fa-chart-line",
+        "game.TaskProgress": "fas fa-clipboard-check",
+        "game.LeaderboardEntry": "fas fa-trophy",
+    },
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+    "order_with_respect_to": [
+        "game",
+        "game.track",
+        "game.location",
+        "game.mission",
+        "game.missiontask",
+        "users",
+    ],
+    "related_modal_active": True,
+    "show_ui_builder": False,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "theme": "darkly",
+    "dark_mode_theme": "darkly",
+    "navbar": "navbar-dark",
+    "navbar_fixed": True,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_fixed": True,
+    "sidebar_nav_compact_style": True,
+    "accent": "accent-purple",
+    "brand_colour": "navbar-indigo",
+    "actions_sticky_top": True,
+}

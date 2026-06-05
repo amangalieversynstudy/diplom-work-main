@@ -11,6 +11,9 @@ django-environ
 django-filter
 drf-yasg
 
+# Branded Django admin (course-leader CMS)
+django-jazzmin==3.0.1
+
 # WhiteNoise for static files
 whitenoise
 

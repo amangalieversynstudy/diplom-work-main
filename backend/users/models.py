@@ -1,9 +1,12 @@
 """Custom user model and profile management."""
 
+from datetime import timedelta
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 import uuid
 
 
@@ -46,9 +49,9 @@ class Profile(models.Model):
         help_text="Свитки Архитектора (Skeleton Scroll - вставка стартового кода)"
     )
     # Серия завершений подряд (Streak). Используется как secondary
-    # tiebreaker в лидерборде после xp_total. Сбрасывается, если
-    # пользователь пропускает день — обновление делает signal на
-    # Progress.complete (см. game/signals.py).
+    # tiebreaker в лидерборде после xp_total. Обновляется методом
+    # register_activity() при каждом Progress.complete(): растёт на
+    # подряд идущих днях и сбрасывается, если день пропущен.
     current_streak = models.PositiveIntegerField(
         default=0,
         help_text="Текущая серия дней с завершённой миссией"
@@ -56,6 +59,21 @@ class Profile(models.Model):
     longest_streak = models.PositiveIntegerField(
         default=0,
         help_text="Лучшая серия за всё время"
+    )
+    # Дата последнего дня, который был засчитан в стрик. Нужна, чтобы
+    # отличить «уже отметился сегодня» от «новый день» и понять, жива ли
+    # серия (последняя активность сегодня/вчера) или уже оборвана.
+    last_streak_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Дата последнего засчитанного в стрик дня"
+    )
+    # Дата последнего отправленного email-напоминания о стрике. Нужна, чтобы
+    # команда send_streak_reminders не слала повторное письмо в тот же день.
+    last_streak_reminder = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Дата последнего email-напоминания о стрике"
     )
 
     def use_item(self, item_field_name: str) -> bool:
@@ -94,6 +112,50 @@ class Profile(models.Model):
             self.ai_summons += levels_gained
         self.save()
         return leveled_up, old_level, new_level
+
+    def register_activity(self, today=None):
+        """Засчитать активность игрока в дневной стрик.
+
+        Вызывается ровно при завершении миссии (``Progress.complete``).
+        Логика по дням: первый засчитанный день за сегодня продлевает серию,
+        если вчера тоже был засчитан, иначе серия начинается заново с 1.
+        Повторные завершения в тот же день не считаются. ``today`` можно
+        передать явно (для тестов); по умолчанию берётся локальная дата.
+
+        Возвращает True, если счётчик изменился (засчитан новый день).
+        """
+        today = today or timezone.localdate()
+        last = self.last_streak_date
+        if last == today:
+            return False  # уже отметились сегодня — без двойного счёта
+        if last == today - timedelta(days=1):
+            self.current_streak = (self.current_streak or 0) + 1
+        else:
+            self.current_streak = 1  # первый день или серия прервалась
+        if self.current_streak > (self.longest_streak or 0):
+            self.longest_streak = self.current_streak
+        self.last_streak_date = today
+        self.save(
+            update_fields=["current_streak", "longest_streak", "last_streak_date"]
+        )
+        return True
+
+    @property
+    def streak_active(self):
+        """Жива ли серия: последний засчитанный день — сегодня или вчера.
+
+        Если активности не было больше суток, серия считается оборванной
+        (следующее завершение начнёт её заново), поэтому показываем 0.
+        """
+        if not self.last_streak_date or not self.current_streak:
+            return False
+        return self.last_streak_date >= timezone.localdate() - timedelta(days=1)
+
+    @property
+    def streak_at_risk(self):
+        """Серия жива, но сегодня ещё не продлена — повод напомнить игроку
+        («заверши миссию сегодня, чтобы не потерять серию»)."""
+        return self.streak_active and self.last_streak_date != timezone.localdate()
 
     @property
     def current_rank(self):

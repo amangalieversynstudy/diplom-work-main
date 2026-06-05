@@ -1,4 +1,13 @@
 export const ru = {
+  streak: {
+    reminder: {
+      banner:
+        "Твоя серия из {n} дн. под угрозой — заверши сегодня хотя бы одну миссию, чтобы не потерять её",
+      cta: "К миссиям",
+      dismiss: "Скрыть",
+      toast: "🔥 Серия {n} дн. под угрозой — заверши миссию сегодня",
+    },
+  },
   nav: {
     sanctum: "Санктум",
     worlds: "Миры",
@@ -364,6 +373,11 @@ export const ru = {
       unknownPlayer: "Неизвестный",
       unknownClass: "Класс неизвестен",
       level: "Уровень",
+      streak: {
+        label: "Серия",
+        best: "рекорд",
+        start: "Заверши миссию — начни серию",
+      },
       changeClass: "Сменить класс",
       logout: "Выйти",
       accountSettings: "Настройки аккаунта",

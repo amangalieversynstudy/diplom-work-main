@@ -1,4 +1,13 @@
 export const en = {
+  streak: {
+    reminder: {
+      banner:
+        "Your {n}-day streak is at risk — finish at least one mission today to keep it",
+      cta: "Go to missions",
+      dismiss: "Dismiss",
+      toast: "🔥 {n}-day streak at risk — complete a mission today",
+    },
+  },
   nav: {
     sanctum: "Sanctum",
     worlds: "Worlds",
@@ -363,6 +372,11 @@ export const en = {
       unknownPlayer: "Unknown",
       unknownClass: "Unknown class",
       level: "Level",
+      streak: {
+        label: "Streak",
+        best: "best",
+        start: "Complete a mission to start a streak",
+      },
       changeClass: "Change class",
       logout: "Log out",
       accountSettings: "Account settings",

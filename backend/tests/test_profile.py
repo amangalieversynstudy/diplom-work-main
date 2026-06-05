@@ -62,7 +62,7 @@ def test_profile_get_and_change_class_freely():
 
 @pytest.mark.django_db
 def test_profile_rank_display_tc_rank_01():
-    """TC-RANK-01: Verify rank chip displays and updates on profile.
+    """Verify rank chip displays and updates on profile.
 
     Tests that:
     1. Profile endpoint returns rank data when user qualifies

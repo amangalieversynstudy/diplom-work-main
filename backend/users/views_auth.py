@@ -94,7 +94,7 @@ def _send_email_change_email(user, new_email):
     )
 
 
-# MID-02: rate-limiting декоратор для брутфорс-защиты
+# rate-limiting декоратор для брутфорс-защиты
 # 10 попыток/мин с одного IP — для login и register
 @method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True), name="post")
 class LoginView(TokenObtainPairView):

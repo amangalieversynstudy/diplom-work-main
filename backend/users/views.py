@@ -44,7 +44,7 @@ class ProfileMeView(APIView):
             "ai_summons": profile.ai_summons,
             "hint_scrolls": profile.hint_scrolls,
             "skeleton_scrolls": profile.skeleton_scrolls,
-            # HIGH-01: ранг пользователя для отображения в профиле
+            # ранг пользователя для отображения в профиле
             "rank": profile.current_rank,
             # Стрик: счётчики + флаги для видимого стрика и напоминания.
             "current_streak": profile.current_streak,

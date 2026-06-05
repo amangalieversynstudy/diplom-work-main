@@ -34,7 +34,7 @@ export default function Worlds() {
       })
       .catch(logger.error)
       .finally(() => setLoading(false));
-    // MID-06: refetch при смене языка
+    // refetch при смене языка
   }, [language]);
 
   // Вычисляем хаотичные координаты

@@ -107,7 +107,7 @@ export default function MissionDetail() {
     return () => {
       active = false;
     };
-    // MID-06: при смене языка миссия перезагружается с правильными title_ru/title_en
+    // при смене языка миссия перезагружается с правильными title_ru/title_en
   }, [id, language]);
 
   // Сцена сама возвращается в покой после реакции на запуск кода.
@@ -177,7 +177,7 @@ export default function MissionDetail() {
         // Если это была последняя задача — завершаем миссию и обрабатываем награды
         try {
           const result = await Missions.complete(id);
-          // CRIT-03: backend честно шлёт leveled_up/xp_added/new_level
+          // backend честно шлёт leveled_up/xp_added/new_level
           if (result?.xp_added > 0) {
             toast.success(
               t("missionPage.toasts.questDoneXp").replace("{xp}", result.xp_added),
@@ -217,7 +217,7 @@ export default function MissionDetail() {
             });
           }
 
-          // TC-RANK-01: refetch profile to show updated rank on level-up
+          // refetch profile to show updated rank on level-up
           // and update inventory with any rewards granted
           try {
             const profileData = await Profile.me();

@@ -238,8 +238,9 @@
       "body_ru": "<p>Напиши функцию <code>mana_status(mana)</code>, которая возвращает:</p><ul><li><code>\"Overcharged\"</code> если mana &gt; 100</li><li><code>\"Charged\"</code> если mana от 50 до 100 включительно</li><li><code>\"Low\"</code> если mana меньше 50</li></ul><p>Вызови её: <code>print(mana_status(75))</code> — должно вывести <code>Charged</code>.</p>",
       "data": {
         "language": "python",
-        "starter": "def mana_status(mana):\n    # Твой код здесь\n    pass\n\nprint(mana_status(75))\n",
-        "sampleOutput": "Charged"
+        "starter": "def mana_status(mana):\n    # Верни \"Charged\" для mana 50..100, иначе \"Low\" / \"Overcharged\"\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(mana_status(75))\n",
+        "sampleOutput": "Charged",
+        "expected_output": "Charged"
       },
       "xp_reward": 20,
       "is_required": true
@@ -299,8 +300,9 @@
       "body_ru": "<p>Напиши код, который выводит сумму чисел от 1 до 10 с помощью цикла <code>for</code>.</p><p>Ожидаемый вывод: <code>55</code></p>",
       "data": {
         "language": "python",
-        "starter": "total = 0\nfor i in range(1, 11):\n    # Прибавь i к total\n    pass\n\nprint(total)\n",
-        "sampleOutput": "55"
+        "starter": "total = 0\nfor i in range(1, 11):\n    # Прибавь i к total\n    raise NotImplementedError(\"Допиши тело цикла\")\n\nprint(total)\n",
+        "sampleOutput": "55",
+        "expected_output": "55"
       },
       "xp_reward": 20,
       "is_required": true
@@ -360,10 +362,263 @@
       "body_ru": "<p>Напиши функцию <code>power(base, exp)</code>, которая возвращает <code>base</code> в степени <code>exp</code> <strong>без</strong> оператора <code>**</code> — используй цикл.</p><p>Затем выведи: <code>print(power(2, 8))</code> — ожидаемый вывод: <code>256</code></p>",
       "data": {
         "language": "python",
-        "starter": "def power(base, exp):\n    result = 1\n    # Умножь base на себя exp раз\n    for _ in range(exp):\n        pass  # замени на нужное действие\n    return result\n\nprint(power(2, 8))\n",
-        "sampleOutput": "256"
+        "starter": "def power(base, exp):\n    result = 1\n    for _ in range(exp):\n        # Умножь result на base\n        raise NotImplementedError(\"Допиши умножение\")\n    return result\n\nprint(power(2, 8))\n",
+        "sampleOutput": "256",
+        "expected_output": "256"
       },
       "xp_reward": 30,
+      "is_required": true
+    }
+  },
+
+  {
+    "model": "game.mission",
+    "pk": 5,
+    "fields": {
+      "location": 1,
+      "title": "Голос Героя",
+      "title_en": "Scroll V: The Hero's Voice",
+      "title_ru": "Свиток V: Голос Героя",
+      "description": "Work with text: f-strings and string methods.",
+      "description_en": "Words carry power. Shape text with f-strings and string methods.",
+      "description_ru": "Слова несут силу. Управляй текстом через f-строки и методы строк.",
+      "xp_reward": 40,
+      "order": 4,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 88,
+      "pos_y": 62,
+      "prerequisites": [4]
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 50,
+    "fields": {
+      "mission": 5,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "Strings & f-strings",
+      "title_ru": "Строки и f-строки",
+      "body_en": "<h2>Text — The Spoken Spell</h2><p>Combine text and values with <strong>f-strings</strong>:</p><pre><code>name = \"Aidan\"\nlevel = 5\nprint(f\"{name} reached level {level}\")</code></pre><p>Handy string methods:</p><ul><li><code>.upper()</code> / <code>.lower()</code> — change case</li><li><code>.strip()</code> — trim spaces</li><li><code>len(text)</code> — length</li><li><code>.replace(a, b)</code> — replace text</li></ul>",
+      "body_ru": "<h2>Текст — Произнесённое Заклинание</h2><p>Соединяй текст и значения через <strong>f-строки</strong>:</p><pre><code>name = \"Айдан\"\nlevel = 5\nprint(f\"{name} достиг уровня {level}\")</code></pre><p>Полезные методы строк:</p><ul><li><code>.upper()</code> / <code>.lower()</code> — регистр</li><li><code>.strip()</code> — убрать пробелы по краям</li><li><code>len(text)</code> — длина</li><li><code>.replace(a, b)</code> — замена</li></ul>",
+      "data": {},
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 51,
+    "fields": {
+      "mission": 5,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: Strings",
+      "title_ru": "Испытание: Строки",
+      "body_en": "<p>Which method turns <code>\"fire\"</code> into <code>\"FIRE\"</code>?</p>",
+      "body_ru": "<p>Какой метод превратит <code>\"fire\"</code> в <code>\"FIRE\"</code>?</p>",
+      "data": {
+        "correct_answer": "upper",
+        "options": [
+          {"value": "upper", "label": ".upper()"},
+          {"value": "lower", "label": ".lower()"},
+          {"value": "strip", "label": ".strip()"},
+          {"value": "title", "label": ".title()"}
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 52,
+    "fields": {
+      "mission": 5,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "Forge a Battle Cry",
+      "title_ru": "Скуй боевой клич",
+      "body_en": "<p>Write a function <code>battle_cry(name)</code> that returns <code>name</code> in UPPERCASE with <code>\"!\"</code> at the end.</p><p><code>print(battle_cry(\"aidan\"))</code> should print <code>AIDAN!</code></p>",
+      "body_ru": "<p>Напиши функцию <code>battle_cry(name)</code>, которая возвращает <code>name</code> ЗАГЛАВНЫМИ буквами и с <code>\"!\"</code> в конце.</p><p><code>print(battle_cry(\"айдан\"))</code> должно вывести <code>АЙДАН!</code></p>",
+      "data": {
+        "language": "python",
+        "starter": "def battle_cry(name):\n    # Верни name заглавными буквами и \"!\" в конце\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(battle_cry(\"айдан\"))\n",
+        "sampleOutput": "АЙДАН!",
+        "expected_output": "АЙДАН!"
+      },
+      "xp_reward": 20,
+      "is_required": true
+    }
+  },
+
+  {
+    "model": "game.mission",
+    "pk": 6,
+    "fields": {
+      "location": 1,
+      "title": "Сумка Героя",
+      "title_en": "Scroll VI: The Hero's Pack",
+      "title_ru": "Свиток VI: Сумка Героя",
+      "description": "Store many values in a list.",
+      "description_en": "Carry many items at once — lists hold ordered collections.",
+      "description_ru": "Носи много предметов сразу — списки хранят упорядоченные коллекции.",
+      "xp_reward": 40,
+      "order": 5,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 65,
+      "pos_y": 75,
+      "prerequisites": [5]
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 60,
+    "fields": {
+      "mission": 6,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "Lists",
+      "title_ru": "Списки",
+      "body_en": "<h2>Lists — The Adventurer's Pack</h2><p>A <strong>list</strong> holds many values in order:</p><pre><code>loot = [\"gold\", \"sword\", \"potion\"]\nprint(loot[0])      # gold\nloot.append(\"shield\")\nprint(len(loot))    # 4</code></pre><p>Iterate with a loop:</p><pre><code>for item in loot:\n    print(item)</code></pre>",
+      "body_ru": "<h2>Списки — Сумка Авантюриста</h2><p><strong>Список</strong> хранит много значений по порядку:</p><pre><code>loot = [\"золото\", \"меч\", \"зелье\"]\nprint(loot[0])      # золото\nloot.append(\"щит\")\nprint(len(loot))    # 4</code></pre><p>Перебор циклом:</p><pre><code>for item in loot:\n    print(item)</code></pre>",
+      "data": {},
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 61,
+    "fields": {
+      "mission": 6,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: Lists",
+      "title_ru": "Испытание: Списки",
+      "body_en": "<p>Which method adds an item to the end of a list?</p>",
+      "body_ru": "<p>Какой метод добавляет элемент в конец списка?</p>",
+      "data": {
+        "correct_answer": "append",
+        "options": [
+          {"value": "append", "label": ".append()"},
+          {"value": "add", "label": ".add()"},
+          {"value": "push", "label": ".push()"},
+          {"value": "insert", "label": ".insert()"}
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 62,
+    "fields": {
+      "mission": 6,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "Count the Strong",
+      "title_ru": "Сосчитай сильных",
+      "body_en": "<p>Write a function <code>count_big(numbers)</code> that returns how many numbers are greater than 10.</p><p><code>print(count_big([4, 15, 9, 20, 11]))</code> should print <code>3</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>count_big(numbers)</code>, которая возвращает, сколько чисел больше 10.</p><p><code>print(count_big([4, 15, 9, 20, 11]))</code> должно вывести <code>3</code>.</p>",
+      "data": {
+        "language": "python",
+        "starter": "def count_big(numbers):\n    count = 0\n    for n in numbers:\n        # Увеличь count, если n > 10\n        raise NotImplementedError(\"Допиши условие\")\n    return count\n\nprint(count_big([4, 15, 9, 20, 11]))\n",
+        "sampleOutput": "3",
+        "expected_output": "3"
+      },
+      "xp_reward": 20,
+      "is_required": true
+    }
+  },
+
+  {
+    "model": "game.mission",
+    "pk": 7,
+    "fields": {
+      "location": 1,
+      "title": "Книга Знаний",
+      "title_en": "Scroll VII: The Book of Knowledge",
+      "title_ru": "Свиток VII: Книга Знаний",
+      "description": "Map keys to values with dictionaries.",
+      "description_en": "Bind names to power — dictionaries link keys to values.",
+      "description_ru": "Свяжи имена с силой — словари сопоставляют ключам значения.",
+      "xp_reward": 50,
+      "order": 6,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 45,
+      "pos_y": 85,
+      "prerequisites": [6]
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 70,
+    "fields": {
+      "mission": 7,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "Dictionaries",
+      "title_ru": "Словари",
+      "body_en": "<h2>Dictionaries — The Spellbook Index</h2><p>A <strong>dict</strong> maps <em>keys</em> to <em>values</em>:</p><pre><code>hero = {\"name\": \"Aidan\", \"hp\": 100}\nprint(hero[\"name\"])   # Aidan\nhero[\"hp\"] = 80         # update\nhero[\"mana\"] = 50       # add</code></pre><p>Loop over keys and values:</p><pre><code>for key, value in hero.items():\n    print(key, value)</code></pre>",
+      "body_ru": "<h2>Словари — Указатель Гримуара</h2><p><strong>Словарь</strong> сопоставляет <em>ключам</em> <em>значения</em>:</p><pre><code>hero = {\"name\": \"Айдан\", \"hp\": 100}\nprint(hero[\"name\"])   # Айдан\nhero[\"hp\"] = 80         # изменить\nhero[\"mana\"] = 50       # добавить</code></pre><p>Перебор ключей и значений:</p><pre><code>for key, value in hero.items():\n    print(key, value)</code></pre>",
+      "data": {},
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 71,
+    "fields": {
+      "mission": 7,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: Dictionaries",
+      "title_ru": "Испытание: Словари",
+      "body_en": "<p>How do you read the value for key <code>\"hp\"</code> from a dict named <code>hero</code>?</p>",
+      "body_ru": "<p>Как получить значение по ключу <code>\"hp\"</code> из словаря <code>hero</code>?</p>",
+      "data": {
+        "correct_answer": "hero[hp]",
+        "options": [
+          {"value": "hero[hp]", "label": "hero[\"hp\"]"},
+          {"value": "hero.hp", "label": "hero.hp"},
+          {"value": "hero(hp)", "label": "hero(\"hp\")"},
+          {"value": "get hp", "label": "get hp from hero"}
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 72,
+    "fields": {
+      "mission": 7,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "The Tally Spell",
+      "title_ru": "Заклинание Подсчёта",
+      "body_en": "<p>Write a function <code>total_gold(heroes)</code> that takes a dict of name → gold and returns the sum of all the gold.</p><p><code>print(total_gold({\"Aidan\": 50, \"Mira\": 30, \"Bo\": 20}))</code> should print <code>100</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>total_gold(heroes)</code>, которая принимает словарь имя → золото и возвращает сумму всего золота.</p><p><code>print(total_gold({\"Айдан\": 50, \"Мира\": 30, \"Бо\": 20}))</code> должно вывести <code>100</code>.</p>",
+      "data": {
+        "language": "python",
+        "starter": "def total_gold(heroes):\n    total = 0\n    for gold in heroes.values():\n        # Прибавь gold к total\n        raise NotImplementedError(\"Допиши суммирование\")\n    return total\n\nprint(total_gold({\"Айдан\": 50, \"Мира\": 30, \"Бо\": 20}))\n",
+        "sampleOutput": "100",
+        "expected_output": "100"
+      },
+      "xp_reward": 20,
       "is_required": true
     }
   }

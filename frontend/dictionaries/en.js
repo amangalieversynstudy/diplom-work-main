@@ -763,6 +763,7 @@ export const en = {
       authRequired: "Sign in to run code.",
       noRunnerUrl: "Could not resolve the runner address.",
       sessionExpired: "Session expired. Sign in again.",
+      wrongOutput: "Output doesn't match the expected result. Check your logic and try again.",
       itemUsed: "{item} used! Remaining: {count}",
       itemFail: "Could not use the item, or you've run out.",
       noSummons: "No AI assistant charges left.",

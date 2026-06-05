@@ -180,6 +180,7 @@ export default function CodeRunnerPanel({
     }
     wsRef.current = ws;
     let testPassedFired = false;
+    let stdoutBuf = "";
 
     ws.onopen = () => {
       ws.send(JSON.stringify({ type: "run", code: code || "", language: "python" }));
@@ -190,6 +191,7 @@ export default function CodeRunnerPanel({
       try { msg = JSON.parse(ev.data); } catch { return; }
       switch (msg.type) {
         case "stdout":
+          stdoutBuf += msg.data ?? "";
           term?.write(normaliseEol(msg.data));
           break;
         case "stderr":
@@ -205,8 +207,18 @@ export default function CodeRunnerPanel({
               `${sym} exit ${msg.code} · ${Number(msg.duration || 0).toFixed(2)}s\r\n`
           );
           setLastExit({ code: msg.code, duration: msg.duration });
-          onRunStateChange?.(msg.code === 0 ? "success" : "error");
-          if (msg.code === 0 && !testPassedFired && onTestPassed) {
+          // Если у задания задан expected_output — сверяем вывод (с trim).
+          // Иначе достаточно успешного запуска (exit 0), как было раньше.
+          const expected = (task?.data?.expected_output ?? "").toString().trim();
+          const outputOk = !expected || stdoutBuf.trim() === expected;
+          const ok = msg.code === 0 && outputOk;
+          onRunStateChange?.(ok ? "success" : "error");
+          if (msg.code === 0 && !outputOk) {
+            term?.write(
+              `\r\n${ANSI_YELLOW}${t("codeRunner.wrongOutput")}${ANSI_RESET}\r\n`
+            );
+          }
+          if (ok && !testPassedFired && onTestPassed) {
             testPassedFired = true;
             onTestPassed({ status: "success", code, exit_code: msg.code, duration: msg.duration });
           }
@@ -228,7 +240,7 @@ export default function CodeRunnerPanel({
         toast.error(t("codeRunner.sessionExpired"));
       }
     };
-  }, [running, code, onTestPassed, onRunStateChange, t]);
+  }, [running, code, task, onTestPassed, onRunStateChange, t]);
 
   // ── Inventory handlers ────────────────────────────────────────────────────
   const handleUseItem = useCallback(

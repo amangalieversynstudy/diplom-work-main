@@ -402,12 +402,22 @@ class Progress(models.Model):
         self.save()
 
     def complete(self):
-        """Mark mission as completed with timestamp and status."""
+        """Mark mission as completed with timestamp and status.
+
+        On the first completion we also register the day in the player's
+        streak (Profile.register_activity): this is the single place a
+        mission is marked done (views call prog.complete()), so the streak,
+        the streak_7 achievement and the leaderboard/analytics streak
+        columns all stay in sync from here.
+        """
         if not self.completed:
             self.completed = True
             self.status = "completed"
             self.completed_at = timezone.now()
             self.save()
+            profile = getattr(self.user, "profile", None)
+            if profile:
+                profile.register_activity()
 
 
 class UserAchievement(models.Model):

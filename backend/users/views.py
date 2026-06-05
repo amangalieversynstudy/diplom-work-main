@@ -46,6 +46,11 @@ class ProfileMeView(APIView):
             "skeleton_scrolls": profile.skeleton_scrolls,
             # HIGH-01: ранг пользователя для отображения в профиле
             "rank": profile.current_rank,
+            # Стрик: счётчики + флаги для видимого стрика и напоминания.
+            "current_streak": profile.current_streak,
+            "longest_streak": profile.longest_streak,
+            "streak_active": profile.streak_active,
+            "streak_at_risk": profile.streak_at_risk,
         }
 
     def get(self, request):

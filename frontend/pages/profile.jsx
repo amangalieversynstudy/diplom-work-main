@@ -8,7 +8,7 @@ import { clearPlayerClass } from "../lib/class";
 import { Profile as ProfileAPI, Achievements as AchievementsAPI } from "../lib/api";
 import logger from "../lib/logger";
 import { toast } from "sonner";
-import { LogOut, Settings, Mail, User, Shield } from "lucide-react";
+import { LogOut, Settings, Mail, User, Shield, Flame } from "lucide-react";
 import { useI18n } from "../lib/i18n";
 
 export default function ProfilePage() {
@@ -61,6 +61,10 @@ export default function ProfilePage() {
         hint_scrolls: profileBlock.hint_scrolls ?? 0,
         skeleton_scrolls: profileBlock.skeleton_scrolls ?? 0,
         rank: profileBlock.rank ?? null,
+        current_streak: profileBlock.current_streak ?? 0,
+        longest_streak: profileBlock.longest_streak ?? 0,
+        streak_active: profileBlock.streak_active ?? false,
+        streak_at_risk: profileBlock.streak_at_risk ?? false,
       };
 
       setProfile(merged);
@@ -183,7 +187,29 @@ if (loading) {
                 current={(profile?.xp || 0) % 100}
                 max={100}
               />
-              
+
+              {/* Стрик — серия дней подряд с завершёнными миссиями */}
+              <div className="mt-5 flex items-center justify-center gap-3 rounded-2xl border border-border bg-panel px-4 py-3">
+                <Flame
+                  size={26}
+                  className={profile?.streak_active ? "text-orange-500" : "text-faint"}
+                  fill={profile?.streak_active ? "currentColor" : "none"}
+                />
+                <div className="text-left">
+                  <p className="flex items-baseline gap-1 text-xl font-bold leading-none text-text">
+                    {profile?.streak_active ? profile.current_streak : 0}
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                      {t("profile.streak.label")}
+                    </span>
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted">
+                    {(profile?.longest_streak || 0) > 0
+                      ? `${t("profile.streak.best")}: ${profile.longest_streak}`
+                      : t("profile.streak.start")}
+                  </p>
+                </div>
+              </div>
+
               <div className="mt-6 pt-6 border-t border-border space-y-3">
                 <Button onClick={handleResetClass} variant="outline" className="w-full text-sm">
                   <Shield size={16} className="mr-2" /> {t("profile.changeClass")}

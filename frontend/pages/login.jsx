@@ -52,6 +52,18 @@ export default function Login() {
 
       // Smart redirect: newcomer → class picker, returning user → worlds
       const userData = await ProfileAPI.me();
+
+      // Напоминание о стрике: если серия жива, но сегодня ещё не продлена —
+      // подталкиваем заняться миссией (тост виден и после редиректа).
+      const pb = userData?.profile ?? userData ?? {};
+      if (pb.streak_at_risk) {
+        const msg = (dict.streak?.reminder?.toast || "").replace(
+          "{n}",
+          pb.current_streak ?? 0
+        );
+        if (msg) toast(msg, { duration: 6000 });
+      }
+
       if (!userData?.profile?.class_role && !userData?.class_role) {
         router.push("/class");
       } else {

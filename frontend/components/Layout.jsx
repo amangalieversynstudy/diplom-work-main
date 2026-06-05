@@ -10,6 +10,7 @@ import { useTheme } from "../lib/theme";
 import { Profile as ProfileAPI } from "../lib/api";
 import CustomCursor from "./CustomCursor";
 import TransitionLink from "./TransitionLink";
+import StreakReminder from "./StreakReminder";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -256,6 +257,8 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
           </button>
         </div>
       </header>
+
+      <StreakReminder />
 
       <main className={fullBleed ? "relative" : `max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 relative ${noBottomPadding ? "pt-10 pb-0" : "py-10"}`}>
         {children}

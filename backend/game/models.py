@@ -31,6 +31,17 @@ class Track(models.Model):
         ),
     )
     default_language = models.CharField(max_length=5, default="ru")
+    owner = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="owned_tracks",
+        help_text=(
+            "Преподаватель-владелец курса (Студия). Пусто = системный/seed-курс, "
+            "редактируется только суперюзером."
+        ),
+    )
 
     class Meta:
         ordering = ["order", "id"]

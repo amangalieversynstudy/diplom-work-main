@@ -29,9 +29,12 @@ def _student(username="stu", *, xp=0, level=1):
     return user
 
 
-def _staff(username="teacher"):
+def _staff(username="teacher", *, superuser=False):
     return User.objects.create_user(
-        username=username, password="TestPass123!", is_staff=True
+        username=username,
+        password="TestPass123!",
+        is_staff=True,
+        is_superuser=superuser,
     )
 
 
@@ -54,8 +57,12 @@ def _open_progress(user, mission, *, attempts=1, last_started=None):
 
 
 def _staff_client(user=None):
+    # The cabinet is owner-scoped: a regular teacher sees only students doing
+    # their courses. These generic roster/stuck tests assert the *global* view,
+    # so they authenticate as the platform owner (superuser), who sees everyone.
+    # Per-teacher scoping is covered in test_studio.py.
     client = APIClient()
-    client.force_authenticate(user=user or _staff())
+    client.force_authenticate(user=user or _staff("super", superuser=True))
     return client
 
 

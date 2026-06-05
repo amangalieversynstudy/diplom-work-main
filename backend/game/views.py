@@ -43,6 +43,7 @@ from .models import (
     TaskProgress,
     Track,
 )
+from .permissions import IsSuperUser
 from .serializers import (
     LeaderboardEntrySerializer,
     LocationSerializer,
@@ -70,9 +71,12 @@ class TrackViewSet(viewsets.ModelViewSet):
         return qs
 
     def get_permissions(self):
+        # Reads are public; writes are superuser-only. Teachers author their
+        # own courses via the owner-scoped Studio API (game/studio.py), so the
+        # public endpoint never lets one teacher edit another's content.
         if self.request.method in ("GET", "HEAD", "OPTIONS"):
             return [permissions.AllowAny()]
-        return [permissions.IsAdminUser()]
+        return [IsSuperUser()]
 
 
 class LocationViewSet(viewsets.ModelViewSet):
@@ -84,9 +88,10 @@ class LocationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
 
     def get_permissions(self):
+        # Reads public; writes superuser-only (teachers use the Studio API).
         if self.request.method in ("GET", "HEAD", "OPTIONS"):
             return [permissions.AllowAny()]
-        return [permissions.IsAdminUser()]
+        return [IsSuperUser()]
 
 
 class MissionViewSet(viewsets.ModelViewSet):
@@ -102,7 +107,8 @@ class MissionViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated()]
         if self.request.method in ("GET", "HEAD", "OPTIONS"):
             return [permissions.AllowAny()]
-        return [permissions.IsAdminUser()]
+        # Writes superuser-only (teachers use the Studio API).
+        return [IsSuperUser()]
 
     @swagger_auto_schema(
         method="post",
@@ -262,7 +268,7 @@ class MissionViewSet(viewsets.ModelViewSet):
             required=["user_id"],
         ),
     )
-    @action(detail=True, methods=["post"], permission_classes=[permissions.IsAdminUser])
+    @action(detail=True, methods=["post"], permission_classes=[IsSuperUser])
     @transaction.atomic
     def force_complete(self, request, pk=None):
         mission = self.get_object()
@@ -1130,12 +1136,26 @@ class TeacherStudentsView(APIView):
         inactive_before = now - timedelta(days=STUCK_INACTIVE_DAYS)
         User = get_user_model()
 
+        # Преподаватель видит только «своих» учеников — тех, кто проходит миссии
+        # его курсов (Студия). Суперюзер видит всех. Используем подзапрос id__in
+        # (а не JOIN-фильтр), чтобы агрегаты ниже остались точными.
+        base = User.objects.filter(is_staff=False)
+        if not request.user.is_superuser:
+            my_student_ids = (
+                Progress.objects.filter(
+                    mission__location__track__owner=request.user
+                )
+                .values_list("user_id", flat=True)
+                .distinct()
+            )
+            base = base.filter(id__in=my_student_ids)
+
         # Одним запросом: считаем по каждому ученику завершённые / открытые
         # миссии, максимум попыток на незавершённой и время последней активности.
         # Все агрегаты идут по одному JOIN к progress, поэтому distinct=True на
         # Count обязателен, чтобы строки не двоились.
         rows = (
-            User.objects.filter(is_staff=False)
+            base
             .select_related("profile")
             .annotate(
                 completed_count=Count(

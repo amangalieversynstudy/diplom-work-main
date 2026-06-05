@@ -3,6 +3,7 @@ import Button from "../../components/Button";
 import MissionStepper from "../../components/MissionStepper";
 import CodeRunnerPanel from "../../components/CodeRunnerPanel";
 import CodemancerStage from "../../components/CodemancerStage";
+import LevelUpBurst from "../../components/LevelUpBurst";
 import { useRouter } from "next/router";
 import { toast } from "sonner";
 import {
@@ -41,6 +42,7 @@ export default function MissionDetail() {
   // idle | casting (код выполняется) | victory (тест пройден) | defeat (ошибка).
   // tick перезапускает one-shot анимации (снаряд, вспышка) при каждом событии.
   const [stage, setStage] = useState({ phase: "idle", tick: 0 });
+  const [levelUp, setLevelUp] = useState(null);
 
   const activeTask = useMemo(() => {
     return tasks.find((t) => t.id === activeTaskId) || tasks[0] || null;
@@ -185,6 +187,7 @@ export default function MissionDetail() {
             toast.success(t("missionPage.toasts.questDone"));
           }
           if (result?.leveled_up) {
+            setLevelUp(result.new_level);
             // Двойной toast: общая победа + level-up отдельно
             setTimeout(() => {
               toast.success(
@@ -255,8 +258,10 @@ export default function MissionDetail() {
       correctAnswer = correctOpt?.value ?? correctOpt?.label;
     }
     if (String(userAnswer).trim().toLowerCase() === String(correctAnswer).trim().toLowerCase()) {
+      setStage((s) => ({ phase: "victory", tick: s.tick + 1 }));
       handleCompleteTask(taskId, { selected: userAnswer }, 100);
     } else {
+      setStage((s) => ({ phase: "defeat", tick: s.tick + 1 }));
       toast.error(t("missionPage.quizWrong"));
     }
   };
@@ -327,6 +332,9 @@ export default function MissionDetail() {
 
   return (
     <Layout fullBleed hideFooter>
+      {levelUp != null && (
+        <LevelUpBurst level={levelUp} onDone={() => setLevelUp(null)} />
+      )}
       <div className="h-screen pt-24 bg-bg dark:bg-[#0f0f11] text-text dark:text-gray-200 font-sans flex flex-col">
         {/* Квест-шапка в RPG-стиле: deep-wood band + scroll icon + Melodrama.
             Светлая тема — чистая surface-полоса; тёмная — глубокое дерево. */}

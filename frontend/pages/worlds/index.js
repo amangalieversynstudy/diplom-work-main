@@ -21,6 +21,7 @@ export default function Worlds() {
   
   const [missions, setMissions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [heroArrived, setHeroArrived] = useState(false);
   
   const pinContainerRef = useRef(null);
   const mapScrollRef = useRef(null);
@@ -36,6 +37,14 @@ export default function Worlds() {
       .finally(() => setLoading(false));
     // refetch при смене языка
   }, [language]);
+
+  // Маркер героя «доезжает» к текущему узлу при открытии карты.
+  useEffect(() => {
+    if (loading || missions.length === 0) return undefined;
+    setHeroArrived(false);
+    const id = setTimeout(() => setHeroArrived(true), 500);
+    return () => clearTimeout(id);
+  }, [loading, missions]);
 
   // Вычисляем хаотичные координаты
   const getCoords = (index, total) => {
@@ -126,6 +135,22 @@ export default function Worlds() {
       ScrollTrigger.refresh();
     }
   }, { scope: pinContainerRef, dependencies: [loading, missions] });
+
+  // Текущий узел = первый доступный, иначе последний пройденный.
+  const heroTarget = (() => {
+    if (!missions.length) return 0;
+    const avail = missions.findIndex((m) => missionStatus(m) === "available");
+    if (avail !== -1) return avail;
+    let lastDone = 0;
+    missions.forEach((m, i) => {
+      if (missionStatus(m) === "completed") lastDone = i;
+    });
+    return lastDone;
+  })();
+  const heroCoords = getCoords(
+    heroArrived ? heroTarget : Math.max(0, heroTarget - 1),
+    missions.length
+  );
 
   return (
     <Layout hideFooter noBottomPadding>
@@ -268,6 +293,25 @@ export default function Worlds() {
                   </Link>
                 );
               })}
+
+              {/* Маркер героя: стоит у текущего узла и «доезжает» к нему при входе */}
+              <div
+                className="absolute z-20 -translate-x-1/2 -translate-y-[150%] pointer-events-none"
+                style={{
+                  left: `${heroCoords.x}%`,
+                  top: `${heroCoords.y}%`,
+                  transition:
+                    "left 1.2s cubic-bezier(0.4,0,0.2,1), top 1.2s cubic-bezier(0.4,0,0.2,1)",
+                }}
+                aria-hidden="true"
+              >
+                <span className="relative grid place-items-center">
+                  <span className="absolute -inset-2 rounded-full bg-[#8e1d1d]/30 animate-ping motion-reduce:animate-none" />
+                  <span className="grid h-8 w-8 place-items-center rounded-full border-2 border-[#8e1d1d] bg-[#f4e4bc] text-[#8e1d1d] shadow-[0_4px_10px_rgba(62,39,35,0.5)]">
+                    <Compass size={17} strokeWidth={2.5} />
+                  </span>
+                </span>
+              </div>
             </>
           )}
         </div>

@@ -3,6 +3,11 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
+from .studio import (
+    StudioLocationViewSet,
+    StudioMissionViewSet,
+    StudioTrackViewSet,
+)
 from .views import (
     AchievementsView,
     AIAssistView,
@@ -30,6 +35,15 @@ router.register(r"mission-tasks", MissionTaskViewSet)
 router.register(r"task-progress", TaskProgressViewSet, basename="task-progress")
 router.register(r"ranks", RankViewSet)
 router.register(r"leaderboard", LeaderboardViewSet, basename="leaderboard")
+
+# Teacher Studio — owner-scoped content authoring (see game/studio.py).
+router.register(r"teacher/studio/tracks", StudioTrackViewSet, basename="studio-track")
+router.register(
+    r"teacher/studio/locations", StudioLocationViewSet, basename="studio-location"
+)
+router.register(
+    r"teacher/studio/missions", StudioMissionViewSet, basename="studio-mission"
+)
 
 
 urlpatterns = [

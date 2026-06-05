@@ -334,6 +334,20 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
                 </div>
               </TransitionLink>
             )}
+            {isStaff && (
+              <TransitionLink
+                href="/studio"
+                onClick={() => setIsMenuOpen(false)}
+                className="group flex items-center gap-4 text-3xl font-bold text-text hover:text-primary transition-colors"
+              >
+                <span className="group-hover:text-[var(--primary)] transition-colors">
+                  {t("studio.title")}
+                </span>
+                <div className="w-8 h-8 rounded-full bg-[var(--primary)] text-white flex items-center justify-center opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                  <ArrowUpRight className="w-5 h-5" />
+                </div>
+              </TransitionLink>
+            )}
           </div>
 
           <div className="mt-auto pb-10 border-t border-border pt-6 flex flex-col gap-4">

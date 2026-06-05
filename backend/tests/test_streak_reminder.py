@@ -74,3 +74,16 @@ def test_dry_run_sends_nothing(mailoutbox):
     assert len(mailoutbox) == 0
     user.profile.refresh_from_db()
     assert user.profile.last_streak_reminder is None  # not stamped
+
+
+def test_scheduler_seconds_until_next_utc_slot():
+    # Pure helper that drives the in-process daily scheduler (game/scheduler.py).
+    from datetime import datetime, timezone as tz
+
+    from game.scheduler import _seconds_until
+
+    before = datetime(2026, 6, 5, 10, 0, 0, tzinfo=tz.utc)  # 8h before 18:00
+    assert _seconds_until(18, 0, now=before) == 8 * 3600
+
+    after = datetime(2026, 6, 5, 20, 0, 0, tzinfo=tz.utc)  # slot passed → tomorrow
+    assert _seconds_until(18, 0, now=after) == 22 * 3600

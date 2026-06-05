@@ -498,6 +498,8 @@ export const en = {
       cta_button2: "World map",
     },
     missionPage: {
+      levelUpTitle: "Level up!",
+      levelLabel: "Level",
       toasts: {
         loadFail: "Failed to load quest data.",
         passed: "Trial cleared! Reporting to the server...",

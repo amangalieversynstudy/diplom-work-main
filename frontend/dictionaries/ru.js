@@ -498,6 +498,8 @@ export const ru = {
       cta_button2: "Карта миров",
     },
     missionPage: {
+      levelUpTitle: "Новый уровень!",
+      levelLabel: "Уровень",
       toasts: {
         loadFail: "Не удалось загрузить данные квеста.",
         passed: "Испытание пройдено! Отправка отчёта на сервер...",

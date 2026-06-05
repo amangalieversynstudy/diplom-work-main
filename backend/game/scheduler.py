@@ -1,17 +1,8 @@
-"""Lightweight in-process daily scheduler for streak reminders.
+"""In-process daily scheduler: runs ``send_streak_reminders`` once a day.
 
-Runs *inside* the existing web service, so no extra Railway service (or
-dependency) is needed. Spawns one daemon thread that wakes once a day at the
-configured UTC time and runs the ``send_streak_reminders`` management command.
-
-Enabled only when ``ENABLE_STREAK_SCHEDULER=1`` so it never starts during
-tests, migrations or one-off management commands. Daily idempotency lives in
-the command itself (``Profile.last_streak_reminder``), so even if several web
-workers each run this thread, no player is emailed twice.
-
-Caveat: a missed slot (service restarting/asleep at the target minute) is not
-retried until the next day — fine for a daily nudge, and you can always run
-``python manage.py send_streak_reminders`` manually.
+A daemon thread (started only when ``ENABLE_STREAK_SCHEDULER=1``) wakes at the
+configured UTC hour and runs the command. Sends are idempotent per day, so a
+missed or duplicated run is harmless.
 """
 
 import logging

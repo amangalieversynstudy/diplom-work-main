@@ -1,6 +1,6 @@
 # RPG Learning Platform (Django + Next.js)
 
-— Быстрый старт: [локально](README.deploy.md#quickstart-local) • [staging](README.deploy.md#quickstart-staging) • [Полный гайд по деплою](README.deploy.md)
+— Деплой: [Backend → Railway](README.deploy.md#backend-railway) • [Frontend → Vercel](README.deploy.md#frontend-vercel) • [Локально](README.deploy.md#quickstart-local) • [Полный гайд](README.deploy.md)
 — CI: GitHub Actions — `.github/workflows/ci.yml` (бэкенд: pytest, фронтенд: build).
 
 ## Что реализовано
@@ -248,7 +248,7 @@ cd frontend && npm run lint && npm run build
 ## Быстрый старт
 
 - Локально: [README.deploy.md#quickstart-local](README.deploy.md#quickstart-local)
-- Staging: [README.deploy.md#quickstart-staging](README.deploy.md#quickstart-staging)
+- Прод: [Backend → Railway](README.deploy.md#backend-railway) · [Frontend → Vercel](README.deploy.md#frontend-vercel)
 
 Run backend tests with coverage locally (using Docker Compose):
 

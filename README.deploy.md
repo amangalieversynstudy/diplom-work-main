@@ -37,7 +37,6 @@
 - [Уведомления о сбоях (Slack)](#%D0%A3%D0%B2%D0%B5%D0%B4%D0%BE%D0%BC%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F-%D0%BE-%D1%81%D0%B1%D0%BE%D1%8F%D1%85-slack)
 - [Переменные GitLab CI (общее)](#%D0%9F%D0%B5%D1%80%D0%B5%D0%BC%D0%B5%D0%BD%D0%BD%D1%8B%D0%B5-gitlab-ci-%D0%BE%D0%B1%D1%89%D0%B5%D0%B5)
 - [Demo management-команды](#demo-management-%D0%BA%D0%BE%D0%BC%D0%B0%D0%BD%D0%B4%D1%8B)
-- [Ручное тестирование API (Postman)](#%D0%A0%D1%83%D1%87%D0%BD%D0%BE%D0%B5-%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5-api-postman)
 - [Частые проблемы](#%D0%A7%D0%B0%D1%81%D1%82%D1%8B%D0%B5-%D0%BF%D1%80%D0%BE%D0%B1%D0%BB%D0%B5%D0%BC%D1%8B)
 - [Безопасность](#%D0%91%D0%B5%D0%B7%D0%BE%D0%BF%D0%B0%D1%81%D0%BD%D0%BE%D1%81%D1%82%D1%8C)
 - [Быстрый старт (фронт+бэк)](#%D0%91%D1%8B%D1%81%D1%82%D1%80%D1%8B%D0%B9-%D1%81%D1%82%D0%B0%D1%80%D1%82-%D1%84%D1%80%D0%BE%D0%BD%D1%82%D0%B1%D1%8D%D0%BA)
@@ -63,10 +62,6 @@
 - `Admin login: admin/admin123`
 
 4. Откройте `http://localhost:8000/healthz` — должно вернуть `{ "status": "ok" }`.
-5. Для ручного API-теста импортируйте в Postman:
-
-- Коллекцию: `diagnostics/postman/RPG.postman_collection.json`
-- Окружение: `diagnostics/postman/Local.postman_environment.json`
 
 ### 2) Staging с демо-данными
 
@@ -236,15 +231,6 @@
   - В non-debug средах требует `ALLOW_DEMO_SEED=true`.
 - `python manage.py print_demo_summary`
   - Печатает краткую сводку по локациям/миссиям.
-
-## Ручное тестирование API (Postman)
-
-Импортируйте:
-
-- Коллекция: `diagnostics/postman/RPG.postman_collection.json`
-- Окружение: `diagnostics/postman/Local.postman_environment.json`
-
-Последовательность: Register → Login (автосохранит access/refresh) → Me → Missions → Start/Complete → Progress → Logout.
 
 ## Частые проблемы
 

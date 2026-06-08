@@ -1,11 +1,7 @@
 # RPG Learning Platform (Django + Next.js)
 
-![pipeline status](https://gitlab.com/amangalieversynstudy/diplom-work/badges/main/pipeline.svg)
-![coverage](https://gitlab.com/amangalieversynstudy/diplom-work/badges/main/coverage.svg)
-![codecov](https://codecov.io/gh/amangalieversynstudy/diplom-work/branch/main/graph/badge.svg)
-
 — Быстрый старт: [локально](README.deploy.md#quickstart-local) • [staging](README.deploy.md#quickstart-staging) • [Полный гайд по деплою](README.deploy.md)
-— CI/CD на GitLab: [docs/gitlab.md](docs/gitlab.md) описывает пайплайн, переменные и чек-листы.
+— CI: GitHub Actions — `.github/workflows/ci.yml` (бэкенд: pytest, фронтенд: build).
 
 ## Что реализовано
 
@@ -95,14 +91,9 @@
 | `frontend/components/CodeRunnerPanel.jsx` | Редактор + терминал + инвентарь + AI Summon |
 | `frontend/dictionaries/` | i18n словари `en.js` и `ru.js` |
 | `docker-compose.yml` | Локальный стек: db / backend (Daphne) / frontend |
-| `docs/QA_CHECKLIST.md` | Чеклист ручного тестирования всех критических путей |
 | `README.deploy.md` | Полный гайд по деплою на VPS (nginx + SSL + systemd) |
-| `docs/` | Гайды: `gitlab.md`, `file_overview.md`, `internet_deploy_plan.md` |
-| `diagnostics/postman/` | Коллекции для ручного теста API |
-| `ci/`, `.github/workflows/` | GitLab CI + GitHub Actions |
+| `.github/workflows/ci.yml` | CI: бэкенд (pytest) + фронтенд (build) |
 | `Makefile` | Укороченные команды (`deploy-local`, `seed-demo`, `logs`) |
-
-Подробные описания файлов: `docs/file_overview.md`.
 
 Быстрый просмотр фронтенда (без бэкенда):
 
@@ -128,7 +119,7 @@ cd frontend && npm ci --no-audit --no-fund && npm run dev
 - [Codecov integration](#codecov-integration)
 - [Документация по деплою](#%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D0%B0%D1%86%D0%B8%D1%8F-%D0%BF%D0%BE-%D0%B4%D0%B5%D0%BF%D0%BB%D0%BE%D1%8E)
 - [Manual testing (локально)](#manual-testing-%D0%BB%D0%BE%D0%BA%D0%B0%D0%BB%D1%8C%D0%BD%D0%BE-1)
-- [GitLab CI/CD](#gitlab-cicd)
+- [CI (GitHub Actions)](#ci-github-actions)
 - [Branch Protection](#branch-protection)
   - [Настройка защиты веток](#%D0%9D%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0-%D0%B7%D0%B0%D1%89%D0%B8%D1%82%D1%8B-%D0%B2%D0%B5%D1%82%D0%BE%D0%BA)
 
@@ -403,14 +394,10 @@ docker compose exec db pg_dump -U rpguser rpgdb > db-dump.sql
 
 Если хотите, могу сгенерировать пример Postman коллекции (JSON) или добавить конкретные curl-примеры для каждого endpoint.
 
-## GitLab CI/CD
+## CI (GitHub Actions)
 
-- **Конфигурация** — хранится в `.gitlab-ci.yml`. Структура: `lint → test → frontend → build → smoke → deploy`.
-- **Docker job-ы** (`backend-build-image`, `smoke-backend-image`, `deploy-local`) используют сервис `docker:dind`. На GitLab.com shared runner-ах флаг `privileged` отключён, поэтому подключаемся к демону через `DOCKER_HOST=tcp://docker:2375` и выключаем TLS (`DOCKER_TLS_CERTDIR=""`).
-- **Отчёты** — `backend-test` публикует `pytest` результаты и coverage, фронтенд-джобы сохраняют `.next` как артефакт.
-- **Документация** — см. `docs/gitlab.md` для детального описания стадий, переменных, чек-листа перед merge и типовых ошибок (`lookup docker`, `healthz`).
-
-Когда обновляешь `.gitlab-ci.yml`, обязательно синхронизируй заметки в `docs/gitlab.md`, чтобы команда видела единое место правды.
+- **Конфигурация** — `.github/workflows/ci.yml`. Три job-а: `backend` (Postgres+Redis → миграции → `pytest` → `manage.py check --deploy`), `frontend` (`npm ci` → lint → `npm run build`), `security` (pip-audit + npm audit на PR).
+- Триггеры: push и pull request в `main`.
 
 ## Branch Protection
 

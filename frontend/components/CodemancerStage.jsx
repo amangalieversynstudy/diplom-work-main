@@ -28,7 +28,7 @@ export default function CodemancerStage({
 
   return (
     <div
-      className="codemancer-stage relative w-full shrink-0 h-44 sm:h-52 md:h-60 xl:h-64 overflow-hidden border-b border-border bg-[#0a1322] select-none"
+      className={`codemancer-stage relative w-full shrink-0 h-44 sm:h-52 md:h-60 xl:h-64 overflow-hidden border-b border-border bg-[#0a1322] select-none ${phase !== "idle" ? "cm-" + phase : ""}`}
       role="img"
       aria-label={`${heroName}, level ${level}`}
     >
@@ -73,6 +73,8 @@ export default function CodemancerStage({
 
         {/* sky */}
         <rect width="1408" height="470" fill="url(#cm-sky)" />
+        {/* тинт всей сцены — реакция окружения на исход задания */}
+        <rect className="cm-tint" width="1408" height="470" fill="#000" opacity="0" />
 
         {/* stars */}
         <g fill="#cfd6f0" className="cm-stars">
@@ -88,7 +90,7 @@ export default function CodemancerStage({
 
         {/* moon */}
         <g transform="translate(700 90)">
-          <circle r="60" fill="url(#cm-moonGlow)" />
+          <circle r="60" fill="url(#cm-moonGlow)" className="cm-moonlight" />
           <path d="M -14 -22 a 22 22 0 1 0 0 44 a 17 17 0 1 1 0 -44 z" fill="#f7efcc" />
         </g>
 
@@ -110,9 +112,9 @@ export default function CodemancerStage({
           <polygon points="160,60 190,20 220,60" />
           <polygon points="80,50 110,0 140,50" />
           <rect x="100" y="100" width="20" height="40" fill="#1a1f30" />
-          <rect x="35" y="100" width="14" height="20" fill="#ffd86a" opacity=".7" />
-          <rect x="175" y="100" width="14" height="20" fill="#ffd86a" opacity=".7" />
-          <rect x="100" y="130" width="14" height="20" fill="#ffd86a" opacity=".7" />
+          <rect x="35" y="100" width="14" height="20" fill="#ffd86a" opacity=".7" className="cm-window" />
+          <rect x="175" y="100" width="14" height="20" fill="#ffd86a" opacity=".7" className="cm-window" />
+          <rect x="100" y="130" width="14" height="20" fill="#ffd86a" opacity=".7" className="cm-window" />
         </g>
 
         {/* trees left */}
@@ -161,7 +163,7 @@ export default function CodemancerStage({
         </g>
 
         {/* spikes pit */}
-        <g transform="translate(620 320)">
+        <g transform="translate(620 320)" className="cm-spikes">
           <g fill="#cfd4dc" stroke="#7a8090" strokeWidth="1">
             <polygon points="0,80 14,20 28,80" />
             <polygon points="26,80 40,12 54,80" />
@@ -457,8 +459,34 @@ export default function CodemancerStage({
           0%, 90%, 100% { opacity: 1; }
           95% { opacity: 0.2; }
         }
+        /* ── реакция ОКРУЖЕНИЯ на исход задания (не только герой/голем) ── */
+        .cm-tint { transform-box: view-box; }
+        .cm-defeat .cm-tint { fill: #3a0d0d; animation: cm-tint-in 0.5s ease forwards; }
+        .cm-victory .cm-tint { fill: #d9a441; animation: cm-flash 0.9s ease; }
+        @keyframes cm-tint-in { from { opacity: 0; } to { opacity: 0.34; } }
+        @keyframes cm-flash { 0% { opacity: 0; } 25% { opacity: 0.18; } 100% { opacity: 0; } }
+
+        .cm-victory .cm-window { animation: cm-win-flare 1s ease; }
+        .cm-defeat .cm-window { opacity: 0.2; transition: opacity 0.4s ease; }
+        .cm-casting .cm-window { animation: cm-flicker 1.1s ease-in-out infinite; }
+        @keyframes cm-win-flare { 0%, 100% { opacity: 0.7; } 40% { opacity: 1; } }
+        @keyframes cm-flicker { 0%, 100% { opacity: 0.7; } 50% { opacity: 0.35; } }
+
+        .cm-moonlight { transform-box: fill-box; transform-origin: center; }
+        .cm-victory .cm-moonlight { animation: cm-moon-up 1s ease; }
+        .cm-defeat .cm-moonlight { opacity: 0.3; transition: opacity 0.4s ease; }
+        @keyframes cm-moon-up { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } }
+
+        .cm-victory .cm-stars circle { animation-duration: 1s; }
+        .cm-defeat .cm-spikes polygon { fill: #ff6b6b; transition: fill 0.25s ease; }
+        .cm-defeat .cm-axe { animation-duration: 1.2s; }
+        .cm-casting .cm-axe { animation-duration: 2.2s; }
+
         @media (prefers-reduced-motion: reduce) {
           .cm-stars circle,
+          .cm-tint,
+          .cm-window,
+          .cm-moonlight,
           .cm-axe,
           .cm-hero,
           .cm-hero.cm-cast,

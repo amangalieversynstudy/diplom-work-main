@@ -43,6 +43,15 @@ CORS_ALLOWED_ORIGIN_REGEXES += [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+# ─── Teacher self-registration (invite code) ──────────────────────────────
+# Ship a working default so teacher sign-up works in prod out of the box —
+# no one has to set a Railway variable first. Teachers register at /register
+# with this code and get is_staff (cabinet + analytics). Setting the
+# TEACHER_INVITE_CODE env var overrides this, so the code can be rotated
+# without a redeploy. (base.py defaults to "" = disabled; this opts prod in,
+# exactly like local.py does for dev.)
+TEACHER_INVITE_CODE = TEACHER_INVITE_CODE or "RPG-TEACHER-2026"
+
 # ─── code runner on Docker-less hosts (Railway) ───────────────────────────
 # Primary path here is the external Judge0 sandbox (RUNNER_JUDGE0_URL, inherited
 # from base) — code runs OFF this server, so app secrets/filesystem stay safe.

@@ -186,12 +186,14 @@ export const Profile = {
   },
 };
 
-export async function registerUser({ username, email, password }) {
+export async function registerUser({ username, email, password, teacher_code }) {
   // DRF: POST /api/auth/register/
+  // teacher_code необязателен: верный код → бэкенд выдаёт is_staff (учитель).
   const { data } = await api.post("/auth/register/", {
     username,
     email,
     password,
+    ...(teacher_code ? { teacher_code } : {}),
   });
   return data;
 }
@@ -242,6 +244,52 @@ export const Runner = {
 // комиссии «как вы измеряете эффективность обучения».
 export const Analytics = {
   get: () => api.get("/analytics/").then((r) => r.data),
+};
+
+// Кабинет преподавателя (только для staff): список учеников с прогрессом и
+// флагом «застрял». Ответ — {students: [...], summary: {...}}.
+export const Teacher = {
+  students: () => api.get("/teacher/students/").then((r) => r.data),
+};
+
+// Студия преподавателя (staff): CRUD по своим курсам. Бэкенд жёстко ограничивает
+// выдачу владельцем (game/studio.py), поэтому учитель видит и правит только своё.
+export const Studio = {
+  tracks: {
+    list: () => api.get("/teacher/studio/tracks/").then((r) => unwrapList(r.data)),
+    get: (id) => api.get(`/teacher/studio/tracks/${id}/`).then((r) => r.data),
+    create: (payload) =>
+      api.post("/teacher/studio/tracks/", payload).then((r) => r.data),
+    update: (id, payload) =>
+      api.patch(`/teacher/studio/tracks/${id}/`, payload).then((r) => r.data),
+    remove: (id) => api.delete(`/teacher/studio/tracks/${id}/`),
+  },
+  locations: {
+    list: (trackId) =>
+      api
+        .get("/teacher/studio/locations/", {
+          params: trackId ? { track: trackId } : {},
+        })
+        .then((r) => unwrapList(r.data)),
+    create: (payload) =>
+      api.post("/teacher/studio/locations/", payload).then((r) => r.data),
+    update: (id, payload) =>
+      api.patch(`/teacher/studio/locations/${id}/`, payload).then((r) => r.data),
+    remove: (id) => api.delete(`/teacher/studio/locations/${id}/`),
+  },
+  missions: {
+    list: (locationId) =>
+      api
+        .get("/teacher/studio/missions/", {
+          params: locationId ? { location: locationId } : {},
+        })
+        .then((r) => unwrapList(r.data)),
+    create: (payload) =>
+      api.post("/teacher/studio/missions/", payload).then((r) => r.data),
+    update: (id, payload) =>
+      api.patch(`/teacher/studio/missions/${id}/`, payload).then((r) => r.data),
+    remove: (id) => api.delete(`/teacher/studio/missions/${id}/`),
+  },
 };
 
 // Достижения текущего игрока. Каталог (иконки/условия) живёт на бэкенде в

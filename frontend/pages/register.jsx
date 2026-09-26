@@ -16,10 +16,13 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [teacherMode, setTeacherMode] = useState(false);
+  const [teacherCode, setTeacherCode] = useState("");
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const dict = useDictionary();
   const copy = dict.auth.register;
+  const extra = dict.auth.registerExtra || {};
   const toggle = dict.auth.passwordToggle || {};
   const router = useRouter();
 
@@ -47,7 +50,12 @@ export default function Register() {
     setLoading(true);
     const trimmedEmail = email.trim();
     try {
-      await registerUser({ username, email: trimmedEmail, password });
+      await registerUser({
+        username,
+        email: trimmedEmail,
+        password,
+        teacher_code: teacherMode ? teacherCode.trim() : "",
+      });
 
       clearPlayerClass();
 
@@ -68,10 +76,12 @@ export default function Register() {
       const detail = err?.response?.data || {};
       // Разложим ошибки бэкенда по полям, если они пришли структурой.
       const fieldErrors = {};
-      ["username", "email", "password"].forEach((k) => {
+      ["username", "email", "password", "teacher_code"].forEach((k) => {
         if (detail[k])
           fieldErrors[k] = Array.isArray(detail[k]) ? detail[k][0] : detail[k];
       });
+      // Если бэк отверг код преподавателя — держим поле раскрытым.
+      if (detail.teacher_code) setTeacherMode(true);
       if (Object.keys(fieldErrors).length) setErrors((p) => ({ ...p, ...fieldErrors }));
       const msg =
         detail.detail ||
@@ -158,6 +168,45 @@ export default function Register() {
               />
               <FieldError k="confirm" />
             </label>
+
+            {!teacherMode ? (
+              <button
+                type="button"
+                onClick={() => setTeacherMode(true)}
+                className="self-start text-xs text-primary hover:underline"
+              >
+                {extra.teacherToggle || "Регистрируетесь как преподаватель?"}
+              </button>
+            ) : (
+              <label className="text-sm text-muted">
+                {extra.teacherCodeLabel || "Код преподавателя"}
+                <input
+                  className={inputCls("teacher_code")}
+                  placeholder={
+                    extra.teacherCodePlaceholder ||
+                    "Введите код, выданный администратором"
+                  }
+                  value={teacherCode}
+                  onChange={(e) => {
+                    setTeacherCode(e.target.value);
+                    clearError("teacher_code");
+                  }}
+                />
+                <FieldError k="teacher_code" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTeacherMode(false);
+                    setTeacherCode("");
+                    clearError("teacher_code");
+                  }}
+                  className="mt-1 text-xs text-faint hover:underline"
+                >
+                  {extra.teacherCancel || "Я студент"}
+                </button>
+              </label>
+            )}
+
             <Button type="submit" disabled={loading}>
               {loading ? copy.submitting : copy.submit}
             </Button>

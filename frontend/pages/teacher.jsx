@@ -99,6 +99,9 @@ function EarlyWarningPanel({ warning, t }) {
         mission: reason.mission_title,
       });
     }
+    if (reason.code === "model_risk") {
+      return t("teacher.warning.reasonModel");
+    }
     return reason.days == null
       ? t("teacher.warning.reasonNeverSeen")
       : fill(t("teacher.warning.reasonInactive"), { n: reason.days });

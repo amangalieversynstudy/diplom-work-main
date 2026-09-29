@@ -11,6 +11,8 @@ Signals (weights in ``WEIGHTS``):
 * ``stuck_task`` - failed the same quiz/code step several times in a row
   (``HELP_AFTER_FAILURES`` or more; ``DEEP_STRUGGLE_FAILURES`` counts double).
 * ``inactive`` - has unfinished work but has not shown up for a while.
+* ``model_risk`` - the trained drop-out model (``game.risk``), if one is
+  configured, puts the learner above its decision threshold.
 """
 
 from django.contrib.auth import get_user_model
@@ -18,6 +20,7 @@ from django.utils import timezone
 
 from .metrics import _last_activity, _title, scoped_tasks
 from .models import Progress, TaskProgress
+from .risk import load_risk_model, risk_probabilities
 from .services import HELP_AFTER_FAILURES
 
 DEEP_STRUGGLE_FAILURES = 5
@@ -29,6 +32,7 @@ WEIGHTS = {
     "deep_struggle": 4,
     "inactive_long": 3,
     "inactive_soon": 1,
+    "model_risk": 2,
 }
 HIGH_SCORE = 4
 MEDIUM_SCORE = 2
@@ -79,6 +83,8 @@ def assess_students(viewer, *, now=None):
             worst[row["user_id"]] = row
 
     last_seen = _last_activity(learner_ids)
+    model = load_risk_model()
+    chances = risk_probabilities(model, learner_ids, now) if model else {}
     assessments = {}
     for student in students:
         reasons = []
@@ -107,6 +113,11 @@ def assess_students(viewer, *, now=None):
             score += WEIGHTS["inactive_long" if long_gone else "inactive_soon"]
             reasons.append({"code": "inactive", "days": days})
 
+        chance = chances.get(student.pk)
+        if chance is not None and has_open_work and chance >= model.threshold:
+            score += WEIGHTS["model_risk"]
+            reasons.append({"code": "model_risk", "probability": round(chance, 2)})
+
         profile = getattr(student, "profile", None)
         assessments[student.pk] = {
             "id": student.pk,
@@ -116,6 +127,7 @@ def assess_students(viewer, *, now=None):
             "score": score,
             "reasons": reasons,
             "failures": stuck["attempts"] if stuck else 0,
+            "risk_probability": round(chance, 3) if chance is not None else None,
             "last_active": seen.isoformat() if seen else None,
             "days_inactive": days,
             "xp": getattr(profile, "xp", 0),
@@ -142,5 +154,6 @@ def early_warning(viewer, *, now=None):
             "deep_failures": DEEP_STRUGGLE_FAILURES,
             "inactive_soon_days": INACTIVE_SOON_DAYS,
             "inactive_long_days": INACTIVE_LONG_DAYS,
+            "model": bool(load_risk_model()),
         },
     }

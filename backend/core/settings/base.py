@@ -192,6 +192,8 @@ REST_FRAMEWORK = {
 # SECRET_KEY when empty). See game/management/commands/export_learning_data.py.
 LEARNING_DATA_RETENTION_DAYS = int(os.getenv("LEARNING_DATA_RETENTION_DAYS", "730"))
 ANALYTICS_EXPORT_SALT = os.getenv("ANALYTICS_EXPORT_SALT", "")
+# Optional drop-out risk model (JSON from ml/risk/train.py); empty = rules only.
+RISK_MODEL_PATH = os.getenv("RISK_MODEL_PATH", "")
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),

@@ -47,3 +47,9 @@ CLAUDE.md
 # Diploma explanatory note (Word docs) — рукопись держится отдельно от кода
 *.docx
 _diplom_chapters/
+
+# ML: datasets and trained-model outputs stay local (OULAD is large; exports are personal data)
+ml/data/
+ml/out/
+risk_features.csv
+risk_model/

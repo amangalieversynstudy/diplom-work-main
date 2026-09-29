@@ -195,8 +195,9 @@ export const en = {
       reasonStuck: "{n} failures in a row: “{task}” ({mission})",
       reasonInactive: "not seen for {n} d with unfinished work",
       reasonNeverSeen: "no activity with unfinished work",
+      reasonModel: "the model rates the risk of leaving as high, judging by recent activity",
       rules:
-        "Rules: {n}+ failures in a row on a step, or {days}+ days without activity on an unfinished mission.",
+        "Rules: {n}+ failures in a row on a step, or {days}+ days without activity on an unfinished mission. When a model is configured it adds one more signal.",
       step: "step",
     },
     lastActive: {

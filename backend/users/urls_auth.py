@@ -17,7 +17,6 @@ urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="auth-register"),
     # Canonical JWT endpoints with custom LoginView that supports email or username
     path("auth/login/", LoginView.as_view(), name="token_obtain_pair"),
-    path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # Compatibility aliases for frontend expecting djoser-like paths
     path("auth/jwt/create/", LoginView.as_view(), name="jwt_create"),
     path("auth/jwt/refresh/", TokenRefreshView.as_view(), name="jwt_refresh"),

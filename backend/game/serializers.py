@@ -66,7 +66,6 @@ class MissionTaskSerializer(LocalizedSerializerMixin, serializers.ModelSerialize
             "data",
             "xp_reward",
             "is_required",
-            "is_side_quest",
             "estimated_minutes",
             "language",
         ]
@@ -202,7 +201,6 @@ class LocationSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
             "slug": track.slug,
             "title": track.get_localized_title(lang),
             "color_theme": track.color_theme,
-            "is_premium": track.is_premium,
         }
 
     def get_language(self, obj):
@@ -233,8 +231,6 @@ class TrackSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
             "color_theme",
             "order",
             "is_active",
-            "is_premium",
-            "default_language",
             "worlds",
             "language",
         ]

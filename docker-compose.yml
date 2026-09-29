@@ -81,24 +81,6 @@ services:
       retries: 5
       start_period: 90s  # next dev долго стартует
 
-  celery:
-    build: ./backend
-    command: celery -A core worker -l info
-    volumes:
-      - ./backend:/app
-    environment:
-      REDIS_URL: "redis://redis:6379/0"
-      DJANGO_SETTINGS_MODULE: "core.settings.local"
-    depends_on:
-      - backend
-      - redis
-    # INFRA-04: healthcheck для celery worker
-    healthcheck:
-      test: ["CMD-SHELL", "celery -A core inspect ping -d celery@$$HOSTNAME || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
 
 volumes:
   db-data: {}

@@ -11,7 +11,7 @@ parse_rate(), который поддерживает синтаксис вид�
 """
 
 from django.core.cache import cache
-from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
+from rest_framework.throttling import UserRateThrottle
 
 
 class _CustomPeriodThrottle(UserRateThrottle):
@@ -70,12 +70,6 @@ class CodeRunnerBurstThrottle(_CustomPeriodThrottle):
     """
 
     scope = "code_runner_burst"
-
-
-class AnonHardLimit(AnonRateThrottle):
-    """Аноны получают жёсткий лимит на любой защищённый эндпоинт."""
-
-    rate = "10/min"
 
 
 # ── WebSocket runner limits ─────────────────────────────────────────────────

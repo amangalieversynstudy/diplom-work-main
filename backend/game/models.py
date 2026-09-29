@@ -21,7 +21,6 @@ class Track(models.Model):
     color_theme = models.CharField(max_length=32, blank=True)
     order = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
-    is_premium = models.BooleanField(default=False)
     is_intro = models.BooleanField(
         default=False,
         help_text=(
@@ -30,7 +29,6 @@ class Track(models.Model):
             "Включать стоит ровно у одного активного трека."
         ),
     )
-    default_language = models.CharField(max_length=5, default="ru")
     owner = models.ForeignKey(
         "users.User",
         on_delete=models.SET_NULL,
@@ -240,10 +238,6 @@ class MissionTask(models.Model):
     xp_reward = models.IntegerField(default=0)
     is_required = models.BooleanField(default=True)
     estimated_minutes = models.IntegerField(default=5)
-    is_side_quest = models.BooleanField(
-        default=False,
-        help_text="Если True — отображается как побочная миссия для доп. XP",
-    )
 
     class Meta:
         ordering = ["mission", "order", "id"]
@@ -294,17 +288,6 @@ class TaskProgress(models.Model):
 
     class Meta:
         unique_together = ("user", "task")
-
-    def mark_attempt(self, score: int = 0, completed: bool = False):
-        now = timezone.now()
-        self.attempts = (self.attempts or 0) + 1
-        self.last_submitted_at = now
-        self.best_score = max(self.best_score or 0, score or 0)
-        if completed:
-            self.status = "completed"
-        elif self.status == "not_started":
-            self.status = "in_progress"
-        self.save()
 
 
 class Rank(models.Model):

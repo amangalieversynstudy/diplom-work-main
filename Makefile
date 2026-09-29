@@ -25,7 +25,7 @@ COMMON_ENV = -e DJANGO_SETTINGS_MODULE=core.settings.base \
 .PHONY: help
 help:
 	@echo "Available targets:"
-	@echo "  make deploy-local     - Run local stack (redis, postgres, backend, celery)"
+	@echo "  make deploy-local     - Run local stack (redis, postgres, backend)"
 	@echo "  make seed-demo        - Seed demo content + admin user"
 	@echo "  make stop-local       - Stop local stack containers"
 	@echo "  make logs             - Tail backend logs"
@@ -39,7 +39,7 @@ help:
 .PHONY: deploy-local
 deploy-local:
 	@docker network create ci_local_net >/dev/null 2>&1 || true
-	@for c in ci_local_backend ci_local_celery ci_local_postgres ci_local_redis; do docker rm -f $$c >/dev/null 2>&1 || true; done
+	@for c in ci_local_backend ci_local_postgres ci_local_redis; do docker rm -f $$c >/dev/null 2>&1 || true; done
 	@docker run -d --name ci_local_redis --network ci_local_net redis:7 >/dev/null
 	@docker run -d --name ci_local_postgres --network ci_local_net -e POSTGRES_DB=rpgdb -e POSTGRES_USER=rpguser -e POSTGRES_PASSWORD=rpgpass postgres:15 >/dev/null
 	@echo -n "Waiting for Postgres"; \
@@ -53,7 +53,6 @@ deploy-local:
 	@docker run --rm --network ci_local_net $(COMMON_ENV) backend-local:latest python manage.py collectstatic --noinput
 	@$(MAKE) seed-demo
 	@docker run -d --name ci_local_backend --network ci_local_net -p 8000:8000 $(COMMON_ENV) backend-local:latest >/dev/null
-	@docker run -d --name ci_local_celery --network ci_local_net $(COMMON_ENV) backend-local:latest celery -A core worker -l info >/dev/null
 	@echo -n "Waiting for backend"; \
 	for i in `seq 1 30`; do \
 		if curl -fsS http://localhost:8000/healthz >/dev/null 2>&1; then echo " OK"; break; fi; \
@@ -69,7 +68,7 @@ seed-demo:
 
 .PHONY: stop-local
 stop-local:
-	@for c in ci_local_backend ci_local_celery ci_local_postgres ci_local_redis; do docker rm -f $$c >/dev/null 2>&1 || true; done
+	@for c in ci_local_backend ci_local_postgres ci_local_redis; do docker rm -f $$c >/dev/null 2>&1 || true; done
 
 .PHONY: logs
 logs:

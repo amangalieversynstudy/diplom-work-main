@@ -8,10 +8,9 @@
 # Сервисы:
 #   nginx     — reverse-proxy, TLS-терминация (443 → backend/frontend)
 #   backend   — Daphne ASGI (Django + Channels WebSocket для песочницы)
-#   celery    — фоновые задачи
 #   frontend  — Next.js production build
 #   db        — PostgreSQL 15
-#   redis     — кэш + брокер Celery + хранилище DRF throttle
+#   redis     — кэш + хранилище DRF throttle
 #   db-backup — pg_dump раз в сутки, ротация 14 дней
 #   certbot   — обновление Let's Encrypt сертификатов раз в 12 часов
 
@@ -127,32 +126,6 @@ services:
       retries: 5
       start_period: 60s
 
-  celery:
-    build: ./backend
-    restart: always
-    command: celery -A core worker -l info --concurrency=4
-    environment:
-      DJANGO_SETTINGS_MODULE: core.settings.production
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      REDIS_URL: redis://redis:6379/0
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_HOST: db
-      POSTGRES_PORT: 5432
-      SECRET_KEY: ${SECRET_KEY}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "celery -A core inspect ping -d celery@$$HOSTNAME || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
 
   frontend:
     build: ./frontend

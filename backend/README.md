@@ -11,7 +11,7 @@ Backend: Django + DRF + Channels (ASGI/Daphne)
 
 - Django 4.2 + DRF, JWT via `djangorestframework-simplejwt`
 - Channels 4 + Daphne (ASGI) — обслуживает HTTP и WebSocket в одном процессе
-- PostgreSQL, Redis (опц.), Celery (опц.)
+- PostgreSQL, Redis (опц.)
 - Gemini 2.5 Flash via `google-genai` SDK (set `GEMINI_API_KEY`, optional `GEMINI_MODEL`)
 - Email via Resend HTTP API (`django-anymail[resend]`)
 
@@ -54,8 +54,3 @@ DJANGO_SETTINGS_MODULE=core.settings.test PYTHONPATH=backend pytest --tb=short
 
 Includes async WebSocket tests via `channels.testing.WebsocketCommunicator`.
 
-## Celery
-
-```bash
-celery -A core worker -l info
-```

@@ -14,9 +14,7 @@
       "tagline_ru": "Твой путь начинается здесь",
       "order": 0,
       "is_active": true,
-      "is_premium": false,
       "is_intro": true,
-      "default_language": "ru",
       "icon_url": "",
       "banner_url": "",
       "color_theme": "purple"

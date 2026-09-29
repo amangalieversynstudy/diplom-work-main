@@ -208,9 +208,6 @@ SIMPLE_JWT = {
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-
 # Redis cache — нужен для DRF throttle (счётчики должны шариться между
 # процессами Daphne, локальный LocMemCache теряет их при каждом forке).
 CACHES = {

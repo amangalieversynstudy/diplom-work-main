@@ -41,16 +41,16 @@ class ClassRoleAdmin(admin.ModelAdmin):
 class TrackAdmin(_LocalisedMixin, admin.ModelAdmin):
     list_display = (
         "id", "slug", "ru_title", "en_title",
-        "order", "is_active", "is_premium", "is_intro_badge",
+        "order", "is_active", "is_intro_badge",
     )
-    list_filter = ("is_active", "is_premium", "is_intro")
+    list_filter = ("is_active", "is_intro")
     search_fields = ("slug", "title", "title_ru", "title_en")
     list_editable = ("order", "is_active")
     list_per_page = 25
 
     fieldsets = (
         ("Идентификация", {
-            "fields": ("slug", "order", "default_language"),
+            "fields": ("slug", "order"),
         }),
         ("Контент (RU)", {
             "fields": ("title_ru", "description_ru", "tagline_ru"),
@@ -64,7 +64,7 @@ class TrackAdmin(_LocalisedMixin, admin.ModelAdmin):
             "classes": ("collapse",),
         }),
         ("Настройки", {
-            "fields": ("is_active", "is_premium", "is_intro", "color_theme"),
+            "fields": ("is_active", "is_intro", "color_theme"),
         }),
         ("Медиа", {
             "fields": ("icon_url", "banner_url"),

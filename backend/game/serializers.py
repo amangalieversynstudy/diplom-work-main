@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from users.models import Profile
 
-from .services import public_task_data
+from .services import help_offer, public_task_data
 from .models import (
     LeaderboardEntry,
     Location,
@@ -277,6 +277,7 @@ class TaskProgressSerializer(serializers.ModelSerializer):
     """
 
     task_detail = MissionTaskSerializer(source="task", read_only=True)
+    help_offer = serializers.SerializerMethodField()
 
     class Meta:
         model = TaskProgress
@@ -289,8 +290,12 @@ class TaskProgressSerializer(serializers.ModelSerializer):
             "best_score",
             "last_submitted_at",
             "answer",
+            "help_offer",
         ]
         read_only_fields = fields
+
+    def get_help_offer(self, obj):
+        return help_offer(obj)
 
 
 class RankSerializer(serializers.ModelSerializer):

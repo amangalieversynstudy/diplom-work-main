@@ -20,6 +20,11 @@ from .models import MissionTask, Progress, TaskProgress
 PUBLIC_DATA_KEYS = ("language", "starter")
 PUBLIC_OPTION_KEYS = ("value", "label")
 
+# After this many failed attempts in a row on one step the platform offers help
+# (hint scroll, AI mentor) instead of letting the learner grind alone. The same
+# number marks the learner as "struggling" for the teacher's early warning.
+HELP_AFTER_FAILURES = 3
+
 
 class RuleViolation(APIException):
     """A learner-facing rule was broken; carries its own HTTP status."""
@@ -209,6 +214,25 @@ def record_task_attempt(user, task, *, passed, score, answer):
     return task_progress
 
 
+def failures_in_a_row(task_progress):
+    """Failed attempts since the learner last solved (or started) the step.
+
+    ``attempts`` counts tries up to the first success, so for an unsolved step it
+    is exactly the number of failures in a row.
+    """
+    if task_progress.status == "completed":
+        return 0
+    return task_progress.attempts
+
+
+def help_offer(task_progress):
+    """The help offer for this step, or None while the learner is not stuck."""
+    failures = failures_in_a_row(task_progress)
+    if failures < HELP_AFTER_FAILURES:
+        return None
+    return {"failures": failures, "threshold": HELP_AFTER_FAILURES}
+
+
 def progress_payload(task_progress):
     """Small JSON-safe view of a TaskProgress for API and WebSocket replies."""
     return {
@@ -218,6 +242,7 @@ def progress_payload(task_progress):
         "attempts": task_progress.attempts,
         "best_score": task_progress.best_score,
         "answer": task_progress.answer,
+        "help_offer": help_offer(task_progress),
     }
 
 

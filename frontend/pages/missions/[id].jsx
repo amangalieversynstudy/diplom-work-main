@@ -523,6 +523,22 @@ export default function MissionDetail() {
               </svg>
             </div>
 
+            {/* Триггер помощи: несколько неудач подряд — предлагаем свитки и наставника */}
+            {taskProgress[activeTaskId]?.help_offer && (
+              <div
+                role="status"
+                className="mx-6 mt-4 rounded-lg border-2 border-[#5c3a21]/50 bg-[#f3e2c0]/80 px-4 py-3 text-sm text-[#3e2723]"
+              >
+                <p className="font-bold">
+                  {t("missionPage.helpOffer.title").replace(
+                    "{n}",
+                    taskProgress[activeTaskId].help_offer.failures
+                  )}
+                </p>
+                <p className="mt-1 leading-snug">{t("missionPage.helpOffer.body")}</p>
+              </div>
+            )}
+
             {/* Орнаментальный разделитель главы — перо + росчерк (чистый SVG) */}
             <div className="flex items-center gap-3 px-6 pt-4 pb-1 select-none" aria-hidden="true">
               <span className="h-px flex-1 bg-gradient-to-r from-transparent via-[#5c3a21]/40 to-[#5c3a21]/60" />

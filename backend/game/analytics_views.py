@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .metrics import CSV_COLUMNS, clamp_inactive_days, compute_metrics
+from .warning import early_warning
 
 _FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
 
@@ -79,3 +80,23 @@ class LearningMetricsExportView(APIView):
         for row in data["tasks"]:
             writer.writerow([_safe_cell(row[column]) for column in CSV_COLUMNS])
         return response
+
+
+class EarlyWarningView(APIView):
+    """Learners who need a teacher's attention, with the reasons.
+
+    GET /api/analytics/early-warning/ -> {students, summary, rules}
+    """
+
+    permission_classes = [permissions.IsAdminUser]
+
+    @swagger_auto_schema(
+        operation_summary="Early warning list (staff)",
+        operation_description=(
+            "Ученики, которым нужна помощь прямо сейчас: несколько неудач "
+            "подряд на шаге или долгое молчание при незаконченной работе. "
+            "Преподаватель видит только учеников своих курсов."
+        ),
+    )
+    def get(self, request):
+        return Response(early_warning(request.user))

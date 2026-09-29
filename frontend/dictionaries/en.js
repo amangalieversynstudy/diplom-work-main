@@ -182,9 +182,23 @@ export const en = {
       ok: "On track",
       stuck: "Stuck",
       inactive: "Inactive",
-      manyAttempts: "Many attempts",
+      manyAttempts: "Struggling",
     },
-    attemptsHint: "{n} attempts on an unfinished mission",
+    attemptsHint: "{n} failures in a row on one step",
+    warning: {
+      title: "Who needs help right now",
+      subtitle:
+        "Early warning list: learners who are stuck on a step or have gone quiet with unfinished work.",
+      empty: "Nobody needs help right now.",
+      high: "Urgent",
+      medium: "Attention",
+      reasonStuck: "{n} failures in a row: “{task}” ({mission})",
+      reasonInactive: "not seen for {n} d with unfinished work",
+      reasonNeverSeen: "no activity with unfinished work",
+      rules:
+        "Rules: {n}+ failures in a row on a step, or {days}+ days without activity on an unfinished mission.",
+      step: "step",
+    },
     lastActive: {
       today: "today",
       yesterday: "yesterday",
@@ -709,6 +723,10 @@ export const en = {
       pickAnswer: "Pick the correct answer:",
       loading: "Loading Quest Chronicles...",
       quizWrong: "🛡️ Wrong answer! The mana was absorbed — try another spell.",
+      helpOffer: {
+        title: "{n} failures in a row — that is normal",
+        body: "Do not grind alone: use a hint scroll or call the AI mentor. They help you figure it out without giving the answer away.",
+      },
       backToMap: "← To the world map",
       locked: {
         title: "Quest locked",

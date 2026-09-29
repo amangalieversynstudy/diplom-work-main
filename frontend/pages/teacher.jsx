@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import Button from "../components/Button";
-import { Teacher as TeacherAPI, Profile as ProfileAPI } from "../lib/api";
+import {
+  Analytics as AnalyticsAPI,
+  Teacher as TeacherAPI,
+  Profile as ProfileAPI,
+} from "../lib/api";
 import logger from "../lib/logger";
 import { useI18n } from "../lib/i18n";
 import {
@@ -10,6 +14,7 @@ import {
   CheckCircle2,
   Clock,
   GraduationCap,
+  LifeBuoy,
   Lock,
   Moon,
   Users,
@@ -76,11 +81,95 @@ function StatusBadge({ student, t }) {
   );
 }
 
+const fill = (template, values) =>
+  Object.entries(values).reduce(
+    (text, [key, value]) => text.replace(`{${key}}`, value),
+    template
+  );
+
+// Список раннего предупреждения: кому нужна помощь и по какой причине.
+function EarlyWarningPanel({ warning, t }) {
+  const students = warning?.students || [];
+  const rules = warning?.rules;
+  const reasonText = (reason) => {
+    if (reason.code === "stuck_task") {
+      return fill(t("teacher.warning.reasonStuck"), {
+        n: reason.failures,
+        task: reason.task_title || `${t("teacher.warning.step")} #${reason.task_id}`,
+        mission: reason.mission_title,
+      });
+    }
+    return reason.days == null
+      ? t("teacher.warning.reasonNeverSeen")
+      : fill(t("teacher.warning.reasonInactive"), { n: reason.days });
+  };
+
+  return (
+    <section
+      aria-labelledby="early-warning-title"
+      className="bg-surface border border-border rounded-3xl p-4 sm:p-6 shadow-sm mb-6"
+    >
+      <h2
+        id="early-warning-title"
+        className="text-lg font-bold text-text mb-1 flex items-center gap-2"
+      >
+        <LifeBuoy size={18} className="text-amber-400" />
+        {t("teacher.warning.title")}
+      </h2>
+      <p className="text-xs text-muted mb-4">{t("teacher.warning.subtitle")}</p>
+
+      {students.length === 0 ? (
+        <p className="text-sm text-muted py-4 text-center">
+          {t("teacher.warning.empty")}
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {students.map((s) => (
+            <li
+              key={s.id}
+              className="flex flex-wrap items-start gap-3 bg-panel border border-border rounded-xl px-3 py-2.5"
+            >
+              <span
+                className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                  s.level === "high"
+                    ? "border-rose-400/30 bg-rose-400/10 text-rose-400"
+                    : "border-amber-400/30 bg-amber-400/10 text-amber-400"
+                }`}
+              >
+                {t(`teacher.warning.${s.level}`)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-text truncate">
+                  {s.display_name || s.username}
+                </p>
+                <ul className="text-xs text-muted space-y-0.5 mt-0.5">
+                  {s.reasons.map((reason) => (
+                    <li key={reason.code}>{reasonText(reason)}</li>
+                  ))}
+                </ul>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {rules ? (
+        <p className="text-[11px] text-muted mt-4">
+          {fill(t("teacher.warning.rules"), {
+            n: rules.stuck_failures,
+            days: rules.inactive_long_days,
+          })}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 export default function TeacherPage() {
   const router = useRouter();
   const { t } = useI18n();
   const [allowed, setAllowed] = useState(null); // null = проверяем, false = не staff
   const [data, setData] = useState(null);
+  const [warning, setWarning] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -97,8 +186,14 @@ export default function TeacherPage() {
           return;
         }
         setAllowed(true);
-        const res = await TeacherAPI.students();
-        if (!cancelled) setData(res);
+        const [res, warned] = await Promise.all([
+          TeacherAPI.students(),
+          AnalyticsAPI.earlyWarning(),
+        ]);
+        if (!cancelled) {
+          setData(res);
+          setWarning(warned);
+        }
       } catch (error) {
         // 401 перехватит axios-интерсептор (редирект на /login).
         if (error?.response?.status === 403) {
@@ -207,6 +302,8 @@ export default function TeacherPage() {
             value={summary.active_week ?? 0}
           />
         </div>
+
+        <EarlyWarningPanel warning={warning} t={t} />
 
         {/* ── Таблица учеников ── */}
         <div className="bg-surface border border-border rounded-3xl p-4 sm:p-6 shadow-sm">

@@ -264,6 +264,8 @@ export const Analytics = {
   // KPI обучения: MCR, MAS, отсев, порог неудач подряд, эффект подсказок.
   metrics: (params = {}) =>
     api.get("/analytics/metrics/", { params }).then((r) => r.data),
+  // Список раннего предупреждения: кому из учеников нужна помощь и почему.
+  earlyWarning: () => api.get("/analytics/early-warning/").then((r) => r.data),
   // Таблица по шагам одним файлом; идёт через axios, чтобы ушёл JWT.
   metricsCsv: (params = {}) =>
     api

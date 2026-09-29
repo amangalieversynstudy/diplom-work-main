@@ -535,6 +535,7 @@ class LearningEvent(models.Model):
     SKELETON_USED = "skeleton_used"
     AI_HINT_USED = "ai_hint_used"
     AI_MENTOR_USED = "ai_mentor_used"
+    HELP_OFFERED = "help_offered"
 
     TYPES = (
         (LOGIN, "Login"),
@@ -546,6 +547,7 @@ class LearningEvent(models.Model):
         (SKELETON_USED, "Skeleton scroll used"),
         (AI_HINT_USED, "AI hint used"),
         (AI_MENTOR_USED, "AI mentor used"),
+        (HELP_OFFERED, "Help offered after repeated failures"),
     )
 
     user = models.ForeignKey(

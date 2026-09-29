@@ -3,7 +3,11 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .analytics_views import LearningMetricsExportView, LearningMetricsView
+from .analytics_views import (
+    EarlyWarningView,
+    LearningMetricsExportView,
+    LearningMetricsView,
+)
 from .studio import (
     StudioLocationViewSet,
     StudioMissionViewSet,
@@ -59,6 +63,11 @@ urlpatterns = [
         "analytics/metrics/",
         LearningMetricsView.as_view(),
         name="learning_metrics",
+    ),
+    path(
+        "analytics/early-warning/",
+        EarlyWarningView.as_view(),
+        name="early_warning",
     ),
     path(
         "analytics/metrics/export/",

@@ -12,7 +12,7 @@ from django.db import transaction
 
 from .models import CodeRun, LearningEvent, MissionTask
 from .runner import INFRASTRUCTURE_REASONS, REASON_OUTPUT_LIMIT, REASON_TIMEOUT
-from .services import grade_code_run, only_published
+from .services import HELP_AFTER_FAILURES, grade_code_run, only_published
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +86,17 @@ def log_event(user, event_type, *, task=None, mission=None, **meta):
         logger.exception("Could not record learning event %s", event_type)
 
 
+def log_help_offer(user, task, progress):
+    """Record that the learner was offered help; once, at the threshold.
+
+    ``progress`` is the ``progress_payload`` of the attempt that was just
+    counted. Later failures keep the offer visible but do not repeat the event.
+    """
+    offer = progress.get("help_offer")
+    if offer and offer["failures"] == HELP_AFTER_FAILURES:
+        log_event(user, LearningEvent.HELP_OFFERED, task=task, failures=offer["failures"])
+
+
 def record_code_run(
     user,
     task,
@@ -140,6 +151,8 @@ def finish_code_run(
     if task is not None and not (set(reasons) & INFRASTRUCTURE_REASONS):
         verdict = grade_code_run(user, task, code, stdout, exit_code)
         counted = verdict.pop("counted")
+        if counted and not verdict["passed"]:
+            log_help_offer(user, task, verdict["progress"])
 
     record_code_run(
         user,

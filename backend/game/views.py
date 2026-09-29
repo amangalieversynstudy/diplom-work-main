@@ -26,7 +26,7 @@ from rest_framework.views import APIView
 from rest_framework.exceptions import APIException
 
 from .achievements import evaluate_achievements
-from .footprint import find_task, log_event
+from .footprint import find_task, log_event, log_help_offer
 from .services import (
     RuleViolation,
     check_mission_access,
@@ -60,6 +60,7 @@ from .models import (
     Track,
 )
 from .permissions import IsSuperUser
+from .warning import assess_students
 from .serializers import (
     LeaderboardEntrySerializer,
     LocationSerializer,
@@ -395,11 +396,14 @@ class MissionTaskViewSet(viewsets.ReadOnlyModelViewSet):
             attempt=task_progress.attempts,
             after_solved=not task_progress.counted,
         )
+        payload = progress_payload(task_progress)
+        if task_progress.counted and not passed:
+            log_help_offer(user, task, payload)
         return Response(
             {
                 "correct": passed,
                 "completed": task_progress.status == "completed",
-                "progress": progress_payload(task_progress),
+                "progress": payload,
             }
         )
 
@@ -1180,14 +1184,6 @@ class AchievementsView(APIView):
         return Response(achievements_for(request.user))
 
 
-# Студент считается «застрявшим», если у него есть незавершённая (взятая в
-# работу) миссия И при этом либо он давно не заходил, либо уже бьётся над ней
-# слишком много раз. Пороги вынесены в константы, чтобы преподавателю было
-# понятно правило и его можно было подкрутить одним местом.
-STUCK_INACTIVE_DAYS = 7
-STUCK_ATTEMPTS = 5
-
-
 class TeacherStudentsView(APIView):
     """Сводка по всем ученикам для кабинета преподавателя (staff-only).
 
@@ -1212,7 +1208,6 @@ class TeacherStudentsView(APIView):
     def get(self, request):
         now = timezone.now()
         week_ago = now - timedelta(days=7)
-        inactive_before = now - timedelta(days=STUCK_INACTIVE_DAYS)
         User = get_user_model()
 
         # Преподаватель видит только «своих» учеников — тех, кто проходит миссии
@@ -1250,16 +1245,17 @@ class TeacherStudentsView(APIView):
                     ),
                     distinct=True,
                 ),
-                max_open_attempts=Max(
-                    "progress__attempts",
-                    filter=Q(progress__completed=False),
-                ),
                 last_completed=Max("progress__completed_at"),
                 last_started=Max("progress__last_started_at"),
             )
             .order_by("-profile__xp", "username")
         )
 
+        # «Застрял» решает система раннего предупреждения (game/warning.py):
+        # несколько неудач подряд на шаге либо долгое молчание при незаконченной
+        # работе. Попытки миссии (Progress.attempts) для этого не годятся: это
+        # число стартов, а не ошибок.
+        warnings = assess_students(request.user, now=now)
         students = []
         stuck_count = 0
         active_week = 0
@@ -1269,22 +1265,16 @@ class TeacherStudentsView(APIView):
                 [t for t in (s.last_completed, s.last_started) if t],
                 default=None,
             )
-            open_count = s.in_progress_count or 0
-            max_attempts = s.max_open_attempts or 0
-
-            # Правило «застрял»: только при наличии незавершённой миссии.
-            many_attempts = open_count > 0 and max_attempts >= STUCK_ATTEMPTS
-            inactive = open_count > 0 and (
-                last_active is None or last_active < inactive_before
-            )
-            stuck = many_attempts or inactive
-            # Много попыток — более «действенный» сигнал борьбы, чем простое
-            # бездействие, поэтому он в приоритете при выборе причины.
+            warning = warnings.get(s.id)
+            codes = {r["code"] for r in warning["reasons"]} if warning else set()
+            stuck = bool(warning) and warning["level"] != "ok"
             stuck_reason = (
                 "many_attempts"
-                if many_attempts
-                else ("inactive" if inactive else None)
+                if stuck and "stuck_task" in codes
+                else ("inactive" if stuck and "inactive" in codes else None)
             )
+            open_count = s.in_progress_count or 0
+            max_attempts = warning["failures"] if warning else 0
 
             if stuck:
                 stuck_count += 1

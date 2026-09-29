@@ -14,7 +14,7 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from game.models import Location, Mission, Progress
+from game.models import Location, Mission, MissionTask, Progress, TaskProgress
 
 User = get_user_model()
 
@@ -147,15 +147,34 @@ def test_inactive_open_mission_is_stuck_inactive():
 
 
 @pytest.mark.django_db
-def test_many_attempts_open_mission_is_stuck_attempts():
-    """Five+ attempts on an unfinished mission flags many_attempts."""
+def test_repeated_failures_on_a_step_are_stuck_attempts():
+    """Three failed tries in a row on one step flags many_attempts."""
     user = _student("grinder")
-    _open_progress(user, _mission(), attempts=5, last_started=timezone.now())
+    mission = _mission()
+    _open_progress(user, mission, attempts=1, last_started=timezone.now())
+    task = MissionTask.objects.create(mission=mission, order=1, task_type="quiz")
+    TaskProgress.objects.create(
+        user=user,
+        task=task,
+        attempts=3,
+        status="in_progress",
+        last_submitted_at=timezone.now(),
+    )
 
     s = _staff_client().get(URL).json()["students"][0]
     assert s["stuck"] is True
     assert s["stuck_reason"] == "many_attempts"
-    assert s["max_attempts"] == 5
+    assert s["max_attempts"] == 3
+
+
+@pytest.mark.django_db
+def test_mission_restarts_alone_do_not_make_a_learner_stuck():
+    """Progress.attempts counts mission starts, not mistakes."""
+    user = _student("restarter")
+    _open_progress(user, _mission(), attempts=9, last_started=timezone.now())
+
+    s = _staff_client().get(URL).json()["students"][0]
+    assert s["stuck"] is False
 
 
 @pytest.mark.django_db

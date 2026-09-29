@@ -54,14 +54,14 @@ TEACHER_INVITE_CODE = TEACHER_INVITE_CODE or "RPG-TEACHER-2026"
 
 # ─── code runner on Docker-less hosts (Railway) ───────────────────────────
 # Primary path here is the external Judge0 sandbox (RUNNER_JUDGE0_URL, inherited
-# from base) — code runs OFF this server, so app secrets/filesystem stay safe.
-# The local subprocess fallback only triggers if Judge0 is unreachable; it is
-# now hardened (scrubbed env without secrets, CPU/mem/proc rlimits, own session
-# + process-group kill, temp cwd). We keep it ENABLED so a live demo still works
-# if Judge0 is briefly down. Set RUNNER_ALLOW_UNSAFE_FALLBACK=False to force
-# Judge0-only (no local execution).
+# from base) - code runs OFF this server, so app secrets/filesystem stay safe.
+# The local subprocess fallback runs student code on THIS server without real
+# isolation, so it is OFF in production: if Judge0 is down the student gets a
+# clear "sandbox unavailable" message instead of remote code execution.
+# Only set RUNNER_ALLOW_UNSAFE_FALLBACK=True for a throwaway demo, never with
+# real user data or secrets on the host.
 RUNNER_ALLOW_UNSAFE_FALLBACK = os.getenv(
-    "RUNNER_ALLOW_UNSAFE_FALLBACK", "True"
+    "RUNNER_ALLOW_UNSAFE_FALLBACK", "False"
 ).lower() in {"1", "true", "yes", "on"}
 
 # Cloudflare Tunnel / nginx ставят запрос как https, но к Daphne приходит http.

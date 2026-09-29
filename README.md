@@ -29,7 +29,7 @@
 - Лимит вывода 50 KB — после `[ВЫВОД ОБРЕЗАН]`
 - Каждая строка stdout/stderr транслируется в реальном времени
 - Кнопка Stop убивает контейнер через cooperative stop-event
-- **Subprocess fallback** — если Docker недоступен (например, Railway без Docker-in-Docker), runner переходит на `subprocess.Popen`. Без песочницы, но рабочий для demo/защиты
+- **Subprocess fallback** — только для локальной разработки (в `local.py` включён). Запускает код без изоляции, поэтому в production он выключен (`RUNNER_ALLOW_UNSAFE_FALLBACK=False` по умолчанию): при недоступной песочнице студент видит сообщение, а код на сервере не выполняется
 - **Resizable** — высота терминала перетаскивается (150–1000px, default 550px)
 
 ### AI-ассистент

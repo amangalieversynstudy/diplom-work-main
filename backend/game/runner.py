@@ -7,6 +7,7 @@
 Лимиты: 128 MB RAM, 64 PID, нет сети, hard-kill по таймауту.
 """
 
+import logging
 import os
 import struct
 import subprocess
@@ -30,6 +31,8 @@ except ImportError:  # pragma: no cover
     signal = None
 
 
+logger = logging.getLogger(__name__)
+
 # максимум 50 KB вывода — иначе обрезаем
 MAX_OUTPUT_SIZE = 50 * 1024
 
@@ -52,20 +55,30 @@ _RUNNER_DISABLED_MSG = (
 
 
 def _unsafe_fallback_allowed() -> bool:
-    """Subprocess-фолбэк запускает код БЕЗ изоляции. На проде он запрещён,
-    чтобы исключить RCE; локально и в тестах по умолчанию разрешён."""
+    """Subprocess-фолбэк запускает код БЕЗ изоляции, поэтому по умолчанию он
+    выключен (в проде и при любой ошибке чтения настроек). Включается только
+    явно: RUNNER_ALLOW_UNSAFE_FALLBACK=True (в local.py — для разработки)."""
     try:
         from django.conf import settings
-        return bool(getattr(settings, "RUNNER_ALLOW_UNSAFE_FALLBACK", True))
+        return bool(getattr(settings, "RUNNER_ALLOW_UNSAFE_FALLBACK", False))
     except Exception:
-        return True
+        logger.exception("Cannot read RUNNER_ALLOW_UNSAFE_FALLBACK; treating it as disabled")
+        return False
 
 
 def _runner_disabled_result() -> dict:
+    logger.error(
+        "Code execution refused: no Docker sandbox, Judge0 unavailable and the "
+        "unsafe local fallback is disabled"
+    )
     return {"status": "error", "output": _RUNNER_DISABLED_MSG}
 
 
 def _runner_disabled_stream(started_at: float):
+    logger.error(
+        "Code execution refused: no Docker sandbox, Judge0 unavailable and the "
+        "unsafe local fallback is disabled"
+    )
     yield {"type": "error", "message": _RUNNER_DISABLED_MSG}
     yield {"type": "exit", "code": -1, "duration": time.time() - started_at}
 
@@ -90,6 +103,7 @@ def _judge0_settings():
         lang = int(getattr(settings, "RUNNER_JUDGE0_LANGUAGE_ID", 71) or 71)
         return url, key, host, lang
     except Exception:
+        logger.exception("Cannot read Judge0 settings; Judge0 is treated as not configured")
         return "", "", "judge0-ce.p.rapidapi.com", 71
 
 
@@ -117,6 +131,7 @@ def _judge0_run(code: str, timeout: int):
             timeout=max(1, timeout) + 20,
         )
         if resp.status_code not in (200, 201):
+            logger.warning("Judge0 answered HTTP %s; the code was not run there", resp.status_code)
             return None
         data = resp.json()
         status = data.get("status") or {}
@@ -126,7 +141,8 @@ def _judge0_run(code: str, timeout: int):
             "compile_output": data.get("compile_output") or "",
             "status_id": status.get("id"),
         }
-    except Exception:
+    except Exception as exc:
+        logger.warning("Judge0 request failed: %r", exc)
         return None
 
 
@@ -373,6 +389,7 @@ def execute_python_code(code: str, timeout: int = 5) -> dict:
         # Judge0 не сконфигурирован/недоступен — локальный фолбэк (под флагом).
         if not _unsafe_fallback_allowed():
             return _runner_disabled_result()
+        logger.warning("Running student code with the UNSAFE local subprocess fallback")
         return _execute_subprocess_fallback(code, timeout)
 
     container = None
@@ -442,6 +459,7 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
         if not _unsafe_fallback_allowed():
             yield from _runner_disabled_stream(started_at)
             return
+        logger.warning("Running student code with the UNSAFE local subprocess fallback")
         yield from _stream_subprocess_fallback(code, timeout, stop_event, started_at)
         return
 

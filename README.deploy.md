@@ -64,7 +64,7 @@ migrate → collectstatic → loaddata (ranks, class_roles, intro_course) → da
 - Зайди в `/admin/` (брендированная админка jazzmin) — там правится контент курсов.
 
 ### 1.5. Запуск кода учеников
-На Railway нет Docker-in-Docker, поэтому код исполняется во внешней песочнице **Judge0** (`RUNNER_JUDGE0_URL`). Если Judge0 не задан/недоступен — срабатывает локальный subprocess-фолбэк (он захардён: без секретов, с rlimits). Чтобы запретить локальное исполнение, поставь `RUNNER_ALLOW_UNSAFE_FALLBACK=False`.
+На Railway нет Docker-in-Docker, поэтому код исполняется во внешней песочнице **Judge0** (`RUNNER_JUDGE0_URL`). Если Judge0 не задан или недоступен, студент получает сообщение «песочница недоступна» и код **не выполняется** — локальный subprocess-фолбэк в production выключен, потому что он запускает чужой код на сервере приложения. Не задавай `RUNNER_ALLOW_UNSAFE_FALLBACK=True` в Railway (проверь, что такой переменной там нет). Каждый отказ Judge0 пишется в логи деплоя (`Judge0 request failed` / `Judge0 answered HTTP …`).
 
 ---
 
@@ -106,7 +106,7 @@ python manage.py runserver        # http://localhost:8000
 cd frontend && npm install
 npm run dev                       # http://localhost:3000
 ```
-Локально письма по умолчанию идут в консоль (`EMAIL_BACKEND=console`), запуск кода — через Docker-песочницу (если есть Docker) или Judge0/фолбэк.
+Локально письма по умолчанию идут в консоль (`EMAIL_BACKEND=console`), запуск кода — через Docker-песочницу (если есть Docker), иначе Judge0, иначе локальный фолбэк (включён только в `core.settings.local`).
 
 ---
 
@@ -124,7 +124,7 @@ npm run dev                       # http://localhost:3000
 | 500 на любом API | нет `REDIS_URL` (throttling-кэш не работает) — добавь Redis-плагин |
 | Письма не приходят | нет `RESEND_API_KEY`/`DEFAULT_FROM_EMAIL`, или домен не верифицирован в Resend |
 | CORS-ошибка на фронте | имя Vercel-проекта не подпадает под regex — задай `CORS_ALLOWED_ORIGINS` |
-| Запуск кода «недоступен» | задай `RUNNER_JUDGE0_URL` (+ ключ) или оставь фолбэк включённым |
+| Запуск кода «недоступен» | Judge0 не отвечает — смотри логи (`Judge0 request failed`), задай свой `RUNNER_JUDGE0_URL` (+ ключ); фолбэк в production не включай |
 | Письмо о серии не уходит | `ENABLE_STREAK_SCHEDULER=1` + время в UTC; проверь логи деплоя |
 
 ---

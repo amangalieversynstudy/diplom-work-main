@@ -29,10 +29,13 @@ PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.MD5PasswordHasher",
 ]
 
-# Disable costly logging during tests
+# No log handlers during tests. Existing loggers must stay enabled: Django
+# re-applies LOGGING whenever core.asgi is imported (the WebSocket tests do),
+# and disabling loggers there would silently break caplog assertions on
+# application loggers such as game.runner.
 LOGGING = {
     "version": 1,
-    "disable_existing_loggers": True,
+    "disable_existing_loggers": False,
 }
 
 # Tests must not require an external Redis server. base.py points the cache at

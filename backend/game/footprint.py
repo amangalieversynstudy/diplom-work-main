@@ -12,7 +12,13 @@ from django.db import transaction
 
 from .models import CodeRun, LearningEvent, MissionTask
 from .runner import INFRASTRUCTURE_REASONS, REASON_OUTPUT_LIMIT, REASON_TIMEOUT
-from .services import HELP_AFTER_FAILURES, grade_code_run, only_published
+from .services import (
+    ARM_OFFER,
+    HELP_AFTER_FAILURES,
+    grade_code_run,
+    help_arm,
+    only_published,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -87,14 +93,24 @@ def log_event(user, event_type, *, task=None, mission=None, **meta):
 
 
 def log_help_offer(user, task, progress):
-    """Record that the learner was offered help; once, at the threshold.
+    """Record that the learner reached the help threshold; once, at the threshold.
 
     ``progress`` is the ``progress_payload`` of the attempt that was just
-    counted. Later failures keep the offer visible but do not repeat the event.
+    counted. The event is written for both experiment arms (``shown`` says
+    whether the prompt was displayed), so the arms can be compared afterwards.
+    Later failures do not repeat it.
     """
-    offer = progress.get("help_offer")
-    if offer and offer["failures"] == HELP_AFTER_FAILURES:
-        log_event(user, LearningEvent.HELP_OFFERED, task=task, failures=offer["failures"])
+    failures = 0 if progress["status"] == "completed" else progress["attempts"]
+    if failures == HELP_AFTER_FAILURES:
+        arm = help_arm(user.pk)
+        log_event(
+            user,
+            LearningEvent.HELP_OFFERED,
+            task=task,
+            failures=failures,
+            arm=arm,
+            shown=arm == ARM_OFFER,
+        )
 
 
 def record_code_run(

@@ -194,6 +194,10 @@ LEARNING_DATA_RETENTION_DAYS = int(os.getenv("LEARNING_DATA_RETENTION_DAYS", "73
 ANALYTICS_EXPORT_SALT = os.getenv("ANALYTICS_EXPORT_SALT", "")
 # Optional drop-out risk model (JSON from ml/risk/train.py); empty = rules only.
 RISK_MODEL_PATH = os.getenv("RISK_MODEL_PATH", "")
+# Share (0-100) of learners who see the "help after 3 failures" banner. The rest
+# are a control group that keeps the normal hint/AI tools but gets no prompt;
+# 100 = everyone (no experiment). Used for the pilot, see docs/PILOT.md.
+HELP_OFFER_SHARE = int(os.getenv("HELP_OFFER_SHARE", "100"))
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),

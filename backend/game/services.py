@@ -6,6 +6,9 @@ WebSocket runner share one implementation and the browser is never trusted to
 say "I solved it".
 """
 
+import hashlib
+
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -225,10 +228,30 @@ def failures_in_a_row(task_progress):
     return task_progress.attempts
 
 
+ARM_OFFER = "offer"
+ARM_CONTROL = "control"
+
+
+def help_arm(user_id):
+    """Which experiment arm a learner is in: sees the help prompt or not.
+
+    Stable for a given learner (a hash of the id, no table needed) and driven by
+    ``HELP_OFFER_SHARE``: 100 (the default) puts everyone in ``offer``.
+    """
+    share = max(0, min(100, int(getattr(settings, "HELP_OFFER_SHARE", 100))))
+    if share >= 100:
+        return ARM_OFFER
+    digest = hashlib.sha256(f"help-offer:{user_id}".encode()).digest()
+    bucket = int.from_bytes(digest[:4], "big") % 100
+    return ARM_OFFER if bucket < share else ARM_CONTROL
+
+
 def help_offer(task_progress):
-    """The help offer for this step, or None while the learner is not stuck."""
+    """The help offer for this step, or None (not stuck, or in the control arm)."""
     failures = failures_in_a_row(task_progress)
     if failures < HELP_AFTER_FAILURES:
+        return None
+    if help_arm(task_progress.user_id) != ARM_OFFER:
         return None
     return {"failures": failures, "threshold": HELP_AFTER_FAILURES}
 

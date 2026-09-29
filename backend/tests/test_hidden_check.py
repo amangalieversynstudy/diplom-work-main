@@ -289,3 +289,45 @@ def test_every_function_step_of_the_course_has_a_working_check(pk):
 
     # printing the expected text is exactly what the check exists to stop
     assert run_hidden_check(task, f"print({expected!r})\n") is False
+
+
+# ── the sandbox reports a timeout as the learner's fault, not as a broken sandbox ──
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        __import__("requests").exceptions.ReadTimeout("slow"),
+        __import__("urllib3").exceptions.ReadTimeoutError(None, "/wait", "slow"),
+        __import__("requests").exceptions.ConnectionError(
+            "NpipeHTTPConnectionPool(host='localhost', port=None): Read timed out."
+        ),
+    ],
+)
+def test_a_wait_timeout_is_not_an_infrastructure_failure(error):
+    from unittest.mock import MagicMock, patch
+
+    from game import runner
+
+    container = MagicMock()
+    container.wait.side_effect = error
+    client = MagicMock()
+    client.containers.run.return_value = container
+    with patch.object(runner.docker, "from_env", return_value=client):
+        result = runner.execute_python_code("while True: pass", timeout=1)
+    assert "infra" not in result
+    assert result["output"].startswith("Timeout")
+    container.kill.assert_called_once()
+    container.remove.assert_called_once()
+
+
+def test_other_sandbox_errors_stay_infrastructure_failures():
+    from unittest.mock import MagicMock, patch
+
+    from game import runner
+
+    client = MagicMock()
+    client.containers.run.side_effect = RuntimeError("daemon exploded")
+    with patch.object(runner.docker, "from_env", return_value=client):
+        result = runner.execute_python_code("print(1)")
+    assert result["infra"] is True

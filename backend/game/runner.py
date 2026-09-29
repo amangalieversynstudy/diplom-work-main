@@ -20,6 +20,7 @@ import time
 import docker
 import requests
 from requests.exceptions import ReadTimeout
+from urllib3.exceptions import ReadTimeoutError
 
 try:  # POSIX-only; used to cap CPU/memory/procs of the local fallback
     import resource
@@ -442,6 +443,18 @@ def _read_capped_logs(container) -> bytes:
     return data + _TRUNCATED_MARK if truncated else data
 
 
+def _is_wait_timeout(exc: Exception) -> bool:
+    """Did ``container.wait`` give up because the learner's code ran too long?
+
+    Depending on the platform docker-py surfaces that as requests' ReadTimeout,
+    a bare urllib3 ReadTimeoutError or a ConnectionError wrapping one (Windows
+    named pipes), so the type alone is not reliable.
+    """
+    if isinstance(exc, (ReadTimeout, ReadTimeoutError)):
+        return True
+    return "read timed out" in str(exc).lower()
+
+
 def execute_python_code(code: str, timeout: int = 5) -> dict:
     """Запускает код в контейнере и возвращает весь вывод одним блоком."""
     try:
@@ -473,17 +486,17 @@ def execute_python_code(code: str, timeout: int = 5) -> dict:
             return {"status": "success", "output": logs}
         return {"status": "error", "output": logs}
 
-    except ReadTimeout:
-        if container is not None:
-            try:
-                container.kill()
-            except Exception:
-                pass
-        return {
-            "status": "error",
-            "output": f"Timeout: код выполнялся дольше {timeout} сек.",
-        }
     except Exception as e:
+        if _is_wait_timeout(e):
+            if container is not None:
+                try:
+                    container.kill()
+                except Exception:
+                    pass
+            return {
+                "status": "error",
+                "output": f"Timeout: код выполнялся дольше {timeout} сек.",
+            }
         return {"status": "error", "output": f"Ошибка песочницы: {e}", "infra": True}
     finally:
         if container is not None:

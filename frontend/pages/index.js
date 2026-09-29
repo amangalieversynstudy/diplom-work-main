@@ -54,10 +54,20 @@ function StatCard({ value, label, icon: Icon, delay }) {
 }
 
 /* ─── Track program card ─────────────────────────────────────── */
-function TrackCard({ track }) {
+function TrackCard({ track, soonLabel }) {
   const Icon = track.icon;
+  // Трек, которого ещё нет, не ссылка: раньше все четыре карточки вели на одну страницу.
+  const Root = track.soon ? "div" : TransitionLink;
+  const rootProps = track.soon ? { "aria-disabled": "true" } : { href: "/worlds" };
   return (
-    <TransitionLink href="/worlds" className="track-card block text-left cursor-pointer group relative rounded-3xl border border-border bg-panel transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/20">
+    <Root
+      {...rootProps}
+      className={`track-card block text-left group relative rounded-3xl border border-border bg-panel transition-all duration-300 ${
+        track.soon
+          ? "opacity-60"
+          : "cursor-pointer hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/20"
+      }`}
+    >
       {/* Top line accent */}
       <div className="absolute top-0 left-0 right-0 h-1 opacity-70"
         style={{ background: `linear-gradient(90deg, transparent, ${track.dot}, transparent)` }} />
@@ -78,7 +88,9 @@ function TrackCard({ track }) {
         <p className="text-sm text-muted leading-relaxed mb-8 h-24">{track.desc}</p>
 
         <div className="flex items-center justify-end text-sm font-medium border-t border-border pt-5">
-          <span style={{ color: track.dot }}>{track.xp}</span>
+          <span style={{ color: track.soon ? undefined : track.dot }} className={track.soon ? "text-muted" : undefined}>
+            {track.soon ? soonLabel : track.xp}
+          </span>
         </div>
       </div>
 
@@ -90,7 +102,7 @@ function TrackCard({ track }) {
           background: `${track.dot}03`,
         }}
       />
-    </TransitionLink>
+    </Root>
   );
 }
 
@@ -100,9 +112,11 @@ export default function Home() {
   const dict = useDictionary();
   const homeDict = dict.home || {};
 
+  // Числа совпадают с тем, что есть в курсе сейчас: 1 трек, 8 миссий, 3 класса
+  // (backend/game/fixtures). Изменится курс: поправьте здесь.
   const STATS = [
-    { value: "84",  label: homeDict.stats?.totalMissions || "Всего миссий",    icon: Swords  },
-    { value: "4",   label: homeDict.stats?.learningWorlds || "Учебных миров",   icon: Map     },
+    { value: "8",   label: homeDict.stats?.totalMissions || "Всего миссий",    icon: Swords  },
+    { value: "1",   label: homeDict.stats?.learningWorlds || "Учебных миров",   icon: Map     },
     { value: "3",   label: homeDict.stats?.heroClasses || "Классов героев",      icon: Crown   },
   ];
 
@@ -112,8 +126,8 @@ export default function Home() {
       label: homeDict.tracks?.[0]?.label || "Основы",
       title: homeDict.tracks?.[0]?.title || "Основы Python",
       desc: homeDict.tracks?.[0]?.desc || "Изучите переменные, циклы, функции и структуры данных через практические квесты на Островах Новичков.",
-      xp: "1 200 XP",
-      missions: 12,
+      xp: "370 XP",
+      missions: 8,
       icon: BookOpen,
       dot: "#10B981",
     },
@@ -122,7 +136,7 @@ export default function Home() {
       label: homeDict.tracks?.[1]?.label || "Средний уровень",
       title: homeDict.tracks?.[1]?.title || "ООП и Алгоритмы",
       desc: homeDict.tracks?.[1]?.desc || "Откройте для себя объектно-ориентированное проектирование и изучите сортировку, поиск и рекурсию на Рубеже Адептов.",
-      xp: "2 400 XP",
+      soon: true,
       missions: 18,
       icon: Code2,
       dot: "#F59E0B",
@@ -132,7 +146,7 @@ export default function Home() {
       label: homeDict.tracks?.[2]?.label || "Продвинутый",
       title: homeDict.tracks?.[2]?.title || "Django и REST API",
       desc: homeDict.tracks?.[2]?.desc || "Создавайте реальные веб-приложения, конечные точки REST и развертывайте свой первый бэкенд в Мифическом Просторе.",
-      xp: "3 600 XP",
+      soon: true,
       missions: 24,
       icon: Zap,
       dot: "#3B82F6",
@@ -142,7 +156,7 @@ export default function Home() {
       label: homeDict.tracks?.[3]?.label || "Элита",
       title: homeDict.tracks?.[3]?.title || "Готовность к Junior",
       desc: homeDict.tracks?.[3]?.desc || "Docker, CI/CD, тестирование и системный дизайн — все, что вам нужно для вашей первой работы с Django.",
-      xp: "5 000 XP",
+      soon: true,
       missions: 30,
       icon: Crown,
       dot: "#8B5CF6",
@@ -231,18 +245,18 @@ export default function Home() {
           <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">{homeDict.tracks_eyebrow || "Учебные Треки"}</p>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-text leading-tight max-w-lg">
-              {homeDict.tracks_headline_1 || "Четыре мира."}<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{homeDict.tracks_headline_2 || "Одна цель."}</span>
+              {homeDict.tracks_headline_1 || "Один мир."}<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{homeDict.tracks_headline_2 || "С него всё начинается."}</span>
             </h2>
             <p className="text-muted text-sm sm:text-base max-w-sm leading-relaxed">
-              {homeDict.tracks_desc || "Каждый мир — это структурированный трек, который проведёт тебя от основ до production-ready Django-разработчика."}
+              {homeDict.tracks_desc || "Сейчас открыт вводный курс по Python. Следующие треки готовятся и появятся позже."}
             </p>
           </div>
         </div>
 
         <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 max-w-6xl 2xl:max-w-[80rem] 3xl:max-w-[92rem] 4xl:max-w-[110rem] mx-auto px-4 sm:px-6">
           {TRACKS.map((track) => (
-            <TrackCard key={track.id} track={track} />
+            <TrackCard key={track.id} track={track} soonLabel={homeDict.soon || "Скоро"} />
           ))}
         </div>
       </section>
@@ -311,11 +325,11 @@ export default function Home() {
               {homeDict.cta_headline_mid || "начинается "}<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{homeDict.cta_headline_2 || "прямо сейчас."}</span>
             </h2>
             <p className="text-muted text-base sm:text-lg leading-relaxed mb-10 max-w-lg mx-auto">
-              {homeDict.cta_desc || "Присоединяйся к тысячам учеников, превращающих изучение Python в реальный опыт разработки — миссия за миссией."}
+              {homeDict.cta_desc || "Начни с вводного курса и пройди Python шаг за шагом: история, квиз, код."}
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
               <TransitionLink href="/register"
-                className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 md:px-8 md:py-4 bg-primary text-white shadow-glow rounded-2xl font-semibold overflow-hidden transition-all hover:scale-105 hover:shadow-glow-lg active:scale-95 border border-primary-dk"
+                className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 md:px-8 md:py-4 bg-primary text-on-primary shadow-glow rounded-2xl font-semibold overflow-hidden transition-all hover:scale-105 hover:shadow-glow-lg active:scale-95 border border-primary-dk"
               >
                 <Sparkles size={18} /> {homeDict.cta_button1 || "Создать аккаунт"}
                 <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />

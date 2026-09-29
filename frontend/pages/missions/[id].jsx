@@ -579,9 +579,10 @@ export default function MissionDetail() {
               {/* Квиз — карточка в тон пергамента, тёмное дерево по рамке */}
               {activeTask?.task_type === "quiz" && (
                 <div className="mt-8 p-4 bg-[#c5a572]/50 border-2 border-[#5c3a21]/40 rounded-xl space-y-4 shadow-inner">
-                  <p className="font-display text-xs font-bold uppercase text-[#5c3a21] tracking-wider">
+                  <fieldset className="min-w-0 space-y-4 border-0 p-0 m-0">
+                  <legend className="font-display text-xs font-bold uppercase text-[#5c3a21] tracking-wider">
                     {t("missionPage.pickAnswer")}
-                  </p>
+                  </legend>
                   <div className="space-y-2">
                     {activeTask.data?.options?.map((opt, i) => (
                       <label key={i} className="flex items-start gap-3 p-3 bg-[#dcb98a]/70 hover:bg-[#dcb98a] border-2 border-[#5c3a21]/30 hover:border-[#5c3a21]/60 rounded-lg cursor-pointer transition-colors group">
@@ -597,6 +598,7 @@ export default function MissionDetail() {
                       </label>
                     ))}
                   </div>
+                  </fieldset>
                   <Button
                     onClick={() => handleQuizSubmit(activeTask.id)}
                     disabled={!quizAnswers[activeTask.id] || savingTaskId === activeTask.id}

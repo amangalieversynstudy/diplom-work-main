@@ -165,7 +165,7 @@ function ErrorState({ t, message, onBack }) {
       </p>
       <button
         onClick={onBack}
-        className="px-6 py-3 bg-primary text-white rounded-2xl font-semibold hover:scale-105 transition-transform shadow-[0_0_15px_var(--primary-selection)]"
+        className="px-6 py-3 bg-primary text-on-primary rounded-2xl font-semibold hover:scale-105 transition-transform shadow-[0_0_15px_var(--primary-selection)]"
       >
         {t("auth.confirm.backToProfile")}
       </button>

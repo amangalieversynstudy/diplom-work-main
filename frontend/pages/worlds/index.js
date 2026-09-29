@@ -176,13 +176,13 @@ export default function Worlds() {
         
         {/* ИСПРАВЛЕНО: Оверлеи состояний теперь зафиксированы по центру экрана и не улетают при прокрутке */}
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center text-[#5c3a21] font-display text-2xl font-bold tracking-widest uppercase animate-pulse z-20 pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center text-text font-display text-2xl font-bold tracking-widest uppercase animate-pulse z-20 pointer-events-none">
             {worldsDict.mapLoading || "Разворачиваем пергамент..."}
           </div>
         )}
 
         {!loading && missions.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center text-[#5c3a21] font-display text-xl font-bold z-20 pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center text-text font-display text-xl font-bold z-20 pointer-events-none">
             {worldsDict.mapEmpty || "Пираты украли карту. Задания не найдены."}
           </div>
         )}

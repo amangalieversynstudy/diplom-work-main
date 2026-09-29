@@ -361,7 +361,7 @@ function SkillNode({ node, onSelect, choosing, cta, labels = {} }) {
                 ? "bg-panel text-muted border border-border"
                 : isCurrent
                 ? "bg-accent/15 text-accent border border-accent/40"
-                : "bg-primary/15 text-primary group-hover:bg-primary group-hover:text-white group-hover:shadow-[0_0_15px_var(--primary)]"
+                : "bg-primary/15 text-primary group-hover:bg-primary group-hover:text-on-primary group-hover:shadow-[0_0_15px_var(--primary)]"
             }`}
           >
             {isLocked ? <Lock size={16} /> : <Icon size={18} />}
@@ -397,7 +397,7 @@ function SkillNode({ node, onSelect, choosing, cta, labels = {} }) {
           </div>
         ) : (
           <div
-            className={`w-full text-center bg-primary text-white border border-primary-dk rounded-xl py-3 font-semibold transition-shadow
+            className={`w-full text-center bg-primary text-on-primary border border-primary-dk rounded-xl py-3 font-semibold transition-shadow
               ${choosing ? "opacity-60" : "hover:shadow-[0_0_20px_var(--primary-selection)]"}`}
           >
             {choosing ? "..." : cta}

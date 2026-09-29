@@ -12,7 +12,7 @@
  *   <ConfirmModal data={confirm} onClose={() => setConfirm(null)} />
  */
 
-import { useEffect } from "react";
+import { useEffect, useId, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, X } from "lucide-react";
 import Button from "./Button";
@@ -21,16 +21,55 @@ import { useI18n } from "../lib/i18n";
 export default function ConfirmModal({ data, onClose }) {
   const { t } = useI18n();
   const open = Boolean(data);
+  const dialogRef = useRef(null);
+  const titleId = useId();
+  // onClose приходит новым замыканием на каждый рендер родителя; в зависимостях
+  // эффекта он сбрасывал бы фокус при каждой перерисовке.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
-  // Esc закрывает модал
+  // Диалог: фокус внутрь (на «Отмена»), Tab не выходит за пределы окна,
+  // Esc закрывает, при закрытии фокус возвращается на то, что было в фокусе.
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
+    const previous = document.activeElement;
+    const focusable = () =>
+      dialogRef.current
+        ? [
+            ...dialogRef.current.querySelectorAll(
+              'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            ),
+          ].filter((el) => !el.disabled)
+        : [];
+    const timer = setTimeout(() => {
+      const items = focusable();
+      (items.find((el) => el.dataset.autofocus !== undefined) || items[0])?.focus();
+    }, 0);
     const onKey = (e) => {
-      if (e.key === "Escape") onClose?.();
+      if (e.key === "Escape") {
+        onCloseRef.current?.();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const items = focusable();
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("keydown", onKey);
+      previous?.focus?.();
+    };
+  }, [open]);
 
   const handleConfirm = () => {
     data?.onConfirm?.();
@@ -54,6 +93,10 @@ export default function ConfirmModal({ data, onClose }) {
           className="fixed inset-0 z-[1000] flex items-center justify-center bg-modal-overlay backdrop-blur-sm px-4"
         >
           <motion.div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
             initial={{ scale: 0.92, y: 16, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.95, y: 10, opacity: 0 }}
@@ -74,7 +117,7 @@ export default function ConfirmModal({ data, onClose }) {
                 <AlertTriangle size={22} />
               </div>
               <div>
-                <h2 className="text-xl font-display font-bold text-modal-text mb-2">
+                <h2 id={titleId} className="text-xl font-display font-bold text-modal-text mb-2">
                   {data?.title || t("confirm.title")}
                 </h2>
                 {data?.message && (
@@ -88,6 +131,7 @@ export default function ConfirmModal({ data, onClose }) {
             <div className="flex gap-3 justify-end">
               <Button
                 variant="ghost"
+                data-autofocus
                 onClick={handleCancel}
                 className="text-card-muted hover:text-modal-text"
               >

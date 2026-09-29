@@ -43,6 +43,11 @@ export function I18nProvider({ children }) {
     setLanguage(getStoredLanguage());
   }, []);
 
+  // Скринридеру нужен язык страницы: без него русский текст читается английским голосом.
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
   const changeLanguage = useCallback((next) => {
     const safe = dictionaries[next] ? next : DEFAULT_LANG;
     persistLanguage(safe);

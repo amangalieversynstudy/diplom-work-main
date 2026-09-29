@@ -2,7 +2,7 @@
  * CodeRunnerPanel — editor + interactive terminal wired to the WebSocket runner.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Play,
   Square,
@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { Profile, getRunnerWsUrl } from "../lib/api";
 import { getTokens } from "../lib/auth";
 import { useI18n } from "../lib/i18n";
+import { indentAction, newlineAction } from "../lib/editorKeys";
 import Terminal from "./Terminal";
 import AIMentorChat from "./AIMentorChat";
 
@@ -315,6 +316,50 @@ export default function CodeRunnerPanel({
   const lines = code ? code.split("\n").length : 1;
   const lineArray = Array.from({ length: Math.max(25, lines) }, (_, i) => i + 1);
 
+  // ── клавиши редактора: Tab/Shift+Tab дают отступ, Enter сохраняет его ──────
+  // Escape, а затем Tab выпускает фокус из редактора (иначе пользователь
+  // клавиатуры застрял бы в нём).
+  const editorRef = useRef(null);
+  const gutterRef = useRef(null);
+  const pendingSelection = useRef(null);
+  const escapeArmed = useRef(false);
+
+  useLayoutEffect(() => {
+    const pending = pendingSelection.current;
+    if (pending && editorRef.current) {
+      pendingSelection.current = null;
+      editorRef.current.setSelectionRange(pending.start, pending.end);
+    }
+  }, [code]);
+
+  const applyEdit = (result) => {
+    pendingSelection.current = { start: result.start, end: result.end };
+    onChange(result.text);
+  };
+
+  const onEditorKeyDown = (e) => {
+    if (e.key === "Escape") {
+      escapeArmed.current = true;
+      return;
+    }
+    const plain = !e.ctrlKey && !e.altKey && !e.metaKey;
+    const { value, selectionStart, selectionEnd } = e.currentTarget;
+    if (e.key === "Tab" && plain) {
+      if (escapeArmed.current) {
+        escapeArmed.current = false;
+        return; // пусть фокус уйдёт дальше
+      }
+      e.preventDefault();
+      applyEdit(indentAction(value, selectionStart, selectionEnd, { shift: e.shiftKey }));
+      return;
+    }
+    escapeArmed.current = false;
+    if (e.key === "Enter" && plain && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      applyEdit(newlineAction(value, selectionStart, selectionEnd));
+    }
+  };
+
   return (
     <div
       className={`flex flex-col font-mono bg-[#1e1e1e] ${
@@ -416,18 +461,37 @@ export default function CodeRunnerPanel({
 
       {/* Editor */}
       <div className="flex-1 relative bg-[#1e1e1e] flex border-l border-[#333] min-h-0">
-        <div className="w-12 bg-[#1e1e1e] border-r border-[#333] flex flex-col items-end py-4 pr-3 text-[#858585] text-xs select-none overflow-hidden font-mono">
+        <div
+          ref={gutterRef}
+          aria-hidden="true"
+          className="w-12 bg-[#1e1e1e] border-r border-[#333] flex flex-col items-end py-4 pr-3 text-[#9da3ab] text-xs select-none overflow-hidden font-mono"
+        >
           {lineArray.map((n) => (
-            <span key={n} className="leading-6 opacity-50">{n}</span>
+            <span key={n} className="leading-6">{n}</span>
           ))}
         </div>
         <textarea
+          ref={editorRef}
           value={code || ""}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={onEditorKeyDown}
+          // номера строк едут вместе с текстом, иначе «ошибка в строке N» врёт
+          onScroll={(e) => {
+            if (gutterRef.current) gutterRef.current.scrollTop = e.currentTarget.scrollTop;
+          }}
           spellCheck="false"
-          className="w-full h-full p-4 bg-transparent text-[13px] font-mono text-[#d4d4d4] resize-none focus:outline-none focus:ring-0 leading-6"
+          // на телефоне первая буква не должна становиться заглавной: Print(...) — это NameError
+          autoCapitalize="off"
+          autoCorrect="off"
+          autoComplete="off"
+          aria-label={t("codeRunner.editorLabel")}
+          aria-describedby="editor-keys-hint"
+          className="w-full h-full p-4 bg-transparent text-[13px] font-mono text-[#d4d4d4] resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d9a441] leading-6"
           placeholder={t("codeRunner.placeholder")}
         />
+        <span id="editor-keys-hint" className="sr-only">
+          {t("codeRunner.editorHint")}
+        </span>
       </div>
 
       {/* Drag handle — только когда терминал развёрнут */}

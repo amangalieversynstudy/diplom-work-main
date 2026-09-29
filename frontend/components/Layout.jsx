@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import {
-  Map, Swords, User2, Crown, Sparkles, Trophy,
+  Map, User2, Crown, Sparkles, Trophy,
   ArrowUpRight, Sun, Moon, X
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n, languages as supportedLanguages } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import { Profile as ProfileAPI, revokeSession } from "../lib/api";
@@ -22,7 +22,6 @@ if (typeof window !== "undefined") {
 
 const navLinks = [
   { href: "/worlds", labelKey: "nav.worlds", icon: Map },
-  { href: "/missions/1", labelKey: "nav.quest", icon: Swords },
   { href: "/leaderboard", labelKey: "nav.legends", icon: Trophy },
   { href: "/profile", labelKey: "nav.character", icon: User2 },
   { href: "/class", labelKey: "nav.class", icon: Crown },
@@ -42,7 +41,7 @@ function LanguageToggle() {
             onClick={() => setLanguage(lang.id)}
             aria-pressed={isActive}
             className={`relative h-10 px-4 rounded-full text-xs font-bold uppercase tracking-wide transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
-              isActive ? "text-white" : "text-muted hover:text-text"
+              isActive ? "text-on-primary" : "text-muted hover:text-text"
             }`}
           >
             {isActive && (
@@ -80,7 +79,7 @@ function ThemeSwitcher() {
       icon: Moon,
       label: t("layout.themeDark"),
       activeBg: "bg-primary",
-      activeIcon: "text-white",
+      activeIcon: "text-on-primary",
       glow: "0 0 22px var(--primary)",
       idleRotate: 35,
     },
@@ -137,6 +136,41 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isStaff, setIsStaff] = useState(false);
   const { t } = useI18n();
+  const burgerRef = useRef(null);
+  const closeRef = useRef(null);
+  const menuRef = useRef(null);
+
+  // Меню — модальное окно: фокус внутрь, Tab не выходит за его пределы, Escape
+  // закрывает из любого места, а при закрытии фокус возвращается на кнопку меню.
+  useEffect(() => {
+    if (!isMenuOpen) return undefined;
+    closeRef.current?.focus();
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        setIsMenuOpen(false);
+        return;
+      }
+      if (e.key !== "Tab" || !menuRef.current) return;
+      const items = [...menuRef.current.querySelectorAll("a[href], button, [tabindex]:not([tabindex='-1'])")].filter(
+        (el) => !el.disabled
+      );
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      burgerRef.current?.focus();
+    };
+  }, [isMenuOpen]);
 
   const translatedNavLinks = useMemo(
     () =>
@@ -223,8 +257,20 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
         }`}
       >
         <div className="max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 flex items-center justify-between relative">
-          {/* Пустой блок слева для балансировки флекс-контейнера */}
-          <div className={`transition-all duration-500 ${isShrunk ? "w-10" : "w-12"}`} />
+          {/* Навигация видна на широких экранах, не только в выдвижном меню */}
+          <nav aria-label={t("layout.nav")} className="hidden xl:flex w-[24rem] shrink-0 items-center gap-1">
+            {translatedNavLinks.map((item) => (
+              <TransitionLink
+                key={item.href}
+                href={item.href}
+                className="rounded-full px-3 py-2 text-sm font-semibold text-muted transition-colors hover:bg-panel hover:text-text"
+              >
+                {item.label}
+              </TransitionLink>
+            ))}
+          </nav>
+          {/* Пустой блок слева для балансировки на узких экранах */}
+          <div className={`xl:hidden transition-all duration-500 ${isShrunk ? "w-10" : "w-12"}`} />
 
           {/* Центрированный интерактивный логотип */}
           <TransitionLink
@@ -246,8 +292,20 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
             </div>
           </TransitionLink>
 
+          <div className="flex items-center justify-end gap-3 xl:w-[24rem]">
+          {!isAuthenticated && (
+            <TransitionLink
+              href="/login"
+              className="hidden lg:inline-flex rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-panel"
+            >
+              {t("layout.login")}
+            </TransitionLink>
+          )}
           <button
+            ref={burgerRef}
             onClick={() => setIsMenuOpen(true)}
+            aria-expanded={isMenuOpen}
+            aria-controls="site-menu"
             aria-label={t("layout.nav")}
             className={`relative z-[110] rounded-full bg-surface border border-border shadow-sm flex flex-col justify-center items-center gap-1.5 hover:bg-panel transition-all duration-500 active:scale-95 ${isShrunk ? "w-10 h-10" : "w-12 h-12"} ${isMenuOpen ? "opacity-0 pointer-events-none" : "pointer-events-auto"}`}
           >
@@ -255,6 +313,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
             <span className="block w-5 h-[2px] bg-text" />
             <span className="block w-5 h-[2px] bg-text" />
           </button>
+          </div>
         </div>
       </header>
 
@@ -266,18 +325,23 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
 
       {/* ── Sidebar Menu Drawer ── */}
       <div
-        role="button"
-        tabIndex={isMenuOpen ? 0 : -1}
-        aria-label={t("layout.closeMenu")}
+        aria-hidden="true"
         className={`fixed inset-0 z-[90] bg-modal-overlay backdrop-blur-sm transition-opacity duration-500 ${
           isMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={() => setIsMenuOpen(false)}
-        onKeyDown={(e) => e.key === "Escape" && setIsMenuOpen(false)}
       />
 
       {/* Контейнер меню (справа) */}
       <div
+        id="site-menu"
+        ref={menuRef}
+        role="dialog"
+        aria-modal={isMenuOpen ? "true" : undefined}
+        aria-label={t("layout.nav")}
+        aria-hidden={isMenuOpen ? undefined : "true"}
+        // закрытое меню только сдвинуто за экран: inert убирает его из порядка Tab и из дерева доступности
+        inert={isMenuOpen ? undefined : ""}
         className={`fixed top-0 right-0 bottom-0 w-full max-w-[400px] z-[100] bg-surface border-l border-border shadow-2xl flex flex-col overflow-hidden transition-transform duration-500 ease-[cubic-bezier(0.6,0.05,0.01,0.9)] transition-colors duration-300 ${
           isMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
@@ -287,6 +351,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
           className="relative z-10 w-full h-full flex flex-col pointer-events-auto"
         >
           <button
+            ref={closeRef}
             onClick={() => setIsMenuOpen(false)}
             aria-label={t("layout.closeMenu")}
             className="absolute top-6 right-6 z-20 w-11 h-11 rounded-full border border-border bg-panel text-text flex items-center justify-center hover:text-primary hover:rotate-90 transition-all duration-300 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
@@ -359,7 +424,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
                 <TransitionLink href="/login" onClick={() => setIsMenuOpen(false)} className="w-full py-3 rounded-xl border border-border text-muted font-semibold text-center hover:bg-panel transition-colors">
                   {t("layout.login")}
                 </TransitionLink>
-                <TransitionLink href="/register" onClick={() => setIsMenuOpen(false)} className="w-full py-3 rounded-xl bg-primary text-white shadow-glow font-semibold text-center hover:scale-[1.02] transition-transform">
+                <TransitionLink href="/register" onClick={() => setIsMenuOpen(false)} className="w-full py-3 rounded-xl bg-primary text-on-primary shadow-glow font-semibold text-center hover:scale-[1.02] transition-transform">
                   {t("layout.register")}
                 </TransitionLink>
               </div>

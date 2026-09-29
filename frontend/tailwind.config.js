@@ -22,6 +22,7 @@ module.exports = {
       colors: {
         primary:      'var(--primary)',
         'primary-dk': 'var(--primary-dk)',
+        'on-primary': 'var(--on-primary)',
         accent:       'var(--accent)',
         'accent-dk':  'var(--accent-dk)',
         gold:         'var(--gold)',

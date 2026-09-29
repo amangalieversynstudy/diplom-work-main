@@ -75,7 +75,7 @@ export default function AnimatedHero() {
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <Link
             href="/register"
-            className="hero-btn group relative inline-flex items-center justify-center gap-2 px-8 py-4 bg-primary text-white shadow-glow rounded-2xl font-semibold overflow-hidden transition-all hover:scale-105 hover:shadow-glow-lg active:scale-95 border border-primary-dk"
+            className="hero-btn group relative inline-flex items-center justify-center gap-2 px-8 py-4 bg-primary text-on-primary shadow-glow rounded-2xl font-semibold overflow-hidden transition-all hover:scale-105 hover:shadow-glow-lg active:scale-95 border border-primary-dk"
           >
             <span className="relative z-10">{t("landing.primaryCta")}</span>
             <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />

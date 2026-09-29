@@ -56,6 +56,9 @@ export default function MissionStepper({
           <button
             key={task.id}
             onClick={() => !locked && onSelect?.(task.id)}
+            disabled={locked}
+            aria-disabled={locked}
+            aria-current={current ? "step" : undefined}
             className={cx(
               "w-full flex items-center justify-between px-6 py-1.5 text-[13px] text-left transition-colors rounded-md",
               locked ? "opacity-40 cursor-not-allowed" : "cursor-pointer",

@@ -13,13 +13,14 @@
   --panel: #ffffff;
   --text: #2a241b;
   --muted: #6b5f4f;
-  --faint: #9a8b75;
+  --faint: #75695a;
   --border: #e6dcc7;
   --primary: #2a6f68;
   --primary-dk: #1e524d;
+  --on-primary: #ffffff;
   --primary-selection: rgba(42,111,104,0.25);
-  --accent: #c07c3a;
-  --accent-dk: #9a5f2a;
+  --accent: #9a5f2a;
+  --accent-dk: #7f4d20;
   --gold: #d4a24c;
   --success: #4ade80;
   --warning: #f59e0b;
@@ -41,10 +42,12 @@ html.dark {
   --panel: #0f2421;
   --text: #E8F0EA;
   --muted: #9ab4ac;
-  --faint: #6a8278;
+  --faint: #83998f;
   --border: rgba(232,240,234,0.12);
   --primary: #4ade80;
   --primary-dk: #34d399;
+  /* тёмный текст на светло-зелёной кнопке: белый давал 1,74:1, этот 11:1 */
+  --on-primary: #06100D;
   --primary-selection: rgba(74,222,128,0.30);
   --accent: #f4a261;
   --accent-dk: #e07b3a;
@@ -97,31 +100,17 @@ body::before, body::after { display: none !important; }
    По умолчанию скрываем родной курсор — на его месте рисуем кастомный.
    Класс body.native-cursor ставит CustomCursor.jsx при потере фокуса окна
    (split-screen, alt-tab), чтобы вернуть системный курсор. */
-body, a, button, input, textarea, select {
-  cursor: none !important;
-}
+/* Системный курсор больше не прячется: `cursor: none` убирал I-образный
+   курсор в редакторе кода и игнорировал системные настройки размера курсора.
+   Кастомный курсор остаётся декоративным слоем поверх системного. */
 
-body.native-cursor,
-body.native-cursor a,
-body.native-cursor button,
-body.native-cursor input,
-body.native-cursor textarea,
-body.native-cursor select {
-  cursor: auto !important;
-}
-
-/* На тач-устройствах кастомный курсор не нужен — возвращаем родной всегда */
-@media (hover: none), (pointer: coarse) {
-  body, body a, body button, body input, body textarea, body select {
-    cursor: auto !important;
-  }
-}
-
-/* На экранах меньше md (768px) кастомный курсор скрыт (hidden md:block),
-   поэтому возвращаем системный чтобы не было «пустоты» */
-@media (max-width: 767px) {
-  body, body a, body button, body input, body textarea, body select {
-    cursor: auto !important;
+/* Пользователь просил уменьшить движение: без анимаций и плавной прокрутки. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

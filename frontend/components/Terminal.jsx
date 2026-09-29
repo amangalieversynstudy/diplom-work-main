@@ -62,6 +62,8 @@ const Terminal = forwardRef(function Terminal({ className = "" }, ref) {
 
       const term = new XTerm({
         cursorBlink: true,
+        // вывод запуска (в том числе ошибки) должен озвучиваться скринридером
+        screenReaderMode: true,
         cursorStyle: "bar",
         fontFamily:
           'ui-monospace, SF Mono, Menlo, Monaco, "Cascadia Mono", Consolas, monospace',

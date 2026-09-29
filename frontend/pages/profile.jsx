@@ -280,7 +280,7 @@ if (loading) {
                     />
                   </div>
                   <div className="flex gap-3 pt-4">
-                    <Button type="submit" className="bg-primary text-white">{t("profile.saveBtn")}</Button>
+                    <Button type="submit" className="bg-primary text-on-primary">{t("profile.saveBtn")}</Button>
                     <Button type="button" variant="ghost" onClick={() => setIsEditing(false)}>{t("profile.cancelBtn")}</Button>
                   </div>
                 </form>

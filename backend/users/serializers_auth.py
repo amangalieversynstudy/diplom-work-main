@@ -7,7 +7,10 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
+from django.core.exceptions import ValidationError as DjangoValidationError
+
 from .models import Profile
+from .validators import clean_single_email, clean_username
 
 User = get_user_model()
 
@@ -37,7 +40,18 @@ class RegisterSerializer(serializers.ModelSerializer):
             "research_consent",
         )
 
+    def validate_username(self, value):
+        try:
+            return clean_username(value)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError(" ".join(error.messages))
+
     def validate_email(self, value):
+        if value:
+            try:
+                value = clean_single_email(value)
+            except DjangoValidationError as error:
+                raise serializers.ValidationError(" ".join(error.messages))
         if value and User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("Этот email уже используется.")
         return value
@@ -54,7 +68,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         teacher_code = (validated_data.pop("teacher_code", "") or "").strip()
         research_consent = validated_data.pop("research_consent", False)
         username = validated_data["username"]
-        if User.objects.filter(username=username).exists():
+        if User.objects.filter(username__iexact=username).exists():
             raise serializers.ValidationError({"username": "Это имя пользователя уже занято."})
         email = validated_data.get("email") or ""
 

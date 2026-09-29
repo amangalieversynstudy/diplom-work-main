@@ -49,8 +49,15 @@ INFRASTRUCTURE_REASONS = frozenset(
 # максимум 50 KB вывода — иначе обрезаем
 MAX_OUTPUT_SIZE = 50 * 1024
 
+# Демон Docker хранит вывод контейнера на диске; без лимита код, который пишет в
+# stdout сотни мегабайт, забил бы диск хоста. Ограничиваем журнал самого контейнера.
+_LOG_CONFIG = docker.types.LogConfig(
+    type=docker.types.LogConfig.types.JSON, config={"max-size": "1m", "max-file": "1"}
+)
+
 # ограничения Docker-песочницы (общие для sync и streaming путей)
 _SANDBOX_KWARGS = dict(
+    log_config=_LOG_CONFIG,
     mem_limit="128m",
     pids_limit=64,
     network_mode="none",
@@ -406,6 +413,35 @@ def _stream_subprocess_fallback(code: str, timeout: int, stop_event, started_at:
             pass
 
 
+_TRUNCATED_MARK = "\n\n... [ВЫВОД ОБРЕЗАН] ...".encode("utf-8")
+
+
+def _read_capped_logs(container) -> bytes:
+    """Вывод контейнера не длиннее MAX_OUTPUT_SIZE, прочитанный по частям.
+
+    ``container.logs()`` без ``stream`` затягивает весь журнал в память сервера
+    до того, как мы его обрежем, а объём вывода выбирает студент. Здесь читаем
+    поток и бросаем его, как только лимит исчерпан.
+    """
+    stream = container.logs(stdout=True, stderr=True, stream=True, follow=False)
+    chunks, size, truncated = [], 0, False
+    try:
+        for chunk in stream:
+            room = MAX_OUTPUT_SIZE - size
+            if len(chunk) > room:
+                chunks.append(chunk[:room])
+                truncated = True
+                break
+            chunks.append(chunk)
+            size += len(chunk)
+    finally:
+        close = getattr(stream, "close", None)
+        if close is not None:
+            close()
+    data = b"".join(chunks)
+    return data + _TRUNCATED_MARK if truncated else data
+
+
 def execute_python_code(code: str, timeout: int = 5) -> dict:
     """Запускает код в контейнере и возвращает весь вывод одним блоком."""
     try:
@@ -431,12 +467,7 @@ def execute_python_code(code: str, timeout: int = 5) -> dict:
             **_SANDBOX_KWARGS,
         )
         result = container.wait(timeout=timeout)
-        raw_logs = container.logs(stdout=True, stderr=True)
-
-        if len(raw_logs) > MAX_OUTPUT_SIZE:
-            raw_logs = raw_logs[:MAX_OUTPUT_SIZE] + "\n\n... [ВЫВОД ОБРЕЗАН] ...".encode("utf-8")
-
-        logs = raw_logs.decode("utf-8", errors="replace")
+        logs = _read_capped_logs(container).decode("utf-8", errors="replace")
 
         if result.get("StatusCode", 0) == 0:
             return {"status": "success", "output": logs}

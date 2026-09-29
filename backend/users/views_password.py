@@ -1,5 +1,7 @@
 """Views for requesting password reset and confirming new password."""
 
+import unicodedata
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
@@ -14,6 +16,22 @@ from .serializers_password import (
 )
 
 User = get_user_model()
+
+
+def _fold(address):
+    """The comparison form of an address: Unicode-normalised and case-folded.
+
+    Django's own PasswordResetForm compares this way (CVE-2019-19844): the
+    database ``iexact`` lookup alone also matches look-alikes such as an address
+    with a dotless "ı" for "i".
+    """
+    return unicodedata.normalize("NFKC", address).casefold()
+
+
+def users_for_reset(email):
+    """Active accounts whose stored address really is ``email``."""
+    candidates = User.objects.filter(email__iexact=email, is_active=True)
+    return [u for u in candidates if u.email and _fold(u.email) == _fold(email)]
 
 
 class PasswordResetRequestView(generics.GenericAPIView):
@@ -37,14 +55,6 @@ class PasswordResetRequestView(generics.GenericAPIView):
                 )
             }
         )
-        try:
-            user = User.objects.get(email__iexact=email)
-        except User.DoesNotExist:
-            return generic
-
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        token = default_token_generator.make_token(user)
-
         import os
 
         from django.conf import settings
@@ -54,26 +64,34 @@ class PasswordResetRequestView(generics.GenericAPIView):
             or os.environ.get("FRONTEND_URL")
             or "http://localhost:3000"
         )
-        reset_link = (
-            f"{frontend_url.rstrip('/')}/reset-password-confirm?uid={uid}&token={token}"
-        )
-        try:
-            send_mail(
-                "Сброс пароля — RPG Academy",
-                (
-                    f"Привет, {user.username}!\n\n"
-                    "Кто-то запросил сброс пароля для твоего аккаунта.\n"
-                    "Перейди по ссылке, чтобы задать новый пароль:\n"
-                    f"{reset_link}\n\n"
-                    "Если это был не ты — просто проигнорируй письмо, "
-                    "пароль останется прежним."
-                ),
-                None,
-                [email],
+        for user in users_for_reset(email):
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            reset_link = (
+                f"{frontend_url.rstrip('/')}/reset-password-confirm"
+                f"?uid={uid}&token={token}"
             )
-        except Exception as e:
-            import logging
-            logging.error("[PASSWORD-RESET] Email send failed for %s: %r", email, e)
+            try:
+                send_mail(
+                    "Сброс пароля — RPG Academy",
+                    (
+                        f"Привет, {user.username}!\n\n"
+                        "Кто-то запросил сброс пароля для твоего аккаунта.\n"
+                        "Перейди по ссылке, чтобы задать новый пароль:\n"
+                        f"{reset_link}\n\n"
+                        "Если это был не ты — просто проигнорируй письмо, "
+                        "пароль останется прежним."
+                    ),
+                    None,
+                    # Только сохранённый адрес: введённый запрашивающим мог
+                    # оказаться адресом-двойником.
+                    [user.email],
+                )
+            except Exception as e:
+                import logging
+                logging.error(
+                    "[PASSWORD-RESET] Email send failed for user %s: %r", user.pk, e
+                )
         return generic
 
 

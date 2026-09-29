@@ -14,6 +14,11 @@ class User(AbstractUser):
     """Custom user model with optional display name."""
 
     display_name = models.CharField(max_length=150, blank=True)
+    # ``is_active`` is Django's on/off switch for an account (admins use it to
+    # block people), so it cannot also mean "e-mail not confirmed yet": the
+    # confirmation link would then undo a block. This flag is True only while
+    # sign-up waits for its confirmation link; the link works for no one else.
+    email_verification_pending = models.BooleanField(default=False)
 
 
 class Profile(models.Model):

@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 def test_register_login_logout():
     """Register a user, verify email, obtain JWT, then logout."""
     from django.contrib.auth import get_user_model
-    from django.contrib.auth.tokens import default_token_generator
+    from users.tokens import email_verification_token
     from django.utils.encoding import force_bytes
     from django.utils.http import urlsafe_base64_encode
 
@@ -38,7 +38,7 @@ def test_register_login_logout():
     User = get_user_model()
     user = User.objects.get(username="u1")
     uid = urlsafe_base64_encode(force_bytes(user.pk))
-    token = default_token_generator.make_token(user)
+    token = email_verification_token.make_token(user)
     resp = client.get(f"/api/auth/verify-email/?uid={uid}&token={token}")
     assert resp.status_code == 200
 
@@ -71,12 +71,12 @@ def test_register_and_verify_email(client):
     u = User.objects.get(username="u2")
     # by default user created may be inactive until verification
     # simulate verification by calling the verify endpoint with token
-    from django.contrib.auth.tokens import default_token_generator
+    from users.tokens import email_verification_token
     from django.utils.encoding import force_bytes
     from django.utils.http import urlsafe_base64_encode
 
     uid = urlsafe_base64_encode(force_bytes(u.pk))
-    token = default_token_generator.make_token(u)
+    token = email_verification_token.make_token(u)
     verify_path = f"/api/auth/verify-email/?uid={uid}&token={token}"
     resp = client.get(verify_path)
     assert resp.status_code == 200

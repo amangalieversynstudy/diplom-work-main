@@ -12,6 +12,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .serializers_auth import RegisterSerializer, UserDetailSerializer
+from .tokens import email_verification_token
 
 User = get_user_model()
 
@@ -29,13 +30,12 @@ def _send_verification_email(user):
     import os
 
     from django.conf import settings
-    from django.contrib.auth.tokens import default_token_generator
     from django.core.mail import send_mail
     from django.utils.encoding import force_bytes
     from django.utils.http import urlsafe_base64_encode
 
     uid = urlsafe_base64_encode(force_bytes(user.pk))
-    token = default_token_generator.make_token(user)
+    token = email_verification_token.make_token(user)
     frontend_url = (
         getattr(settings, "FRONTEND_URL", None)
         or os.environ.get("FRONTEND_URL")
@@ -94,6 +94,24 @@ def _send_email_change_email(user, new_email):
     )
 
 
+def _find_login_user(identifier):
+    """The account a login identifier (username or e-mail) refers to.
+
+    An identifier with ``@`` is an e-mail first: otherwise a user who registered
+    a username equal to somebody's address would capture that person's e-mail
+    login. New usernames may not contain ``@``; the username fallback only
+    serves older accounts that already have one.
+    """
+    if "@" in identifier:
+        user = User.objects.filter(email__iexact=identifier).first()
+        if user:
+            return user
+    user = User.objects.filter(username__iexact=identifier).first()
+    if user is None and "@" not in identifier:
+        user = User.objects.filter(email__iexact=identifier).first()
+    return user
+
+
 # rate-limiting декоратор для брутфорс-защиты
 # 10 попыток/мин с одного IP — для login и register
 @method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True), name="post")
@@ -119,10 +137,7 @@ class LoginView(TokenObtainPairView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Try to find user by username or email
-        user = User.objects.filter(username__iexact=identifier).first()
-        if not user:
-            user = User.objects.filter(email__iexact=identifier).first()
+        user = _find_login_user(str(identifier).strip())
 
         # Аккаунт найден, не активирован, и пароль верный → отдаём явный,
         # независимый от локали код, чтобы фронт показал баннер
@@ -130,7 +145,13 @@ class LoginView(TokenObtainPairView):
         # пароле мы бы палили статус активации чужого аккаунта. 403 ещё и
         # обходит фронтовый перехватчик 401-сессий.
         password = request.data.get("password", "")
-        if user and not user.is_active and password and user.check_password(password):
+        if (
+            user
+            and not user.is_active
+            and user.email_verification_pending
+            and password
+            and user.check_password(password)
+        ):
             return Response(
                 {
                     "detail": "Аккаунт не активирован. Проверьте почту для активации.",
@@ -181,9 +202,11 @@ class RegisterView(generics.CreateAPIView):
         # Без почты верификация невозможна — иначе аккаунт остался бы заблокирован навсегда.
         if getattr(settings, "DEBUG", False) or is_console_email or not user.email:
             user.is_active = True
+            user.email_verification_pending = False
         else:
             user.is_active = False
-        user.save(update_fields=["is_active"])
+            user.email_verification_pending = True
+        user.save(update_fields=["is_active", "email_verification_pending"])
 
         # send verification email (console backend in dev)
         try:
@@ -245,7 +268,6 @@ class VerifyEmailView(APIView):
                 {"detail": "Missing uid or token"}, status=status.HTTP_400_BAD_REQUEST
             )
         try:
-            from django.contrib.auth.tokens import default_token_generator
             from django.utils.encoding import force_str
             from django.utils.http import urlsafe_base64_decode
 
@@ -255,9 +277,15 @@ class VerifyEmailView(APIView):
             return Response(
                 {"detail": "Invalid uid"}, status=status.HTTP_400_BAD_REQUEST
             )
-        if default_token_generator.check_token(user, token):
+        # Включить аккаунт может только регистрация, ждущая подтверждения;
+        # заблокированный администратором так себя не разблокирует.
+        if (
+            user.email_verification_pending
+            and email_verification_token.check_token(user, token)
+        ):
             user.is_active = True
-            user.save()
+            user.email_verification_pending = False
+            user.save(update_fields=["is_active", "email_verification_pending"])
             return Response({"detail": "Email verified"})
         return Response({"detail": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -289,7 +317,7 @@ class ResendVerificationView(APIView):
         if not email:
             return generic
         user = User.objects.filter(email__iexact=email).first()
-        if user and not user.is_active:
+        if user and not user.is_active and user.email_verification_pending:
             try:
                 _send_verification_email(user)
             except Exception as e:

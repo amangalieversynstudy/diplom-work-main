@@ -1,5 +1,7 @@
 """API viewsets for user management."""
 
+from django.core.cache import cache
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -7,6 +9,23 @@ from rest_framework import status
 
 from .models import User
 from .serializers import ProfileSerializer
+from .validators import clean_single_email, clean_username
+
+# A confirmation e-mail goes to an address the user typed, so how often one may
+# be sent is capped: the platform's sender domain must not become a mail relay.
+EMAIL_CHANGE_LIMIT = 5
+EMAIL_CHANGE_WINDOW = 60 * 60
+
+
+def _email_change_allowed(user):
+    """Count this attempt; False once the hourly allowance is used up."""
+    key = f"email-change:{user.pk}"
+    cache.add(key, 0, EMAIL_CHANGE_WINDOW)
+    try:
+        return cache.incr(key) <= EMAIL_CHANGE_LIMIT
+    except ValueError:  # the key expired between add and incr
+        cache.set(key, 1, EMAIL_CHANGE_WINDOW)
+        return True
 
 
 def _parse_bool(value):
@@ -73,10 +92,11 @@ class ProfileMeView(APIView):
         if "username" in data and data["username"]:
             new_username = str(data["username"]).strip()
             if new_username != user.username:
-                # check uniqueness
-                if User.objects.exclude(pk=user.pk).filter(username=new_username).exists():
+                try:
+                    new_username = clean_username(new_username, exclude_pk=user.pk)
+                except DjangoValidationError as error:
                     return Response(
-                        {"username": "Такое имя пользователя уже занято."},
+                        {"username": " ".join(error.messages)},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
                 user.username = new_username
@@ -86,6 +106,18 @@ class ProfileMeView(APIView):
             new_email = str(data["email"]).strip().lower()
             if new_email != (user.email or "").lower():
                 if new_email:
+                    try:
+                        new_email = clean_single_email(new_email)
+                    except DjangoValidationError as error:
+                        return Response(
+                            {"email": " ".join(error.messages)},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                    if not _email_change_allowed(user):
+                        return Response(
+                            {"email": "Слишком много попыток смены email. Попробуйте позже."},
+                            status=status.HTTP_429_TOO_MANY_REQUESTS,
+                        )
                     # Смена/добавление email требует подтверждения владения новым
                     # ящиком. НЕ пишем user.email сразу — старый адрес остаётся
                     # активным, пока юзер не кликнет по ссылке. Так опечатка в

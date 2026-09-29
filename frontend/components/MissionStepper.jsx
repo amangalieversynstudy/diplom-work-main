@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { FileText, CheckCircle2, Code2, HelpCircle, Lock } from "lucide-react";
 
 const cx = (...classes) => classes.filter(Boolean).join(" ");
@@ -29,6 +30,13 @@ const variantStyles = {
   },
 };
 
+// Same rule as the server: a step opens once every earlier required step is solved.
+export function isStepLocked(tasks, index, progressMap) {
+  return tasks
+    .slice(0, index)
+    .some((earlier) => earlier.is_required && progressMap[earlier.id]?.status !== "completed");
+}
+
 export default function MissionStepper({
   tasks = [],
   activeId,
@@ -47,10 +55,7 @@ export default function MissionStepper({
         const taskProg = progressMap[task.id];
         const completed = taskProg?.status === "completed";
         const current = task.id === activeId;
-        // Same rule as the server: a step opens once every earlier required step is solved.
-        const locked = tasks
-          .slice(0, index)
-          .some((earlier) => earlier.is_required && progressMap[earlier.id]?.status !== "completed");
+        const locked = isStepLocked(tasks, index, progressMap);
 
         return (
           <button
@@ -75,5 +80,65 @@ export default function MissionStepper({
         );
       })}
     </div>
+  );
+}
+
+// Телефон: те же шаги, но полоской с крупными кнопками (44 px) вместо списка свитков.
+export function StepStrip({ tasks = [], activeId, progress: progressMap = {}, onSelect, label }) {
+  const listRef = useRef(null);
+
+  // активный шаг всегда в поле зрения полосы (сама страница при этом не прокручивается)
+  useEffect(() => {
+    const list = listRef.current;
+    const item = list?.querySelector('[aria-current="step"]');
+    if (!list || !item) return;
+    const left = item.offsetLeft - (list.clientWidth - item.offsetWidth) / 2;
+    list.scrollTo({ left: Math.max(0, left) });
+  }, [activeId, tasks.length]);
+
+  if (!tasks.length) return null;
+
+  return (
+    <ol ref={listRef} aria-label={label} className="flex gap-2 overflow-x-auto pb-1">
+      {tasks.map((task, index) => {
+        const Icon = iconMap[task.task_type] || FileText;
+        const completed = progressMap[task.id]?.status === "completed";
+        const current = task.id === activeId;
+        const locked = isStepLocked(tasks, index, progressMap);
+        const title = task.title || task.title_ru || task.title_en || "";
+        return (
+          <li key={task.id} className="shrink-0">
+            <button
+              type="button"
+              disabled={locked}
+              aria-current={current ? "step" : undefined}
+              aria-label={`${index + 1}. ${title}`}
+              onClick={() => onSelect?.(task.id)}
+              className={cx(
+                "relative grid h-11 w-11 place-items-center rounded-xl border-2 transition-colors",
+                current
+                  ? "border-[#fde68a] bg-[#5c3a21] text-[#fde68a]"
+                  : completed
+                  ? "border-[#6b8e23]/70 bg-[#2b1d11] text-[#a3e635]"
+                  : "border-[#8b5a2b]/60 bg-[#2b1d11] text-[#d4a24c]",
+                locked && "opacity-40"
+              )}
+            >
+              {locked ? <Lock size={16} /> : <Icon size={18} />}
+              <span className="absolute -left-1 -top-1 grid h-4 min-w-[1rem] place-items-center rounded-full bg-[#fde68a] px-1 font-mono text-[10px] font-bold leading-none text-[#2b1d11]">
+                {index + 1}
+              </span>
+              {completed && !locked && (
+                <CheckCircle2
+                  size={14}
+                  aria-hidden="true"
+                  className="absolute -bottom-1 -right-1 rounded-full bg-[#2b1d11] text-[#a3e635]"
+                />
+              )}
+            </button>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

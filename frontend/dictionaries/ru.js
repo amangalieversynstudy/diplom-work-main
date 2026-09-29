@@ -727,6 +727,13 @@ export const ru = {
         title: "Ошибок подряд: {n} — это нормально",
         body: "Не мучайтесь в одиночку: возьмите свиток подсказки или позовите AI-наставника, они помогут разобраться, не выдавая ответ.",
       },
+      mobile: {
+        step: "Шаг {n} из {total}",
+        stepsLabel: "Шаги миссии",
+        task: "Задание",
+        code: "Код",
+        showBody: "Показать условие",
+      },
       backToMap: "← На карту мира",
       locked: {
         title: "Квест заблокирован",
@@ -842,6 +849,16 @@ export const ru = {
       loadingLocation: "Загрузка карты мира...",
       locationBadge: "Локация",
       backToWorlds: "Вернуться к списку миров",
+      mobile: {
+        progress: "Пройдено {done} из {total}",
+        progressLabel: "Прогресс по миссиям",
+        start: "Начать",
+        continue: "Продолжить",
+        reward: "+{xp} XP",
+        steps: "Шагов: {n}",
+        lockedAfter: "Сначала пройдите: {title}",
+        lockedLevel: "Нужен уровень {n}",
+      },
     },
     landing: {
       badge: "Новая эра обучения",

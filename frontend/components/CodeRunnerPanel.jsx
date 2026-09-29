@@ -83,6 +83,10 @@ export default function CodeRunnerPanel({
   const [termCollapsed, setTermCollapsed] = useState(false);
   const dragRef = useRef(null);
 
+  useEffect(() => {
+    if (window.innerWidth < 640) setTermH(180);
+  }, []);
+
   // Снимок оригинального starter-кода задачи — обновляется ТОЛЬКО при смене
   // task.id. Reset-кнопка ниже всегда восстанавливает код из этого снимка
   // и не тратит инвентарь (в отличие от Skeleton Scroll, который добавляет
@@ -368,17 +372,17 @@ export default function CodeRunnerPanel({
     >
       {/* Editor Tabs & Toolbar */}
       <div className="flex items-center bg-[#252526] overflow-x-auto select-none border-l border-[#333]">
-        <div className="flex items-center gap-2 bg-[#1e1e1e] px-4 py-2 border-t border-[#3794ff] min-w-max cursor-pointer">
+        <div className="hidden sm:flex items-center gap-2 bg-[#1e1e1e] px-4 py-2 border-t border-[#3794ff] min-w-max cursor-pointer">
           <FileCode2 size={14} className="text-[#519aba]" />
           <span className="text-xs text-white">main.py</span>
         </div>
 
         {/* Inventory toolbar */}
-        <div className="flex items-center gap-3 px-4 py-1 border-l border-[#333] ml-2">
+        <div className="flex items-center gap-1 sm:gap-3 px-2 sm:px-4 py-1 sm:border-l border-[#333] sm:ml-2">
           <button
             onClick={handleSkeletonScroll}
             disabled={usingItem || !inventoryCounts?.skeleton_scrolls}
-            className={`flex items-center gap-1.5 px-2 py-1 text-[11px] rounded transition-colors ${inventoryCounts?.skeleton_scrolls > 0 ? "text-[#e5c07b] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
+            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-[11px] rounded transition-colors ${inventoryCounts?.skeleton_scrolls > 0 ? "text-[#e5c07b] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
             title={t("codeRunner.items.architect")}
           >
             <Scroll size={14} />
@@ -388,7 +392,7 @@ export default function CodeRunnerPanel({
           <button
             onClick={handleHintScroll}
             disabled={usingItem || !inventoryCounts?.hint_scrolls}
-            className={`flex items-center gap-1.5 px-2 py-1 text-[11px] rounded transition-colors ${inventoryCounts?.hint_scrolls > 0 ? "text-[#98c379] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
+            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-[11px] rounded transition-colors ${inventoryCounts?.hint_scrolls > 0 ? "text-[#98c379] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
             title={t("codeRunner.items.clarity")}
           >
             <Lightbulb size={14} />
@@ -397,7 +401,7 @@ export default function CodeRunnerPanel({
 
           <button
             onClick={() => setMentorOpen(true)}
-            className="flex items-center gap-1.5 px-2 py-1 text-[11px] rounded transition-colors text-[#c678dd] hover:bg-[#333] cursor-pointer"
+            className="flex items-center gap-1.5 px-2 py-2 sm:py-1 text-[11px] rounded transition-colors text-[#c678dd] hover:bg-[#333] cursor-pointer"
             title={t("codeRunner.mentor.open")}
           >
             <Bot size={14} />
@@ -406,7 +410,7 @@ export default function CodeRunnerPanel({
         </div>
 
         <div className="flex-1" />
-        <div className="px-3 flex items-center gap-2 bg-[#252526]">
+        <div className="pl-1 pr-2 sm:px-3 flex items-center gap-1.5 sm:gap-2 bg-[#252526]">
           {/* Развернуть редактор на весь экран / свернуть обратно. */}
           <button
             onClick={() => setFullscreen((v) => !v)}
@@ -424,16 +428,17 @@ export default function CodeRunnerPanel({
           <button
             onClick={handleResetCode}
             title={t("codeRunner.resetTitle")}
-            className="flex items-center gap-1.5 px-3 py-1 rounded border border-[#a0432a] bg-gradient-to-b from-[#7a2b1a] to-[#3a0d06] hover:from-[#8e3420] hover:to-[#4a1208] text-[#f3e6c2] text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,220,140,0.2)]"
+            aria-label={t("codeRunner.resetTitle")}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-1 rounded border border-[#a0432a] bg-gradient-to-b from-[#7a2b1a] to-[#3a0d06] hover:from-[#8e3420] hover:to-[#4a1208] text-[#f3e6c2] text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,220,140,0.2)]"
           >
             <RotateCcw size={11} />
-            Reset
+            <span className="hidden sm:inline">Reset</span>
           </button>
 
           {running ? (
             <button
               onClick={stopRun}
-              className="flex items-center gap-1.5 px-3 py-1 rounded border border-[#d14a4a] bg-gradient-to-b from-[#a31515] to-[#5e0c0c] hover:from-[#c41a1a] hover:to-[#6e0e0e] text-white text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,200,200,0.2)]"
+              className="flex items-center gap-1.5 px-3 py-2 sm:py-1 rounded border border-[#d14a4a] bg-gradient-to-b from-[#a31515] to-[#5e0c0c] hover:from-[#c41a1a] hover:to-[#6e0e0e] text-white text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,200,200,0.2)]"
             >
               <Square size={11} fill="currentColor" />
               Stop
@@ -441,7 +446,7 @@ export default function CodeRunnerPanel({
           ) : (
             <button
               onClick={runCode}
-              className="flex items-center gap-1.5 px-3 py-1 rounded border border-[#5a8a2a] bg-gradient-to-b from-[#3a6a22] to-[#1b3a0e] hover:from-[#46802a] hover:to-[#224a12] text-[#f1ffd6] text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,220,140,0.25)]"
+              className="flex items-center gap-1.5 px-3 py-2 sm:py-1 rounded border border-[#5a8a2a] bg-gradient-to-b from-[#3a6a22] to-[#1b3a0e] hover:from-[#46802a] hover:to-[#224a12] text-[#f1ffd6] text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,220,140,0.25)]"
             >
               <Play size={12} fill="currentColor" />
               Run Code
@@ -451,7 +456,7 @@ export default function CodeRunnerPanel({
       </div>
 
       {/* Breadcrumbs */}
-      <div className="flex items-center gap-1.5 px-4 py-1.5 text-[11px] text-[#cccccc] bg-[#1e1e1e] border-b border-[#333] border-l select-none shadow-sm z-10">
+      <div className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 text-[11px] text-[#cccccc] bg-[#1e1e1e] border-b border-[#333] border-l select-none shadow-sm z-10">
         <span className="hover:text-white cursor-pointer">rpg-academy</span>
         <span className="opacity-50">&gt;</span>
         <span className="hover:text-white cursor-pointer">mission-{task?.mission || "X"}</span>

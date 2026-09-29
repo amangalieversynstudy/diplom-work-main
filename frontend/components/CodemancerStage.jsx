@@ -28,7 +28,7 @@ export default function CodemancerStage({
 
   return (
     <div
-      className={`codemancer-stage relative w-full shrink-0 h-44 sm:h-52 md:h-60 xl:h-64 overflow-hidden border-b border-border bg-[#0a1322] select-none ${phase !== "idle" ? "cm-" + phase : ""}`}
+      className={`codemancer-stage relative w-full shrink-0 h-32 sm:h-44 md:h-56 xl:h-64 overflow-hidden border-b border-border bg-[#0a1322] select-none ${phase !== "idle" ? "cm-" + phase : ""}`}
       role="img"
       aria-label={`${heroName}, level ${level}`}
     >

@@ -1,6 +1,6 @@
 import Layout from "../../components/Layout";
 import Button from "../../components/Button";
-import MissionStepper from "../../components/MissionStepper";
+import MissionStepper, { StepStrip } from "../../components/MissionStepper";
 import CodeRunnerPanel from "../../components/CodeRunnerPanel";
 import CodemancerStage from "../../components/CodemancerStage";
 import LevelUpBurst from "../../components/LevelUpBurst";
@@ -14,10 +14,19 @@ import {
   Profile, // Импортируем Profile для работы с инвентарем
 } from "../../lib/api";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sword, Sparkles, Code2, BookOpen, Lock, ChevronRight, ScrollText } from "lucide-react";
+import { Sparkles, Code2, BookOpen, Lock, ChevronRight, ScrollText, ArrowLeft } from "lucide-react";
 import logger from "../../lib/logger";
 import { useI18n } from "../../lib/i18n";
 import { sanitizeHtml } from "../../lib/sanitize";
+
+// Стили текста свитка: тёмно-коричневый на пергаменте (светлый фон, поэтому без prose-invert).
+const SCROLL_PROSE =
+  "prose max-w-none text-sm text-[#3e2723] leading-relaxed space-y-4 " +
+  "prose-headings:font-display prose-headings:text-[#3e2723] " +
+  "prose-strong:text-[#3e2723] " +
+  "prose-code:bg-[#5c3a21]/15 prose-code:text-[#5c3a21] prose-code:px-1 prose-code:rounded " +
+  "prose-pre:bg-[#3a2818] prose-pre:text-[#fde68a] prose-pre:overflow-x-auto " +
+  "prose-a:text-[#8e1d1d] prose-li:marker:text-[#5c3a21]";
 
 export default function MissionDetail() {
   const router = useRouter();
@@ -51,10 +60,33 @@ export default function MissionDetail() {
   // tick перезапускает one-shot анимации (снаряд, вспышка) при каждом событии.
   const [stage, setStage] = useState({ phase: "idle", tick: 0 });
   const [levelUp, setLevelUp] = useState(null);
+  // Телефон: у кодового шага две вкладки, условие и редактор. На широком экране видно всё сразу.
+  const [mobileTab, setMobileTab] = useState("task");
+  const stripRef = useRef(null);
+  const tabsRef = useRef(null);
+  const prevStepRef = useRef(null);
 
   const activeTask = useMemo(() => {
     return tasks.find((t) => t.id === activeTaskId) || tasks[0] || null;
   }, [tasks, activeTaskId]);
+
+  // Новый шаг всегда открывается с условия, а не с редактора прошлого шага.
+  // На телефоне прокручиваем к полосе шагов: иначе после победы новое условие остаётся за экраном.
+  useEffect(() => {
+    setMobileTab("task");
+    if (prevStepRef.current && prevStepRef.current !== activeTaskId && window.innerWidth < 1280) {
+      stripRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
+    prevStepRef.current = activeTaskId;
+  }, [activeTaskId]);
+
+  // Вкладку «Код» поднимаем к верху экрана, чтобы редактор получил всю высоту.
+  const openMobileTab = (key) => {
+    setMobileTab(key);
+    requestAnimationFrame(() =>
+      tabsRef.current?.scrollIntoView({ block: "start", behavior: "smooth" })
+    );
+  };
 
   // Загрузка данных миссии и инвентаря пользователя
   useEffect(() => {
@@ -356,12 +388,36 @@ export default function MissionDetail() {
     );
   }
 
+  const isCodeTask = activeTask?.task_type === "code";
+  const showEditor = isCodeTask && mobileTab === "code";
+  const activeIndex = tasks.findIndex((task) => task.id === activeTask?.id);
+  const taskBodyHtml = sanitizeHtml(
+    (language === "en"
+      ? activeTask?.body_en || activeTask?.body_ru
+      : activeTask?.body_ru || activeTask?.body_en) ||
+      activeTask?.body ||
+      ""
+  );
+  const helpOffer = taskProgress[activeTaskId]?.help_offer;
+  const helpBanner = (cls) =>
+    helpOffer && (
+      <div
+        role="status"
+        className={`rounded-lg border-2 border-[#5c3a21]/50 bg-[#f3e2c0]/80 px-4 py-3 text-sm text-[#3e2723] ${cls}`}
+      >
+        <p className="font-bold">
+          {t("missionPage.helpOffer.title").replace("{n}", helpOffer.failures)}
+        </p>
+        <p className="mt-1 leading-snug">{t("missionPage.helpOffer.body")}</p>
+      </div>
+    );
+
   return (
     <Layout fullBleed hideFooter>
       {levelUp != null && (
         <LevelUpBurst level={levelUp} onDone={() => setLevelUp(null)} />
       )}
-      <div className="h-screen pt-24 bg-bg dark:bg-[#0f0f11] text-text dark:text-gray-200 font-sans flex flex-col">
+      <div className="min-h-screen xl:h-screen pt-24 bg-bg dark:bg-[#0f0f11] text-text dark:text-gray-200 font-sans flex flex-col">
         {/* Квест-шапка в RPG-стиле: deep-wood band + scroll icon + Melodrama.
             Светлая тема — чистая surface-полоса; тёмная — глубокое дерево. */}
         <header className="border-b border-border dark:border-[#5c3a21]/40 px-4 sm:px-8 py-4 flex items-center justify-between gap-3 select-none shadow-md bg-surface dark:bg-gradient-to-r dark:from-[#2b1d11] dark:via-[#3a2818] dark:to-[#2b1d11]">
@@ -370,7 +426,7 @@ export default function MissionDetail() {
               <ScrollText size={22} />
             </div>
             <div className="min-w-0">
-              <h1 className="font-display text-xl sm:text-2xl font-bold text-text dark:text-[#fde68a] tracking-wide truncate dark:drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
+              <h1 className="font-display text-xl sm:text-2xl font-bold text-text dark:text-[#fde68a] tracking-wide leading-tight line-clamp-2 sm:truncate dark:drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
                 {(language === "en"
                   ? mission.title_en || mission.title_ru
                   : mission.title_ru || mission.title_en) ||
@@ -381,7 +437,15 @@ export default function MissionDetail() {
               </p>
             </div>
           </div>
-          <Button variant="secondary" size="sm" className="shrink-0" onClick={() => router.push("/worlds")}>
+          <button
+            type="button"
+            onClick={() => router.push("/worlds")}
+            aria-label={t("missionPage.backToMap").replace("← ", "")}
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary/10 text-primary sm:hidden"
+          >
+            <ArrowLeft size={18} aria-hidden="true" />
+          </button>
+          <Button variant="secondary" size="sm" className="hidden shrink-0 sm:inline-flex" onClick={() => router.push("/worlds")}>
             {t("missionPage.backToMap")}
           </Button>
         </header>
@@ -397,13 +461,67 @@ export default function MissionDetail() {
         />
 
         {/* Основной контент */}
-        <section className="flex-1 flex flex-col xl:flex-row min-h-0 overflow-auto xl:overflow-hidden">
+        <section className="flex-1 flex flex-col xl:flex-row min-h-0 xl:overflow-hidden">
+          {/* Телефон: шаги полоской и сводка по текущему шагу вместо панели свитков */}
+          <div
+            ref={stripRef}
+            className="xl:hidden scroll-mt-24 border-b-2 border-[#5c3a21]/60 bg-gradient-to-r from-[#2b1d11] via-[#3a2818] to-[#2b1d11] px-3 pt-3 pb-2"
+          >
+            <div className="flex items-center justify-between gap-3 pb-2 font-mono text-[11px] text-[#d4a24c]">
+              <span className="font-bold uppercase tracking-wider text-[#fde68a]">
+                {t("missionPage.mobile.step")
+                  .replace("{n}", activeIndex + 1)
+                  .replace("{total}", tasks.length)}
+              </span>
+              {activeTask && (
+                <span className="truncate text-right">
+                  <span className="uppercase text-[#fde68a]">{activeTask.task_type}</span>
+                  {" · "}
+                  {activeTask.estimated_minutes} {t("missionPage.stats.minutesShort")}
+                  {taskProgress[activeTask.id]?.attempts > 0 &&
+                    ` · ${t("missionPage.stats.attempts")} ${taskProgress[activeTask.id].attempts}`}
+                </span>
+              )}
+            </div>
+            <StepStrip
+              tasks={tasks}
+              activeId={activeTaskId}
+              progress={taskProgress}
+              onSelect={setActiveTaskId}
+              label={t("missionPage.mobile.stepsLabel")}
+            />
+          </div>
+
+          {isCodeTask && (
+            <div ref={tabsRef} className="xl:hidden scroll-mt-24 grid grid-cols-2 gap-1 bg-[#2b1d11] p-1">
+              {[
+                ["task", BookOpen, t("missionPage.mobile.task")],
+                ["code", Code2, t("missionPage.mobile.code")],
+              ].map(([key, TabIcon, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={mobileTab === key}
+                  onClick={() => openMobileTab(key)}
+                  className={`flex min-h-[44px] items-center justify-center gap-2 rounded-lg font-display text-sm font-bold tracking-wide transition-colors ${
+                    mobileTab === key
+                      ? "bg-[#d4ad75] text-[#2a1810]"
+                      : "text-[#fde68a] hover:bg-[#5c3a21]/50"
+                  }`}
+                >
+                  <TabIcon size={16} aria-hidden="true" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Левая панель (Quest Scrolls) — пергаментный фон.
               Текстура: base parchment color + 3 radial overlays (имитируют
               пятна и потёртости) + лёгкое sepia-tint поверх. Никаких
               файлов-текстур — чистый CSS, переживёт любую сборку. */}
           <div
-            className="w-full xl:w-[320px] xl:flex-shrink-0 border-r-4 border-[#5c3a21]/60 flex flex-col select-none shadow-2xl z-10 relative"
+            className="w-full xl:w-[320px] xl:flex-shrink-0 border-r-4 border-[#5c3a21]/60 hidden xl:flex flex-col select-none shadow-2xl z-10 relative"
             style={{
               backgroundColor: "#d4ad75",
               backgroundImage:
@@ -487,7 +605,7 @@ export default function MissionDetail() {
 
           {/* Центральная панель (Свиток инструкций) — parchment под стать левой панели */}
           <div
-            className="w-full xl:w-[420px] xl:flex-shrink-0 flex flex-col border-r-4 border-[#5c3a21]/60 min-w-0 relative"
+            className={`w-full xl:w-[420px] xl:flex-shrink-0 ${showEditor ? "hidden" : "flex"} xl:flex flex-col border-r-4 border-[#5c3a21]/60 min-w-0 relative`}
             style={{
               backgroundColor: "#dcb98a",
               backgroundImage:
@@ -525,20 +643,7 @@ export default function MissionDetail() {
             </div>
 
             {/* Триггер помощи: несколько неудач подряд — предлагаем свитки и наставника */}
-            {taskProgress[activeTaskId]?.help_offer && (
-              <div
-                role="status"
-                className="mx-6 mt-4 rounded-lg border-2 border-[#5c3a21]/50 bg-[#f3e2c0]/80 px-4 py-3 text-sm text-[#3e2723]"
-              >
-                <p className="font-bold">
-                  {t("missionPage.helpOffer.title").replace(
-                    "{n}",
-                    taskProgress[activeTaskId].help_offer.failures
-                  )}
-                </p>
-                <p className="mt-1 leading-snug">{t("missionPage.helpOffer.body")}</p>
-              </div>
-            )}
+            {helpBanner("mx-4 sm:mx-6 mt-4")}
 
             {/* Орнаментальный разделитель главы — перо + росчерк (чистый SVG) */}
             <div className="flex items-center gap-3 px-6 pt-4 pb-1 select-none" aria-hidden="true">
@@ -554,21 +659,8 @@ export default function MissionDetail() {
             {/* Тело свитка: тёмно-коричневый текст на пергаменте.
                 `prose-invert` снят — у нас светлый фон. Цвета через явные классы,
                 чтобы prose не пытался применить ни тёмную, ни системную палитру. */}
-            <div className="flex-1 overflow-y-auto p-6 prose max-w-none text-sm text-[#3e2723] leading-relaxed space-y-4
-              prose-headings:font-display prose-headings:text-[#3e2723]
-              prose-strong:text-[#3e2723]
-              prose-code:bg-[#5c3a21]/15 prose-code:text-[#5c3a21] prose-code:px-1 prose-code:rounded
-              prose-pre:bg-[#3a2818] prose-pre:text-[#fde68a]
-              prose-a:text-[#8e1d1d] prose-li:marker:text-[#5c3a21]">
-              <div dangerouslySetInnerHTML={{
-                __html: sanitizeHtml(
-                  (language === "en"
-                    ? activeTask?.body_en || activeTask?.body_ru
-                    : activeTask?.body_ru || activeTask?.body_en) ||
-                    activeTask?.body ||
-                    ""
-                ),
-              }} />
+            <div className={`flex-1 overflow-y-auto p-4 sm:p-6 ${SCROLL_PROSE}`}>
+              <div dangerouslySetInnerHTML={{ __html: taskBodyHtml }} />
 
               {tasks.length === 0 && (
                 <p role="status" className="rounded-lg border-2 border-[#5c3a21]/40 bg-[#f3e2c0]/70 px-4 py-3 font-semibold">
@@ -622,17 +714,35 @@ export default function MissionDetail() {
           </div>
 
           {/* Правая панель (Editor + Terminal) */}
-          <div className="w-full xl:flex-1 min-h-[700px] xl:min-h-0 bg-surface dark:bg-[#1e1e1e] flex flex-col min-w-0">
-            {activeTask?.task_type === "code" ? (
-              <CodeRunnerPanel
-                task={activeTask}
-                code={codeValue}
-                onChange={(val) => setCodeDrafts((prev) => ({ ...prev, [activeTask.id]: val }))}
-                onTaskResult={handleCodeResult}
-                onRunStateChange={handleRunState}
-                inventoryCounts={inventory}
-                onInventoryUpdate={handleInventoryUpdate}
-              />
+          <div
+            className={`w-full xl:flex-1 ${showEditor ? "flex" : "hidden"} xl:flex h-[calc(100dvh-10rem)] min-h-[480px] xl:h-auto xl:min-h-0 bg-surface dark:bg-[#1e1e1e] flex-col min-w-0`}
+          >
+            {isCodeTask ? (
+              <>
+                {/* Телефон: условие под рукой, пока пишешь код */}
+                <details className="xl:hidden shrink-0 border-b-2 border-[#5c3a21]/60 bg-[#dcb98a] text-[#3e2723]">
+                  <summary className="flex min-h-[44px] cursor-pointer items-center gap-2 px-4 font-display text-sm font-bold">
+                    <BookOpen size={16} aria-hidden="true" />
+                    {t("missionPage.mobile.showBody")}
+                  </summary>
+                  <div
+                    className={`max-h-[45vh] overflow-y-auto px-4 pb-4 ${SCROLL_PROSE}`}
+                    dangerouslySetInnerHTML={{ __html: taskBodyHtml }}
+                  />
+                </details>
+                {helpBanner("xl:hidden mx-3 my-2 shrink-0")}
+                <div className="min-h-0 flex-1">
+                  <CodeRunnerPanel
+                    task={activeTask}
+                    code={codeValue}
+                    onChange={(val) => setCodeDrafts((prev) => ({ ...prev, [activeTask.id]: val }))}
+                    onTaskResult={handleCodeResult}
+                    onRunStateChange={handleRunState}
+                    inventoryCounts={inventory}
+                    onInventoryUpdate={handleInventoryUpdate}
+                  />
+                </div>
+              </>
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center p-8 bg-surface dark:bg-[#1e1e1e] border-l border-border dark:border-[#333]">
                 {/* RPG-свиток с анимированной руной. Чистый CSS,

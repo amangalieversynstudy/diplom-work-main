@@ -727,6 +727,13 @@ export const en = {
         title: "{n} failures in a row — that is normal",
         body: "Do not grind alone: use a hint scroll or call the AI mentor. They help you figure it out without giving the answer away.",
       },
+      mobile: {
+        step: "Step {n} of {total}",
+        stepsLabel: "Mission steps",
+        task: "Task",
+        code: "Code",
+        showBody: "Show the task",
+      },
       backToMap: "← To the world map",
       locked: {
         title: "Quest locked",
@@ -842,6 +849,16 @@ export const en = {
       loadingLocation: "Loading world map...",
       locationBadge: "Location",
       backToWorlds: "Back to worlds list",
+      mobile: {
+        progress: "{done} of {total} completed",
+        progressLabel: "Mission progress",
+        start: "Start",
+        continue: "Continue",
+        reward: "+{xp} XP",
+        steps: "{n} steps",
+        lockedAfter: "Finish first: {title}",
+        lockedLevel: "Requires level {n}",
+      },
     },
     landing: {
       badge: "New era of learning",

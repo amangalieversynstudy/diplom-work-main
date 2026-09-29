@@ -8,7 +8,9 @@ from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .me import my_learning
 from .metrics import CSV_COLUMNS, clamp_inactive_days, compute_metrics
+from .serializers import _resolve_language
 from .warning import early_warning
 
 _FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
@@ -25,6 +27,28 @@ def _safe_cell(value):
     if isinstance(value, str) and value.startswith(_FORMULA_PREFIXES):
         return "'" + value
     return "" if value is None else value
+
+
+class MyLearningView(APIView):
+    """The signed-in learner's own progress, hard spots and next step.
+
+    GET /api/me/learning/
+
+    Only the caller's data, plus one cohort average that is hidden while the
+    group is too small to avoid pointing at individuals.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="My learning progress",
+        operation_description=(
+            "Личный экран ученика: прогресс, где было трудно, что повторить, "
+            "следующий шаг и активность за две недели. Без вероятностей риска."
+        ),
+    )
+    def get(self, request):
+        return Response(my_learning(request.user, lang=_resolve_language(request)))
 
 
 class LearningMetricsView(APIView):

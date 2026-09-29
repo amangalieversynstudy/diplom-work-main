@@ -7,6 +7,7 @@ from .analytics_views import (
     EarlyWarningView,
     LearningMetricsExportView,
     LearningMetricsView,
+    MyLearningView,
 )
 from .studio import (
     StudioLocationViewSet,
@@ -61,6 +62,7 @@ urlpatterns = [
     path("ai-assist/", AIAssistView.as_view(), name="ai_assist"),
     path("ai-mentor/", AIMentorView.as_view(), name="ai_mentor"),
     path("analytics/", AnalyticsView.as_view(), name="analytics"),
+    path("me/learning/", MyLearningView.as_view(), name="my_learning"),
     path(
         "analytics/metrics/",
         LearningMetricsView.as_view(),

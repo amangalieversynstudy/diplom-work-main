@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import {
-  Map, User2, Crown, Sparkles, Trophy,
+  Map, User2, Crown, Sparkles, Trophy, TrendingUp,
   ArrowUpRight, Sun, Moon, X
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -24,6 +24,7 @@ if (typeof window !== "undefined") {
 const navLinks = [
   { href: "/worlds", labelKey: "nav.worlds", icon: Map },
   { href: "/leaderboard", labelKey: "nav.legends", icon: Trophy },
+  { href: "/journey", labelKey: "nav.journey", icon: TrendingUp },
   { href: "/profile", labelKey: "nav.character", icon: User2 },
   { href: "/class", labelKey: "nav.class", icon: Crown },
 ];

@@ -294,6 +294,11 @@ export const Analytics = {
       .then((r) => r.data),
 };
 
+// Личный экран ученика «Мой путь»: прогресс, где трудно, что повторить, следующий шаг.
+export const Learning = {
+  me: () => api.get("/me/learning/").then((r) => r.data),
+};
+
 // Кабинет преподавателя (только для staff): список учеников с прогрессом и
 // флагом «застрял». Ответ — {students: [...], summary: {...}}.
 export const Teacher = {

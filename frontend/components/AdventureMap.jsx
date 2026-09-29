@@ -175,7 +175,7 @@ export default function AdventureMap({ nodes, playerClass }) {
                     <span className="block truncate font-bold text-text">
                       {title}
                     </span>
-                    <span className="block text-[11px] font-bold uppercase tracking-widest text-muted mt-0.5">
+                    <span className="block text-xs font-bold uppercase tracking-widest text-muted mt-0.5">
                       {statusLabel}
                     </span>
                   </span>

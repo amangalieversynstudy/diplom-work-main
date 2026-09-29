@@ -78,7 +78,7 @@ export default function AchievementsPanel({ items = [] }) {
                     {t(`achievements.items.${a.slug}.desc`)}
                   </p>
                   {a.earned ? (
-                    <p className="text-[10px] text-accent uppercase tracking-widest font-bold mt-2">
+                    <p className="text-xs text-accent uppercase tracking-widest font-bold mt-2">
                       {t("achievements.earnedLabel")}
                     </p>
                   ) : (
@@ -89,7 +89,7 @@ export default function AchievementsPanel({ items = [] }) {
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <p className="text-[10px] text-muted mt-1 tabular-nums">
+                      <p className="text-xs text-muted mt-1 tabular-nums">
                         {a.current} / {a.target}
                       </p>
                     </div>

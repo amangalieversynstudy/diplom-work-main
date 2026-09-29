@@ -467,7 +467,7 @@ export default function MissionDetail() {
             ref={stripRef}
             className="xl:hidden scroll-mt-24 border-b-2 border-[#5c3a21]/60 bg-gradient-to-r from-[#2b1d11] via-[#3a2818] to-[#2b1d11] px-3 pt-3 pb-2"
           >
-            <div className="flex items-center justify-between gap-3 pb-2 font-mono text-[11px] text-[#d4a24c]">
+            <div className="flex items-center justify-between gap-3 pb-2 font-mono text-xs text-[#d4a24c]">
               <span className="font-bold uppercase tracking-wider text-[#fde68a]">
                 {t("missionPage.mobile.step")
                   .replace("{n}", activeIndex + 1)

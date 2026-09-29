@@ -13,6 +13,7 @@ import TransitionLink from "./TransitionLink";
 import StreakReminder from "./StreakReminder";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import { prefersReducedMotion } from "../lib/motion";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion } from "framer-motion";
 
@@ -227,6 +228,10 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
     // Works correctly in both cases:
     // - First visit: overlay was at yPercent:0 (visible) and slides up
     // - After navigation: TransitionLink left overlay at yPercent:0, now it slides up revealing new page
+    if (prefersReducedMotion()) {
+      gsap.set(".page-transition-overlay", { yPercent: -100 });
+      return;
+    }
     gsap.fromTo(
       ".page-transition-overlay",
       { yPercent: 0 },

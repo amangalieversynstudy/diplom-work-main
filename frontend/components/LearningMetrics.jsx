@@ -236,7 +236,7 @@ export default function LearningMetrics() {
           </p>
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-[11px] uppercase tracking-wider text-muted text-left">
+              <tr className="text-xs uppercase tracking-wider text-muted text-left">
                 <th className="py-1 font-bold">{t("analytics.metrics.threshold.colFailures")}</th>
                 <th className="py-1 font-bold text-right">{t("analytics.metrics.threshold.colReached")}</th>
                 <th className="py-1 font-bold text-right">{t("analytics.metrics.threshold.colDropout")}</th>
@@ -291,7 +291,7 @@ export default function LearningMetrics() {
                         aria-label={label}
                         title={label}
                         style={{ backgroundColor: heat(step.dropout_rate) }}
-                        className="grid h-9 min-w-[2.75rem] place-items-center rounded-lg border border-border px-1 text-[11px] font-bold text-text tabular-nums"
+                        className="grid h-9 min-w-[2.75rem] place-items-center rounded-lg border border-border px-1 text-xs font-bold text-text tabular-nums"
                       >
                         {step.opened ? `${Math.round(step.dropout_rate)}%` : "·"}
                       </div>
@@ -300,7 +300,7 @@ export default function LearningMetrics() {
                 </div>
               </div>
             ))}
-            <div className="flex items-center gap-2 pt-2 text-[11px] text-muted">
+            <div className="flex items-center gap-2 pt-2 text-xs text-muted">
               <span>{t("analytics.metrics.heatmap.legendLow")}</span>
               <span
                 aria-hidden="true"
@@ -323,7 +323,7 @@ export default function LearningMetrics() {
         >
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-[11px] uppercase tracking-wider text-muted text-left">
+              <tr className="text-xs uppercase tracking-wider text-muted text-left">
                 <th className="py-1 font-bold" />
                 <th className="py-1 font-bold text-right">{t("analytics.metrics.help.pairs")}</th>
                 <th className="py-1 font-bold text-right">{t("analytics.metrics.help.solveRate")}</th>
@@ -378,7 +378,7 @@ export default function LearningMetrics() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-[11px] uppercase tracking-wider text-muted text-left">
+              <tr className="text-xs uppercase tracking-wider text-muted text-left">
                 <th className="py-1 pr-3 font-bold">{t("analytics.metrics.tasks.colMission")}</th>
                 <th className="py-1 pr-3 font-bold">{t("analytics.metrics.tasks.colStep")}</th>
                 <th className="py-1 pr-3 font-bold text-right">{t("analytics.metrics.tasks.colOpened")}</th>

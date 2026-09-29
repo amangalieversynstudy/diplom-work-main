@@ -137,13 +137,13 @@ export default function Leaderboard() {
                   {/* Статистика (Серия и Опыт) */}
                   <div className="flex items-center gap-6 text-right">
                     <div className="hidden sm:block">
-                      <p className="text-[10px] uppercase tracking-widest text-faint mb-1">{copy.columns.streak}</p>
+                      <p className="text-xs uppercase tracking-widest text-faint mb-1">{copy.columns.streak}</p>
                       <p className="flex items-center justify-end gap-1 font-bold text-accent">
                         {user.streak || 0} <Flame size={14} />
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-widest text-faint mb-1">{copy.columns.xp}</p>
+                      <p className="text-xs uppercase tracking-widest text-faint mb-1">{copy.columns.xp}</p>
                       <p className="font-display text-xl font-bold text-primary">
                         {user.xp || 0}
                       </p>

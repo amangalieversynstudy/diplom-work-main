@@ -156,7 +156,7 @@ function EarlyWarningPanel({ warning, t }) {
         </ul>
       )}
       {rules ? (
-        <p className="text-[11px] text-muted mt-4">
+        <p className="text-xs text-muted mt-4">
           {fill(t("teacher.warning.rules"), {
             n: rules.stuck_failures,
             days: rules.inactive_long_days,
@@ -317,7 +317,7 @@ export default function TeacherPage() {
           ) : (
             <>
               {/* Заголовок таблицы — только на md+ */}
-              <div className="hidden md:grid grid-cols-[1.6fr_0.5fr_0.7fr_0.9fr_0.9fr_1fr_auto] gap-3 px-3 pb-3 text-[11px] uppercase tracking-wider text-muted font-bold border-b border-border">
+              <div className="hidden md:grid grid-cols-[1.6fr_0.5fr_0.7fr_0.9fr_0.9fr_1fr_auto] gap-3 px-3 pb-3 text-xs uppercase tracking-wider text-muted font-bold border-b border-border">
                 <span>{t("teacher.table.student")}</span>
                 <span className="text-right">{t("teacher.table.level")}</span>
                 <span className="text-right">{t("teacher.table.xp")}</span>
@@ -342,7 +342,7 @@ export default function TeacherPage() {
                           {s.display_name || s.username}
                         </p>
                         {s.display_name ? (
-                          <p className="text-[11px] text-muted truncate">
+                          <p className="text-xs text-muted truncate">
                             @{s.username}
                           </p>
                         ) : null}

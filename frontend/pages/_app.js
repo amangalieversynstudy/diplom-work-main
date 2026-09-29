@@ -5,6 +5,8 @@ import { Toaster } from "sonner";
 import { I18nProvider } from "../lib/i18n";
 import { ThemeProvider, useTheme } from "../lib/theme";
 import Head from "next/head"; // <-- ИМПОРТ
+import gsap from "gsap";
+import { prefersReducedMotion } from "../lib/motion";
 
 async function initSmoothScroll() {
   const [{ default: Lenis }, { gsap }, { ScrollTrigger }] = await Promise.all([
@@ -42,9 +44,12 @@ function AppContent({ Component, pageProps }) {
 export default function MyApp({ Component, pageProps }) {
   useEffect(() => {
     let lenisInstance = null;
-    // Плавная прокрутка и анимации по скроллу отключаются, если пользователь
-    // просил уменьшить движение в системе.
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return undefined;
+    // Плавная прокрутка и анимации отключаются, если пользователь просил
+    // уменьшить движение в системе: твины GSAP доигрываются мгновенно.
+    if (prefersReducedMotion()) {
+      gsap.globalTimeline.timeScale(100);
+      return undefined;
+    }
     initSmoothScroll().then((lenis) => { lenisInstance = lenis; });
     return () => {
       if (lenisInstance) {

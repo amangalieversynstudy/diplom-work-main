@@ -135,11 +135,13 @@ export default function CodeRunnerPanel({
       setTermH(Math.min(MAX_TERMINAL_H, Math.max(MIN_TERMINAL_H, startH + delta)));
     };
     const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
     };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
   };
 
   const stopRun = useCallback(() => {
@@ -382,7 +384,7 @@ export default function CodeRunnerPanel({
           <button
             onClick={handleSkeletonScroll}
             disabled={usingItem || !inventoryCounts?.skeleton_scrolls}
-            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-[11px] rounded transition-colors ${inventoryCounts?.skeleton_scrolls > 0 ? "text-[#e5c07b] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
+            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors ${inventoryCounts?.skeleton_scrolls > 0 ? "text-[#e5c07b] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
             title={t("codeRunner.items.architect")}
           >
             <Scroll size={14} />
@@ -392,7 +394,7 @@ export default function CodeRunnerPanel({
           <button
             onClick={handleHintScroll}
             disabled={usingItem || !inventoryCounts?.hint_scrolls}
-            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-[11px] rounded transition-colors ${inventoryCounts?.hint_scrolls > 0 ? "text-[#98c379] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
+            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors ${inventoryCounts?.hint_scrolls > 0 ? "text-[#98c379] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
             title={t("codeRunner.items.clarity")}
           >
             <Lightbulb size={14} />
@@ -401,7 +403,7 @@ export default function CodeRunnerPanel({
 
           <button
             onClick={() => setMentorOpen(true)}
-            className="flex items-center gap-1.5 px-2 py-2 sm:py-1 text-[11px] rounded transition-colors text-[#c678dd] hover:bg-[#333] cursor-pointer"
+            className="flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors text-[#c678dd] hover:bg-[#333] cursor-pointer"
             title={t("codeRunner.mentor.open")}
           >
             <Bot size={14} />
@@ -456,7 +458,7 @@ export default function CodeRunnerPanel({
       </div>
 
       {/* Breadcrumbs */}
-      <div className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 text-[11px] text-[#cccccc] bg-[#1e1e1e] border-b border-[#333] border-l select-none shadow-sm z-10">
+      <div className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 text-xs text-[#cccccc] bg-[#1e1e1e] border-b border-[#333] border-l select-none shadow-sm z-10">
         <span className="hover:text-white cursor-pointer">rpg-academy</span>
         <span className="opacity-50">&gt;</span>
         <span className="hover:text-white cursor-pointer">mission-{task?.mission || "X"}</span>
@@ -503,8 +505,8 @@ export default function CodeRunnerPanel({
       {!termCollapsed && (
         <div
           ref={dragRef}
-          onMouseDown={onDragStart}
-          className="h-2 bg-[#252526] border-t border-b border-[#333] flex items-center justify-center cursor-row-resize hover:bg-[#2a2d2e] select-none group"
+          onPointerDown={onDragStart}
+          className="h-3 sm:h-2 touch-none bg-[#252526] border-t border-b border-[#333] flex items-center justify-center cursor-row-resize hover:bg-[#2a2d2e] select-none group"
           title={t("codeRunner.resizeTitle")}
         >
           <GripHorizontal size={12} className="text-[#555] group-hover:text-[#888]" />
@@ -517,17 +519,17 @@ export default function CodeRunnerPanel({
         className="flex flex-col bg-[#1e1e1e] border-l border-[#333] flex-shrink-0"
       >
         <div className="flex items-center gap-4 px-4 pt-2 border-b border-[#333] select-none">
-          <span className="text-[11px] uppercase tracking-wider text-white border-b border-white pb-2 font-semibold flex items-center gap-2">
+          <span className="text-xs uppercase tracking-wider text-white border-b border-white pb-2 font-semibold flex items-center gap-2">
             <TerminalIcon size={14} /> TERMINAL
           </span>
           {running && (
-            <span className="text-[11px] tracking-wider text-[#cca700] pb-2 flex items-center gap-1.5">
+            <span className="text-xs tracking-wider text-[#cca700] pb-2 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#cca700] animate-pulse" />
               running…
             </span>
           )}
           {!running && lastExit && (
-            <span className={`text-[11px] tracking-wider pb-2 ${lastExit.code === 0 ? "text-[#23d18b]" : "text-[#f14c4c]"}`}>
+            <span className={`text-xs tracking-wider pb-2 ${lastExit.code === 0 ? "text-[#23d18b]" : "text-[#f14c4c]"}`}>
               exit {lastExit.code} · {Number(lastExit.duration || 0).toFixed(2)}s
             </span>
           )}

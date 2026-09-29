@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import gsap from "gsap";
+import { prefersReducedMotion } from "../lib/motion";
 
 export default function TransitionLink({ href, children, className, onClick }) {
   const router = useRouter();
@@ -11,6 +12,12 @@ export default function TransitionLink({ href, children, className, onClick }) {
 
     // If already on this page, don't play the overlay animation (it won't come back up)
     if (router.pathname === href || router.asPath === href) {
+      return;
+    }
+
+    // без движения шторка не нужна: сразу переходим
+    if (prefersReducedMotion()) {
+      router.push(href);
       return;
     }
 

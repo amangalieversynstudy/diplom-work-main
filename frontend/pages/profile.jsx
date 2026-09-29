@@ -196,7 +196,7 @@ if (loading) {
                   {t("profile.level")} {profile?.level || 1}
                 </p>
                 {profile?.rank && (
-                  <span className="px-2 py-0.5 text-[10px] uppercase tracking-widest font-bold rounded-full bg-accent/15 border border-accent/40 text-accent">
+                  <span className="px-2 py-0.5 text-xs uppercase tracking-widest font-bold rounded-full bg-accent/15 border border-accent/40 text-accent">
                     {profile.rank.title_ru || profile.rank.title_en || profile.rank.slug}
                   </span>
                 )}
@@ -218,11 +218,11 @@ if (loading) {
                 <div className="text-left">
                   <p className="flex items-baseline gap-1 text-xl font-bold leading-none text-text">
                     {profile?.streak_active ? profile.current_streak : 0}
-                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted">
                       {t("profile.streak.label")}
                     </span>
                   </p>
-                  <p className="mt-1 text-[11px] text-muted">
+                  <p className="mt-1 text-xs text-muted">
                     {(profile?.longest_streak || 0) > 0
                       ? `${t("profile.streak.best")}: ${profile.longest_streak}`
                       : t("profile.streak.start")}

@@ -48,7 +48,7 @@ function StatCard({ value, label, icon: Icon, delay }) {
         {isNaN(parseInt(value, 10)) ? value : counted}
         {!isNaN(parseInt(value, 10)) && value.includes("+") && "+"}
       </p>
-      <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-widest text-muted">{label}</p>
+      <p className="text-xs sm:text-xs font-semibold uppercase tracking-widest text-muted">{label}</p>
     </div>
   );
 }
@@ -77,7 +77,7 @@ function TrackCard({ track, soonLabel }) {
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-panel border border-border group-hover:scale-110 transition-transform duration-300">
             <Icon size={28} style={{ color: track.dot }} />
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full bg-panel text-muted border border-border">
+          <span className="text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full bg-panel text-muted border border-border">
             {track.label}
           </span>
         </div>
@@ -245,7 +245,7 @@ export default function Home() {
           <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">{homeDict.tracks_eyebrow || "Учебные Треки"}</p>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-text leading-tight max-w-lg">
-              {homeDict.tracks_headline_1 || "Один мир."}<br />
+              {homeDict.tracks_headline_1 || "Один мир."}{" "}<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{homeDict.tracks_headline_2 || "С него всё начинается."}</span>
             </h2>
             <p className="text-muted text-sm sm:text-base max-w-sm leading-relaxed">
@@ -270,7 +270,7 @@ export default function Home() {
           <div className="md:sticky md:top-28">
             <p className="text-xs font-bold uppercase tracking-widest text-accent mb-3">{homeDict.howitworks_eyebrow || "Процесс"}</p>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-text leading-tight">
-              {homeDict.howitworks_headline_1 || "Как разворачивается"}<br />
+              {homeDict.howitworks_headline_1 || "Как разворачивается"}{" "}<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-amber-700">{homeDict.howitworks_headline_2 || "приключение."}</span>
             </h2>
             <p className="text-muted text-sm sm:text-base leading-relaxed mt-5 max-w-sm">
@@ -321,7 +321,7 @@ export default function Home() {
           <div className="relative z-10 max-w-2xl mx-auto">
             <p className="text-xs font-bold uppercase tracking-widest text-primary mb-4">{homeDict.cta_eyebrow || "Готов начать?"}</p>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-text mb-6 leading-tight">
-              {homeDict.cta_headline_1 || "Твой путь героя"}<br />
+              {homeDict.cta_headline_1 || "Твой путь героя"}{" "}<br />
               {homeDict.cta_headline_mid || "начинается "}<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{homeDict.cta_headline_2 || "прямо сейчас."}</span>
             </h2>
             <p className="text-muted text-base sm:text-lg leading-relaxed mb-10 max-w-lg mx-auto">

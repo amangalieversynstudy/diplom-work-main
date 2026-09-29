@@ -157,11 +157,11 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
           <p className="truncate text-xs text-muted">{mission.title_en}</p>
         ) : null}
       </div>
-      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
+      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold text-amber-400">
         {mission.xp_reward ?? 0} {t("studio.editor.xp")}
       </span>
       <span
-        className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+        className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${
           mission.is_active
             ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-400"
             : "border-border bg-panel text-muted"

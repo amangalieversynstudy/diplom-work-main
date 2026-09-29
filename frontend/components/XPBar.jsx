@@ -8,7 +8,7 @@ export default function XPBar({ current = 0, max = 100 }) {
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] md:text-xs uppercase tracking-widest text-muted font-bold">
+        <span className="text-xs md:text-xs uppercase tracking-widest text-muted font-bold">
           {t("sheet.xpLabel") || "Опыт"}
         </span>
         <span className="text-sm text-text font-bold">

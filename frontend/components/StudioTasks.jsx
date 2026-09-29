@@ -100,7 +100,7 @@ function Field({ label, hint, children }) {
     <label className="block text-xs font-semibold text-muted">
       {label}
       <div className="mt-1 font-normal">{children}</div>
-      {hint ? <span className="mt-1 block text-[11px] font-normal text-faint">{hint}</span> : null}
+      {hint ? <span className="mt-1 block text-xs font-normal text-faint">{hint}</span> : null}
     </label>
   );
 }
@@ -188,7 +188,7 @@ function TaskForm({ form, setForm, t }) {
               ) : null}
             </div>
           ))}
-          <p className="text-[11px] text-faint">{t("studio.tasks.correctHint")}</p>
+          <p className="text-xs text-faint">{t("studio.tasks.correctHint")}</p>
           {form.options.length < 8 ? (
             <Button type="button" variant="ghost" onClick={() => set({ options: [...form.options, ""] })}>
               <Plus size={15} /> {t("studio.tasks.addOption")}
@@ -355,7 +355,7 @@ export default function StudioTasks({ missionId, t, setConfirm, onChanged }) {
             <span className="w-6 shrink-0 text-xs tabular-nums text-faint">{index + 1}</span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm text-text">{task.title_ru || task.title_en || "—"}</p>
-              <p className="text-[11px] text-muted">{t(`studio.tasks.types.${task.task_type}`)}</p>
+              <p className="text-xs text-muted">{t(`studio.tasks.types.${task.task_type}`)}</p>
             </div>
             <button
               type="button"

@@ -286,7 +286,7 @@ export default function Worlds() {
                         <p className={`text-sm font-display font-bold tracking-wide ${isLocked ? 'text-[#5c3a21]' : 'text-[#3e2723]'}`}>
                           {mission.title || mission.name || worldsDict.missionFallback || "Миссия"}
                         </p>
-                        <p className={`text-[10px] font-bold uppercase tracking-widest mt-0.5 ${isLocked ? 'text-[#8b5a2b]' : 'text-[#8e1d1d]'}`}>
+                        <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${isLocked ? 'text-[#8b5a2b]' : 'text-[#8e1d1d]'}`}>
                           {mission.chapter || mission.tier || worldsDict.chapterFallback || "Глава"}
                         </p>
                       </div>

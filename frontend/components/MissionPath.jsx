@@ -111,7 +111,7 @@ export default function MissionPath({ missions, loading }) {
                   {title}
                 </span>
                 <span
-                  className={`mt-0.5 block text-[11px] font-bold uppercase tracking-widest ${
+                  className={`mt-0.5 block text-xs font-bold uppercase tracking-widest ${
                     isCurrent ? "text-primary" : "text-muted"
                   }`}
                 >

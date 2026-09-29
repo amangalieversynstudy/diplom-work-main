@@ -167,7 +167,7 @@ export default function AIMentorChat({
           <div className="font-display text-[15px] leading-tight text-[#f3e7c8]">
             {t("codeRunner.mentor.title")}
           </div>
-          <div className="text-[11px] uppercase tracking-[0.18em] text-[#d9a441]/80">
+          <div className="text-xs uppercase tracking-[0.18em] text-[#d9a441]/80">
             {t("codeRunner.mentor.subtitle")}
           </div>
         </div>

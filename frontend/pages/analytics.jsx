@@ -245,7 +245,7 @@ export default function AnalyticsPage() {
               </p>
             ) : (
               <div className="space-y-3">
-                <div className="grid grid-cols-[1fr_auto_auto] gap-3 text-[11px] uppercase tracking-wider text-muted font-bold px-1">
+                <div className="grid grid-cols-[1fr_auto_auto] gap-3 text-xs uppercase tracking-wider text-muted font-bold px-1">
                   <span>{t("analytics.hardest.colMission")}</span>
                   <span className="text-right w-16">
                     {t("analytics.hardest.colAttempts")}
@@ -263,7 +263,7 @@ export default function AnalyticsPage() {
                       <p className="text-sm text-text font-medium truncate">
                         {m.title}
                       </p>
-                      <p className="text-[11px] text-muted">
+                      <p className="text-xs text-muted">
                         {m.learners} {t("analytics.units.learners")}
                       </p>
                     </div>

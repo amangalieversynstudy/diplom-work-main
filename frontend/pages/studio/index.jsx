@@ -37,7 +37,7 @@ function CourseCard({ track, onOpen, t }) {
           <BookOpen size={18} />
         </div>
         <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+          className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
             track.is_active
               ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-400"
               : "border-border bg-panel text-muted"

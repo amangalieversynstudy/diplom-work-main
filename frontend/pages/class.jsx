@@ -328,7 +328,7 @@ function SkillNode({ node, onSelect, choosing, cta, labels = {} }) {
         }`}
     >
       {isCurrent && (
-        <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-accent/20 border border-accent/60 text-accent text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full">
+        <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-accent/20 border border-accent/60 text-accent text-xs font-bold uppercase tracking-widest px-2 py-1 rounded-full">
           <Check size={10} /> {lblSelected}
         </div>
       )}
@@ -369,7 +369,7 @@ function SkillNode({ node, onSelect, choosing, cta, labels = {} }) {
         </div>
 
         <p
-          className={`text-[10px] font-bold uppercase tracking-widest mb-1
+          className={`text-xs font-bold uppercase tracking-widest mb-1
           ${isLocked ? "text-muted" : isCurrent ? "text-accent" : "text-primary"}`}
         >
           {isLocked
@@ -381,7 +381,7 @@ function SkillNode({ node, onSelect, choosing, cta, labels = {} }) {
             : lblAvail}
         </p>
         <h3 className="text-xl font-display font-bold text-text mb-2">{node.name}</h3>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-accent mb-3">
+        <p className="text-xs font-bold uppercase tracking-widest text-accent mb-3">
           {node.focus}
         </p>
         <p className="text-sm text-muted leading-relaxed mb-5">{node.desc}</p>

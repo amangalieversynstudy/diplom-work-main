@@ -347,7 +347,7 @@ export default function CodemancerStage({
       </div>
 
       {/* ── Level-пилюля ────────────────────────────────────────── */}
-      <div className="absolute top-3 sm:top-4 left-1/2 -translate-x-1/2 px-4 sm:px-5 py-1.5 rounded-lg bg-gradient-to-b from-[#1a2238] to-[#0c1224] border border-[#2c3a5d] text-[#e6e8f0] text-[11px] sm:text-xs font-bold tracking-[0.2em] uppercase shadow-[0_6px_14px_rgba(0,0,0,0.4)]">
+      <div className="absolute top-3 sm:top-4 left-1/2 -translate-x-1/2 px-4 sm:px-5 py-1.5 rounded-lg bg-gradient-to-b from-[#1a2238] to-[#0c1224] border border-[#2c3a5d] text-[#e6e8f0] text-xs sm:text-xs font-bold tracking-[0.2em] uppercase shadow-[0_6px_14px_rgba(0,0,0,0.4)]">
         Level {level}
       </div>
 

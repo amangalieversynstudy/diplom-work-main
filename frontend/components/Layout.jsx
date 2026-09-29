@@ -228,7 +228,14 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
     // Works correctly in both cases:
     // - First visit: overlay was at yPercent:0 (visible) and slides up
     // - After navigation: TransitionLink left overlay at yPercent:0, now it slides up revealing new page
-    if (prefersReducedMotion()) {
+    let armed = false;
+    try {
+      armed = window.sessionStorage.getItem("curtain") === "1";
+      window.sessionStorage.removeItem("curtain");
+    } catch {
+      /* хранилище недоступно: просто без шторки */
+    }
+    if (prefersReducedMotion() || !armed) {
       gsap.set(".page-transition-overlay", { yPercent: -100 });
       return;
     }
@@ -256,7 +263,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
            Slides DOWN to cover page (TransitionLink on click)
            Slides UP to reveal page (Layout on mount)
            Does NOT trigger on errors/toasts — only during real navigation */}
-      <div className="page-transition-overlay fixed inset-0 z-[999] bg-[var(--primary)] origin-top flex items-center justify-center pointer-events-none">
+      <div className="page-transition-overlay fixed inset-0 z-[999] -translate-y-full bg-[var(--primary)] origin-top flex items-center justify-center pointer-events-none">
         <Sparkles className="w-12 h-12 text-white animate-spin-slow" />
       </div>
 
@@ -478,11 +485,17 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
               </div>
               <span>{t("layout.footerNote")}</span>
               <div className="flex items-center gap-4">
-                {["/worlds", "/profile", "/leaderboard"].map((href) => (
-                  <Link key={href} href={href} className="hover:text-primary-dk transition-colors">
-                    {href.slice(1).charAt(0).toUpperCase() + href.slice(2)}
-                  </Link>
-                ))}
+                {translatedNavLinks
+                  .filter((item) => item.href !== "/class")
+                  .map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="inline-block py-2 hover:text-primary-dk transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
               </div>
             </div>
           </div>

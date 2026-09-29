@@ -21,6 +21,11 @@ export default function TransitionLink({ href, children, className, onClick }) {
       return;
     }
 
+    try {
+      window.sessionStorage.setItem("curtain", "1"); // новая страница поднимет шторку
+    } catch {
+      /* без хранилища шторка не поднимется сама, но и не опустится */
+    }
     gsap.to(".page-transition-overlay", {
       yPercent: 0,
       duration: 0.7,

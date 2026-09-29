@@ -20,7 +20,6 @@ import {
   Save,
   Swords,
   Trash2,
-  X,
 } from "lucide-react";
 
 const inputCls =

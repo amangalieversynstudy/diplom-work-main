@@ -116,6 +116,10 @@ jobs:
       - name: Dictionaries have the same keys in both languages
         run: node scripts/check-i18n.js
 
+      - name: Unit tests (pure functions)
+        working-directory: frontend
+        run: npm test
+
       - name: Lint
         working-directory: frontend
         run: npm run lint --if-present

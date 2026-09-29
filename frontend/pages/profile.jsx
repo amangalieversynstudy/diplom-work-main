@@ -304,10 +304,10 @@ if (loading) {
               )}
 
               <div className="mt-6 pt-6 border-t border-border">
-                <label className="flex items-start gap-3 cursor-pointer">
+                <label className="flex items-start gap-3 cursor-pointer py-1">
                   <input
                     type="checkbox"
-                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--primary)]"
+                    className="mt-0.5 h-6 w-6 shrink-0 accent-[var(--primary)]"
                     checked={!!profile?.research_consent}
                     onChange={(e) => handleConsentChange(e.target.checked)}
                   />

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import Layout from "../components/Layout";
-import Button from "../components/Button";
 import ConfirmModal from "../components/ConfirmModal";
 import { setPlayerClass, getPlayerClass, fetchIntroStatus } from "../lib/class";
 import { Profile } from "../lib/api";

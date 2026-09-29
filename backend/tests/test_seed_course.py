@@ -22,6 +22,30 @@ def test_seeds_an_empty_database():
     assert MissionTask.objects.filter(mission__location__track=track).count() == 23
 
 
+def test_the_second_course_follows_the_intro_and_does_not_gate_class_selection():
+    _seed()
+    intro = Track.objects.get(slug="python-intro")
+    second = Track.objects.get(slug="python-continued")
+    assert second.is_intro is False
+    assert Track.get_intro() == intro  # class selection still opens after the first course
+    missions = list(Mission.objects.filter(location__track=second).order_by("order"))
+    assert len(missions) == 8
+    assert MissionTask.objects.filter(mission__location__track=second).count() == 24
+    # the first mission of the second course waits for the last one of the intro
+    last_intro = Mission.objects.filter(location__track=intro).order_by("order").last()
+    assert list(missions[0].prerequisites.all()) == [last_intro]
+    # and every later mission waits for the one before it
+    for before, after in zip(missions, missions[1:]):
+        assert list(after.prerequisites.all()) == [before]
+
+
+def test_an_existing_deployment_gets_the_second_course_on_the_next_boot():
+    call_command("loaddata", "ranks", "class_roles", "intro_course", verbosity=0)
+    assert not Track.objects.filter(slug="python-continued").exists()
+    _seed()
+    assert Track.objects.filter(slug="python-continued").exists()
+
+
 def test_second_run_changes_nothing():
     _seed()
     before = (Rank.objects.count(), Mission.objects.count(), MissionTask.objects.count())

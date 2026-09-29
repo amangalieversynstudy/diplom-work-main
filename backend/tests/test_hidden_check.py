@@ -235,7 +235,10 @@ def test_an_empty_check_is_not_stored(teacher_api):
 
 # ── the built-in course ─────────────────────────────────────────────────────
 
-FIXTURE = Path(__file__).resolve().parents[1] / "game" / "fixtures" / "intro_course.json"
+FIXTURES = [
+    Path(__file__).resolve().parents[1] / "game" / "fixtures" / name
+    for name in ("intro_course.json", "python_continued.json")
+]
 
 # what a correct learner writes in place of ``raise NotImplementedError`` (per step)
 SOLUTIONS = {
@@ -246,16 +249,25 @@ SOLUTIONS = {
     62: "if n > 10:\n    count += 1",
     72: "total += gold",
     81: 'best = max(heroes, key=lambda h: h["hp"])\nreturn f"Champion: {best[\'name\']} ({best[\'hp\']})"',
+    # the second course
+    92: 'return "".join(word[0].upper() + "." for word in full_name.split())',
+    102: "return len(set(items))",
+    112: "try:\n    return a / b\nexcept ZeroDivisionError:\n    return None",
+    122: "return [n * n for n in numbers if n % 2 == 0]",
+    132: "counts = {}\nfor word in text.lower().split():\n    counts[word] = counts.get(word, 0) + 1\nreturn counts",
+    142: "self.hp = max(0, self.hp - damage)",
+    152: "super().__init__(name, hp)\nself.mana = mana",
+    162: 'report = {}\nfor hero in heroes:\n    report[hero["class"]] = report.get(hero["class"], 0) + hero["hp"]\nreturn report',
 }
 
 
 def _course_tasks():
-    rows = json.loads(FIXTURE.read_text(encoding="utf-8"))
-    return {
-        row["pk"]: row["fields"]["data"]
-        for row in rows
-        if row["model"] == "game.missiontask" and row["pk"] in SOLUTIONS
-    }
+    tasks = {}
+    for fixture in FIXTURES:
+        for row in json.loads(fixture.read_text(encoding="utf-8")):
+            if row["model"] == "game.missiontask" and row["pk"] in SOLUTIONS:
+                tasks[row["pk"]] = row["fields"]["data"]
+    return tasks
 
 
 def _solved(pk, starter):
@@ -331,3 +343,15 @@ def test_other_sandbox_errors_stay_infrastructure_failures():
     with patch.object(runner.docker, "from_env", return_value=client):
         result = runner.execute_python_code("print(1)")
     assert result["infra"] is True
+
+
+def test_every_code_step_of_every_course_is_covered_by_a_reference_solution():
+    """A new code step without a hidden check (or without a reference solution
+    to prove the check works) must not slip into the built-in courses."""
+    code_steps = []
+    for fixture in FIXTURES:
+        for row in json.loads(fixture.read_text(encoding="utf-8")):
+            if row["model"] == "game.missiontask" and row["fields"]["task_type"] == "code":
+                if row["fields"]["data"].get("expected_output"):
+                    code_steps.append(row["pk"])
+    assert sorted(code_steps) == sorted(SOLUTIONS)

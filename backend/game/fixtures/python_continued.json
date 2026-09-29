@@ -1,0 +1,821 @@
+[
+  {
+    "model": "game.track",
+    "pk": 2,
+    "fields": {
+      "slug": "python-continued",
+      "title": "Python: The Master's Path",
+      "title_en": "Python: The Master's Path",
+      "title_ru": "Python: Путь Мастера",
+      "description": "Strings, sets, errors, comprehensions, modules and classes.",
+      "description_en": "Go past the basics: strings, sets, error handling, comprehensions, modules and object-oriented Python, ending with a guild quest.",
+      "description_ru": "Иди дальше основ: строки, множества, обработка ошибок, списочные выражения, модули и объектный Python, а в конце квест гильдии.",
+      "tagline_en": "From spells to mastery",
+      "tagline_ru": "От заклинаний к мастерству",
+      "order": 1,
+      "is_active": true,
+      "is_intro": false,
+      "icon_url": "",
+      "banner_url": "",
+      "color_theme": "emerald"
+    }
+  },
+  {
+    "model": "game.location",
+    "pk": 2,
+    "fields": {
+      "track": 2,
+      "title": "Башня Мастеров",
+      "title_en": "The Masters' Tower",
+      "title_ru": "Башня Мастеров",
+      "description": "Where apprentices become masters.",
+      "description_en": "A tall tower where apprentices practise the harder spells.",
+      "description_ru": "Высокая башня, где ученики оттачивают сложные заклинания.",
+      "order": 0
+    }
+  },
+  {
+    "model": "game.mission",
+    "pk": 9,
+    "fields": {
+      "location": 2,
+      "title": "Слова-заклинания",
+      "title_en": "Scroll IX: Words of Power",
+      "title_ru": "Свиток IX: Слова-заклинания",
+      "description": "Slices, split, join and strip: how to take text apart and put it back together.",
+      "description_en": "Slices, split, join and strip: how to take text apart and put it back together.",
+      "description_ru": "Срезы, split, join и strip: как разбирать и собирать текст.",
+      "xp_reward": 50,
+      "order": 0,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 12,
+      "pos_y": 40,
+      "prerequisites": [
+        8
+      ]
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 90,
+    "fields": {
+      "mission": 9,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "Slices and String Methods",
+      "title_ru": "Срезы и методы строк",
+      "body_en": "<h2>Strings: words as spells</h2><p>A string is a sequence of characters. You reach one character by its number (index) and cut out a piece with a slice:</p><pre><code>spell = \"fireball\"\nprint(spell[0])      # f\nprint(spell[1:4])    # ire  (characters 1 to 3)\nprint(spell[-1])     # l    (the last one)\nprint(spell[::-1])   # llabeirf (backwards)</code></pre><p>Counting starts at zero and the right end of a slice is not included.</p><p>Handy methods: <code>split()</code> breaks text into words (extra spaces do not matter), <code>join()</code> glues them, <code>strip()</code> removes edge spaces, <code>replace()</code> swaps a piece, <code>len()</code> counts characters.</p><pre><code>words = \"ice  fire wind\".split()   # ['ice', 'fire', 'wind']\nprint(\"-\".join(words))              # ice-fire-wind</code></pre><p>Strings cannot be changed in place: every method returns a new string.</p>",
+      "body_ru": "<h2>Строки: слова как заклинания</h2><p>Строка — это последовательность символов. К символу обращаются по номеру (индексу), а кусок текста вырезают срезом:</p><pre><code>spell = \"fireball\"\nprint(spell[0])      # f\nprint(spell[1:4])    # ire  (с 1-го по 3-й символ)\nprint(spell[-1])     # l    (последний)\nprint(spell[::-1])   # llabeirf (задом наперёд)</code></pre><p>Нумерация начинается с нуля, а правая граница среза не входит в результат.</p><p>Полезные методы: <code>split()</code> разбивает на слова (лишние пробелы не мешают), <code>join()</code> склеивает, <code>strip()</code> убирает пробелы по краям, <code>replace()</code> меняет кусок, <code>len()</code> считает символы.</p><pre><code>words = \"ice  fire wind\".split()   # ['ice', 'fire', 'wind']\nprint(\"-\".join(words))              # ice-fire-wind</code></pre><p>Строки нельзя изменить «на месте»: каждый метод возвращает новую строку.</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {}
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 91,
+    "fields": {
+      "mission": 9,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: Slices",
+      "title_ru": "Испытание: срезы",
+      "body_en": "<p>What does <code>print(\"python\"[1:4])</code> print?</p>",
+      "body_ru": "<p>Что напечатает <code>print(\"python\"[1:4])</code>?</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {
+        "correct_answer": "yth",
+        "options": [
+          {
+            "value": "yth",
+            "label": "yth"
+          },
+          {
+            "value": "pyt",
+            "label": "pyt"
+          },
+          {
+            "value": "ytho",
+            "label": "ytho"
+          },
+          {
+            "value": "tho",
+            "label": "tho"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 92,
+    "fields": {
+      "mission": 9,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "Hero Initials",
+      "title_ru": "Инициалы героя",
+      "body_en": "<p>Write a function <code>initials(full_name)</code> that returns the first letters of all words in capitals, each followed by a dot. Extra spaces must not matter.</p><p><code>print(initials(\"ada lovelace\"))</code> should print <code>A.L.</code></p>",
+      "body_ru": "<p>Напиши функцию <code>initials(full_name)</code>: она возвращает первые буквы всех слов заглавными, каждую с точкой. Лишние пробелы не должны мешать.</p><p><code>print(initials(\"ada lovelace\"))</code> должен вывести <code>A.L.</code></p>",
+      "xp_reward": 20,
+      "is_required": true,
+      "data": {
+        "language": "python",
+        "starter": "def initials(full_name):\n    # Верни первые буквы всех слов заглавными, каждую с точкой\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(initials(\"ada lovelace\"))\n",
+        "sampleOutput": "A.L.",
+        "expected_output": "A.L.",
+        "hidden_check": "assert initials(\"john ronald reuel tolkien\") == \"J.R.R.T.\"\nassert initials(\"Bo\") == \"B.\"\nassert initials(\"  ada   lovelace \") == \"A.L.\""
+      }
+    }
+  },
+  {
+    "model": "game.mission",
+    "pk": 10,
+    "fields": {
+      "location": 2,
+      "title": "Кортежи и множества",
+      "title_en": "Scroll X: Tuples & Sets",
+      "title_ru": "Свиток X: Кортежи и множества",
+      "description": "Immutable tuples and sets without duplicates.",
+      "description_en": "Immutable tuples and sets without duplicates.",
+      "description_ru": "Неизменяемые кортежи и множества без повторов.",
+      "xp_reward": 50,
+      "order": 1,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 32,
+      "pos_y": 28,
+      "prerequisites": [
+        9
+      ]
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 100,
+    "fields": {
+      "mission": 10,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "Tuples and Sets",
+      "title_ru": "Кортежи и множества",
+      "body_en": "<h2>Tuple and set</h2><p>A <strong>tuple</strong> is like a list, but immutable. It unpacks nicely:</p><pre><code>point = (3, 4)\nx, y = point\nprint(x + y)   # 7</code></pre><p>A <strong>set</strong> keeps only unique values and forgets order:</p><pre><code>loot = {\"gold\", \"sword\", \"gold\"}\nprint(len(loot))          # 2\nprint(\"gold\" in loot)     # True — a fast check\nprint(set([1, 1, 2, 3]))  # {1, 2, 3}</code></pre><p>Sets support union <code>|</code> and intersection <code>&amp;</code>. Set members must be immutable: numbers, strings, tuples.</p>",
+      "body_ru": "<h2>Кортеж и множество</h2><p><strong>Кортеж</strong> — как список, но неизменяемый. Его удобно распаковывать:</p><pre><code>point = (3, 4)\nx, y = point\nprint(x + y)   # 7</code></pre><p><strong>Множество</strong> хранит только уникальные значения и не помнит порядок:</p><pre><code>loot = {\"gold\", \"sword\", \"gold\"}\nprint(len(loot))          # 2\nprint(\"gold\" in loot)     # True — проверка быстрая\nprint(set([1, 1, 2, 3]))  # {1, 2, 3}</code></pre><p>Множества умеют объединение <code>|</code> и пересечение <code>&amp;</code>. Элементами множества могут быть только неизменяемые значения: числа, строки, кортежи.</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {}
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 101,
+    "fields": {
+      "mission": 10,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: Sets",
+      "title_ru": "Испытание: множества",
+      "body_en": "<p>What is <code>len(set([1, 1, 2]))</code>?</p>",
+      "body_ru": "<p>Чему равно <code>len(set([1, 1, 2]))</code>?</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {
+        "correct_answer": "2",
+        "options": [
+          {
+            "value": "1",
+            "label": "1"
+          },
+          {
+            "value": "2",
+            "label": "2"
+          },
+          {
+            "value": "3",
+            "label": "3"
+          },
+          {
+            "value": "Будет ошибка",
+            "label": "Будет ошибка"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 102,
+    "fields": {
+      "mission": 10,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "How Many Different Creatures",
+      "title_ru": "Сколько разных существ",
+      "body_en": "<p>Write a function <code>unique_count(items)</code> that returns how many different values a sequence holds.</p><p><code>print(unique_count([\"orc\", \"elf\", \"orc\", \"dwarf\", \"elf\"]))</code> should print <code>3</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>unique_count(items)</code>, которая возвращает, сколько разных значений в последовательности.</p><p><code>print(unique_count([\"orc\", \"elf\", \"orc\", \"dwarf\", \"elf\"]))</code> должен вывести <code>3</code>.</p>",
+      "xp_reward": 20,
+      "is_required": true,
+      "data": {
+        "language": "python",
+        "starter": "def unique_count(items):\n    # Верни число разных значений\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(unique_count([\"orc\", \"elf\", \"orc\", \"dwarf\", \"elf\"]))\n",
+        "sampleOutput": "3",
+        "expected_output": "3",
+        "hidden_check": "assert unique_count([]) == 0\nassert unique_count([1, 1, 1]) == 1\nassert unique_count(\"aabbc\") == 3\nassert unique_count([(1, 2), (1, 2), (2, 1)]) == 2"
+      }
+    }
+  },
+  {
+    "model": "game.mission",
+    "pk": 11,
+    "fields": {
+      "location": 2,
+      "title": "Щиты от ошибок",
+      "title_en": "Scroll XI: Shields Against Errors",
+      "title_ru": "Свиток XI: Щиты от ошибок",
+      "description": "try, except and finally: how a program survives errors.",
+      "description_en": "try, except and finally: how a program survives errors.",
+      "description_ru": "try, except и finally: как программа переживает ошибки.",
+      "xp_reward": 50,
+      "order": 2,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 52,
+      "pos_y": 55,
+      "prerequisites": [
+        10
+      ]
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 110,
+    "fields": {
+      "mission": 11,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "Exceptions",
+      "title_ru": "Исключения",
+      "body_en": "<h2>Errors are events</h2><p>When something goes wrong Python “raises” an exception: <code>ZeroDivisionError</code>, <code>ValueError</code>, <code>KeyError</code>. If nobody catches it, the program crashes. You catch it like this:</p><pre><code>try:\n    number = int(\"abc\")\nexcept ValueError:\n    number = 0\nelse:\n    print(\"It worked\")\nfinally:\n    print(\"This always runs\")</code></pre><p>Catch a <strong>specific</strong> error, not everything: otherwise you hide real bugs. Raise your own with <code>raise ValueError(\"message\")</code>.</p>",
+      "body_ru": "<h2>Ошибки — это события</h2><p>Когда что-то идёт не так, Python «бросает» исключение: <code>ZeroDivisionError</code>, <code>ValueError</code>, <code>KeyError</code>. Если его не поймать, программа падает. Поймать можно так:</p><pre><code>try:\n    number = int(\"abc\")\nexcept ValueError:\n    number = 0\nelse:\n    print(\"Получилось\")\nfinally:\n    print(\"Это выполнится всегда\")</code></pre><p>Ловите <strong>конкретную</strong> ошибку, а не все подряд: иначе вы спрячете настоящий баг. Свою ошибку бросают через <code>raise ValueError(\"сообщение\")</code>.</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {}
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 111,
+    "fields": {
+      "mission": 11,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: try",
+      "title_ru": "Испытание: try",
+      "body_en": "<p>Which block runs whether or not an error happened?</p>",
+      "body_ru": "<p>Какой блок выполняется всегда, была ошибка или нет?</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {
+        "correct_answer": "finally",
+        "options": [
+          {
+            "value": "try",
+            "label": "try"
+          },
+          {
+            "value": "except",
+            "label": "except"
+          },
+          {
+            "value": "else",
+            "label": "else"
+          },
+          {
+            "value": "finally",
+            "label": "finally"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 112,
+    "fields": {
+      "mission": 11,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "Safe Division",
+      "title_ru": "Безопасное деление",
+      "body_en": "<p>Write a function <code>safe_divide(a, b)</code> that returns <code>a / b</code> and returns <code>None</code> on division by zero. Catch only division by zero: other errors must pass through.</p><p>The example prints <code>2.5</code> and <code>None</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>safe_divide(a, b)</code>: она возвращает <code>a / b</code>, а при делении на ноль возвращает <code>None</code>. Ловите только деление на ноль: другие ошибки должны проходить.</p><p>Пример выведет <code>2.5</code> и <code>None</code>.</p>",
+      "xp_reward": 20,
+      "is_required": true,
+      "data": {
+        "language": "python",
+        "starter": "def safe_divide(a, b):\n    # Верни a / b, а при делении на ноль верни None\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(safe_divide(10, 4))\nprint(safe_divide(1, 0))\n",
+        "sampleOutput": "2.5\nNone",
+        "expected_output": "2.5\nNone",
+        "hidden_check": "assert safe_divide(9, 3) == 3\nassert safe_divide(5, 0) is None\nassert safe_divide(-1, 2) == -0.5\ntry:\n    safe_divide(\"a\", 2)\nexcept TypeError:\n    pass\nelse:\n    raise AssertionError(\"TypeError must not be swallowed\")"
+      }
+    }
+  },
+  {
+    "model": "game.mission",
+    "pk": 12,
+    "fields": {
+      "location": 2,
+      "title": "Магия в одну строку",
+      "title_en": "Scroll XII: One-Line Magic",
+      "title_ru": "Свиток XII: Магия в одну строку",
+      "description": "Comprehensions: a loop and a condition in one line.",
+      "description_en": "Comprehensions: a loop and a condition in one line.",
+      "description_ru": "Списочные выражения: цикл и условие в одной строке.",
+      "xp_reward": 50,
+      "order": 3,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 72,
+      "pos_y": 40,
+      "prerequisites": [
+        11
+      ]
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 120,
+    "fields": {
+      "mission": 12,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "List Comprehensions",
+      "title_ru": "Списочные выражения",
+      "body_en": "<h2>A loop in one line</h2><p>You can build a list without an explicit loop:</p><pre><code>squares = [n * n for n in range(5)]        # [0, 1, 4, 9, 16]\nevens = [n for n in range(10) if n % 2 == 0]   # [0, 2, 4, 6, 8]\nnames = {name: len(name) for name in [\"ice\", \"fire\"]}   # {'ice': 3, 'fire': 4}</code></pre><p>Read it as “take <code>n * n</code> for every <code>n</code> if the condition holds”. When an expression gets long, go back to a plain loop: readability beats brevity.</p>",
+      "body_ru": "<h2>Цикл в одну строку</h2><p>Список можно собрать без явного цикла:</p><pre><code>squares = [n * n for n in range(5)]        # [0, 1, 4, 9, 16]\nevens = [n for n in range(10) if n % 2 == 0]   # [0, 2, 4, 6, 8]\nnames = {name: len(name) for name in [\"ice\", \"fire\"]}   # {'ice': 3, 'fire': 4}</code></pre><p>Читается так: «возьми <code>n * n</code> для каждого <code>n</code>, если условие верно». Если выражение становится длинным, лучше вернуться к обычному циклу: читаемость важнее краткости.</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {}
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 121,
+    "fields": {
+      "mission": 12,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: Comprehensions",
+      "title_ru": "Испытание: выражения",
+      "body_en": "<p>What does <code>[x * 2 for x in range(3)]</code> produce?</p>",
+      "body_ru": "<p>Что получится из <code>[x * 2 for x in range(3)]</code>?</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {
+        "correct_answer": "[0, 2, 4]",
+        "options": [
+          {
+            "value": "[0, 2, 4]",
+            "label": "[0, 2, 4]"
+          },
+          {
+            "value": "[2, 4, 6]",
+            "label": "[2, 4, 6]"
+          },
+          {
+            "value": "[0, 1, 2]",
+            "label": "[0, 1, 2]"
+          },
+          {
+            "value": "[1, 2, 3]",
+            "label": "[1, 2, 3]"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 122,
+    "fields": {
+      "mission": 12,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "Squares of Evens",
+      "title_ru": "Квадраты чётных",
+      "body_en": "<p>Write a function <code>squares_of_evens(numbers)</code> that returns the squares of the even numbers in the same order.</p><p><code>print(squares_of_evens([1, 2, 3, 4, 5, 6]))</code> should print <code>[4, 16, 36]</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>squares_of_evens(numbers)</code>: она возвращает список квадратов чётных чисел в том же порядке.</p><p><code>print(squares_of_evens([1, 2, 3, 4, 5, 6]))</code> должен вывести <code>[4, 16, 36]</code>.</p>",
+      "xp_reward": 20,
+      "is_required": true,
+      "data": {
+        "language": "python",
+        "starter": "def squares_of_evens(numbers):\n    # Верни квадраты чётных чисел, порядок сохрани\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(squares_of_evens([1, 2, 3, 4, 5, 6]))\n",
+        "sampleOutput": "[4, 16, 36]",
+        "expected_output": "[4, 16, 36]",
+        "hidden_check": "assert squares_of_evens([]) == []\nassert squares_of_evens([1, 3]) == []\nassert squares_of_evens([2, 10]) == [4, 100]\nassert squares_of_evens([4, 2]) == [16, 4]\nassert squares_of_evens([-2]) == [4]"
+      }
+    }
+  },
+  {
+    "model": "game.mission",
+    "pk": 13,
+    "fields": {
+      "location": 2,
+      "title": "Библиотека заклинаний",
+      "title_en": "Scroll XIII: The Spell Library",
+      "title_ru": "Свиток XIII: Библиотека заклинаний",
+      "description": "import, the standard library and counting words.",
+      "description_en": "import, the standard library and counting words.",
+      "description_ru": "import, стандартная библиотека и подсчёт слов.",
+      "xp_reward": 50,
+      "order": 4,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 88,
+      "pos_y": 62,
+      "prerequisites": [
+        12
+      ]
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 130,
+    "fields": {
+      "mission": 13,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "Modules and the Standard Library",
+      "title_ru": "Модули и стандартная библиотека",
+      "body_en": "<h2>Do not rewrite what exists</h2><p>Python ships with a large library. You bring it in with <code>import</code>:</p><pre><code>import math\nprint(math.sqrt(81))          # 9.0\n\nfrom collections import Counter\nprint(Counter(\"banana\"))     # Counter({'a': 3, 'n': 2, 'b': 1})\n\nimport random\nrandom.seed(7)               # the same “random” every time\nprint(random.randint(1, 6))</code></pre><p>Two kinds of import: <code>import math</code> (then you write <code>math.sqrt</code>) and <code>from math import sqrt</code> (then just <code>sqrt</code>). Your own <code>utils.py</code> can be imported too.</p>",
+      "body_ru": "<h2>Не пиши то, что уже написано</h2><p>Python поставляется с большой библиотекой. Подключают её через <code>import</code>:</p><pre><code>import math\nprint(math.sqrt(81))          # 9.0\n\nfrom collections import Counter\nprint(Counter(\"banana\"))     # Counter({'a': 3, 'n': 2, 'b': 1})\n\nimport random\nrandom.seed(7)               # одно и то же «случайное» каждый раз\nprint(random.randint(1, 6))</code></pre><p>Два вида импорта: <code>import math</code> (потом пишут <code>math.sqrt</code>) и <code>from math import sqrt</code> (потом просто <code>sqrt</code>). Свой файл <code>utils.py</code> тоже можно импортировать.</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {}
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 131,
+    "fields": {
+      "mission": 13,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: import",
+      "title_ru": "Испытание: import",
+      "body_en": "<p>Which line lets you call <code>sqrt(9)</code> without the <code>math.</code> prefix?</p>",
+      "body_ru": "<p>Какая строка позволяет вызывать <code>sqrt(9)</code> без приставки <code>math.</code>?</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {
+        "correct_answer": "from math import sqrt",
+        "options": [
+          {
+            "value": "from math import sqrt",
+            "label": "from math import sqrt"
+          },
+          {
+            "value": "import sqrt from math",
+            "label": "import sqrt from math"
+          },
+          {
+            "value": "import math.sqrt",
+            "label": "import math.sqrt"
+          },
+          {
+            "value": "using math.sqrt",
+            "label": "using math.sqrt"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 132,
+    "fields": {
+      "mission": 13,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "Count the Words",
+      "title_ru": "Считаем слова",
+      "body_en": "<p>Write a function <code>word_count(text)</code> that returns a dict <code>{word: how many times it appears}</code>. Letter case does not matter, extra spaces do not matter.</p><p>The example prints <code>[('fire', 2), ('ice', 1)]</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>word_count(text)</code>: она возвращает словарь <code>{слово: сколько раз встретилось}</code>. Регистр букв не важен, лишние пробелы не мешают.</p><p>Пример выведет <code>[('fire', 2), ('ice', 1)]</code>.</p>",
+      "xp_reward": 20,
+      "is_required": true,
+      "data": {
+        "language": "python",
+        "starter": "def word_count(text):\n    # Верни словарь {слово: сколько раз встретилось}, регистр не важен\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(sorted(word_count(\"Fire ice fire\").items()))\n",
+        "sampleOutput": "[('fire', 2), ('ice', 1)]",
+        "expected_output": "[('fire', 2), ('ice', 1)]",
+        "hidden_check": "assert word_count(\"A a b\") == {\"a\": 2, \"b\": 1}\nassert word_count(\"\") == {}\nassert word_count(\"x  x\") == {\"x\": 2}\nassert dict(word_count(\"Z\")) == {\"z\": 1}"
+      }
+    }
+  },
+  {
+    "model": "game.mission",
+    "pk": 14,
+    "fields": {
+      "location": 2,
+      "title": "Чертежи героев",
+      "title_en": "Scroll XIV: Blueprints of Heroes",
+      "title_ru": "Свиток XIV: Чертежи героев",
+      "description": "Python classes: data and behaviour in one place.",
+      "description_en": "Python classes: data and behaviour in one place.",
+      "description_ru": "Классы Python: данные и поведение в одном месте.",
+      "xp_reward": 60,
+      "order": 5,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 65,
+      "pos_y": 78,
+      "prerequisites": [
+        13
+      ]
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 140,
+    "fields": {
+      "mission": 14,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "Classes and Objects",
+      "title_ru": "Классы и объекты",
+      "body_en": "<h2>A blueprint and its copies</h2><p>A class is a blueprint, an object is a thing made from it. (Do not confuse it with the hero class in the game: this is about Python.)</p><pre><code>class Hero:\n    def __init__(self, name, hp):   # constructor: runs on creation\n        self.name = name            # the object's data\n        self.hp = hp\n\n    def heal(self, amount):         # method: the object's behaviour\n        self.hp += amount\n\nmira = Hero(\"Mira\", 50)\nmira.heal(10)\nprint(mira.hp)   # 60</code></pre><p><code>self</code> is the very object a method works on. Every object has its own data: changing one hero does not touch another.</p>",
+      "body_ru": "<h2>Чертёж и его копии</h2><p>Класс — это чертёж, объект — вещь, сделанная по нему. (Не путайте с классом героя в игре: здесь речь о Python.)</p><pre><code>class Hero:\n    def __init__(self, name, hp):   # конструктор: срабатывает при создании\n        self.name = name            # данные объекта\n        self.hp = hp\n\n    def heal(self, amount):         # метод: поведение объекта\n        self.hp += amount\n\nmira = Hero(\"Mira\", 50)\nmira.heal(10)\nprint(mira.hp)   # 60</code></pre><p><code>self</code> — это сам объект, с которым работает метод. У каждого объекта свои данные: изменение одного героя не трогает другого.</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {}
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 141,
+    "fields": {
+      "mission": 14,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: Classes",
+      "title_ru": "Испытание: классы",
+      "body_en": "<p>What is the special method that runs when an object is created?</p>",
+      "body_ru": "<p>Как называется специальный метод, который срабатывает при создании объекта?</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {
+        "correct_answer": "__init__",
+        "options": [
+          {
+            "value": "__init__",
+            "label": "__init__"
+          },
+          {
+            "value": "__start__",
+            "label": "__start__"
+          },
+          {
+            "value": "__create__",
+            "label": "__create__"
+          },
+          {
+            "value": "__new_object__",
+            "label": "__new_object__"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 142,
+    "fields": {
+      "mission": 14,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "A Hit on the Hero",
+      "title_ru": "Удар по герою",
+      "body_en": "<p>Finish the method <code>take_hit(damage)</code> of the <code>Hero</code> class: it lowers <code>hp</code> by <code>damage</code>, but health must never go below zero.</p><p>The example prints <code>18</code>, then <code>0 False</code>.</p>",
+      "body_ru": "<p>Допиши метод <code>take_hit(damage)</code> класса <code>Hero</code>: он уменьшает <code>hp</code> на <code>damage</code>, но здоровье не должно уходить ниже нуля.</p><p>Пример выведет <code>18</code>, а затем <code>0 False</code>.</p>",
+      "xp_reward": 30,
+      "is_required": true,
+      "data": {
+        "language": "python",
+        "starter": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def take_hit(self, damage):\n        # Уменьши hp на damage, но не ниже нуля\n        raise NotImplementedError(\"Допиши метод\")\n\n    def is_alive(self):\n        return self.hp > 0\n\nhero = Hero(\"Aidan\", 30)\nhero.take_hit(12)\nprint(hero.hp)\nhero.take_hit(100)\nprint(hero.hp, hero.is_alive())\n",
+        "sampleOutput": "18\n0 False",
+        "expected_output": "18\n0 False",
+        "hidden_check": "h = Hero(\"x\", 5)\nh.take_hit(0)\nassert h.hp == 5 and h.is_alive()\nh.take_hit(3)\nassert h.hp == 2\nh.take_hit(5)\nassert h.hp == 0 and not h.is_alive()\nother = Hero(\"y\", 9)\nassert other.hp == 9 and h.hp == 0"
+      }
+    }
+  },
+  {
+    "model": "game.mission",
+    "pk": 15,
+    "fields": {
+      "location": 2,
+      "title": "Наследие рода",
+      "title_en": "Scroll XV: Bloodlines",
+      "title_ru": "Свиток XV: Наследие рода",
+      "description": "Inheritance: a new class built on an old one.",
+      "description_en": "Inheritance: a new class built on an old one.",
+      "description_ru": "Наследование: новый класс на основе старого.",
+      "xp_reward": 60,
+      "order": 6,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 45,
+      "pos_y": 88,
+      "prerequisites": [
+        14
+      ]
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 150,
+    "fields": {
+      "mission": 15,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "Inheritance",
+      "title_ru": "Наследование",
+      "body_en": "<h2>Children inherit skills</h2><p>A class can take everything from another class and add its own:</p><pre><code>class Hero:\n    def __init__(self, name):\n        self.name = name\n\n    def speak(self):\n        return f\"I am {self.name}\"\n\nclass Mage(Hero):                 # Mage inherits Hero\n    def __init__(self, name, mana):\n        super().__init__(name)    # call the parent constructor\n        self.mana = mana\n\n    def speak(self):              # overridden method\n        return super().speak() + \", master of spells\"\n\nprint(Mage(\"Mira\", 100).speak())</code></pre><p><code>super()</code> gives access to the parent. <code>isinstance(obj, Hero)</code> checks that an object belongs to a class or its descendant.</p>",
+      "body_ru": "<h2>Дети наследуют умения</h2><p>Класс может взять всё у другого класса и добавить своё:</p><pre><code>class Hero:\n    def __init__(self, name):\n        self.name = name\n\n    def speak(self):\n        return f\"I am {self.name}\"\n\nclass Mage(Hero):                 # Mage наследует Hero\n    def __init__(self, name, mana):\n        super().__init__(name)    # вызвать конструктор родителя\n        self.mana = mana\n\n    def speak(self):              # переопределили метод\n        return super().speak() + \", master of spells\"\n\nprint(Mage(\"Mira\", 100).speak())</code></pre><p><code>super()</code> даёт доступ к родителю. <code>isinstance(obj, Hero)</code> проверяет, что объект принадлежит классу или его наследнику.</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {}
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 151,
+    "fields": {
+      "mission": 15,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: Inheritance",
+      "title_ru": "Испытание: наследование",
+      "body_en": "<p>Why does a child constructor call <code>super().__init__(...)</code>?</p>",
+      "body_ru": "<p>Зачем в конструкторе наследника вызывают <code>super().__init__(...)</code>?</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {
+        "correct_answer": "Чтобы родитель настроил свои данные",
+        "options": [
+          {
+            "value": "Чтобы родитель настроил свои данные",
+            "label": "Чтобы родитель настроил свои данные"
+          },
+          {
+            "value": "Чтобы удалить родителя",
+            "label": "Чтобы удалить родителя"
+          },
+          {
+            "value": "Чтобы создать копию объекта",
+            "label": "Чтобы создать копию объекта"
+          },
+          {
+            "value": "Без этого класс не запустится",
+            "label": "Без этого класс не запустится"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 152,
+    "fields": {
+      "mission": 15,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "The Mage's Constructor",
+      "title_ru": "Конструктор мага",
+      "body_en": "<p>Finish the constructor of the <code>Mage</code> class: it must call the <code>Hero</code> constructor and store <code>mana</code>.</p><p>The example prints <code>Mira (70 hp), mana 120</code>.</p>",
+      "body_ru": "<p>Допиши конструктор класса <code>Mage</code>: он должен вызвать конструктор <code>Hero</code> и сохранить <code>mana</code>.</p><p>Пример выведет <code>Mira (70 hp), mana 120</code>.</p>",
+      "xp_reward": 30,
+      "is_required": true,
+      "data": {
+        "language": "python",
+        "starter": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def describe(self):\n        return f\"{self.name} ({self.hp} hp)\"\n\nclass Mage(Hero):\n    def __init__(self, name, hp, mana):\n        # Вызови конструктор родителя и запомни mana\n        raise NotImplementedError(\"Допиши конструктор\")\n\n    def describe(self):\n        return f\"{super().describe()}, mana {self.mana}\"\n\nprint(Mage(\"Mira\", 70, 120).describe())\n",
+        "sampleOutput": "Mira (70 hp), mana 120",
+        "expected_output": "Mira (70 hp), mana 120",
+        "hidden_check": "m = Mage(\"A\", 1, 2)\nassert m.name == \"A\" and m.hp == 1 and m.mana == 2\nassert isinstance(m, Hero)\nassert m.describe() == \"A (1 hp), mana 2\"\nclass Rogue(Hero):\n    pass\nassert Rogue(\"r\", 3).describe() == \"r (3 hp)\""
+      }
+    }
+  },
+  {
+    "model": "game.mission",
+    "pk": 16,
+    "fields": {
+      "location": 2,
+      "title": "Итоговый квест Гильдии",
+      "title_en": "Scroll XVI: The Guild's Grand Quest",
+      "title_ru": "Свиток XVI: Итоговый квест Гильдии",
+      "description": "Combine everything: dictionaries, loops and functions in one task.",
+      "description_en": "Combine everything: dictionaries, loops and functions in one task.",
+      "description_ru": "Соедини всё: словари, циклы и функции в одной задаче.",
+      "xp_reward": 120,
+      "order": 7,
+      "is_active": true,
+      "min_level": 1,
+      "repeatable": false,
+      "repeat_xp_rate": 0,
+      "pos_x": 22,
+      "pos_y": 62,
+      "prerequisites": [
+        15
+      ]
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 160,
+    "fields": {
+      "mission": 16,
+      "order": 1,
+      "task_type": "story",
+      "title_en": "The Grand Quest",
+      "title_ru": "Итоговый квест",
+      "body_en": "<h2>The guild awaits a report</h2><p>The final trial of the course. Recall everything you learned: lists and dicts, loops, functions, the dict methods <code>get</code> and <code>items</code>.</p><p>The task: the guild has heroes with classes and health. You must summarise them: how much health each class has in total. Think about which structure stores “class → total”.</p><p>Hint: <code>counts.get(key, 0) + value</code> saves you the “is the key already there” check.</p>",
+      "body_ru": "<h2>Гильдия ждёт отчёта</h2><p>Последнее испытание курса. Вспомни всё, что прошёл: списки и словари, циклы, функции, методы словаря <code>get</code> и <code>items</code>.</p><p>Задача: у гильдии есть герои с классами и здоровьем. Нужно свести их в отчёт: сколько здоровья суммарно у каждого класса. Подумай, какая структура хранит «класс → сумма».</p><p>Подсказка: <code>counts.get(key, 0) + value</code> избавляет от проверки «есть ли уже такой ключ».</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {}
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 161,
+    "fields": {
+      "mission": 16,
+      "order": 2,
+      "task_type": "quiz",
+      "title_en": "Quiz: Structure",
+      "title_ru": "Испытание: структура",
+      "body_en": "<p>Which structure best stores “hero class → total health”?</p>",
+      "body_ru": "<p>Какая структура лучше всего хранит «класс героя → суммарное здоровье»?</p>",
+      "xp_reward": 10,
+      "is_required": true,
+      "data": {
+        "correct_answer": "dict",
+        "options": [
+          {
+            "value": "dict",
+            "label": "dict"
+          },
+          {
+            "value": "tuple",
+            "label": "tuple"
+          },
+          {
+            "value": "str",
+            "label": "str"
+          },
+          {
+            "value": "int",
+            "label": "int"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 162,
+    "fields": {
+      "mission": 16,
+      "order": 3,
+      "task_type": "code",
+      "title_en": "The Guild Report",
+      "title_ru": "Отчёт гильдии",
+      "body_en": "<p>Write a function <code>guild_report(heroes)</code>: <code>heroes</code> is a list of dicts with keys <code>name</code>, <code>class</code>, <code>hp</code>. Return a dict <code>{class: total hp}</code>.</p><p>The example prints <code>[('mage', 120), ('warrior', 175)]</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>guild_report(heroes)</code>: <code>heroes</code> — список словарей с ключами <code>name</code>, <code>class</code>, <code>hp</code>. Верни словарь <code>{класс: суммарный hp}</code>.</p><p>Для примера выведется <code>[('mage', 120), ('warrior', 175)]</code>.</p>",
+      "xp_reward": 60,
+      "is_required": true,
+      "data": {
+        "language": "python",
+        "starter": "heroes = [\n    {\"name\": \"Aidan\", \"class\": \"warrior\", \"hp\": 80},\n    {\"name\": \"Mira\", \"class\": \"mage\", \"hp\": 120},\n    {\"name\": \"Bo\", \"class\": \"warrior\", \"hp\": 95},\n]\n\ndef guild_report(heroes):\n    # Верни словарь {класс: суммарный hp героев этого класса}\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(sorted(guild_report(heroes).items()))\n",
+        "sampleOutput": "[('mage', 120), ('warrior', 175)]",
+        "expected_output": "[('mage', 120), ('warrior', 175)]",
+        "hidden_check": "assert guild_report([]) == {}\nassert guild_report([{\"name\": \"a\", \"class\": \"x\", \"hp\": 1}, {\"name\": \"b\", \"class\": \"x\", \"hp\": 2}]) == {\"x\": 3}\nassert guild_report(heroes) == {\"warrior\": 175, \"mage\": 120}"
+      }
+    }
+  }
+]

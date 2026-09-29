@@ -15,13 +15,14 @@
 
 ### Геймплей
 - Треки → Локации (карта мира) → Миссии → Задачи (Story → Quiz → Code)
-- **Вводный курс "Основы Python"** (`backend/game/fixtures/intro_course.json`):
-  4 миссии × 3 задачи = 12 шагов с реальным учебным контентом RU/EN
+- **Два курса Python** с контентом RU/EN, у каждого кодового шага есть скрытая проверка:
+  - «Основы Python» (`backend/game/fixtures/intro_course.json`, вводный): 8 миссий, 23 шага. Его прохождение открывает выбор класса героя.
+  - «Python: Путь Мастера» (`backend/game/fixtures/python_continued.json`): ещё 8 миссий, 24 шага (строки, множества, ошибки, списочные выражения, модули, классы, наследование, итоговый квест). Открывается после первого курса.
 - **Sequential unlock** — Mission 2 разблокируется только после Mission 1, и т.д.
   (поле `prerequisites` в `Mission`, проверка в `MissionSerializer.get_available()`)
-- Карты миров визуально меняются по классу игрока (`AdventureMap.jsx`)
 - Прогресс синхронизируется через `/api/task-progress/`; attempts, best_score, статус
-- Адаптивный layout страницы миссии: ≥1280px — 3 колонки, иначе стек по вертикали
+- Адаптивный layout страницы миссии: ≥1280px — 3 колонки; на телефоне полоса шагов и вкладки «Задание/Код»
+- «Мой путь» (`/journey`): личный экран ученика: прогресс, где было трудно, что повторить, следующий шаг
 
 ### Стриминговый терминал (Phase 4)
 - xterm.js + WebSocket (`ws://host/ws/runner/?token=<JWT>`)
@@ -83,7 +84,8 @@
 | Папка/файл | Назначение |
 |---|---|
 | `backend/` | Django/DRF + Channels + Daphne (`core`, `users`, `game`) |
-| `backend/game/fixtures/intro_course.json` | Данные вводного курса Python (Track+Location+4 Missions+12 Tasks) |
+| `backend/game/fixtures/intro_course.json` | Вводный курс «Основы Python» (Track+Location+8 Missions+23 Tasks) |
+| `backend/game/fixtures/python_continued.json` | Курс «Python: Путь Мастера» (Track+Location+8 Missions+24 Tasks) |
 | `backend/game/runner.py` | Docker-песочница — `stream_python_code()` генератор событий |
 | `backend/game/consumers.py` | WebSocket consumer — стриминг через asyncio + threading |
 | `frontend/` | Next.js 14 + Tailwind; страницы `/worlds`, `/missions`, `/profile` |

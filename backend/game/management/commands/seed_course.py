@@ -1,4 +1,4 @@
-"""Seed the built-in fixtures (ranks, class roles, intro course) safely.
+"""Seed the built-in fixtures (ranks, class roles, both Python courses) safely.
 
 A bare ``loaddata`` overwrites rows by primary key every time it runs, so using
 it in the deploy start command silently reverted anything a course author had
@@ -18,6 +18,7 @@ from django.core.management.base import BaseCommand
 from game.models import ClassRole, Rank, Track
 
 INTRO_TRACK_SLUG = "python-intro"
+CONTINUED_TRACK_SLUG = "python-continued"
 
 # fixture name -> (human label, "is it already there?" check)
 FIXTURES = (
@@ -27,6 +28,11 @@ FIXTURES = (
         "intro_course",
         "intro course",
         lambda: Track.objects.filter(slug=INTRO_TRACK_SLUG).exists(),
+    ),
+    (
+        "python_continued",
+        "Python continued course",
+        lambda: Track.objects.filter(slug=CONTINUED_TRACK_SLUG).exists(),
     ),
 )
 

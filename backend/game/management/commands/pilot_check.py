@@ -118,6 +118,21 @@ def check_data():
     if empty:
         yield WARN, f"Квизов без данных (ответ не проверить): {empty}."
 
+    unchecked = [
+        task.pk
+        for task in MissionTask.objects.filter(task_type="code", mission__is_active=True)
+        if isinstance(task.data, dict)
+        and task.data.get("expected_output")
+        and not task.data.get("hidden_check")
+    ]
+    if unchecked:
+        yield WARN, (
+            f"Кодовых шагов без скрытой проверки: {len(unchecked)} (id: {', '.join(map(str, unchecked))}). "
+            "Их можно пройти, просто напечатав ответ, и MAS по ним занижен. Добавьте проверку в Studio."
+        )
+    else:
+        yield OK, "У всех кодовых шагов с эталонным выводом есть скрытая проверка."
+
     User = get_user_model()
     if not User.objects.filter(is_staff=True, is_active=True).exists():
         yield FAIL, "Нет ни одного преподавателя (staff): некому смотреть аналитику."

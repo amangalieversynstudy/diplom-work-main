@@ -278,6 +278,19 @@ def test_a_ready_deployment_passes(ready):
     assert "Проверка пройдена" in _run_check()
 
 
+def test_code_steps_without_a_hidden_check_are_flagged(ready):
+    from game.models import Mission, MissionTask
+
+    mission = Mission.objects.filter(is_active=True).first()
+    step = MissionTask.objects.create(
+        mission=mission, order=50, task_type="code", data={"expected_output": "4"}
+    )
+    assert f"Кодовых шагов без скрытой проверки: 1 (id: {step.pk})" in _run_check()
+    step.data = {"expected_output": "4", "hidden_check": "assert True"}
+    step.save()
+    assert "есть скрытая проверка" in _run_check()
+
+
 @pytest.mark.parametrize(
     "setting, value, fragment",
     [

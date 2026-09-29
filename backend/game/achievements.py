@@ -10,8 +10,9 @@ Slugs are stable identifiers. Titles/descriptions are localized on the frontend
 to lucide-react icons the profile page knows how to render.
 
 Most conditions read data that already flows today (missions completed, level,
-track completion). ``streak_7`` reads ``Profile.longest_streak`` and will light
-up once streak tracking lands (roadmap item: visible streak).
+track completion). ``streak_7`` reads ``Profile.longest_streak``. Level and streak
+move with every solved step, so unlocks are evaluated when a step is solved, when a
+mission is completed and when the profile list is built.
 """
 
 from .models import Mission, Progress, Track, UserAchievement
@@ -112,6 +113,7 @@ def achievements_for(user):
     page consume. ``current`` is clamped to ``target`` so progress bars never
     overflow.
     """
+    evaluate_achievements(user)  # a full progress bar never sits next to a locked badge
     earned = {
         ua.slug: ua.earned_at
         for ua in UserAchievement.objects.filter(user=user)

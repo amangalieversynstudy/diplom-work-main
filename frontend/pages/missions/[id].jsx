@@ -203,6 +203,20 @@ export default function MissionDetail() {
     return activeTask?.data?.starter || "";
   }, [codeDrafts, activeTaskId, activeTask]);
 
+  // Бейджи, которые только что открыл сервер: по тосту на каждый, вразбивку, чтобы не слипались
+  // с тостом шага, победы и нового уровня.
+  const announceAchievements = (slugs, delay = 1500) => {
+    if (!Array.isArray(slugs)) return;
+    slugs.forEach((slug, i) => {
+      setTimeout(() => {
+        toast.success(
+          (t("achievements.unlockToast") || "").replace("{title}", t(`achievements.items.${slug}.title`)),
+          { duration: 6000 }
+        );
+      }, delay + i * 700);
+    });
+  };
+
   // Мы не решаем, верен ли ответ: квиз проверяет сервер (TaskAPI.submit), код
   // проверяет сервер при запуске (событие "result" от раннера). Здесь только
   // показываем итог и ведём ученика дальше.
@@ -230,21 +244,7 @@ export default function MissionDetail() {
       }
 
       // Достижения: backend возвращает слаги только что открытых бейджей.
-      // Показываем отдельный toast на каждый, стагерим, чтобы не наслаивались
-      // на победный/level-up toast.
-      if (Array.isArray(result?.new_achievements) && result.new_achievements.length) {
-        result.new_achievements.forEach((slug, i) => {
-          setTimeout(() => {
-            toast.success(
-              (t("achievements.unlockToast") || "").replace(
-                "{title}",
-                t(`achievements.items.${slug}.title`)
-              ),
-              { duration: 6000 }
-            );
-          }, 1500 + i * 700);
-        });
-      }
+      announceAchievements(result?.new_achievements);
 
       // Вводный курс закончился, а класса ещё нет: предложим выбрать (это и есть награда за курс).
       let suggestClass = false;
@@ -300,6 +300,7 @@ export default function MissionDetail() {
       paid > 0 ? t("missionPage.toasts.stepDoneXp").replace("{xp}", paid) : t("missionPage.toasts.stepSaved")
     );
     if (paid > 0) setXpPop({ amount: paid, id: Date.now() });
+    announceAchievements(progress?.new_achievements, 900);
     if (progress?.leveled_up) {
       setLevelUp(progress.new_level);
       setPlayerLevel(progress.new_level);

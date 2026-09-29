@@ -157,3 +157,22 @@ def test_the_step_payload_of_a_read_only_progress_list_is_unchanged(client, stud
     _submit(client, course["story"])
     rows = client.get(f"/api/task-progress/?mission={course['mission'].pk}").json()
     assert rows and "xp_added" not in rows[0]
+
+
+def test_a_level_badge_opens_with_the_step_that_reaches_the_level(client, student, course):
+    student.profile.xp = 395
+    student.profile.level = 4
+    student.profile.save()
+    payload = _submit(client, course["story"]).json()["progress"]
+    assert payload["leveled_up"] is True
+    assert payload["new_achievements"] == ["level_5"]
+    # a second step does not announce it again
+    assert _submit(client, course["quiz"], "a").json()["progress"]["new_achievements"] == []
+
+
+def test_the_profile_list_never_shows_a_full_bar_next_to_a_locked_badge(client, student):
+    student.profile.level = 5
+    student.profile.save()
+    items = {item["slug"]: item for item in client.get("/api/achievements/").json()}
+    assert items["level_5"]["current"] == items["level_5"]["target"]
+    assert items["level_5"]["earned"] is True

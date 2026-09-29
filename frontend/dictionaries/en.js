@@ -1030,7 +1030,7 @@ export const en = {
         },
         streak_7: {
           title: "Week of Fire",
-          desc: "Keep a daily streak for 7 days straight.",
+          desc: "Study 7 days in a row: solve at least one step a day.",
         },
       },
     },

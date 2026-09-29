@@ -17,6 +17,7 @@ from rest_framework import status as http
 from rest_framework.exceptions import APIException
 
 from . import help as help_module
+from .achievements import evaluate_achievements
 from .models import MissionTask, Progress, TaskProgress
 from .runner import execute_python_code
 
@@ -279,14 +280,18 @@ def _pay_for_solved_step(user, task, progress, task_progress):
     profile = Profile.objects.select_for_update().get(user=user)
     profile.register_activity()  # a solved step is a day of learning, not only a finished mission
     reward = max(0, int(task.xp_reward or 0))
-    if not reward:
-        return
-    leveled_up, _old, new_level = profile.add_xp(reward)
-    Progress.objects.filter(pk=progress.pk).update(xp_earned=F("xp_earned") + reward)
-    task_progress.xp_added = reward
-    task_progress.leveled_up = leveled_up
-    task_progress.new_level = new_level
-    refresh_leaderboard(user, getattr(task.mission.location, "track", None), profile=profile)
+    if reward:
+        leveled_up, _old, new_level = profile.add_xp(reward)
+        Progress.objects.filter(pk=progress.pk).update(xp_earned=F("xp_earned") + reward)
+        task_progress.xp_added = reward
+        task_progress.leveled_up = leveled_up
+        task_progress.new_level = new_level
+        refresh_leaderboard(user, getattr(task.mission.location, "track", None), profile=profile)
+    # Level and streak now move with every solved step, so a badge such as "level 5" or "7 days"
+    # opens here and not only at the end of the next mission (the profile showed a full bar with
+    # the badge still locked).
+    user.profile = profile
+    task_progress.new_achievements = evaluate_achievements(user)
 
 
 def failures_in_a_row(task_progress):
@@ -341,6 +346,8 @@ def progress_payload(task_progress):
         "xp_added": getattr(task_progress, "xp_added", 0),
         "leveled_up": getattr(task_progress, "leveled_up", False),
         "new_level": getattr(task_progress, "new_level", None),
+        # slugs of badges opened by this step (the client shows a toast for each)
+        "new_achievements": getattr(task_progress, "new_achievements", []),
     }
 
 

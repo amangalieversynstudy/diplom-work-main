@@ -14,6 +14,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import Layout from "../components/Layout";
+import Reveal from "../components/Reveal";
+import CountUp from "../components/CountUp";
 import { Learning } from "../lib/api";
 import { useI18n } from "../lib/i18n";
 import logger from "../lib/logger";
@@ -31,13 +33,25 @@ const fmt = (template, values) =>
   Object.entries(values).reduce((text, [key, value]) => text.replace(`{${key}}`, value), template);
 
 function Tile({ icon: Icon, label, value, hint }) {
+  // число доезжает до значения, строка вроде «2/23» — часть числом, часть текстом
+  const [done, total] = String(value).split("/");
+  const body =
+    total !== undefined ? (
+      <>
+        <CountUp to={done} />/{total}
+      </>
+    ) : Number.isFinite(Number(value)) ? (
+      <CountUp to={value} />
+    ) : (
+      value
+    );
   return (
     <div className="rounded-2xl border border-border bg-panel p-4">
       <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted">
         <Icon size={14} aria-hidden="true" />
         {label}
       </div>
-      <p className="mt-2 font-display text-3xl font-bold text-text tabular-nums">{value}</p>
+      <p className="mt-2 font-display text-3xl font-bold text-text tabular-nums">{body}</p>
       {hint ? <p className="mt-1 text-xs leading-snug text-muted">{hint}</p> : null}
     </div>
   );
@@ -124,6 +138,13 @@ export default function Journey() {
   const { t, language } = useI18n();
   const [data, setData] = useState(null);
   const [failed, setFailed] = useState(false);
+  // полоски прогресса заполняются после первого кадра, а не рисуются сразу готовыми
+  const [barsReady, setBarsReady] = useState(false);
+  useEffect(() => {
+    if (!data) return undefined;
+    const timer = setTimeout(() => setBarsReady(true), 80);
+    return () => clearTimeout(timer);
+  }, [data]);
 
   useEffect(() => {
     let active = true;
@@ -186,6 +207,7 @@ export default function Journey() {
           <p className="mt-3 max-w-2xl text-lg leading-relaxed text-muted">{t("journey.subtitle")}</p>
         </header>
 
+        <Reveal>
         <section className={`rounded-3xl border p-6 md:p-8 ${style.ring}`} aria-live="polite">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="flex items-start gap-4">
@@ -221,7 +243,9 @@ export default function Journey() {
             </p>
           ) : null}
         </section>
+        </Reveal>
 
+        <Reveal delay={80}>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Tile
             icon={Compass}
@@ -250,7 +274,9 @@ export default function Journey() {
             }
           />
         </div>
+        </Reveal>
 
+        <Reveal delay={80}>
         <div className="grid gap-4 lg:grid-cols-2">
           <StepList
             title={t("journey.stuckTitle")}
@@ -267,9 +293,13 @@ export default function Journey() {
             t={t}
           />
         </div>
+        </Reveal>
 
-        <ActivityChart days={data.activity} t={t} language={language} />
+        <Reveal>
+          <ActivityChart days={data.activity} t={t} language={language} />
+        </Reveal>
 
+        <Reveal>
         <section className="rounded-3xl border border-border bg-panel p-5">
           <h2 className="font-display text-lg font-bold text-text">{t("journey.missionsTitle")}</h2>
           <ul className="mt-3 space-y-3">
@@ -301,7 +331,7 @@ export default function Journey() {
                         className={`block h-full rounded-full transition-all duration-700 ${
                           mission.completed ? "bg-success" : "bg-primary"
                         }`}
-                        style={{ width: `${pct}%` }}
+                        style={{ width: `${barsReady ? pct : 0}%` }}
                       />
                     </span>
                   </Link>
@@ -310,6 +340,7 @@ export default function Journey() {
             })}
           </ul>
         </section>
+        </Reveal>
       </div>
     </Layout>
   );

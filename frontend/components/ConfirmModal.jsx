@@ -12,64 +12,19 @@
  *   <ConfirmModal data={confirm} onClose={() => setConfirm(null)} />
  */
 
-import { useEffect, useId, useRef } from "react";
+import { useId, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, X } from "lucide-react";
 import Button from "./Button";
 import { useI18n } from "../lib/i18n";
+import { useDialog } from "../lib/useDialog";
 
 export default function ConfirmModal({ data, onClose }) {
   const { t } = useI18n();
   const open = Boolean(data);
   const dialogRef = useRef(null);
   const titleId = useId();
-  // onClose приходит новым замыканием на каждый рендер родителя; в зависимостях
-  // эффекта он сбрасывал бы фокус при каждой перерисовке.
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-
-  // Диалог: фокус внутрь (на «Отмена»), Tab не выходит за пределы окна,
-  // Esc закрывает, при закрытии фокус возвращается на то, что было в фокусе.
-  useEffect(() => {
-    if (!open) return undefined;
-    const previous = document.activeElement;
-    const focusable = () =>
-      dialogRef.current
-        ? [
-            ...dialogRef.current.querySelectorAll(
-              'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-            ),
-          ].filter((el) => !el.disabled)
-        : [];
-    const timer = setTimeout(() => {
-      const items = focusable();
-      (items.find((el) => el.dataset.autofocus !== undefined) || items[0])?.focus();
-    }, 0);
-    const onKey = (e) => {
-      if (e.key === "Escape") {
-        onCloseRef.current?.();
-        return;
-      }
-      if (e.key !== "Tab") return;
-      const items = focusable();
-      if (!items.length) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("keydown", onKey);
-      previous?.focus?.();
-    };
-  }, [open]);
+  useDialog(open, dialogRef, onClose);
 
   const handleConfirm = () => {
     data?.onConfirm?.();

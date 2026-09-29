@@ -4,6 +4,7 @@ import MissionStepper, { StepStrip } from "../../components/MissionStepper";
 import CodeRunnerPanel from "../../components/CodeRunnerPanel";
 import CodemancerStage from "../../components/CodemancerStage";
 import LevelUpBurst from "../../components/LevelUpBurst";
+import MissionComplete from "../../components/MissionComplete";
 import { useRouter } from "next/router";
 import { toast } from "sonner";
 import {
@@ -60,6 +61,9 @@ export default function MissionDetail() {
   // tick перезапускает one-shot анимации (снаряд, вспышка) при каждом событии.
   const [stage, setStage] = useState({ phase: "idle", tick: 0 });
   const [levelUp, setLevelUp] = useState(null);
+  // всплывающее «+XP» над сценой и окно итога миссии
+  const [xpPop, setXpPop] = useState(null);
+  const [completion, setCompletion] = useState(null);
   // Телефон: у кодового шага две вкладки, условие и редактор. На широком экране видно всё сразу.
   const [mobileTab, setMobileTab] = useState("task");
   const stripRef = useRef(null);
@@ -203,6 +207,17 @@ export default function MissionDetail() {
   const finishMission = async () => {
     try {
       const result = await Missions.complete(id);
+      // итог миссии показываем чуть позже, чтобы успели отыграть тосты и рассвет уровня
+      const missionName =
+        (language === "en"
+          ? mission?.title_en || mission?.title_ru
+          : mission?.title_ru || mission?.title_en) ||
+        mission?.title ||
+        "";
+      setTimeout(
+        () => setCompletion({ title: missionName, xp: result?.xp_added || 0, stars: result?.stars ?? 0 }),
+        result?.leveled_up ? 2800 : 900
+      );
       // backend честно шлёт leveled_up/xp_added/new_level
       if (result?.xp_added > 0) {
         toast.success(
@@ -266,6 +281,8 @@ export default function MissionDetail() {
   const onTaskSolved = async (taskId, progress) => {
     setTaskProgress((prev) => ({ ...prev, [taskId]: progress }));
     toast.success(t("missionPage.toasts.stepSaved"));
+    const reward = tasks.find((task) => task.id === taskId)?.xp_reward;
+    if (reward > 0) setXpPop({ amount: reward, id: Date.now() });
 
     const currentIndex = tasks.findIndex((task) => task.id === taskId);
     if (currentIndex !== -1 && currentIndex < tasks.length - 1) {
@@ -417,6 +434,11 @@ export default function MissionDetail() {
       {levelUp != null && (
         <LevelUpBurst level={levelUp} onDone={() => setLevelUp(null)} />
       )}
+      <MissionComplete
+        data={completion}
+        onClose={() => setCompletion(null)}
+        onMap={() => router.push("/worlds")}
+      />
       <div className="min-h-screen xl:h-screen pt-24 bg-bg dark:bg-[#0f0f11] text-text dark:text-gray-200 font-sans flex flex-col">
         {/* Квест-шапка в RPG-стиле: deep-wood band + scroll icon + Melodrama.
             Светлая тема — чистая surface-полоса; тёмная — глубокое дерево. */}
@@ -452,13 +474,25 @@ export default function MissionDetail() {
 
         {/* Игровая сцена Codemancer: пиксель-арт + HUD (HP/MP/Level).
             MP завязана на ai_summons (мана для AI-призывов), HP — флейвор. */}
-        <CodemancerStage
-          level={playerLevel}
-          hpPct={100}
-          mpPct={Math.min(100, (inventory.ai_summons || 0) * 20)}
-          phase={stage.phase}
-          tick={stage.tick}
-        />
+        <div className="relative">
+          <CodemancerStage
+            level={playerLevel}
+            hpPct={100}
+            mpPct={Math.min(100, (inventory.ai_summons || 0) * 20)}
+            phase={stage.phase}
+            tick={stage.tick}
+          />
+          {xpPop && (
+            <span
+              key={xpPop.id}
+              aria-hidden="true"
+              onAnimationEnd={() => setXpPop(null)}
+              className="xp-pop pointer-events-none absolute left-1/2 top-1/3 z-20 rounded-full border border-amber-300/50 bg-[#0c1224]/85 px-4 py-1.5 font-display text-xl font-bold text-amber-300 shadow-[0_0_24px_rgba(255,200,90,0.45)]"
+            >
+              +{xpPop.amount} XP
+            </span>
+          )}
+        </div>
 
         {/* Основной контент */}
         <section className="flex-1 flex flex-col xl:flex-row min-h-0 xl:overflow-hidden">

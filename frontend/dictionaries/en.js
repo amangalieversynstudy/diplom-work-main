@@ -738,6 +738,16 @@ export const en = {
         code: "Code",
         showBody: "Show the task",
       },
+      complete: {
+        title: "Mission complete!",
+        xp: "+{xp} XP",
+        noXp: "You already earned the reward for this mission",
+        starsLabel: "Stars: {n} of {max}",
+        starsHint: "The fewer extra tries on the steps, the more stars. You can replay any mission.",
+        toMap: "To the map",
+        toJourney: "My journey",
+        stay: "Stay here",
+      },
       backToMap: "← To the world map",
       locked: {
         title: "Quest locked",

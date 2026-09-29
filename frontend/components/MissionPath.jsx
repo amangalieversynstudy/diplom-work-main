@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Lock, CheckCircle, Compass, ChevronRight } from "lucide-react";
 import { missionStatus } from "../lib/api";
 import { useI18n } from "../lib/i18n";
+import Reveal from "./Reveal";
 
 const missionTitle = (mission, language, fallback) =>
   (language === "en"
@@ -19,6 +20,11 @@ const missionTitle = (mission, language, fallback) =>
 export default function MissionPath({ missions, loading }) {
   const { t, language } = useI18n();
   const currentRef = useRef(null);
+  const [barReady, setBarReady] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setBarReady(true), 80);
+    return () => clearTimeout(timer);
+  }, []);
 
   const total = missions.length;
   const done = missions.filter((m) => missionStatus(m) === "completed").length;
@@ -75,7 +81,7 @@ export default function MissionPath({ missions, loading }) {
           aria-valuenow={done}
           className="mt-3 h-2 overflow-hidden rounded-full bg-border"
         >
-          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+          <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${barReady ? pct : 0}%` }} />
         </div>
       </div>
 
@@ -132,7 +138,13 @@ export default function MissionPath({ missions, loading }) {
           }`;
 
           return (
-            <li key={mission.id} ref={isCurrent ? currentRef : undefined} className="relative flex gap-3 pb-3 last:pb-0">
+            <Reveal
+              as="li"
+              key={mission.id}
+              delay={Math.min(index, 6) * 60}
+              className="relative flex gap-3 pb-3 last:pb-0"
+            >
+              <span ref={isCurrent ? currentRef : undefined} className="absolute inset-y-0 left-0 w-0" aria-hidden="true" />
               {index < total - 1 && (
                 <span
                   aria-hidden="true"
@@ -160,7 +172,7 @@ export default function MissionPath({ missions, loading }) {
                   {body}
                 </Link>
               )}
-            </li>
+            </Reveal>
           );
         })}
       </ol>

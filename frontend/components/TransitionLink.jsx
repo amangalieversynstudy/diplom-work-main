@@ -28,7 +28,7 @@ export default function TransitionLink({ href, children, className, onClick }) {
     }
     gsap.to(".page-transition-overlay", {
       yPercent: 0,
-      duration: 0.7,
+      duration: 0.4,
       ease: "power3.inOut",
       onComplete: () => {
         router.push(href);

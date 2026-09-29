@@ -1,44 +1,42 @@
-// scripts/check-i18n.js
-const fs = require('fs');
+// Проверка словарей: у каждого ключа есть перевод на оба языка.
+//
+//   node scripts/check-i18n.js
+//
+// Словари лежат в frontend/dictionaries/ как ES-модули без "type": "module",
+// поэтому Node не может подключить их напрямую: копируем во временную папку с
+// расширением .mjs и импортируем оттуда. Код выхода 1, если наборы ключей разные.
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const { pathToFileURL } = require("node:url");
 
-// Простая функция для получения всех ключей объекта рекурсивно (в виде 'nav.sanctum')
-function getKeys(obj, prefix = '') {
-  let keys = [];
-  for (const key in obj) {
-    const newKey = prefix ? `${prefix}.${key}` : key;
-    if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
-      keys = keys.concat(getKeys(obj[key], newKey));
-    } else {
-      keys.push(newKey);
-    }
-  }
-  return keys;
+const DIR = path.join(__dirname, "..", "frontend", "dictionaries");
+
+function keys(obj, prefix = "") {
+  return Object.entries(obj).flatMap(([key, value]) =>
+    value && typeof value === "object" && !Array.isArray(value)
+      ? keys(value, `${prefix}${key}.`)
+      : [`${prefix}${key}`]
+  );
 }
 
-// Загружаем словари (если используете ES Modules в Node.js, можно через import)
-const { en } = require('../lib/dictionaries/en.js'); // Укажите правильный путь
-const { ru } = require('../lib/dictionaries/ru.js'); // Укажите правильный путь
-
-const enKeys = new Set(getKeys(en));
-const ruKeys = new Set(getKeys(ru));
-
-const missingInRu = [...enKeys].filter(x => !ruKeys.has(x));
-const missingInEn = [...ruKeys].filter(x => !enKeys.has(x));
-
-let hasErrors = false;
-
-if (missingInRu.length > 0) {
-  console.error('❌ Отсутствуют ключи в RU словаре:', missingInRu);
-  hasErrors = true;
+async function load(name) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "i18n-"));
+  const target = path.join(tmp, `${name}.mjs`);
+  fs.copyFileSync(path.join(DIR, `${name}.js`), target);
+  const mod = await import(pathToFileURL(target).href);
+  return mod[name] ?? mod.default;
 }
 
-if (missingInEn.length > 0) {
-  console.error('❌ Отсутствуют ключи в EN словаре:', missingInEn);
-  hasErrors = true;
-}
+(async () => {
+  const [ru, en] = [await load("ru"), await load("en")];
+  const ruKeys = new Set(keys(ru));
+  const enKeys = new Set(keys(en));
+  const onlyRu = [...ruKeys].filter((key) => !enKeys.has(key));
+  const onlyEn = [...enKeys].filter((key) => !ruKeys.has(key));
 
-if (!hasErrors) {
-  console.log('✅ Словари полностью синхронизированы!');
-} else {
-  process.exit(1);
-}
+  console.log(`ru: ${ruKeys.size} ключей, en: ${enKeys.size} ключей`);
+  if (onlyRu.length) console.error("Нет в en.js:\n  " + onlyRu.join("\n  "));
+  if (onlyEn.length) console.error("Нет в ru.js:\n  " + onlyEn.join("\n  "));
+  process.exit(onlyRu.length || onlyEn.length ? 1 : 0);
+})();

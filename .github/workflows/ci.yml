@@ -2,9 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ["**"]
   pull_request:
     branches: [main]
+
+# a newer push to the same branch makes the running check obsolete
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # ──────────────────────────────────────────────────────────────
@@ -65,6 +70,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
+      - name: Lint (syntax errors and undefined names only)
+        run: |
+          python -m pip install flake8
+          flake8 backend --select=E9,F63,F7,F82 --exclude=migrations,__pycache__
+
+      - name: Model changes without a migration
+        working-directory: backend
+        run: python manage.py makemigrations --check --dry-run
+
       - name: Run migrations
         working-directory: backend
         run: python manage.py migrate --noinput
@@ -99,6 +113,9 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Dictionaries have the same keys in both languages
+        run: node scripts/check-i18n.js
+
       - name: Lint
         working-directory: frontend
         run: npm run lint --if-present
@@ -109,6 +126,61 @@ jobs:
         env:
           NEXT_PUBLIC_API_BASE: http://localhost:8000/api
         run: npm run build
+
+  # ──────────────────────────────────────────────────────────────
+  # ML: конвейер модели риска (отдельно: numpy/pandas/scikit-learn не нужны backend)
+  # ──────────────────────────────────────────────────────────────
+  ml:
+    name: ML pipeline (risk model)
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_SETTINGS_MODULE: core.settings.test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            ml/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt -r ml/requirements.txt
+
+      - name: ML tests
+        run: python -m pytest ml/tests -q
+
+  # ──────────────────────────────────────────────────────────────
+  # DEPLOY FILES: compose-файлы должны разбираться (так ловится опечатка в имени переменной)
+  # ──────────────────────────────────────────────────────────────
+  deploy-files:
+    name: Deploy files (docker compose config)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate compose files
+        env:
+          POSTGRES_USER: u
+          POSTGRES_PASSWORD: p
+          POSTGRES_DB: d
+          DJANGO_SECRET_KEY: ci-only-secret-key-that-is-long-enough-0123456789
+          ALLOWED_HOSTS: example.com
+          CSRF_TRUSTED_ORIGINS: https://example.com
+          FRONTEND_URL: https://example.com
+          EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
+          DOMAIN: example.com
+          CERTBOT_EMAIL: ci@example.com
+        run: |
+          docker compose -f docker-compose.yml config --quiet
+          docker compose -f docker-compose.prod.yml config --quiet
 
   # ──────────────────────────────────────────────────────────────
   # SECURITY: проверка зависимостей на известные уязвимости

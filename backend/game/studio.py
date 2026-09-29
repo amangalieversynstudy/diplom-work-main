@@ -6,15 +6,26 @@ everything. The public content API (``game.views``) is read-only for everyone
 except superusers, so the Studio is the only write path for teachers and
 ownership cannot be bypassed.
 
-Hierarchy: Track (course) → Location (section) → Mission. Mission tasks
-(story/quiz/code) are added in a later phase.
+Hierarchy: Track (course) → Location (section) → Mission → Task
+(story / quiz / code). A mission with no tasks cannot be published: learners
+could open it but never finish it.
 """
 
 from django.utils.text import slugify
 from rest_framework import permissions, serializers, viewsets
 from rest_framework.exceptions import PermissionDenied
 
-from .models import Location, Mission, Track
+from .models import Location, Mission, MissionTask, Track
+
+# Rewards are authored by teachers, so they are capped: an absurd value would
+# distort the leaderboard for the whole platform.
+MAX_MISSION_XP = 500
+MAX_TASK_XP = 100
+
+STUDIO_TASK_TYPES = ("story", "quiz", "code")
+MAX_QUIZ_OPTIONS = 8
+MAX_TEXT = 20_000
+MAX_CODE = 10_000
 
 
 def _unique_slug(base: str) -> str:
@@ -179,6 +190,13 @@ class StudioMissionSerializer(serializers.ModelSerializer):
     def get_tasks_count(self, obj):
         return obj.tasks.count()
 
+    def validate_xp_reward(self, value):
+        if not 0 <= value <= MAX_MISSION_XP:
+            raise serializers.ValidationError(
+                f"Награда за миссию: от 0 до {MAX_MISSION_XP} XP."
+            )
+        return value
+
     def validate(self, attrs):
         if self.instance is None and not (
             attrs.get("title_ru") or attrs.get("title_en")
@@ -186,9 +204,18 @@ class StudioMissionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"title_ru": "Укажите название миссии."}
             )
+        # A published mission must be finishable, i.e. have at least one task.
+        if attrs.get("is_active") and (
+            self.instance is None or not self.instance.tasks.exists()
+        ):
+            raise serializers.ValidationError(
+                {"is_active": "Добавьте хотя бы одну задачу, прежде чем публиковать миссию."}
+            )
         return attrs
 
     def create(self, validated):
+        # A new mission is a draft until its tasks exist.
+        validated.setdefault("is_active", False)
         validated["title"] = _mirror(
             validated.get("title_ru"), validated.get("title_en"), "Миссия"
         )
@@ -300,3 +327,164 @@ class StudioMissionViewSet(viewsets.ModelViewSet):
             serializer.validated_data.get("location", serializer.instance.location)
         )
         serializer.save()
+
+
+class StudioTaskSerializer(serializers.ModelSerializer):
+    """One step of a mission, with the answer key: the author sees it, learners never do."""
+
+    class Meta:
+        model = MissionTask
+        fields = [
+            "id",
+            "mission",
+            "order",
+            "task_type",
+            "title_ru",
+            "title_en",
+            "body_ru",
+            "body_en",
+            "data",
+            "is_required",
+            "estimated_minutes",
+            "xp_reward",
+        ]
+
+    def validate_task_type(self, value):
+        if value not in STUDIO_TASK_TYPES:
+            raise serializers.ValidationError("Доступны типы: история, квиз, код.")
+        return value
+
+    def validate_xp_reward(self, value):
+        if not 0 <= value <= MAX_TASK_XP:
+            raise serializers.ValidationError(f"Награда за шаг: от 0 до {MAX_TASK_XP} XP.")
+        return value
+
+    def validate_estimated_minutes(self, value):
+        if not 1 <= value <= 240:
+            raise serializers.ValidationError("Оценка времени: от 1 до 240 минут.")
+        return value
+
+    def validate_body_ru(self, value):
+        return self._short(value)
+
+    def validate_body_en(self, value):
+        return self._short(value)
+
+    @staticmethod
+    def _short(value):
+        if len(value or "") > MAX_TEXT:
+            raise serializers.ValidationError(f"Текст длиннее {MAX_TEXT} символов.")
+        return value
+
+    def validate(self, attrs):
+        instance = self.instance
+        task_type = attrs.get("task_type", instance.task_type if instance else "story")
+        data = attrs.get("data", instance.data if instance else {})
+        if self.instance is None and not (
+            attrs.get("title_ru") or attrs.get("title_en")
+        ):
+            raise serializers.ValidationError({"title_ru": "Укажите название шага."})
+        if not isinstance(data, dict):
+            raise serializers.ValidationError({"data": "Ожидается объект."})
+        attrs["data"] = self._clean_data(task_type, data)
+        return attrs
+
+    def _clean_data(self, task_type, data):
+        if task_type == "story":
+            return {}
+        if task_type == "quiz":
+            return self._clean_quiz(data)
+        return self._clean_code(data)
+
+    @staticmethod
+    def _clean_quiz(data):
+        options = data.get("options")
+        if not isinstance(options, list) or not 2 <= len(options) <= MAX_QUIZ_OPTIONS:
+            raise serializers.ValidationError(
+                {"data": f"У квиза от 2 до {MAX_QUIZ_OPTIONS} вариантов ответа."}
+            )
+        cleaned, seen = [], set()
+        for option in options:
+            if not isinstance(option, dict):
+                raise serializers.ValidationError({"data": "Вариант ответа: объект value/label."})
+            value = str(option.get("value", "")).strip()
+            label = str(option.get("label", value)).strip() or value
+            if not value or len(value) > 200 or len(label) > 200:
+                raise serializers.ValidationError({"data": "Вариант ответа: от 1 до 200 символов."})
+            if value.casefold() in seen:
+                raise serializers.ValidationError({"data": "Варианты ответа не должны повторяться."})
+            seen.add(value.casefold())
+            cleaned.append({"value": value, "label": label})
+        answer = str(data.get("correct_answer", "")).strip()
+        if answer.casefold() not in seen:
+            raise serializers.ValidationError(
+                {"data": "Правильный ответ должен совпадать с одним из вариантов."}
+            )
+        # keep the author's spelling of the option the answer refers to
+        answer = next(o["value"] for o in cleaned if o["value"].casefold() == answer.casefold())
+        return {"options": cleaned, "correct_answer": answer}
+
+    @staticmethod
+    def _clean_code(data):
+        starter = str(data.get("starter", ""))
+        expected = str(data.get("expected_output", ""))
+        if len(starter) > MAX_CODE or len(expected) > MAX_CODE:
+            raise serializers.ValidationError({"data": f"Код или вывод длиннее {MAX_CODE} символов."})
+        return {"language": "python", "starter": starter, "expected_output": expected}
+
+    def _mirror_texts(self, validated, instance=None):
+        get = (lambda k: validated.get(k, getattr(instance, k, ""))) if instance else validated.get
+        validated["title"] = _mirror(get("title_ru"), get("title_en"), getattr(instance, "title", "") or "Шаг")
+        validated["body"] = _mirror(get("body_ru"), get("body_en"), "")
+
+    def create(self, validated):
+        self._mirror_texts(validated)
+        return super().create(validated)
+
+    def update(self, instance, validated):
+        self._mirror_texts(validated, instance)
+        return super().update(instance, validated)
+
+
+class StudioTaskViewSet(viewsets.ModelViewSet):
+    """Tasks inside a teacher's missions. Filter with ``?mission=<id>``."""
+
+    serializer_class = StudioTaskSerializer
+    permission_classes = [permissions.IsAdminUser]
+    queryset = MissionTask.objects.all()
+
+    def get_queryset(self):
+        qs = MissionTask.objects.select_related(
+            "mission", "mission__location", "mission__location__track"
+        ).order_by("mission_id", "order", "id")
+        if not self.request.user.is_superuser:
+            qs = qs.filter(mission__location__track__owner=self.request.user)
+        mission_id = self.request.query_params.get("mission")
+        if mission_id and str(mission_id).isdigit():
+            qs = qs.filter(mission_id=mission_id)
+        return qs
+
+    def _check_mission(self, mission):
+        if mission is None:
+            raise serializers.ValidationError({"mission": "Миссия обязательна."})
+        track = mission.location.track if mission.location_id else None
+        if not self.request.user.is_superuser and (
+            track is None or track.owner_id != self.request.user.id
+        ):
+            raise PermissionDenied("Можно добавлять шаги только в миссии своих курсов.")
+
+    def perform_create(self, serializer):
+        self._check_mission(serializer.validated_data.get("mission"))
+        serializer.save()
+
+    def perform_update(self, serializer):
+        self._check_mission(serializer.validated_data.get("mission", serializer.instance.mission))
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        mission = instance.mission
+        instance.delete()
+        # a mission that lost its last task can no longer be finished
+        if mission.is_active and not mission.tasks.exists():
+            mission.is_active = False
+            mission.save(update_fields=["is_active"])

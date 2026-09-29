@@ -11,6 +11,7 @@ from .analytics_views import (
 from .studio import (
     StudioLocationViewSet,
     StudioMissionViewSet,
+    StudioTaskViewSet,
     StudioTrackViewSet,
 )
 from .views import (
@@ -50,6 +51,7 @@ router.register(
 router.register(
     r"teacher/studio/missions", StudioMissionViewSet, basename="studio-mission"
 )
+router.register(r"teacher/studio/tasks", StudioTaskViewSet, basename="studio-task")
 
 
 urlpatterns = [

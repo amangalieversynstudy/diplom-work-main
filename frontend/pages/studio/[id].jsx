@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
 import Button from "../../components/Button";
 import ConfirmModal from "../../components/ConfirmModal";
+import StudioTasks, { apiError } from "../../components/StudioTasks";
 import { Studio as StudioAPI, Profile as ProfileAPI } from "../../lib/api";
 import logger from "../../lib/logger";
 import { useI18n } from "../../lib/i18n";
@@ -12,6 +13,7 @@ import {
   ChevronDown,
   ChevronRight,
   Layers,
+  ListChecks,
   Lock,
   Pencil,
   Plus,
@@ -36,6 +38,18 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
     xp_reward: mission.xp_reward ?? 10,
   });
   const [saving, setSaving] = useState(false);
+  const [showTasks, setShowTasks] = useState(false);
+
+  // Опубликовать можно только миссию с шагами: причину отказа даёт сервер.
+  const togglePublish = async () => {
+    try {
+      await StudioAPI.missions.update(mission.id, { is_active: !mission.is_active });
+      await onReload();
+    } catch (e) {
+      logger.error("Mission publish failed:", e);
+      setError(apiError(e, t("studio.saveError")));
+    }
+  };
 
   useEffect(() => {
     setForm({
@@ -132,7 +146,8 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
   }
 
   return (
-    <div className="group flex items-center gap-3 rounded-xl border border-border bg-panel/40 px-3.5 py-2.5">
+    <div>
+    <div className="group flex flex-wrap items-center gap-3 rounded-xl border border-border bg-panel/40 px-3.5 py-2.5">
       <Swords size={15} className="shrink-0 text-muted" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-text">
@@ -145,6 +160,31 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
       <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
         {mission.xp_reward ?? 0} {t("studio.editor.xp")}
       </span>
+      <span
+        className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+          mission.is_active
+            ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-400"
+            : "border-border bg-panel text-muted"
+        }`}
+      >
+        {mission.is_active ? t("studio.editor.published") : t("studio.editor.draft")}
+      </span>
+      <button
+        type="button"
+        onClick={() => setShowTasks((v) => !v)}
+        aria-expanded={showTasks}
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted hover:bg-panel hover:text-text"
+      >
+        <ListChecks size={14} aria-hidden="true" />
+        {t("studio.editor.steps")} ({mission.tasks_count ?? 0})
+      </button>
+      <button
+        type="button"
+        onClick={togglePublish}
+        className="shrink-0 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted hover:bg-panel hover:text-text"
+      >
+        {mission.is_active ? t("studio.editor.unpublish") : t("studio.editor.publish")}
+      </button>
       <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
         <button
           onClick={() => setEditing(true)}
@@ -161,6 +201,15 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
           <Trash2 size={15} />
         </button>
       </div>
+    </div>
+    {showTasks ? (
+      <StudioTasks
+        missionId={mission.id}
+        t={t}
+        setConfirm={setConfirm}
+        onChanged={onReload}
+      />
+    ) : null}
     </div>
   );
 }

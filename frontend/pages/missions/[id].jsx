@@ -567,6 +567,12 @@ export default function MissionDetail() {
                   "",
               }} />
 
+              {tasks.length === 0 && (
+                <p role="status" className="rounded-lg border-2 border-[#5c3a21]/40 bg-[#f3e2c0]/70 px-4 py-3 font-semibold">
+                  {t("missionPage.noSteps")}
+                </p>
+              )}
+
               {/* Квиз — карточка в тон пергамента, тёмное дерево по рамке */}
               {activeTask?.task_type === "quiz" && (
                 <div className="mt-8 p-4 bg-[#c5a572]/50 border-2 border-[#5c3a21]/40 rounded-xl space-y-4 shadow-inner">

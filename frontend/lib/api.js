@@ -338,6 +338,19 @@ export const Studio = {
       api.patch(`/teacher/studio/missions/${id}/`, payload).then((r) => r.data),
     remove: (id) => api.delete(`/teacher/studio/missions/${id}/`),
   },
+  tasks: {
+    list: (missionId) =>
+      api
+        .get("/teacher/studio/tasks/", {
+          params: missionId ? { mission: missionId } : {},
+        })
+        .then((r) => unwrapList(r.data)),
+    create: (payload) =>
+      api.post("/teacher/studio/tasks/", payload).then((r) => r.data),
+    update: (id, payload) =>
+      api.patch(`/teacher/studio/tasks/${id}/`, payload).then((r) => r.data),
+    remove: (id) => api.delete(`/teacher/studio/tasks/${id}/`),
+  },
 };
 
 // Достижения текущего игрока. Каталог (иконки/условия) живёт на бэкенде в

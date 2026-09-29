@@ -506,6 +506,18 @@ def execute_python_code(code: str, timeout: int = 5) -> dict:
                 pass
 
 
+# Windows: pywintypes.error(109, "ReadFile", ...) — канал закрыт, то есть обычный EOF;
+# 232 — канал закрывается. Это не сбой песочницы, и pywintypes.error не всегда OSError.
+_CLOSED_PIPE_CODES = (109, 232)
+
+
+def _is_closed_pipe(exc: BaseException) -> bool:
+    code = getattr(exc, "winerror", None)
+    if code is None and getattr(exc, "args", None):
+        code = exc.args[0]
+    return code in _CLOSED_PIPE_CODES
+
+
 # заголовок мультиплексного потока Docker: 8 байт, первый — тип (1=stdout, 2=stderr)
 _FRAME_HEADER = struct.Struct(">BBBBI")
 
@@ -601,7 +613,11 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
 
             try:
                 chunk = raw_sock.recv(4096)
-            except (TimeoutError, OSError):
+            except Exception as exc:
+                if _is_closed_pipe(exc):
+                    break  # Windows named pipe: конец потока приходит ошибкой, а не пустым recv
+                if not isinstance(exc, (TimeoutError, OSError)):
+                    raise
                 # таймаут recv — смотрим, может контейнер уже закончил
                 try:
                     container.reload()
@@ -612,8 +628,8 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
                             tail = raw_sock.recv(65536)
                             if tail:
                                 buffer += tail
-                        except (TimeoutError, OSError):
-                            pass
+                        except Exception:
+                            pass  # хвост не обязателен: главное, что контейнер закончил
                         break
                 except Exception:
                     break

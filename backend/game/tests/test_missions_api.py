@@ -174,3 +174,21 @@ def test_repeat_non_repeatable_gives_zero_xp(
     r2 = api_client.post(reverse("mission-complete", args=[m1.id]))
     assert r2.status_code == 200
     assert r2.json()["xp_added"] == 0
+
+
+def test_missions_of_two_courses_are_not_interleaved(api_client, db):
+    """Missions are ordered course by course, even when their own ``order`` values collide."""
+    from game.models import Location, Mission, Track
+
+    first = Track.objects.create(slug="first", title="First", order=0, is_active=True)
+    second = Track.objects.create(slug="second", title="Second", order=1, is_active=True)
+    first_loc = Location.objects.create(track=first, title="A", order=0)
+    second_loc = Location.objects.create(track=second, title="B", order=0)  # same location order on purpose
+    expected = []
+    for n in range(3):
+        expected.append(Mission.objects.create(location=first_loc, title=f"A{n}", order=n).id)
+    for n in range(3):
+        Mission.objects.create(location=second_loc, title=f"B{n}", order=n)
+    ids = [m["id"] for m in api_client.get("/api/missions/").json() if m["title"].startswith(("A", "B"))]
+    titles = [Mission.objects.get(pk=i).title for i in ids]
+    assert titles == ["A0", "A1", "A2", "B0", "B1", "B2"]

@@ -80,7 +80,9 @@ def scoped_tasks(viewer, track_id=None):
         tasks = tasks.filter(mission__location__track__owner=viewer)
     if track_id is not None:
         tasks = tasks.filter(mission__location__track_id=track_id)
-    return tasks.order_by("mission__location__order", "mission__order", "order", "id")
+    return tasks.order_by(
+        "mission__location__track__order", "mission__location__order", "mission__order", "order", "id"
+    )
 
 
 def _last_activity(learner_ids):

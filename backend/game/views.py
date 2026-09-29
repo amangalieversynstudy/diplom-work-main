@@ -118,7 +118,13 @@ class MissionViewSet(viewsets.ModelViewSet):
     """ViewSet for managing missions."""
 
     # ОПТИМИЗАЦИЯ: Вытягиваем локацию миссии и её требования одним запросом
-    queryset = Mission.objects.select_related('location').prefetch_related('prerequisites').order_by("order")
+    # Порядок «курс → локация → миссия»: без него миссии двух курсов с одинаковыми
+    # order перемешиваются, и тропа на карте прыгает между курсами.
+    queryset = (
+        Mission.objects.select_related('location')
+        .prefetch_related('prerequisites')
+        .order_by("location__track__order", "location__order", "order", "id")
+    )
     serializer_class = MissionSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 

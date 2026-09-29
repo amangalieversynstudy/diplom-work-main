@@ -355,3 +355,59 @@ def test_every_code_step_of_every_course_is_covered_by_a_reference_solution():
                 if row["fields"]["data"].get("expected_output"):
                     code_steps.append(row["pk"])
     assert sorted(code_steps) == sorted(SOLUTIONS)
+
+
+# ── Windows named pipes report the end of the stream as an error, not as EOF ──
+
+
+class _PipeClosed(Exception):
+    """Stands in for pywintypes.error(109, "ReadFile", ...): not an OSError."""
+
+
+class _FakeSocket:
+    def __init__(self, chunks, error):
+        self._chunks = list(chunks)
+        self._error = error
+
+    def settimeout(self, _value):
+        pass
+
+    def recv(self, _size):
+        if self._chunks:
+            return self._chunks.pop(0)
+        raise self._error
+
+    def close(self):
+        pass
+
+
+def _stream_with(error):
+    import struct
+    from unittest.mock import MagicMock, patch
+
+    from game import runner
+
+    payload = "Привет\n".encode()
+    frame = struct.pack(">BBBBI", 1, 0, 0, 0, len(payload)) + payload
+    container = MagicMock()
+    container.status = "exited"
+    container.wait.return_value = {"StatusCode": 0}
+    client = MagicMock()
+    client.containers.create.return_value = container
+    client.api.attach_socket.return_value = _FakeSocket([frame], error)
+    with patch.object(runner.docker, "from_env", return_value=client):
+        return list(runner.stream_python_code("print(1)", timeout=5))
+
+
+def test_a_closed_windows_pipe_is_the_end_of_the_output_not_a_sandbox_failure():
+    events = _stream_with(_PipeClosed(109, "ReadFile", "The pipe has been ended."))
+    kinds = [e["type"] for e in events]
+    assert kinds == ["stdout", "exit"]
+    assert events[0]["data"] == "Привет\n"
+    assert events[-1]["code"] == 0
+
+
+def test_other_socket_errors_are_still_reported_as_a_sandbox_failure():
+    events = _stream_with(_PipeClosed(5, "ReadFile", "Access is denied."))
+    assert any(e.get("reason") == "runner_error" for e in events if e["type"] == "error")
+    assert events[-1]["code"] == -1

@@ -94,13 +94,15 @@ def my_learning(user, *, lang="ru", now=None):
         )
         .select_related("location")
         .prefetch_related("prerequisites")
-        .order_by("location__order", "order", "id")
+        .order_by("location__track__order", "location__order", "order", "id")
     )
     mission_ids = [m.pk for m in missions]
     tasks = list(
         MissionTask.objects.filter(mission_id__in=mission_ids)
         .select_related("mission")
-        .order_by("mission__location__order", "mission__order", "order", "id")
+        .order_by(
+            "mission__location__track__order", "mission__location__order", "mission__order", "order", "id"
+        )
     )
     tasks_by_mission = {}
     for task in tasks:

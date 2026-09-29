@@ -261,6 +261,14 @@ export const Runner = {
 // комиссии «как вы измеряете эффективность обучения».
 export const Analytics = {
   get: () => api.get("/analytics/").then((r) => r.data),
+  // KPI обучения: MCR, MAS, отсев, порог неудач подряд, эффект подсказок.
+  metrics: (params = {}) =>
+    api.get("/analytics/metrics/", { params }).then((r) => r.data),
+  // Таблица по шагам одним файлом; идёт через axios, чтобы ушёл JWT.
+  metricsCsv: (params = {}) =>
+    api
+      .get("/analytics/metrics/export/", { params, responseType: "blob" })
+      .then((r) => r.data),
 };
 
 // Кабинет преподавателя (только для staff): список учеников с прогрессом и

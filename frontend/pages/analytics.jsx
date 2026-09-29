@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import Button from "../components/Button";
+import LearningMetrics from "../components/LearningMetrics";
 import { Analytics as AnalyticsAPI, Profile as ProfileAPI } from "../lib/api";
 import logger from "../lib/logger";
 import { useI18n } from "../lib/i18n";
@@ -310,6 +311,10 @@ export default function AnalyticsPage() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="mt-12">
+          <LearningMetrics />
         </div>
       </div>
     </Layout>

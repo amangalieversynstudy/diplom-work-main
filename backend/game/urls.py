@@ -3,6 +3,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
+from .analytics_views import LearningMetricsExportView, LearningMetricsView
 from .studio import (
     StudioLocationViewSet,
     StudioMissionViewSet,
@@ -54,6 +55,16 @@ urlpatterns = [
     path("ai-assist/", AIAssistView.as_view(), name="ai_assist"),
     path("ai-mentor/", AIMentorView.as_view(), name="ai_mentor"),
     path("analytics/", AnalyticsView.as_view(), name="analytics"),
+    path(
+        "analytics/metrics/",
+        LearningMetricsView.as_view(),
+        name="learning_metrics",
+    ),
+    path(
+        "analytics/metrics/export/",
+        LearningMetricsExportView.as_view(),
+        name="learning_metrics_export",
+    ),
     path("achievements/", AchievementsView.as_view(), name="achievements"),
     path("events/", LearningEventView.as_view(), name="learning_events"),
     path(

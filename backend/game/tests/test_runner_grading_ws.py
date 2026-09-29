@@ -74,6 +74,11 @@ async def _run(ctx, stream, message, *, expect_run=True):
                 event["type"] == "exit" or not expect_run
             ):
                 break
+        if not expect_run:
+            # a refusal must close the socket: no "exit" will ever follow
+            closing = await comm.receive_output(timeout=2)
+            assert closing["type"] == "websocket.close"
+            event["closed_with"] = closing["code"]
         await comm.disconnect()
     return events
 
@@ -167,6 +172,7 @@ async def test_locked_step_is_refused_before_the_code_runs():
         ctx, stream, {"code": "print('Charged')", "task_id": ctx["code"].id}, expect_run=False
     )
     assert events[-1]["type"] == "error"
+    assert events[-1]["closed_with"] == 4403
     assert "previous" in events[-1]["message"].lower()
     stream.assert_not_called()
     assert await _progress(ctx["user"], ctx["code"]) is None
@@ -181,3 +187,41 @@ async def test_level_gate_is_enforced_on_the_runner():
     )
     assert events[-1]["type"] == "error"
     stream.assert_not_called()
+
+
+# ── end to end: real code, real subprocess, real grading ───────────────────
+
+
+def _no_docker(*args, **kwargs):
+    raise RuntimeError("docker daemon not available")
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize(
+    "source, passed",
+    [
+        ("print('Charged')", True),
+        ("print('Not charged')", False),
+        ("raise RuntimeError('boom')", False),
+        ("print('Charged'); import sys; sys.exit(3)", False),
+    ],
+)
+async def test_real_run_is_graded_end_to_end(settings, source, passed):
+    from game import runner
+
+    settings.RUNNER_ALLOW_UNSAFE_FALLBACK = True  # local subprocess, dev only
+    settings.RUNNER_JUDGE0_URL = ""
+    ctx = await _setup(f"ws_e2e_{abs(hash(source))}")
+
+    with patch.object(runner.docker, "from_env", _no_docker):
+        events = await _run(
+            ctx, runner.stream_python_code, {"code": source, "task_id": ctx["code"].id}
+        )
+
+    result = next(e for e in events if e["type"] == "result")
+    assert result["passed"] is passed
+    assert events.index(result) < len(events) - 1  # verdict arrives before exit
+    assert events[-1]["type"] == "exit"
+    saved = await _progress(ctx["user"], ctx["code"])
+    assert saved.status == ("completed" if passed else "in_progress")
+    assert saved.attempts == 1

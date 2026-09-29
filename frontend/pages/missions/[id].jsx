@@ -8,10 +8,11 @@ import { useRouter } from "next/router";
 import { toast } from "sonner";
 import {
   Missions,
+  TaskAPI,
   TaskProgressAPI,
   Profile, // Импортируем Profile для работы с инвентарем
 } from "../../lib/api";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Sword, Sparkles, Code2, BookOpen, Lock, ChevronRight, ScrollText } from "lucide-react";
 import logger from "../../lib/logger";
 import { useI18n } from "../../lib/i18n";
@@ -27,6 +28,11 @@ export default function MissionDetail() {
   const [codeDrafts, setCodeDrafts] = useState({});
   const [quizAnswers, setQuizAnswers] = useState({});
   const [savingTaskId, setSavingTaskId] = useState(null);
+  // ref: колбэки раннера живут дольше одного рендера и должны видеть свежий прогресс
+  const taskProgressRef = useRef({});
+  taskProgressRef.current = taskProgress;
+  // миссия помечается «начатой» один раз за открытие страницы, а не при смене языка
+  const startedMissionRef = useRef(null);
 
   // --- СТЕЙТ ДЛЯ ИНВЕНТАРЯ ---
   const [inventory, setInventory] = useState({
@@ -53,24 +59,12 @@ export default function MissionDetail() {
     if (!id) return;
     let active = true;
 
-    // 1. Загружаем данные миссии
-    Missions.get(id)
-      .then((data) => {
+    // 1. Миссия и прогресс по задачам грузятся вместе — сразу видно, на каком
+    // шаге остановился ученик.
+    Promise.all([Missions.get(id), TaskProgressAPI.list(id).catch(() => [])])
+      .then(([data, progressList]) => {
         if (!active) return;
-        setMission(data);
-        if (data.tasks && data.tasks.length > 0) {
-          setTasks(data.tasks);
-          setActiveTaskId(data.tasks[0].id);
-        }
-      })
-      .catch(() => {
-        toast.error(t("missionPage.toasts.loadFail"));
-      });
-
-    // 2. Загружаем прогресс задач
-    TaskProgressAPI.list(id)
-      .then((progressList) => {
-        if (!active) return;
+        const list = data.tasks || [];
         const mapping = {};
         const drafts = {};
         progressList.forEach((p) => {
@@ -80,10 +74,26 @@ export default function MissionDetail() {
             drafts[tid] = p.answer.code;
           }
         });
+        setMission(data);
+        setTasks(list);
         setTaskProgress(mapping);
-        setCodeDrafts(drafts);
+        // то, что ученик уже набрал в этой сессии, важнее сохранённого на сервере
+        setCodeDrafts((prev) => ({ ...drafts, ...prev }));
+        // Смена языка перезагружает миссию — текущий шаг не сбрасываем. При
+        // первом открытии встаём на первый невыполненный шаг.
+        setActiveTaskId((prev) => {
+          if (prev && list.some((task) => task.id === prev)) return prev;
+          const open = list.find((task) => mapping[task.id]?.status !== "completed");
+          return (open || list[0])?.id ?? null;
+        });
+        if (data.available !== false && startedMissionRef.current !== data.id) {
+          startedMissionRef.current = data.id;
+          Missions.start(data.id).catch(() => {});
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (active) toast.error(t("missionPage.toasts.loadFail"));
+      });
 
     // 3. Загружаем профиль для получения актуального инвентаря.
     // Новый ProfileMeView возвращает плоский payload — поля ai_summons/hint_scrolls/
@@ -143,126 +153,130 @@ export default function MissionDetail() {
     return activeTask?.data?.starter || "";
   }, [codeDrafts, activeTaskId, activeTask]);
 
-  // Called by CodeRunnerPanel when the streaming runner returns exit code 0.
-  // Persists the code draft and marks the task as completed.
-  const handleTestPassed = async (payload) => {
-    if (!activeTask) return;
-    const codeToRun =
-      codeDrafts[activeTask.id] ?? activeTask.data?.starter ?? payload?.code ?? "";
-    toast.success(t("missionPage.toasts.passed"));
-    await handleCompleteTask(activeTask.id, { code: codeToRun }, 100);
+  // Мы не решаем, верен ли ответ: квиз проверяет сервер (TaskAPI.submit), код
+  // проверяет сервер при запуске (событие "result" от раннера). Здесь только
+  // показываем итог и ведём ученика дальше.
+  const finishMission = async () => {
+    try {
+      const result = await Missions.complete(id);
+      // backend честно шлёт leveled_up/xp_added/new_level
+      if (result?.xp_added > 0) {
+        toast.success(
+          t("missionPage.toasts.questDoneXp").replace("{xp}", result.xp_added),
+          { duration: 4000 }
+        );
+      } else {
+        toast.success(t("missionPage.toasts.questDone"));
+      }
+      if (result?.leveled_up) {
+        setLevelUp(result.new_level);
+        // Двойной toast: общая победа + level-up отдельно
+        setTimeout(() => {
+          toast.success(
+            t("missionPage.toasts.levelUp").replace("{level}", result.new_level),
+            { duration: 6000 }
+          );
+        }, 800);
+      }
+
+      // Достижения: backend возвращает слаги только что открытых бейджей.
+      // Показываем отдельный toast на каждый, стагерим, чтобы не наслаивались
+      // на победный/level-up toast.
+      if (Array.isArray(result?.new_achievements) && result.new_achievements.length) {
+        result.new_achievements.forEach((slug, i) => {
+          setTimeout(() => {
+            toast.success(
+              (t("achievements.unlockToast") || "").replace(
+                "{title}",
+                t(`achievements.items.${slug}.title`)
+              ),
+              { duration: 6000 }
+            );
+          }, 1500 + i * 700);
+        });
+      }
+
+      // refetch profile to show updated rank on level-up
+      // and update inventory with any rewards granted
+      try {
+        const profileData = await Profile.me();
+        if (profileData) {
+          const p = profileData.profile ?? profileData;
+          setInventory({
+            ai_summons: p.ai_summons ?? 0,
+            hint_scrolls: p.hint_scrolls ?? 0,
+            skeleton_scrolls: p.skeleton_scrolls ?? 0,
+          });
+          setPlayerLevel(p.level ?? 1);
+        }
+      } catch (profileErr) {
+        logger.error("Failed to refetch profile after mission complete:", profileErr);
+      }
+    } catch (err) {
+      logger.error("Mission.complete failed:", err);
+      toast.error(err?.response?.data?.detail || t("missionPage.toasts.saveFail"));
+    }
   };
 
-  const handleCompleteTask = async (taskId, answerData = {}, score = 0) => {
+  // Сервер засчитал шаг: обновляем прогресс, идём дальше или завершаем миссию.
+  const onTaskSolved = async (taskId, progress) => {
+    setTaskProgress((prev) => ({ ...prev, [taskId]: progress }));
+    toast.success(t("missionPage.toasts.stepSaved"));
+
+    const currentIndex = tasks.findIndex((task) => task.id === taskId);
+    if (currentIndex !== -1 && currentIndex < tasks.length - 1) {
+      setActiveTaskId(tasks[currentIndex + 1].id);
+    } else {
+      await finishMission();
+    }
+  };
+
+  // Вердикт раннера по code-задаче (приходит перед событием exit).
+  const handleCodeResult = (msg) => {
+    const progress = msg?.progress;
+    if (!progress) return;
+    const taskId = progress.task;
+    const alreadySolved = taskProgressRef.current[taskId]?.status === "completed";
+    if (msg.passed && !alreadySolved) {
+      onTaskSolved(taskId, progress);
+    } else {
+      setTaskProgress((prev) => ({ ...prev, [taskId]: progress }));
+    }
+  };
+
+  // Сюжетный шаг: сервер засчитывает его сам.
+  const handleStorySubmit = async (taskId) => {
+    if (savingTaskId === taskId) return;
     setSavingTaskId(taskId);
     try {
-      const updatedProgress = await TaskProgressAPI.submit(taskId, {
-        status: "completed",
-        score: score,
-        answer: answerData,
-      });
-
-      setTaskProgress((prev) => ({
-        ...prev,
-        [taskId]: updatedProgress,
-      }));
-
-      toast.success(t("missionPage.toasts.stepSaved"));
-
-      // Автоматический переход на следующий шаг
-      const currentIndex = tasks.findIndex((t) => t.id === taskId);
-      if (currentIndex !== -1 && currentIndex < tasks.length - 1) {
-        setActiveTaskId(tasks[currentIndex + 1].id);
-      } else {
-        // Если это была последняя задача — завершаем миссию и обрабатываем награды
-        try {
-          const result = await Missions.complete(id);
-          // backend честно шлёт leveled_up/xp_added/new_level
-          if (result?.xp_added > 0) {
-            toast.success(
-              t("missionPage.toasts.questDoneXp").replace("{xp}", result.xp_added),
-              { duration: 4000 }
-            );
-          } else {
-            toast.success(t("missionPage.toasts.questDone"));
-          }
-          if (result?.leveled_up) {
-            setLevelUp(result.new_level);
-            // Двойной toast: общая победа + level-up отдельно
-            setTimeout(() => {
-              toast.success(
-                t("missionPage.toasts.levelUp").replace("{level}", result.new_level),
-                { duration: 6000 }
-              );
-            }, 800);
-          }
-
-          // Достижения: backend возвращает слаги только что открытых бейджей.
-          // Показываем отдельный toast на каждый, стагерим, чтобы не наслаивались
-          // на победный/level-up toast.
-          if (
-            Array.isArray(result?.new_achievements) &&
-            result.new_achievements.length
-          ) {
-            result.new_achievements.forEach((slug, i) => {
-              setTimeout(() => {
-                toast.success(
-                  (t("achievements.unlockToast") || "").replace(
-                    "{title}",
-                    t(`achievements.items.${slug}.title`)
-                  ),
-                  { duration: 6000 }
-                );
-              }, 1500 + i * 700);
-            });
-          }
-
-          // refetch profile to show updated rank on level-up
-          // and update inventory with any rewards granted
-          try {
-            const profileData = await Profile.me();
-            if (profileData) {
-              const p = profileData.profile ?? profileData;
-              setInventory({
-                ai_summons: p.ai_summons ?? 0,
-                hint_scrolls: p.hint_scrolls ?? 0,
-                skeleton_scrolls: p.skeleton_scrolls ?? 0,
-              });
-              setPlayerLevel(p.level ?? 1);
-            }
-          } catch (profileErr) {
-            logger.error("Failed to refetch profile after mission complete:", profileErr);
-          }
-        } catch (err) {
-          logger.error("Mission.complete failed:", err);
-        }
-      }
+      const res = await TaskAPI.submit(taskId);
+      await onTaskSolved(taskId, res.progress);
     } catch (e) {
-      toast.error(t("missionPage.toasts.saveFail"));
+      toast.error(e?.response?.data?.detail || t("missionPage.toasts.saveFail"));
     } finally {
-      setSavingTaskId(false);
+      setSavingTaskId(null);
     }
   };
 
-  const handleQuizSubmit = (taskId) => {
+  // Квиз: ответ уходит на сервер, правильный ответ на клиенте не хранится.
+  const handleQuizSubmit = async (taskId) => {
     const userAnswer = quizAnswers[taskId];
-    const currentTask = tasks.find((t) => t.id === taskId);
-    if (!currentTask) return;
-
-    // Поддерживаем 2 формата фикстуры:
-    // 1) data.correct_answer = "break"
-    // 2) data.options = [{ value: "break", isCorrect: true }, ...]
-    let correctAnswer = currentTask.data?.correct_answer;
-    if (!correctAnswer && Array.isArray(currentTask.data?.options)) {
-      const correctOpt = currentTask.data.options.find((o) => o && o.isCorrect);
-      correctAnswer = correctOpt?.value ?? correctOpt?.label;
-    }
-    if (String(userAnswer).trim().toLowerCase() === String(correctAnswer).trim().toLowerCase()) {
-      setStage((s) => ({ phase: "victory", tick: s.tick + 1 }));
-      handleCompleteTask(taskId, { selected: userAnswer }, 100);
-    } else {
-      setStage((s) => ({ phase: "defeat", tick: s.tick + 1 }));
-      toast.error(t("missionPage.quizWrong"));
+    if (!userAnswer || savingTaskId === taskId) return;
+    setSavingTaskId(taskId);
+    try {
+      const res = await TaskAPI.submit(taskId, userAnswer);
+      setTaskProgress((prev) => ({ ...prev, [taskId]: res.progress }));
+      if (res.correct) {
+        setStage((st) => ({ phase: "victory", tick: st.tick + 1 }));
+        await onTaskSolved(taskId, res.progress);
+      } else {
+        setStage((st) => ({ phase: "defeat", tick: st.tick + 1 }));
+        toast.error(t("missionPage.quizWrong"));
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || t("missionPage.toasts.saveFail"));
+    } finally {
+      setSavingTaskId(null);
     }
   };
 
@@ -447,8 +461,10 @@ export default function MissionDetail() {
                   </div>
                   {taskProgress[activeTask.id] && (
                     <div className="mt-2 pt-2 border-t border-[#5c3a21]/40 space-y-1">
-                      <p>{t("missionPage.stats.status")} <span className="text-[#a3e635] font-bold">{t("missionPage.stats.done")}</span></p>
-                      <p>{t("missionPage.stats.attempts")} {taskProgress[activeTask.id].attempts || 1}</p>
+                      {taskProgress[activeTask.id].status === "completed" && (
+                        <p>{t("missionPage.stats.status")} <span className="text-[#a3e635] font-bold">{t("missionPage.stats.done")}</span></p>
+                      )}
+                      <p>{t("missionPage.stats.attempts")} {taskProgress[activeTask.id].attempts}</p>
                       <p>{t("missionPage.stats.best")} <span className="text-[#fde68a] font-bold">{taskProgress[activeTask.id].best_score || 0}</span></p>
                     </div>
                   )}
@@ -557,9 +573,9 @@ export default function MissionDetail() {
               )}
 
               {/* Кнопка завершения story-таска: rebranded в RPG-call-to-action */}
-              {activeTask?.task_type === "story" && !taskProgress[activeTask.id] && (
+              {activeTask?.task_type === "story" && taskProgress[activeTask.id]?.status !== "completed" && (
                 <div className="mt-8 pt-4">
-                  <Button onClick={() => handleCompleteTask(activeTask.id, {}, 100)} className="w-full justify-center shadow-md" icon={Sparkles}>
+                  <Button onClick={() => handleStorySubmit(activeTask.id)} disabled={savingTaskId === activeTask.id} className="w-full justify-center shadow-md" icon={Sparkles}>
                     {t("missionPage.acceptChallenge")}
                   </Button>
                 </div>
@@ -574,7 +590,7 @@ export default function MissionDetail() {
                 task={activeTask}
                 code={codeValue}
                 onChange={(val) => setCodeDrafts((prev) => ({ ...prev, [activeTask.id]: val }))}
-                onTestPassed={handleTestPassed}
+                onTaskResult={handleCodeResult}
                 onRunStateChange={handleRunState}
                 inventoryCounts={inventory}
                 onInventoryUpdate={handleInventoryUpdate}

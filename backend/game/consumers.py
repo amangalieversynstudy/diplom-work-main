@@ -85,7 +85,10 @@ class RunnerConsumer(AsyncWebsocketConsumer):
                     self.scope["user"], task_id
                 )
             except RuleViolation as exc:
+                # No run happens, so no "exit" will follow: close the socket
+                # (4403 = refused) so the client leaves its "running" state.
                 await self._emit({"type": "error", "message": str(exc.detail)})
+                await self.close(code=4403)
                 return
 
         # ставим _running перед стартом задачи, чтобы параллельный receive

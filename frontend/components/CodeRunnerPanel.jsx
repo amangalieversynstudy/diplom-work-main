@@ -65,7 +65,7 @@ export default function CodeRunnerPanel({
   task,
   code,
   onChange,
-  onTestPassed,
+  onTaskResult,
   onRunStateChange,
   inventoryCounts = { ai_summons: 0, hint_scrolls: 0, skeleton_scrolls: 0 },
   onInventoryUpdate,
@@ -179,11 +179,21 @@ export default function CodeRunnerPanel({
       return;
     }
     wsRef.current = ws;
-    let testPassedFired = false;
-    let stdoutBuf = "";
+    // The server grades the run (it alone knows the expected output) and sends
+    // a "result" event just before "exit". Runs without a task id are free
+    // practice: only the exit code matters.
+    let verdict = null;
+    let exited = false;
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: "run", code: code || "", language: "python" }));
+      ws.send(
+        JSON.stringify({
+          type: "run",
+          code: code || "",
+          language: "python",
+          ...(task?.id ? { task_id: task.id } : {}),
+        })
+      );
     };
 
     ws.onmessage = (ev) => {
@@ -191,8 +201,11 @@ export default function CodeRunnerPanel({
       try { msg = JSON.parse(ev.data); } catch { return; }
       switch (msg.type) {
         case "stdout":
-          stdoutBuf += msg.data ?? "";
           term?.write(normaliseEol(msg.data));
+          break;
+        case "result":
+          verdict = msg;
+          onTaskResult?.(msg);
           break;
         case "stderr":
           term?.write(`${ANSI_RED}${normaliseEol(msg.data)}${ANSI_RESET}`);
@@ -201,26 +214,19 @@ export default function CodeRunnerPanel({
           term?.write(`\r\n${ANSI_YELLOW}[!] ${msg.message}${ANSI_RESET}\r\n`);
           break;
         case "exit": {
+          exited = true;
           const sym = msg.code === 0 ? SYM_OK : SYM_FAIL;
           term?.write(
             `\r\n${ANSI_DIM}─────────────────────────────────────────${ANSI_RESET}\r\n` +
               `${sym} exit ${msg.code} · ${Number(msg.duration || 0).toFixed(2)}s\r\n`
           );
           setLastExit({ code: msg.code, duration: msg.duration });
-          // Если у задания задан expected_output — сверяем вывод (с trim).
-          // Иначе достаточно успешного запуска (exit 0), как было раньше.
-          const expected = (task?.data?.expected_output ?? "").toString().trim();
-          const outputOk = !expected || stdoutBuf.trim() === expected;
-          const ok = msg.code === 0 && outputOk;
-          onRunStateChange?.(ok ? "success" : "error");
-          if (msg.code === 0 && !outputOk) {
+          const passed = verdict ? verdict.passed : msg.code === 0;
+          onRunStateChange?.(passed ? "success" : "error");
+          if (verdict && msg.code === 0 && !verdict.passed) {
             term?.write(
               `\r\n${ANSI_YELLOW}${t("codeRunner.wrongOutput")}${ANSI_RESET}\r\n`
             );
-          }
-          if (ok && !testPassedFired && onTestPassed) {
-            testPassedFired = true;
-            onTestPassed({ status: "success", code, exit_code: msg.code, duration: msg.duration });
           }
           try { ws.close(); } catch { /* noop */ }
           break;
@@ -235,12 +241,16 @@ export default function CodeRunnerPanel({
     ws.onclose = (ev) => {
       wsRef.current = null;
       setRunning(false);
+      if (!exited && (ev.code === 4401 || ev.code === 4403)) {
+        // refused before the code ran: no "exit" event will come
+        onRunStateChange?.("error");
+      }
       if (ev.code === 4401) {
         term?.write(`\r\n${ANSI_RED}[auth required — refresh login]${ANSI_RESET}\r\n`);
         toast.error(t("codeRunner.sessionExpired"));
       }
     };
-  }, [running, code, task, onTestPassed, onRunStateChange, t]);
+  }, [running, code, task, onTaskResult, onRunStateChange, t]);
 
   // ── Inventory handlers ────────────────────────────────────────────────────
   const handleUseItem = useCallback(

@@ -131,17 +131,21 @@ const unwrapList = (data) => {
   return [];
 };
 
+// Progress is written by the server only: read it here, change it through
+// TaskAPI.submit (story/quiz) or by running code with a task id (see
+// getRunnerWsUrl / CodeRunnerPanel).
 export const TaskProgressAPI = {
-  list: (missionId) => 
+  list: (missionId) =>
     api.get("/task-progress/", { params: { mission: missionId } }).then((r) => unwrapList(r.data)),
-  
-  create: (payload) => api.post("/task-progress/", payload).then((r) => r.data),
-  
-  update: (id, payload) =>
-    api.patch(`/task-progress/${id}/`, payload).then((r) => r.data),
-    
-  submit: (taskId, payload) => 
-    api.post("/task-progress/", { task: taskId, ...payload }).then((r) => r.data),
+};
+
+export const TaskAPI = {
+  // story: no answer; quiz: the chosen option value.
+  // → { correct, completed, progress: { id, task, status, attempts, best_score, answer } }
+  submit: (taskId, answer) =>
+    api
+      .post(`/mission-tasks/${taskId}/submit/`, answer === undefined ? {} : { answer })
+      .then((r) => r.data),
 };
 
 export const Ranks = {

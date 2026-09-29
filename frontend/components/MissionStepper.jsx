@@ -47,7 +47,10 @@ export default function MissionStepper({
         const taskProg = progressMap[task.id];
         const completed = taskProg?.status === "completed";
         const current = task.id === activeId;
-        const locked = task.is_required && index > 0 && !progressMap[tasks[index - 1].id]?.status;
+        // Same rule as the server: a step opens once every earlier required step is solved.
+        const locked = tasks
+          .slice(0, index)
+          .some((earlier) => earlier.is_required && progressMap[earlier.id]?.status !== "completed");
 
         return (
           <button

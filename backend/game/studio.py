@@ -19,6 +19,8 @@ from .models import Location, Mission, MissionTask, Track
 
 # Rewards are authored by teachers, so they are capped: an absurd value would
 # distort the leaderboard for the whole platform.
+MAX_HINTS = 5
+MAX_HINT_LENGTH = 500
 MAX_MISSION_XP = 500
 MAX_TASK_XP = 100
 
@@ -329,6 +331,38 @@ class StudioMissionViewSet(viewsets.ModelViewSet):
         serializer.save()
 
 
+def _clean_pair(value, limit, label):
+    """{"ru": ..., "en": ...} with empty parts dropped, or None when both are empty."""
+    if value in (None, "", {}):
+        return None
+    if not isinstance(value, dict):
+        raise serializers.ValidationError({"data": f"{label}: нужен объект с текстами ru и en."})
+    pair = {}
+    for lang in ("ru", "en"):
+        text = str(value.get(lang, "")).strip()
+        if len(text) > limit:
+            raise serializers.ValidationError({"data": f"{label}: длиннее {limit} символов."})
+        if text:
+            pair[lang] = text
+    return pair or None
+
+
+def _clean_hints(raw):
+    """Progressive hints, easiest first: at most MAX_HINTS, each in ru and/or en."""
+    if raw in (None, "", []):
+        return []
+    if not isinstance(raw, list):
+        raise serializers.ValidationError({"data": "Подсказки: нужен список."})
+    hints = []
+    for item in raw:
+        pair = _clean_pair(item if not isinstance(item, str) else {"ru": item}, MAX_HINT_LENGTH, "Подсказка")
+        if pair:
+            hints.append(pair)
+    if len(hints) > MAX_HINTS:
+        raise serializers.ValidationError({"data": f"Подсказок не больше {MAX_HINTS}."})
+    return hints
+
+
 class StudioTaskSerializer(serializers.ModelSerializer):
     """One step of a mission, with the answer key: the author sees it, learners never do."""
 
@@ -441,6 +475,12 @@ class StudioTaskSerializer(serializers.ModelSerializer):
         cleaned = {"language": "python", "starter": starter, "expected_output": expected}
         if check:
             cleaned["hidden_check"] = check
+        hints = _clean_hints(data.get("hints"))
+        if hints:
+            cleaned["hints"] = hints
+        skeleton = _clean_pair(data.get("skeleton"), MAX_CODE, "Каркас решения")
+        if skeleton:
+            cleaned["skeleton"] = skeleton
         return cleaned
 
     def _mirror_texts(self, validated, instance=None):

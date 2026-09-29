@@ -192,3 +192,14 @@ def test_missions_of_two_courses_are_not_interleaved(api_client, db):
     ids = [m["id"] for m in api_client.get("/api/missions/").json() if m["title"].startswith(("A", "B"))]
     titles = [Mission.objects.get(pk=i).title for i in ids]
     assert titles == ["A0", "A1", "A2", "B0", "B1", "B2"]
+
+
+def test_a_mission_says_which_course_it_belongs_to(api_client, db):
+    from game.models import Location, Mission, Track
+
+    track = Track.objects.create(slug="named", title="Named course", order=0, is_active=True)
+    location = Location.objects.create(track=track, title="A", order=0)
+    Mission.objects.create(location=location, title="Only", order=0)
+    rows = [m for m in api_client.get("/api/missions/").json() if m["title"] == "Only"]
+    assert rows[0]["track_id"] == track.pk
+    assert rows[0]["track_title"] == "Named course"

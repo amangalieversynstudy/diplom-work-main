@@ -90,7 +90,7 @@ class RunnerConsumer(AsyncWebsocketConsumer):
             await self._emit(
                 {
                     "type": "error",
-                    "message": "Слишком много запусков подряд. Подождите несколько секунд.",
+                    "message": "Слишком много запусков подряд. Подожди несколько секунд.",
                     "reason": "rate_limited",
                 }
             )

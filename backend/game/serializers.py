@@ -81,6 +81,8 @@ class MissionTaskSerializer(LocalizedSerializerMixin, serializers.ModelSerialize
 
 
 class MissionSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
+    track_id = serializers.SerializerMethodField()
+    track_title = serializers.SerializerMethodField()
     available = serializers.SerializerMethodField()
     user_progress = serializers.SerializerMethodField()
     prerequisites = serializers.SerializerMethodField()
@@ -105,6 +107,8 @@ class MissionSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
             "repeat_xp_rate",
             "pos_x",
             "pos_y",
+            "track_id",
+            "track_title",
             "available",
             "user_progress",
             "prerequisites",
@@ -157,6 +161,14 @@ class MissionSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
                 "completed_at": None,
             }
         return None
+
+    def get_track_id(self, obj):
+        return obj.location.track_id
+
+    def get_track_title(self, obj):
+        # the course the mission belongs to: the map and the journey group by it
+        track = obj.location.track
+        return track.get_localized_title(self._preferred_language()) if track else ""
 
     def get_prerequisites(self, obj):
         # Compact representation for UI linking with localization
@@ -343,6 +355,9 @@ class LeaderboardEntrySerializer(serializers.ModelSerializer):
     xp = serializers.SerializerMethodField()
     streak = serializers.SerializerMethodField()
     class_role = serializers.SerializerMethodField()
+    # the pk lets the client show the class under the same (translated) name as the class and
+    # profile pages, instead of the single-language name stored in the database
+    class_role_id = serializers.SerializerMethodField()
 
     class Meta:
         model = LeaderboardEntry
@@ -355,6 +370,7 @@ class LeaderboardEntrySerializer(serializers.ModelSerializer):
             "xp",
             "streak",
             "class_role",
+            "class_role_id",
             "track",
             "scope",
             "period_label",
@@ -375,7 +391,7 @@ class LeaderboardEntrySerializer(serializers.ModelSerializer):
             "display_name": getattr(user, "display_name", "") or user.username,
             "level": profile.level if profile else None,
             "xp": profile.xp if profile else None,
-            "streak": getattr(profile, "current_streak", 0) if profile else 0,
+            "streak": self.get_streak(obj),
         }
 
     def get_username(self, obj):
@@ -386,20 +402,29 @@ class LeaderboardEntrySerializer(serializers.ModelSerializer):
         return p.level if p else 1
 
     def get_xp(self, obj):
-        # xp_total отражает снепшот лидерборда, который может
+        # Строка курса ранжируется по XP этого курса, его и показываем: общий Profile.xp
+        # в таблице курса читался бы как «очки за курс».
+        if obj.scope != "global":
+            return obj.xp_total or 0
+        # xp_total общей строки отражает снепшот лидерборда, который может
         # отставать от текущего Profile.xp на пару секунд.
         # Берём максимум — фронту виден актуальный счёт сразу.
         p = self._profile(obj)
         return max(obj.xp_total or 0, p.xp if p else 0)
 
     def get_streak(self, obj):
+        # оборванная серия показывается нулём везде (Profile.streak_active), и здесь тоже
         p = self._profile(obj)
-        return getattr(p, "current_streak", 0) if p else 0
+        return p.current_streak if p and p.streak_active else 0
 
     def get_class_role(self, obj):
         p = self._profile(obj)
         cr = getattr(p, "class_role", None)
         return cr.name if cr else None
+
+    def get_class_role_id(self, obj):
+        p = self._profile(obj)
+        return getattr(p, "class_role_id", None)
 
     def get_track(self, obj):
         track = obj.track

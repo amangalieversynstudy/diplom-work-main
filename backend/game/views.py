@@ -5,16 +5,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import (
-    Avg,
-    Count,
-    DurationField,
-    ExpressionWrapper,
-    F,
-    Max,
-    Q,
-    Sum,
-)
+from django.db.models import Case, Count, F, IntegerField, Max, Q, Value, When
 from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -23,7 +14,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from users.models import Profile
 from rest_framework.views import APIView
-from rest_framework.exceptions import APIException
 
 from .achievements import evaluate_achievements
 from .footprint import find_task, log_event, log_help_offer
@@ -47,6 +37,13 @@ from .throttles import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Что видит ученик, когда AI недоступен. Причину (нет ключа, сбой сети) не показываем:
+# она нужна администратору, а не первокурснику, и попадает в журнал сервера.
+AI_UNAVAILABLE = (
+    "🔮 Мудрец сейчас недоступен, и твой вызов не потрачен. "
+    "Попробуй Зелье Ясности или вернись чуть позже."
+)
 
 from .models import (
     LearningEvent,
@@ -121,7 +118,7 @@ class MissionViewSet(viewsets.ModelViewSet):
     # Порядок «курс → локация → миссия»: без него миссии двух курсов с одинаковыми
     # order перемешиваются, и тропа на карте прыгает между курсами.
     queryset = (
-        Mission.objects.select_related('location')
+        Mission.objects.select_related('location', 'location__track')
         .prefetch_related('prerequisites')
         .order_by("location__track__order", "location__order", "order", "id")
     )
@@ -243,18 +240,31 @@ class MissionViewSet(viewsets.ModelViewSet):
         new_achievements = evaluate_achievements(user)
         return Response(
             self._completion_payload(
-                prog, profile, xp_gain, leveled_up, new_achievements=new_achievements
+                prog,
+                profile,
+                xp_gain,
+                leveled_up,
+                new_achievements=new_achievements,
+                first_completion=not was_completed,
             )
         )
 
     @staticmethod
     def _completion_payload(
-        prog, profile, xp_added, leveled_up, new_achievements=None, deduplicated=False
+        prog,
+        profile,
+        xp_added,
+        leveled_up,
+        new_achievements=None,
+        deduplicated=False,
+        first_completion=False,
     ):
         data = ProgressSerializer(prog).data
         data.update(
             {
                 "xp_added": xp_added,
+                # true only for the first completion: then ``xp_earned`` is what the mission paid in total
+                "first_completion": first_completion,
                 "leveled_up": leveled_up,  # triggers the level-up burst on the client
                 "new_level": profile.level,
                 "profile_level": profile.level,
@@ -407,7 +417,9 @@ class RankViewSet(viewsets.ReadOnlyModelViewSet):
 
 class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
     # Тут тоже всё было сделано шикарно:
-    queryset = LeaderboardEntry.objects.select_related("track", "user", "user__profile")
+    queryset = LeaderboardEntry.objects.select_related(
+        "track", "user", "user__profile", "user__profile__class_role"
+    )
     serializer_class = LeaderboardEntrySerializer
     permission_classes = [permissions.AllowAny]
 
@@ -416,9 +428,10 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
         track_slug = self.request.query_params.get("track")
         if track_slug:
             qs = qs.filter(track__slug=track_slug)
-        scope = self.request.query_params.get("scope")
-        if scope:
-            qs = qs.filter(scope=scope)
+        # Every learner has one "global" row and one "track" row per course. Reading both at
+        # once listed the same person several times, so one table is read unless asked otherwise.
+        scope = self.request.query_params.get("scope") or ("track" if track_slug else "global")
+        qs = qs.filter(scope=scope)
         period = self.request.query_params.get("period")
         if period:
             qs = qs.filter(period_label=period)
@@ -426,21 +439,28 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(period_label="all_time")
         # XP primary, streak secondary, username tertiary tiebreaker —
         # стабильная сортировка чтобы карточки не прыгали между запросами.
-        # position берётся первым только если он явно проставлен (>0),
-        # иначе фоллбэк на XP+streak. Это даёт «честный» ленинг даже
-        # пока periodic-task с position не отработал.
-        return qs.order_by(
-            "-xp_total",
-            "-user__profile__current_streak",
-            "user__username",
-        )[:200]
+        # Серия, оборванная больше суток назад, показывается нулём (Profile.streak_active),
+        # поэтому и в ничьей она не должна выигрывать.
+        yesterday = timezone.localdate() - timedelta(days=1)
+        qs = qs.annotate(
+            live_streak=Case(
+                When(
+                    user__profile__last_streak_date__gte=yesterday,
+                    then=F("user__profile__current_streak"),
+                ),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        )
+        return qs.order_by("-xp_total", "-live_streak", "user__username")[:200]
 
 class IntroStatusView(APIView):
-    """Reports whether the current user has unlocked class selection.
+    """Reports whether the current user has finished the intro course.
 
-    Class selection is gated on completing the "intro" Track (a Track with
-    is_intro=True). If no intro track is configured, class is unlocked by
-    default — we don't trap users on a misconfigured server.
+    The class page is open to everyone; this status tells the client when to
+    *suggest* choosing a class (after the last mission of the "intro" Track, a
+    Track with is_intro=True). If no intro track is configured the answer is
+    "unlocked" — nobody is held back by a misconfigured server.
     """
 
     permission_classes = [permissions.IsAuthenticated]
@@ -645,22 +665,15 @@ class AIAssistView(APIView):
         )
 
         if not api_key:
-            return (
-                "🔮 Мудрец молчит... Ключ Гемини не настроен. "
-                "Проверь переменную окружения GEMINI_API_KEY.",
-                False,
-            )
+            logger.error("GEMINI_API_KEY is not set: the AI mentor is unavailable")
+            return (AI_UNAVAILABLE, False)
 
         try:
             from google import genai
             from google.genai import types
         except ImportError:
             logger.warning("google-genai не установлен — Gemini выключен")
-            return (
-                "📦 Библиотека google-genai не установлена. "
-                "Запусти: pip install google-genai>=0.3",
-                False,
-            )
+            return (AI_UNAVAILABLE, False)
 
         try:
             model_name = getattr(_settings, "GEMINI_MODEL", None) or os.environ.get(
@@ -741,22 +754,15 @@ def _call_gemini_chat(system_instruction: str, history: list):
         "GEMINI_API_KEY"
     )
     if not api_key:
-        return (
-            "🔮 Мудрец молчит... Ключ Гемини не настроен. "
-            "Проверь переменную окружения GEMINI_API_KEY.",
-            False,
-        )
+        logger.error("GEMINI_API_KEY is not set: the AI mentor is unavailable")
+        return (AI_UNAVAILABLE, False)
 
     try:
         from google import genai
         from google.genai import types
     except ImportError:
         logger.warning("google-genai не установлен — Gemini выключен")
-        return (
-            "📦 Библиотека google-genai не установлена. "
-            "Запусти: pip install google-genai>=0.3",
-            False,
-        )
+        return (AI_UNAVAILABLE, False)
 
     try:
         model_name = getattr(_settings, "GEMINI_MODEL", None) or os.environ.get(
@@ -989,158 +995,6 @@ class AIMentorView(APIView):
             {
                 "reply": reply,
                 "remaining_summons": profile.ai_summons,
-            }
-        )
-
-
-class AnalyticsView(APIView):
-    """Platform-wide learning analytics (staff-only).
-
-    Отвечает на главный вопрос оценки эффективности — «как мы измеряем,
-    что платформа реально учит?» — сводными сигналами вовлечённости,
-    прохождения, сложности и привычки (стрики) по всем ученикам.
-
-    GET /api/game/analytics/ -> {users, missions, streaks, total_xp,
-                                 hardest_missions, task_types}
-    """
-
-    permission_classes = [permissions.IsAdminUser]
-
-    @swagger_auto_schema(
-        operation_summary="Platform learning analytics (staff)",
-        operation_description=(
-            "Сводные метрики по всей платформе: вовлечённость, процент "
-            "прохождения, средние попытки/время, активные стрики и самые "
-            "сложные миссии. Доступно только staff."
-        ),
-    )
-    def get(self, request):
-        now = timezone.now()
-        week_ago = now - timedelta(days=7)
-        User = get_user_model()
-
-        progress = Progress.objects.all()
-        attempted = progress.count()
-        completed = progress.filter(completed=True).count()
-        completion_rate = round(100 * completed / attempted, 1) if attempted else 0.0
-
-        avg_attempts = round(
-            progress.filter(attempts__gt=0).aggregate(v=Avg("attempts"))["v"] or 0, 1
-        )
-
-        avg_duration = (
-            progress.filter(
-                completed=True,
-                started_at__isnull=False,
-                completed_at__isnull=False,
-            )
-            .annotate(
-                dur=ExpressionWrapper(
-                    F("completed_at") - F("started_at"),
-                    output_field=DurationField(),
-                )
-            )
-            .aggregate(v=Avg("dur"))["v"]
-        )
-        avg_minutes = (
-            round(avg_duration.total_seconds() / 60, 1) if avg_duration else 0.0
-        )
-
-        active_learners = progress.values("user_id").distinct().count()
-        active_week = (
-            progress.filter(last_started_at__gte=week_ago)
-            .values("user_id")
-            .distinct()
-            .count()
-        )
-
-        profiles = Profile.objects.all()
-        streak_agg = profiles.aggregate(
-            best_current=Max("current_streak"),
-            best_ever=Max("longest_streak"),
-        )
-
-        # Самые «застревающие» миссии — по среднему числу попыток.
-        hardest = []
-        for row in (
-            progress.values(
-                "mission_id",
-                "mission__title",
-                "mission__title_ru",
-                "mission__title_en",
-            )
-            .annotate(
-                learners=Count("user_id", distinct=True),
-                avg_attempts=Avg("attempts"),
-                comp=Count("id", filter=Q(completed=True)),
-                att=Count("id"),
-            )
-            .filter(att__gt=0)
-            .order_by("-avg_attempts", "-att")[:8]
-        ):
-            att = row["att"] or 0
-            title = (
-                row["mission__title_ru"]
-                or row["mission__title"]
-                or row["mission__title_en"]
-                or f"#{row['mission_id']}"
-            )
-            hardest.append(
-                {
-                    "mission_id": row["mission_id"],
-                    "title": title,
-                    "learners": row["learners"],
-                    "avg_attempts": round(row["avg_attempts"] or 0, 1),
-                    "completion_rate": (
-                        round(100 * (row["comp"] or 0) / att, 1) if att else 0.0
-                    ),
-                }
-            )
-
-        # Прохождение по типам заданий (code / quiz / story).
-        task_types = []
-        for row in (
-            TaskProgress.objects.values("task__task_type")
-            .annotate(
-                total=Count("id"),
-                done=Count("id", filter=Q(status="completed")),
-            )
-            .order_by("-total")
-        ):
-            total = row["total"] or 0
-            task_types.append(
-                {
-                    "task_type": row["task__task_type"] or "—",
-                    "total": total,
-                    "completion_rate": (
-                        round(100 * (row["done"] or 0) / total, 1) if total else 0.0
-                    ),
-                }
-            )
-
-        return Response(
-            {
-                "users": {
-                    "total": User.objects.count(),
-                    "active_learners": active_learners,
-                    "active_week": active_week,
-                },
-                "missions": {
-                    "total": Mission.objects.filter(is_active=True).count(),
-                    "attempted": attempted,
-                    "completed": completed,
-                    "completion_rate": completion_rate,
-                    "avg_attempts": avg_attempts,
-                    "avg_minutes": avg_minutes,
-                },
-                "streaks": {
-                    "active": profiles.filter(current_streak__gt=0).count(),
-                    "best_current": streak_agg["best_current"] or 0,
-                    "best_ever": streak_agg["best_ever"] or 0,
-                },
-                "total_xp": profiles.aggregate(v=Sum("xp"))["v"] or 0,
-                "hardest_missions": hardest,
-                "task_types": task_types,
             }
         )
 

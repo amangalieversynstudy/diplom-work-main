@@ -86,13 +86,16 @@ def _status(has_activity, days_away, stuck, mean_attempts, solved_graded):
     return "steady"
 
 
-def my_learning(user, *, lang="ru", now=None):
+def my_learning(user, *, lang="ru", now=None, owner=None):
+    """The learner's own picture. ``owner`` limits it to that teacher's courses
+    (the teacher's view of a student must not show what happens in other courses)."""
     now = now or timezone.now()
+    visible = only_published(Mission.objects.filter(is_active=True), user, "location__track")
+    if owner is not None:
+        visible = visible.filter(location__track__owner=owner)
     missions = list(
-        only_published(
-            Mission.objects.filter(is_active=True), user, "location__track"
-        )
-        .select_related("location")
+        visible
+        .select_related("location", "location__track")
         .prefetch_related("prerequisites")
         .order_by("location__track__order", "location__order", "order", "id")
     )
@@ -207,6 +210,7 @@ def my_learning(user, *, lang="ru", now=None):
         "missions": [
             {
                 "id": mission.pk,
+                "track_title": _pick(mission.location.track, lang) if mission.location.track_id else "",
                 "title": _pick(mission, lang),
                 "steps_done": sum(
                     1 for t in tasks_by_mission.get(mission.pk, []) if t.pk in solved

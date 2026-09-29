@@ -9,7 +9,7 @@ edited in the admin or Studio. This command only loads what is missing:
 
 ``--force`` overwrites the fixture rows (same primary keys) and therefore any
 manual edits to them - use it only to publish a new version of the built-in
-course.
+course. Course owners are kept.
 """
 
 from django.core.management import call_command
@@ -49,6 +49,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         force = options["force"]
+        # The fixtures do not know who owns a course, so loading them would reset every
+        # owner to nobody and the teacher would lose sight of their students.
+        owners = dict(Track.objects.values_list("slug", "owner_id"))
         for fixture, label, already_loaded in FIXTURES:
             if already_loaded() and not force:
                 self.stdout.write(
@@ -57,3 +60,6 @@ class Command(BaseCommand):
                 continue
             call_command("loaddata", fixture, verbosity=0)
             self.stdout.write(self.style.SUCCESS(f"loaded {label}"))
+        for slug, owner_id in owners.items():
+            if owner_id is not None:
+                Track.objects.filter(slug=slug, owner__isnull=True).update(owner_id=owner_id)

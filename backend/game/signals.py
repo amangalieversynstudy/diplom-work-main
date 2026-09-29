@@ -20,8 +20,18 @@ def update_leaderboard_on_progress(sender, instance: Progress, created, **kwargs
     if not instance.completed:
         return
 
-    user = instance.user
-    profile = getattr(user, "profile", None)
+    track = getattr(getattr(instance.mission, "location", None), "track", None)
+    refresh_leaderboard(instance.user, track)
+
+
+def refresh_leaderboard(user, track=None, profile=None):
+    """Upsert the learner's global (and course) entries and renumber the places.
+
+    Called when a mission is completed and when a solved step pays XP, so the
+    leaderboard never lags behind the XP bar.
+    """
+    # the caller may hand over the profile it has just changed: ``user.profile`` can be a stale copy
+    profile = profile or getattr(user, "profile", None)
     if not profile:
         return
 
@@ -35,12 +45,11 @@ def update_leaderboard_on_progress(sender, instance: Progress, created, **kwargs
     )
 
     # ── 2. Upsert track-specific entry, если миссия привязана к треку ──
-    track = getattr(getattr(instance.mission, "location", None), "track", None)
     if track:
         # XP в рамках одного трека: сумма xp_earned по этому треку
         track_xp = (
             Progress.objects
-            .filter(user=user, mission__location__track=track, completed=True)
+            .filter(user=user, mission__location__track=track)
             .values_list("xp_earned", flat=True)
         )
         LeaderboardEntry.objects.update_or_create(

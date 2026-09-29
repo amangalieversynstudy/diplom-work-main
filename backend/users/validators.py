@@ -37,6 +37,6 @@ def clean_single_email(value):
     """
     value = str(value or "").strip().lower()
     if any(ch in value for ch in ",;\r\n\t "):
-        raise ValidationError("Укажите один адрес электронной почты.")
+        raise ValidationError("Укажи один адрес электронной почты.")
     validate_email(value)
     return value

@@ -3,6 +3,7 @@
 import csv
 
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions
 from rest_framework.response import Response
@@ -11,7 +12,7 @@ from rest_framework.views import APIView
 from .me import my_learning
 from .metrics import CSV_COLUMNS, clamp_inactive_days, compute_metrics
 from .serializers import _resolve_language
-from .warning import early_warning
+from .warning import early_warning, scoped_learners
 
 _FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
 
@@ -49,6 +50,37 @@ class MyLearningView(APIView):
     )
     def get(self, request):
         return Response(my_learning(request.user, lang=_resolve_language(request)))
+
+
+class TeacherStudentLearningView(APIView):
+    """One student's progress, hard spots and next step, for their teacher.
+
+    GET /api/teacher/students/<id>/learning/
+
+    The same picture the student sees on "My journey", limited to the teacher's
+    own courses. A student who does not take the teacher's courses is a 404.
+    """
+
+    permission_classes = [permissions.IsAdminUser]
+
+    @swagger_auto_schema(
+        operation_summary="A student's learning picture (teacher)",
+        operation_description=(
+            "Прогресс ученика, где ему трудно, что повторить и следующий шаг. "
+            "Только по курсам преподавателя; чужой ученик даёт 404."
+        ),
+    )
+    def get(self, request, pk):
+        student = get_object_or_404(scoped_learners(request.user).select_related("profile"), pk=pk)
+        owner = None if request.user.is_superuser else request.user
+        data = my_learning(student, lang=_resolve_language(request), owner=owner)
+        data["student"] = {
+            "id": student.pk,
+            "username": student.username,
+            "level": student.profile.level,
+            "xp": student.profile.xp,
+        }
+        return Response(data)
 
 
 class LearningMetricsView(APIView):

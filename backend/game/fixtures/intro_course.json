@@ -7,9 +7,9 @@
       "title": "Python Basics",
       "title_en": "Python Basics: The Gateway",
       "title_ru": "Основы Python: Врата в Магию",
-      "description": "Introductory Python course unlocking class selection.",
-      "description_en": "Master the fundamental spells of Python. Complete this track to unlock your hero class.",
-      "description_ru": "Освой базовые заклинания Python. Пройди этот курс, чтобы разблокировать выбор класса героя.",
+      "description": "Introductory Python course: variables, conditions, loops, functions, strings, lists and dictionaries.",
+      "description_en": "Learn the fundamentals of Python step by step: variables, conditions, loops, functions, strings, lists and dictionaries.",
+      "description_ru": "Освой основы Python шаг за шагом: переменные, условия, циклы, функции, строки, списки и словари.",
       "tagline_en": "Your journey begins here",
       "tagline_ru": "Твой путь начинается здесь",
       "order": 0,
@@ -176,7 +176,13 @@
       "data": {
         "language": "python",
         "starter": "# Напиши своё первое заклинание\nprint(\"Привет, мир!\")\n",
-        "sampleOutput": "Привет, мир!"
+        "sampleOutput": "Привет, мир!",
+        "hints": [
+          {
+            "ru": "Код уже написан: нажми зелёную кнопку Run Code над терминалом.",
+            "en": "The code is already written: press the green Run Code button above the terminal."
+          }
+        ]
       },
       "xp_reward": 10,
       "is_required": true
@@ -239,7 +245,21 @@
         "starter": "def mana_status(mana):\n    # Верни \"Charged\" для mana 50..100, иначе \"Low\" / \"Overcharged\"\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(mana_status(75))\n",
         "sampleOutput": "Charged",
         "expected_output": "Charged",
-        "hidden_check": "assert mana_status(30) == \"Low\"\nassert mana_status(50) == \"Charged\"\nassert mana_status(100) == \"Charged\"\nassert mana_status(101) == \"Overcharged\""
+        "hidden_check": "assert mana_status(30) == \"Low\"\nassert mana_status(50) == \"Charged\"\nassert mana_status(100) == \"Charged\"\nassert mana_status(101) == \"Overcharged\"",
+        "hints": [
+          {
+            "ru": "Проверяй условия сверху вниз: сначала самый «широкий» случай, потом остальные.",
+            "en": "Check conditions from top to bottom: the widest case first, then the rest."
+          },
+          {
+            "ru": "Случаев три: mana больше 100, mana от 50 (включительно) и всё остальное. Для «всё остальное» подойдёт else или просто return в конце.",
+            "en": "There are three cases: mana above 100, mana from 50 (inclusive) and everything else. For “everything else” use else or simply a return at the end."
+          }
+        ],
+        "skeleton": {
+          "ru": "def mana_status(mana):\n    # 1. если mana больше 100: верни \"Overcharged\"\n    # 2. иначе, если mana не меньше 50: верни \"Charged\"\n    # 3. во всех остальных случаях: верни \"Low\"\n    pass\n\nprint(mana_status(75))\n",
+          "en": "def mana_status(mana):\n    # 1. if mana is above 100: return \"Overcharged\"\n    # 2. otherwise, if mana is at least 50: return \"Charged\"\n    # 3. in every other case: return \"Low\"\n    pass\n\nprint(mana_status(75))\n"
+        }
       },
       "xp_reward": 20,
       "is_required": true
@@ -302,7 +322,21 @@
         "starter": "total = 0\nfor i in range(1, 11):\n    # Прибавь i к total\n    raise NotImplementedError(\"Допиши тело цикла\")\n\nprint(total)\n",
         "sampleOutput": "55",
         "expected_output": "55",
-        "hidden_check": "assert total == 55"
+        "hidden_check": "assert total == 55",
+        "hints": [
+          {
+            "ru": "Сумму копят в переменной: она уже создана, это total.",
+            "en": "You collect the sum in a variable: it already exists, it is total."
+          },
+          {
+            "ru": "На каждом обороте цикла прибавляй текущее число i к total. Строка внутри цикла должна начинаться с отступа.",
+            "en": "On every turn of the loop add the current number i to total. The line inside the loop must be indented."
+          }
+        ],
+        "skeleton": {
+          "ru": "total = 0\nfor i in range(1, 11):\n    # прибавь текущее число i к total\n    pass\n\nprint(total)\n",
+          "en": "total = 0\nfor i in range(1, 11):\n    # add the current number i to total\n    pass\n\nprint(total)\n"
+        }
       },
       "xp_reward": 20,
       "is_required": true
@@ -365,7 +399,21 @@
         "starter": "def power(base, exp):\n    result = 1\n    for _ in range(exp):\n        # Умножь result на base\n        raise NotImplementedError(\"Допиши умножение\")\n    return result\n\nprint(power(2, 8))\n",
         "sampleOutput": "256",
         "expected_output": "256",
-        "hidden_check": "assert power(3, 4) == 81\nassert power(5, 0) == 1\nassert power(2, 1) == 2"
+        "hidden_check": "assert power(3, 4) == 81\nassert power(5, 0) == 1\nassert power(2, 1) == 2",
+        "hints": [
+          {
+            "ru": "Степень — это повторное умножение: base × base × ... ровно exp раз. Значит, нужен цикл на exp оборотов.",
+            "en": "A power is repeated multiplication: base × base × ... exactly exp times. So you need a loop of exp turns."
+          },
+          {
+            "ru": "Начни с result = 1 и на каждом обороте умножай result на base. Оператор ** использовать нельзя.",
+            "en": "Start with result = 1 and multiply result by base on every turn. The ** operator is not allowed."
+          }
+        ],
+        "skeleton": {
+          "ru": "def power(base, exp):\n    result = 1\n    for _ in range(exp):\n        # умножь result на base (это повторится exp раз)\n        pass\n    return result\n\nprint(power(2, 8))\n",
+          "en": "def power(base, exp):\n    result = 1\n    for _ in range(exp):\n        # multiply result by base (this repeats exp times)\n        pass\n    return result\n\nprint(power(2, 8))\n"
+        }
       },
       "xp_reward": 30,
       "is_required": true
@@ -450,7 +498,21 @@
         "starter": "def battle_cry(name):\n    # Верни name заглавными буквами и \"!\" в конце\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(battle_cry(\"айдан\"))\n",
         "sampleOutput": "АЙДАН!",
         "expected_output": "АЙДАН!",
-        "hidden_check": "assert battle_cry(\"mira\") == \"MIRA!\"\nassert battle_cry(\"bo\") == \"BO!\""
+        "hidden_check": "assert battle_cry(\"mira\") == \"MIRA!\"\nassert battle_cry(\"bo\") == \"BO!\"",
+        "hints": [
+          {
+            "ru": "У строк есть метод, который превращает все буквы в заглавные.",
+            "en": "Strings have a method that turns every letter into a capital."
+          },
+          {
+            "ru": "name.upper() даёт заглавные буквы. Восклицательный знак добавь к результату через +.",
+            "en": "name.upper() gives capitals. Add the exclamation mark to the result with +."
+          }
+        ],
+        "skeleton": {
+          "ru": "def battle_cry(name):\n    # 1. сделай все буквы заглавными\n    # 2. добавь \"!\" в конец\n    # 3. верни результат\n    pass\n\nprint(battle_cry(\"айдан\"))\n",
+          "en": "def battle_cry(name):\n    # 1. turn all letters into capitals\n    # 2. add \"!\" at the end\n    # 3. return the result\n    pass\n\nprint(battle_cry(\"айдан\"))\n"
+        }
       },
       "xp_reward": 20,
       "is_required": true
@@ -535,7 +597,21 @@
         "starter": "def count_big(numbers):\n    count = 0\n    for n in numbers:\n        # Увеличь count, если n > 10\n        raise NotImplementedError(\"Допиши условие\")\n    return count\n\nprint(count_big([4, 15, 9, 20, 11]))\n",
         "sampleOutput": "3",
         "expected_output": "3",
-        "hidden_check": "assert count_big([1, 2, 3]) == 0\nassert count_big([11, 12, 13, 5]) == 3\nassert count_big([10, 10]) == 0"
+        "hidden_check": "assert count_big([1, 2, 3]) == 0\nassert count_big([11, 12, 13, 5]) == 3\nassert count_big([10, 10]) == 0",
+        "hints": [
+          {
+            "ru": "Нужен счётчик и проверка каждого числа: подходит ли оно под условие.",
+            "en": "You need a counter and a check of every number against the condition."
+          },
+          {
+            "ru": "Внутри цикла проверь условие «n больше 10» через if и только тогда увеличь счётчик на единицу. Проверь, что return стоит после цикла, а не внутри.",
+            "en": "Inside the loop check “n is above 10” with if and only then increase the counter by one. Make sure return comes after the loop, not inside it."
+          }
+        ],
+        "skeleton": {
+          "ru": "def count_big(numbers):\n    count = 0\n    for n in numbers:\n        # если n больше 10: увеличь count на 1\n        pass\n    return count\n\nprint(count_big([4, 15, 9, 20, 11]))\n",
+          "en": "def count_big(numbers):\n    count = 0\n    for n in numbers:\n        # if n is above 10: increase count by 1\n        pass\n    return count\n\nprint(count_big([4, 15, 9, 20, 11]))\n"
+        }
       },
       "xp_reward": 20,
       "is_required": true
@@ -620,7 +696,21 @@
         "starter": "def total_gold(heroes):\n    total = 0\n    for gold in heroes.values():\n        # Прибавь gold к total\n        raise NotImplementedError(\"Допиши суммирование\")\n    return total\n\nprint(total_gold({\"Айдан\": 50, \"Мира\": 30, \"Бо\": 20}))\n",
         "sampleOutput": "100",
         "expected_output": "100",
-        "hidden_check": "assert total_gold({\"a\": 1, \"b\": 2}) == 3\nassert total_gold({}) == 0"
+        "hidden_check": "assert total_gold({\"a\": 1, \"b\": 2}) == 3\nassert total_gold({}) == 0",
+        "hints": [
+          {
+            "ru": "heroes.values() отдаёт только значения словаря, то есть золото каждого героя.",
+            "en": "heroes.values() gives only the dict's values, that is each hero's gold."
+          },
+          {
+            "ru": "На каждом обороте прибавляй gold к total, а в конце верни total.",
+            "en": "On every turn add gold to total and return total at the end."
+          }
+        ],
+        "skeleton": {
+          "ru": "def total_gold(heroes):\n    total = 0\n    for gold in heroes.values():\n        # прибавь gold к total\n        pass\n    return total\n\nprint(total_gold({\"Айдан\": 50, \"Мира\": 30, \"Бо\": 20}))\n",
+          "en": "def total_gold(heroes):\n    total = 0\n    for gold in heroes.values():\n        # add gold to total\n        pass\n    return total\n\nprint(total_gold({\"Айдан\": 50, \"Мира\": 30, \"Бо\": 20}))\n"
+        }
       },
       "xp_reward": 20,
       "is_required": true
@@ -681,7 +771,21 @@
         "starter": "party = [\n    {\"name\": \"Aidan\", \"hp\": 80},\n    {\"name\": \"Mira\", \"hp\": 120},\n    {\"name\": \"Bo\", \"hp\": 95},\n]\n\ndef champion(heroes):\n    # Найди героя с наибольшим hp и верни \"Champion: name (hp)\"\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(champion(party))\n",
         "sampleOutput": "Champion: Mira (120)",
         "expected_output": "Champion: Mira (120)",
-        "hidden_check": "assert champion([{\"name\": \"Bo\", \"hp\": 5}, {\"name\": \"Cy\", \"hp\": 9}]) == \"Champion: Cy (9)\"\nassert champion([{\"name\": \"Solo\", \"hp\": 1}]) == \"Champion: Solo (1)\""
+        "hidden_check": "assert champion([{\"name\": \"Bo\", \"hp\": 5}, {\"name\": \"Cy\", \"hp\": 9}]) == \"Champion: Cy (9)\"\nassert champion([{\"name\": \"Solo\", \"hp\": 1}]) == \"Champion: Solo (1)\"",
+        "hints": [
+          {
+            "ru": "Нужен герой с наибольшим hp: перебирай героев и запоминай лучшего.",
+            "en": "You need the hero with the highest hp: go through the heroes and remember the best one."
+          },
+          {
+            "ru": "Сравнивай hp героев: лучшего можно запоминать в цикле или найти функцией max с параметром key. Потом собери строку f-строкой по образцу.",
+            "en": "Compare the heroes' hp: remember the best one in a loop or find it with max and its key parameter. Then build the string with an f-string following the pattern."
+          }
+        ],
+        "skeleton": {
+          "ru": "party = [\n    {\"name\": \"Aidan\", \"hp\": 80},\n    {\"name\": \"Mira\", \"hp\": 120},\n    {\"name\": \"Bo\", \"hp\": 95},\n]\n\ndef champion(heroes):\n    # 1. найди героя с наибольшим hp\n    # 2. верни строку \"Champion: имя (hp)\"\n    pass\n\nprint(champion(party))\n",
+          "en": "party = [\n    {\"name\": \"Aidan\", \"hp\": 80},\n    {\"name\": \"Mira\", \"hp\": 120},\n    {\"name\": \"Bo\", \"hp\": 95},\n]\n\ndef champion(heroes):\n    # 1. find the hero with the highest hp\n    # 2. return the string \"Champion: name (hp)\"\n    pass\n\nprint(champion(party))\n"
+        }
       },
       "xp_reward": 40,
       "is_required": true

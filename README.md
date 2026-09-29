@@ -22,7 +22,11 @@
   (поле `prerequisites` в `Mission`, проверка в `MissionSerializer.get_available()`)
 - Прогресс синхронизируется через `/api/task-progress/`; attempts, best_score, статус
 - Адаптивный layout страницы миссии: ≥1280px — 3 колонки; на телефоне полоса шагов и вкладки «Задание/Код»
-- «Мой путь» (`/journey`): личный экран ученика: прогресс, где было трудно, что повторить, следующий шаг
+- «Мой путь» (`/journey`): личный экран ученика: прогресс, где было трудно, что повторить, следующий шаг.
+  Преподаватель открывает такую же картину по любому своему ученику из списка «Кому нужна помощь»
+- XP платится за каждый решённый шаг (первый раз), за миссию добавляется бонус, за минимум лишних попыток звёзды
+- Зелье Ясности даёт подсказки шага по одной, Свиток Архитектора каркас решения, Мудрец (AI) отвечает на вопросы;
+  после трёх неудач баннер помощи предлагает всё это кнопками
 
 ### Стриминговый терминал (Phase 4)
 - xterm.js + WebSocket (`ws://host/ws/runner/?token=<JWT>`)
@@ -211,19 +215,19 @@ open http://localhost:3000
 | GET | `/api/profile/me/` | Профиль + инвентарь |
 | PATCH | `/api/profile/me/` | Обновление профиля |
 | POST | `/api/profile/use-item/` | Расход предмета инвентаря |
-| GET | `/api/game/intro-status/` | Статус вводного курса (class_unlocked) |
+| GET | `/api/intro-status/` | Статус вводного курса: можно ли предложить выбор класса (`class_unlocked`) |
 | POST | `/api/ai-assist/` | Gemini 2.5 Flash hint (10 req/min, списывает `ai_summons`) |
 | WS | `ws://host/ws/runner/?token=JWT` | Стриминговый Python-раннер |
-| GET | `/api/game/missions/` | Список миссий |
-| POST | `/api/game/missions/{id}/complete/` | Завершить миссию + XP |
-| GET | `/api/game/leaderboard/` | Лидерборд |
+| GET | `/api/missions/` | Список миссий (по курсам, в порядке прохождения) |
+| POST | `/api/missions/{id}/complete/` | Завершить миссию: бонус XP и звёзды (шаги проверяет сервер) |
+| GET | `/api/leaderboard/` | Таблица лидеров: общий зачёт; `?track=<slug>` даёт зачёт курса |
 
 > Полный интерактивный список: `http://localhost:8000/swagger/`
 
 ## Запуск тестов
 
 ```bash
-# Все тесты (26 pytest, включая async WebSocket-тесты)
+# Все тесты бэкенда (включая async WebSocket-тесты)
 DJANGO_SETTINGS_MODULE=core.settings.test PYTHONPATH=backend pytest --tb=short
 
 # Frontend lint + build
@@ -236,16 +240,14 @@ cd frontend && npm run lint && npm run build
 
 - **Степпер** показывает 3 шага (теория → викторина → код) и тянет данные из `/api/mission-tasks/?mission=<id>`. Для каждого шага видны XP, длительность и тип задания.
 - **Синхронизация прогресса** происходит через `/api/task-progress/`: любые действия (прочитать, выбрать ответ, прогнать код) сразу создают/обновляют запись TaskProgress и отображают attempts/best_score.
-- **Код-раннер** подключается через WebSocket `/ws/runner/?token=<JWT>` и стримит stdout/stderr из Docker-песочницы в xterm.js построчно. На `exit code 0` шаг автоматически отмечается `completed`, начисляется XP. При недоступности Docker задействуется subprocess-fallback.
+- **Код-раннер** подключается через WebSocket `/ws/runner/?token=<JWT>` и стримит stdout/stderr из Docker-песочницы в xterm.js построчно. Шаг засчитывает сервер: вывод сверяется с ожидаемым (`expected_output`) и, если у шага есть `hidden_check`, код прогоняется ещё раз скрытой проверкой; только после этого шаг `completed` и платится его XP. При недоступности Docker задействуется subprocess-fallback.
 - **AI-Мудрец** доступен в редакторе (`/api/ai-assist/`): тратит 1 `ai_summons` из инвентаря, возвращает подсказку от Gemini 2.5 Flash с учётом текущего кода и описания задачи.
 
 Чтобы пощупать механику:
 
 1. Засейте демо-контент: `docker compose exec backend python manage.py load_demo_content`.
 2. Авторизуйтесь, откройте `/missions/1` и проходите шаги по очереди (Story/Quiz/Code). Каждый шаг сразу пишет TaskProgress, что видно после перезагрузки.
-3. Зайдите на `/leaderboard` — таблица теперь использует `/api/leaderboard/` + фильтры по охвату/трекам/периоду. Если данных пока нет, быстро создайте пару записей `LeaderboardEntry` через Django admin.
-
-=======
+3. Зайдите на `/leaderboard`: по умолчанию общий зачёт, при двух и более курсах сверху появляется переключатель курсов (`/api/leaderboard/?track=<slug>`). Запись в таблице появляется, когда ученик решил первый шаг; для демо есть `python manage.py seed_leaderboard`.
 
 ## Быстрый старт
 

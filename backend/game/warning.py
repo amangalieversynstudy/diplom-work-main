@@ -59,6 +59,9 @@ def _scoped_learners(viewer):
     return students.filter(id__in=doing_my_courses)
 
 
+scoped_learners = _scoped_learners  # public name for the teacher's per-student screen
+
+
 def assess_students(viewer, *, now=None):
     """{user_id: assessment} for every learner in the viewer's scope."""
     now = now or timezone.now()

@@ -11,11 +11,12 @@ import secrets
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from django.utils import timezone
 from rest_framework import status as http
 from rest_framework.exceptions import APIException
 
+from . import help as help_module
 from .models import MissionTask, Progress, TaskProgress
 from .runner import execute_python_code
 
@@ -59,6 +60,11 @@ def public_task_data(task):
     """The part of ``task.data`` a learner is allowed to see (no answer key)."""
     data = task.data if isinstance(task.data, dict) else {}
     public = {key: data[key] for key in PUBLIC_DATA_KEYS if key in data}
+    # the texts stay private until an item is spent; only their existence is public
+    if help_module.has_hint(task):
+        public["has_hint"] = True
+    if help_module.has_skeleton(task):
+        public["has_skeleton"] = True
     options = data.get("options")
     if isinstance(options, list):
         public["options"] = [
@@ -243,6 +249,10 @@ def record_task_attempt(user, task, *, passed, score, answer):
     task_progress, _ = TaskProgress.objects.get_or_create(user=user, task=task)
     task_progress = TaskProgress.objects.select_for_update().get(pk=task_progress.pk)
     task_progress.counted = task_progress.status != "completed"
+    # what the first solve paid out; the client shows it and reacts to a level-up
+    task_progress.xp_added = 0
+    task_progress.leveled_up = False
+    task_progress.new_level = None
     if task_progress.counted:
         task_progress.attempts += 1
         task_progress.last_submitted_at = timezone.now()
@@ -250,7 +260,33 @@ def record_task_attempt(user, task, *, passed, score, answer):
         task_progress.answer = answer
         task_progress.status = "completed" if passed else "in_progress"
         task_progress.save()
+        if passed:
+            _pay_for_solved_step(user, task, progress, task_progress)
     return task_progress
+
+
+def _pay_for_solved_step(user, task, progress, task_progress):
+    """The first solve of a step pays its XP and counts as a day of learning.
+
+    Only the first solve: re-running a solved step changes nothing. The XP is the
+    step's own ``xp_reward`` (the mission's reward is a completion bonus on top),
+    so the reward the course author typed in Studio is the reward learners get.
+    """
+    from users.models import Profile
+
+    from .signals import refresh_leaderboard
+
+    profile = Profile.objects.select_for_update().get(user=user)
+    profile.register_activity()  # a solved step is a day of learning, not only a finished mission
+    reward = max(0, int(task.xp_reward or 0))
+    if not reward:
+        return
+    leveled_up, _old, new_level = profile.add_xp(reward)
+    Progress.objects.filter(pk=progress.pk).update(xp_earned=F("xp_earned") + reward)
+    task_progress.xp_added = reward
+    task_progress.leveled_up = leveled_up
+    task_progress.new_level = new_level
+    refresh_leaderboard(user, getattr(task.mission.location, "track", None), profile=profile)
 
 
 def failures_in_a_row(task_progress):
@@ -302,6 +338,9 @@ def progress_payload(task_progress):
         "best_score": task_progress.best_score,
         "answer": task_progress.answer,
         "help_offer": help_offer(task_progress),
+        "xp_added": getattr(task_progress, "xp_added", 0),
+        "leveled_up": getattr(task_progress, "leveled_up", False),
+        "new_level": getattr(task_progress, "new_level", None),
     }
 
 

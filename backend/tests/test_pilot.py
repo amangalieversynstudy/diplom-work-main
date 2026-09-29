@@ -334,3 +334,18 @@ def test_missing_course_or_teacher_fails(ready):
     Track.objects.all().delete()
     with pytest.raises(CommandError):
         call_command("pilot_check", stdout=StringIO())
+
+
+def test_a_missing_ai_key_is_a_warning_not_a_failure(ready, monkeypatch):
+    ready.GEMINI_API_KEY = ""
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    text = _run_check()
+    assert "GEMINI_API_KEY не задан" in text
+    assert "Проверка пройдена" in text  # a warning never blocks the pilot
+
+
+def test_a_configured_ai_key_reminds_about_the_information_sheet(ready):
+    ready.GEMINI_API_KEY = "test-key"
+    text = _run_check()
+    assert "уходят в Google Gemini" in text
+    assert "Проверка пройдена" in text

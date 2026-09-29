@@ -94,6 +94,16 @@ def test_only_missing_fixtures_are_loaded():
     assert ClassRole.objects.count() == 3
 
 
+def test_a_forced_reload_keeps_the_course_owner():
+    from django.contrib.auth import get_user_model
+
+    _seed()
+    teacher = get_user_model().objects.create_user("teacher", "t@example.com", "S3cure-pass-1", is_staff=True)
+    Track.objects.filter(slug="python-intro").update(owner=teacher)
+    _seed("--force")
+    assert Track.objects.get(slug="python-intro").owner_id == teacher.pk
+
+
 def test_force_restores_the_fixture_version():
     _seed()
     mission = Mission.objects.order_by("id").first()

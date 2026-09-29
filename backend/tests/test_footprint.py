@@ -271,6 +271,8 @@ def test_resubmitting_a_solved_step_is_flagged(client, course):
 
 def test_hints_are_logged_against_the_task(client, student, course):
     *_, code = course
+    code.data = {**code.data, "hints": [{"ru": "подсказка"}], "skeleton": {"ru": "# план\npass"}}
+    code.save()
     client.post("/api/profile/use-item/", {"item_type": "hint_scrolls", "task_id": code.id}, format="json")
     client.post("/api/profile/use-item/", {"item_type": "skeleton_scrolls", "task_id": code.id}, format="json")
     (hint,) = events("hint_used")
@@ -279,13 +281,17 @@ def test_hints_are_logged_against_the_task(client, student, course):
     assert skeleton.task == code
 
 
-def test_hint_without_or_with_a_bogus_task_is_still_logged_and_never_fails(client, student):
+def test_a_hint_without_a_real_step_is_refused_and_costs_nothing(client, student):
+    """A potion needs a step with a hint behind it; nothing is spent or logged otherwise."""
+    before = student.profile.hint_scrolls
     for body in ({}, {"task_id": 999999}, {"task_id": "x"}, {"task_id": True}):
         response = client.post(
             "/api/profile/use-item/", {"item_type": "hint_scrolls", **body}, format="json"
         )
-        assert response.status_code == 200
-    assert [e.task for e in events("hint_used")] == [None] * 4
+        assert response.status_code == 409
+    student.profile.refresh_from_db()
+    assert student.profile.hint_scrolls == before
+    assert events("hint_used") == []
 
 
 def test_an_empty_inventory_logs_nothing(client, student):

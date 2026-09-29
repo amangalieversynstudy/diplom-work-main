@@ -76,11 +76,20 @@ def test_refund_puts_the_item_back_and_ignores_unknown_names(user):
 
 
 def test_use_item_endpoint_spends_once_and_then_refuses(user):
+    from game.models import Location, Mission, MissionTask, Track
+
+    track = Track.objects.create(slug="races", title="T", is_active=True)
+    location = Location.objects.create(track=track, title="L", order=1)
+    mission = Mission.objects.create(location=location, title="M", order=1)
+    task = MissionTask.objects.create(
+        mission=mission, order=1, task_type="code", data={"hints": [{"ru": "подсказка"}]}
+    )
     _set(user, hint_scrolls=1)
     api = _api(user)
-    ok = api.post("/api/profile/use-item/", {"item_type": "hint_scrolls"}, format="json")
+    body = {"item_type": "hint_scrolls", "task_id": task.pk}
+    ok = api.post("/api/profile/use-item/", body, format="json")
     assert ok.status_code == 200 and ok.json()["remaining"] == 0
-    again = api.post("/api/profile/use-item/", {"item_type": "hint_scrolls"}, format="json")
+    again = api.post("/api/profile/use-item/", body, format="json")
     assert again.status_code == 400
 
 

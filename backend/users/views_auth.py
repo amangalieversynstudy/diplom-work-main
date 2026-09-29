@@ -133,7 +133,7 @@ class LoginView(TokenObtainPairView):
 
         if not identifier:
             return Response(
-                {"detail": "Укажите username или email"},
+                {"detail": "Укажи username или email"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -154,7 +154,7 @@ class LoginView(TokenObtainPairView):
         ):
             return Response(
                 {
-                    "detail": "Аккаунт не активирован. Проверьте почту для активации.",
+                    "detail": "Аккаунт не активирован. Проверь почту для активации.",
                     "code": "account_inactive",
                 },
                 status=status.HTTP_403_FORBIDDEN,
@@ -351,7 +351,7 @@ class ConfirmEmailChangeView(APIView):
             )
         except signing.SignatureExpired:
             return Response(
-                {"detail": "Срок действия ссылки истёк. Запросите смену email заново."},
+                {"detail": "Срок действия ссылки истёк. Запроси смену email заново."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except signing.BadSignature:

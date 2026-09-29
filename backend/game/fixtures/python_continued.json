@@ -128,7 +128,21 @@
         "starter": "def initials(full_name):\n    # Верни первые буквы всех слов заглавными, каждую с точкой\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(initials(\"ada lovelace\"))\n",
         "sampleOutput": "A.L.",
         "expected_output": "A.L.",
-        "hidden_check": "assert initials(\"john ronald reuel tolkien\") == \"J.R.R.T.\"\nassert initials(\"Bo\") == \"B.\"\nassert initials(\"  ada   lovelace \") == \"A.L.\""
+        "hidden_check": "assert initials(\"john ronald reuel tolkien\") == \"J.R.R.T.\"\nassert initials(\"Bo\") == \"B.\"\nassert initials(\"  ada   lovelace \") == \"A.L.\"",
+        "hints": [
+          {
+            "ru": "Сначала разбей имя на слова методом split(): лишние пробелы он выбросит сам.",
+            "en": "First break the name into words with split(): it drops extra spaces on its own."
+          },
+          {
+            "ru": "Для каждого слова возьми первую букву (word[0]), сделай её заглавной и добавь точку, потом склей всё через join().",
+            "en": "For each word take the first letter (word[0]), capitalise it, add a dot, then glue everything together with join()."
+          }
+        ],
+        "skeleton": {
+          "ru": "def initials(full_name):\n    # 1. разбей full_name на слова (split)\n    # 2. для каждого слова: первая буква, заглавная, плюс точка\n    # 3. склей результаты и верни\n    pass\n\nprint(initials(\"ada lovelace\"))\n",
+          "en": "def initials(full_name):\n    # 1. split full_name into words\n    # 2. for each word: first letter, capital, plus a dot\n    # 3. join the results and return\n    pass\n\nprint(initials(\"ada lovelace\"))\n"
+        }
       }
     }
   },
@@ -226,7 +240,21 @@
         "starter": "def unique_count(items):\n    # Верни число разных значений\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(unique_count([\"orc\", \"elf\", \"orc\", \"dwarf\", \"elf\"]))\n",
         "sampleOutput": "3",
         "expected_output": "3",
-        "hidden_check": "assert unique_count([]) == 0\nassert unique_count([1, 1, 1]) == 1\nassert unique_count(\"aabbc\") == 3\nassert unique_count([(1, 2), (1, 2), (2, 1)]) == 2"
+        "hidden_check": "assert unique_count([]) == 0\nassert unique_count([1, 1, 1]) == 1\nassert unique_count(\"aabbc\") == 3\nassert unique_count([(1, 2), (1, 2), (2, 1)]) == 2",
+        "hints": [
+          {
+            "ru": "Множество (set) хранит только уникальные значения.",
+            "en": "A set keeps only unique values."
+          },
+          {
+            "ru": "Преврати items в множество и посчитай, сколько в нём элементов: повторы пропадут сами.",
+            "en": "Turn items into a set and count its elements: the duplicates disappear on their own."
+          }
+        ],
+        "skeleton": {
+          "ru": "def unique_count(items):\n    # 1. преврати items в множество\n    # 2. верни, сколько в нём элементов\n    pass\n\nprint(unique_count([\"orc\", \"elf\", \"orc\", \"dwarf\", \"elf\"]))\n",
+          "en": "def unique_count(items):\n    # 1. turn items into a set\n    # 2. return how many elements it has\n    pass\n\nprint(unique_count([\"orc\", \"elf\", \"orc\", \"dwarf\", \"elf\"]))\n"
+        }
       }
     }
   },
@@ -264,7 +292,7 @@
       "title_en": "Exceptions",
       "title_ru": "Исключения",
       "body_en": "<h2>Errors are events</h2><p>When something goes wrong Python “raises” an exception: <code>ZeroDivisionError</code>, <code>ValueError</code>, <code>KeyError</code>. If nobody catches it, the program crashes. You catch it like this:</p><pre><code>try:\n    number = int(\"abc\")\nexcept ValueError:\n    number = 0\nelse:\n    print(\"It worked\")\nfinally:\n    print(\"This always runs\")</code></pre><p>Catch a <strong>specific</strong> error, not everything: otherwise you hide real bugs. Raise your own with <code>raise ValueError(\"message\")</code>.</p>",
-      "body_ru": "<h2>Ошибки — это события</h2><p>Когда что-то идёт не так, Python «бросает» исключение: <code>ZeroDivisionError</code>, <code>ValueError</code>, <code>KeyError</code>. Если его не поймать, программа падает. Поймать можно так:</p><pre><code>try:\n    number = int(\"abc\")\nexcept ValueError:\n    number = 0\nelse:\n    print(\"Получилось\")\nfinally:\n    print(\"Это выполнится всегда\")</code></pre><p>Ловите <strong>конкретную</strong> ошибку, а не все подряд: иначе вы спрячете настоящий баг. Свою ошибку бросают через <code>raise ValueError(\"сообщение\")</code>.</p>",
+      "body_ru": "<h2>Ошибки — это события</h2><p>Когда что-то идёт не так, Python «бросает» исключение: <code>ZeroDivisionError</code>, <code>ValueError</code>, <code>KeyError</code>. Если его не поймать, программа падает. Поймать можно так:</p><pre><code>try:\n    number = int(\"abc\")\nexcept ValueError:\n    number = 0\nelse:\n    print(\"Получилось\")\nfinally:\n    print(\"Это выполнится всегда\")</code></pre><p>Лови <strong>конкретную</strong> ошибку, а не все подряд: иначе спрячешь настоящий баг. Свою ошибку бросают через <code>raise ValueError(\"сообщение\")</code>.</p>",
       "xp_reward": 10,
       "is_required": true,
       "data": {}
@@ -316,7 +344,7 @@
       "title_en": "Safe Division",
       "title_ru": "Безопасное деление",
       "body_en": "<p>Write a function <code>safe_divide(a, b)</code> that returns <code>a / b</code> and returns <code>None</code> on division by zero. Catch only division by zero: other errors must pass through.</p><p>The example prints <code>2.5</code> and <code>None</code>.</p>",
-      "body_ru": "<p>Напиши функцию <code>safe_divide(a, b)</code>: она возвращает <code>a / b</code>, а при делении на ноль возвращает <code>None</code>. Ловите только деление на ноль: другие ошибки должны проходить.</p><p>Пример выведет <code>2.5</code> и <code>None</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>safe_divide(a, b)</code>: она возвращает <code>a / b</code>, а при делении на ноль возвращает <code>None</code>. Лови только деление на ноль: другие ошибки должны проходить.</p><p>Пример выведет <code>2.5</code> и <code>None</code>.</p>",
       "xp_reward": 20,
       "is_required": true,
       "data": {
@@ -324,7 +352,21 @@
         "starter": "def safe_divide(a, b):\n    # Верни a / b, а при делении на ноль верни None\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(safe_divide(10, 4))\nprint(safe_divide(1, 0))\n",
         "sampleOutput": "2.5\nNone",
         "expected_output": "2.5\nNone",
-        "hidden_check": "assert safe_divide(9, 3) == 3\nassert safe_divide(5, 0) is None\nassert safe_divide(-1, 2) == -0.5\ntry:\n    safe_divide(\"a\", 2)\nexcept TypeError:\n    pass\nelse:\n    raise AssertionError(\"TypeError must not be swallowed\")"
+        "hidden_check": "assert safe_divide(9, 3) == 3\nassert safe_divide(5, 0) is None\nassert safe_divide(-1, 2) == -0.5\ntry:\n    safe_divide(\"a\", 2)\nexcept TypeError:\n    pass\nelse:\n    raise AssertionError(\"TypeError must not be swallowed\")",
+        "hints": [
+          {
+            "ru": "Опасное действие (деление) помещают в блок try:, а реакцию на ошибку — в except.",
+            "en": "The risky action (division) goes into a try: block and the reaction to the error into except."
+          },
+          {
+            "ru": "Лови именно ZeroDivisionError, а не любую ошибку: остальные должны проходить.",
+            "en": "Catch exactly ZeroDivisionError, not any error: the others must pass through."
+          }
+        ],
+        "skeleton": {
+          "ru": "def safe_divide(a, b):\n    # 1. в try: верни a / b\n    # 2. в except ZeroDivisionError: верни None\n    pass\n\nprint(safe_divide(10, 4))\nprint(safe_divide(1, 0))\n",
+          "en": "def safe_divide(a, b):\n    # 1. in try: return a / b\n    # 2. in except ZeroDivisionError: return None\n    pass\n\nprint(safe_divide(10, 4))\nprint(safe_divide(1, 0))\n"
+        }
       }
     }
   },
@@ -422,7 +464,21 @@
         "starter": "def squares_of_evens(numbers):\n    # Верни квадраты чётных чисел, порядок сохрани\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(squares_of_evens([1, 2, 3, 4, 5, 6]))\n",
         "sampleOutput": "[4, 16, 36]",
         "expected_output": "[4, 16, 36]",
-        "hidden_check": "assert squares_of_evens([]) == []\nassert squares_of_evens([1, 3]) == []\nassert squares_of_evens([2, 10]) == [4, 100]\nassert squares_of_evens([4, 2]) == [16, 4]\nassert squares_of_evens([-2]) == [4]"
+        "hidden_check": "assert squares_of_evens([]) == []\nassert squares_of_evens([1, 3]) == []\nassert squares_of_evens([2, 10]) == [4, 100]\nassert squares_of_evens([4, 2]) == [16, 4]\nassert squares_of_evens([-2]) == [4]",
+        "hints": [
+          {
+            "ru": "Список можно собрать одной строкой: [выражение for n in numbers if условие].",
+            "en": "A list can be built in one line: [expression for n in numbers if condition]."
+          },
+          {
+            "ru": "Чётность проверяют остатком от деления на 2. В скобках сначала пишут, что положить в результат, потом for, а условие идёт после if.",
+            "en": "Evenness is checked with the remainder of division by 2. In the brackets first write what goes into the result, then for, and the condition comes after if."
+          }
+        ],
+        "skeleton": {
+          "ru": "def squares_of_evens(numbers):\n    # 1. пройди по числам\n    # 2. оставь только чётные (n % 2 == 0)\n    # 3. для каждого верни квадрат\n    pass\n\nprint(squares_of_evens([1, 2, 3, 4, 5, 6]))\n",
+          "en": "def squares_of_evens(numbers):\n    # 1. go through the numbers\n    # 2. keep only the even ones (n % 2 == 0)\n    # 3. return the square of each\n    pass\n\nprint(squares_of_evens([1, 2, 3, 4, 5, 6]))\n"
+        }
       }
     }
   },
@@ -520,7 +576,21 @@
         "starter": "def word_count(text):\n    # Верни словарь {слово: сколько раз встретилось}, регистр не важен\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(sorted(word_count(\"Fire ice fire\").items()))\n",
         "sampleOutput": "[('fire', 2), ('ice', 1)]",
         "expected_output": "[('fire', 2), ('ice', 1)]",
-        "hidden_check": "assert word_count(\"A a b\") == {\"a\": 2, \"b\": 1}\nassert word_count(\"\") == {}\nassert word_count(\"x  x\") == {\"x\": 2}\nassert dict(word_count(\"Z\")) == {\"z\": 1}"
+        "hidden_check": "assert word_count(\"A a b\") == {\"a\": 2, \"b\": 1}\nassert word_count(\"\") == {}\nassert word_count(\"x  x\") == {\"x\": 2}\nassert dict(word_count(\"Z\")) == {\"z\": 1}",
+        "hints": [
+          {
+            "ru": "Приведи текст к нижнему регистру (lower()) и разбей на слова (split()): тогда регистр и лишние пробелы перестанут мешать.",
+            "en": "Lower-case the text (lower()) and split it into words (split()): then case and extra spaces stop mattering."
+          },
+          {
+            "ru": "Заведи пустой словарь. Для каждого слова возьми его текущий счётчик (метод словаря get позволяет задать значение по умолчанию) и увеличь на единицу.",
+            "en": "Create an empty dict. For every word take its current counter (the dict method get lets you set a default) and increase it by one."
+          }
+        ],
+        "skeleton": {
+          "ru": "def word_count(text):\n    # 1. text.lower().split() — список слов\n    # 2. пустой словарь counts\n    # 3. для каждого слова увеличь счётчик\n    # 4. верни counts\n    pass\n\nprint(sorted(word_count(\"Fire ice fire\").items()))\n",
+          "en": "def word_count(text):\n    # 1. text.lower().split() is the list of words\n    # 2. an empty dict counts\n    # 3. for each word increase its counter\n    # 4. return counts\n    pass\n\nprint(sorted(word_count(\"Fire ice fire\").items()))\n"
+        }
       }
     }
   },
@@ -558,7 +628,7 @@
       "title_en": "Classes and Objects",
       "title_ru": "Классы и объекты",
       "body_en": "<h2>A blueprint and its copies</h2><p>A class is a blueprint, an object is a thing made from it. (Do not confuse it with the hero class in the game: this is about Python.)</p><pre><code>class Hero:\n    def __init__(self, name, hp):   # constructor: runs on creation\n        self.name = name            # the object's data\n        self.hp = hp\n\n    def heal(self, amount):         # method: the object's behaviour\n        self.hp += amount\n\nmira = Hero(\"Mira\", 50)\nmira.heal(10)\nprint(mira.hp)   # 60</code></pre><p><code>self</code> is the very object a method works on. Every object has its own data: changing one hero does not touch another.</p>",
-      "body_ru": "<h2>Чертёж и его копии</h2><p>Класс — это чертёж, объект — вещь, сделанная по нему. (Не путайте с классом героя в игре: здесь речь о Python.)</p><pre><code>class Hero:\n    def __init__(self, name, hp):   # конструктор: срабатывает при создании\n        self.name = name            # данные объекта\n        self.hp = hp\n\n    def heal(self, amount):         # метод: поведение объекта\n        self.hp += amount\n\nmira = Hero(\"Mira\", 50)\nmira.heal(10)\nprint(mira.hp)   # 60</code></pre><p><code>self</code> — это сам объект, с которым работает метод. У каждого объекта свои данные: изменение одного героя не трогает другого.</p>",
+      "body_ru": "<h2>Чертёж и его копии</h2><p>Класс — это чертёж, объект — вещь, сделанная по нему. (Не путай с классом героя в игре: здесь речь о Python.)</p><pre><code>class Hero:\n    def __init__(self, name, hp):   # конструктор: срабатывает при создании\n        self.name = name            # данные объекта\n        self.hp = hp\n\n    def heal(self, amount):         # метод: поведение объекта\n        self.hp += amount\n\nmira = Hero(\"Mira\", 50)\nmira.heal(10)\nprint(mira.hp)   # 60</code></pre><p><code>self</code> — это сам объект, с которым работает метод. У каждого объекта свои данные: изменение одного героя не трогает другого.</p>",
       "xp_reward": 10,
       "is_required": true,
       "data": {}
@@ -618,7 +688,21 @@
         "starter": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def take_hit(self, damage):\n        # Уменьши hp на damage, но не ниже нуля\n        raise NotImplementedError(\"Допиши метод\")\n\n    def is_alive(self):\n        return self.hp > 0\n\nhero = Hero(\"Aidan\", 30)\nhero.take_hit(12)\nprint(hero.hp)\nhero.take_hit(100)\nprint(hero.hp, hero.is_alive())\n",
         "sampleOutput": "18\n0 False",
         "expected_output": "18\n0 False",
-        "hidden_check": "h = Hero(\"x\", 5)\nh.take_hit(0)\nassert h.hp == 5 and h.is_alive()\nh.take_hit(3)\nassert h.hp == 2\nh.take_hit(5)\nassert h.hp == 0 and not h.is_alive()\nother = Hero(\"y\", 9)\nassert other.hp == 9 and h.hp == 0"
+        "hidden_check": "h = Hero(\"x\", 5)\nh.take_hit(0)\nassert h.hp == 5 and h.is_alive()\nh.take_hit(3)\nassert h.hp == 2\nh.take_hit(5)\nassert h.hp == 0 and not h.is_alive()\nother = Hero(\"y\", 9)\nassert other.hp == 9 and h.hp == 0",
+        "hints": [
+          {
+            "ru": "Здоровье хранится в self.hp: метод должен изменить именно его.",
+            "en": "Health is stored in self.hp: the method must change exactly that."
+          },
+          {
+            "ru": "Вычти damage, но здоровье не должно стать отрицательным: сравни результат с нулём (можно функцией max).",
+            "en": "Subtract damage, but health must not become negative: compare the result with zero (max can do it)."
+          }
+        ],
+        "skeleton": {
+          "ru": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def take_hit(self, damage):\n        # 1. посчитай новое здоровье: self.hp - damage\n        # 2. не давай ему стать меньше нуля\n        # 3. сохрани в self.hp\n        pass\n\n    def is_alive(self):\n        return self.hp > 0\n\nhero = Hero(\"Aidan\", 30)\nhero.take_hit(12)\nprint(hero.hp)\nhero.take_hit(100)\nprint(hero.hp, hero.is_alive())\n",
+          "en": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def take_hit(self, damage):\n        # 1. compute the new health: self.hp - damage\n        # 2. do not let it drop below zero\n        # 3. store it in self.hp\n        pass\n\n    def is_alive(self):\n        return self.hp > 0\n\nhero = Hero(\"Aidan\", 30)\nhero.take_hit(12)\nprint(hero.hp)\nhero.take_hit(100)\nprint(hero.hp, hero.is_alive())\n"
+        }
       }
     }
   },
@@ -716,7 +800,21 @@
         "starter": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def describe(self):\n        return f\"{self.name} ({self.hp} hp)\"\n\nclass Mage(Hero):\n    def __init__(self, name, hp, mana):\n        # Вызови конструктор родителя и запомни mana\n        raise NotImplementedError(\"Допиши конструктор\")\n\n    def describe(self):\n        return f\"{super().describe()}, mana {self.mana}\"\n\nprint(Mage(\"Mira\", 70, 120).describe())\n",
         "sampleOutput": "Mira (70 hp), mana 120",
         "expected_output": "Mira (70 hp), mana 120",
-        "hidden_check": "m = Mage(\"A\", 1, 2)\nassert m.name == \"A\" and m.hp == 1 and m.mana == 2\nassert isinstance(m, Hero)\nassert m.describe() == \"A (1 hp), mana 2\"\nclass Rogue(Hero):\n    pass\nassert Rogue(\"r\", 3).describe() == \"r (3 hp)\""
+        "hidden_check": "m = Mage(\"A\", 1, 2)\nassert m.name == \"A\" and m.hp == 1 and m.mana == 2\nassert isinstance(m, Hero)\nassert m.describe() == \"A (1 hp), mana 2\"\nclass Rogue(Hero):\n    pass\nassert Rogue(\"r\", 3).describe() == \"r (3 hp)\"",
+        "hints": [
+          {
+            "ru": "Родитель уже умеет хранить name и hp: пусть его конструктор сделает это.",
+            "en": "The parent already knows how to store name and hp: let its constructor do that."
+          },
+          {
+            "ru": "Вызови конструктор родителя через super(), передав ему name и hp, а потом запомни mana в self.mana.",
+            "en": "Call the parent constructor through super(), passing name and hp, then remember mana in self.mana."
+          }
+        ],
+        "skeleton": {
+          "ru": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def describe(self):\n        return f\"{self.name} ({self.hp} hp)\"\n\nclass Mage(Hero):\n    def __init__(self, name, hp, mana):\n        # 1. вызови конструктор родителя с name и hp\n        # 2. сохрани mana в self.mana\n        pass\n\n    def describe(self):\n        return f\"{super().describe()}, mana {self.mana}\"\n\nprint(Mage(\"Mira\", 70, 120).describe())\n",
+          "en": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def describe(self):\n        return f\"{self.name} ({self.hp} hp)\"\n\nclass Mage(Hero):\n    def __init__(self, name, hp, mana):\n        # 1. call the parent constructor with name and hp\n        # 2. store mana in self.mana\n        pass\n\n    def describe(self):\n        return f\"{super().describe()}, mana {self.mana}\"\n\nprint(Mage(\"Mira\", 70, 120).describe())\n"
+        }
       }
     }
   },
@@ -814,7 +912,21 @@
         "starter": "heroes = [\n    {\"name\": \"Aidan\", \"class\": \"warrior\", \"hp\": 80},\n    {\"name\": \"Mira\", \"class\": \"mage\", \"hp\": 120},\n    {\"name\": \"Bo\", \"class\": \"warrior\", \"hp\": 95},\n]\n\ndef guild_report(heroes):\n    # Верни словарь {класс: суммарный hp героев этого класса}\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(sorted(guild_report(heroes).items()))\n",
         "sampleOutput": "[('mage', 120), ('warrior', 175)]",
         "expected_output": "[('mage', 120), ('warrior', 175)]",
-        "hidden_check": "assert guild_report([]) == {}\nassert guild_report([{\"name\": \"a\", \"class\": \"x\", \"hp\": 1}, {\"name\": \"b\", \"class\": \"x\", \"hp\": 2}]) == {\"x\": 3}\nassert guild_report(heroes) == {\"warrior\": 175, \"mage\": 120}"
+        "hidden_check": "assert guild_report([]) == {}\nassert guild_report([{\"name\": \"a\", \"class\": \"x\", \"hp\": 1}, {\"name\": \"b\", \"class\": \"x\", \"hp\": 2}]) == {\"x\": 3}\nassert guild_report(heroes) == {\"warrior\": 175, \"mage\": 120}",
+        "hints": [
+          {
+            "ru": "Нужен словарь «класс → сумма»: пройди по героям и копи здоровье в нём.",
+            "en": "You need a dict “class → total”: go through the heroes and collect health in it."
+          },
+          {
+            "ru": "Для каждого героя возьми накопленную сумму его класса (get с нулём по умолчанию), прибавь hp и запиши обратно в словарь. Не забудь вернуть report.",
+            "en": "For every hero take the running total of his class (get with a default of zero), add hp and write it back to the dict. Do not forget to return report."
+          }
+        ],
+        "skeleton": {
+          "ru": "heroes = [\n    {\"name\": \"Aidan\", \"class\": \"warrior\", \"hp\": 80},\n    {\"name\": \"Mira\", \"class\": \"mage\", \"hp\": 120},\n    {\"name\": \"Bo\", \"class\": \"warrior\", \"hp\": 95},\n]\n\ndef guild_report(heroes):\n    # 1. пустой словарь report\n    # 2. для каждого героя прибавь его hp к своему классу\n    # 3. верни report\n    pass\n\nprint(sorted(guild_report(heroes).items()))\n",
+          "en": "heroes = [\n    {\"name\": \"Aidan\", \"class\": \"warrior\", \"hp\": 80},\n    {\"name\": \"Mira\", \"class\": \"mage\", \"hp\": 120},\n    {\"name\": \"Bo\", \"class\": \"warrior\", \"hp\": 95},\n]\n\ndef guild_report(heroes):\n    # 1. an empty dict report\n    # 2. for every hero add his hp to his class\n    # 3. return report\n    pass\n\nprint(sorted(guild_report(heroes).items()))\n"
+        }
       }
     }
   }

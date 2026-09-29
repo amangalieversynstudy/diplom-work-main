@@ -195,3 +195,8 @@ def test_titles_follow_the_requested_language(student, course):
     api = _api(student)
     assert api.get(URL, {"lang": "en"}).json()["next"]["title"] == "Story EN"
     assert api.get(URL, {"lang": "ru"}).json()["next"]["title"] == "Сюжет"
+
+
+def test_each_mission_row_names_its_course(student, course):
+    rows = _get(student)["missions"]
+    assert {row["track_title"] for row in rows} == {"Python"}

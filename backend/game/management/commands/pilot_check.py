@@ -7,6 +7,8 @@ so it can gate a deploy. WARN means "know what you are doing". Nothing here
 changes any data.
 """
 
+import os
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
@@ -92,6 +94,17 @@ def check_settings():
         yield WARN, "HELP_OFFER_SHARE=100: контрольной группы нет, эффект баннера помощи измерить не получится."
     else:
         yield OK, f"Эксперимент с помощью: {share}% видят баннер, остальные контроль."
+
+    if getattr(settings, "GEMINI_API_KEY", "") or os.environ.get("GEMINI_API_KEY"):
+        yield WARN, (
+            "AI-наставник (Мудрец) подключён: вопрос и код ученика уходят в Google Gemini. "
+            "Скажите об этом в информационном листе."
+        )
+    else:
+        yield WARN, (
+            "GEMINI_API_KEY не задан: Мудрец недоступен, а баннер помощи после трёх неудач его предлагает. "
+            "Ученики увидят «Мудрец сейчас недоступен»."
+        )
 
     yield OK, (
         "Модель риска подключена." if getattr(settings, "RISK_MODEL_PATH", "")

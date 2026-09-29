@@ -8,6 +8,7 @@ from .analytics_views import (
     LearningMetricsExportView,
     LearningMetricsView,
     MyLearningView,
+    TeacherStudentLearningView,
 )
 from .studio import (
     StudioLocationViewSet,
@@ -19,7 +20,6 @@ from .views import (
     AchievementsView,
     AIAssistView,
     AIMentorView,
-    AnalyticsView,
     CodeRunnerView,
     IntroStatusView,
     LeaderboardViewSet,
@@ -61,8 +61,12 @@ urlpatterns = [
     path("intro-status/", IntroStatusView.as_view(), name="intro_status"),
     path("ai-assist/", AIAssistView.as_view(), name="ai_assist"),
     path("ai-mentor/", AIMentorView.as_view(), name="ai_mentor"),
-    path("analytics/", AnalyticsView.as_view(), name="analytics"),
     path("me/learning/", MyLearningView.as_view(), name="my_learning"),
+    path(
+        "teacher/students/<int:pk>/learning/",
+        TeacherStudentLearningView.as_view(),
+        name="teacher_student_learning",
+    ),
     path(
         "analytics/metrics/",
         LearningMetricsView.as_view(),

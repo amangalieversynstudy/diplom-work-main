@@ -411,3 +411,53 @@ def test_other_socket_errors_are_still_reported_as_a_sandbox_failure():
     events = _stream_with(_PipeClosed(5, "ReadFile", "Access is denied."))
     assert any(e.get("reason") == "runner_error" for e in events if e["type"] == "error")
     assert events[-1]["code"] == -1
+
+
+# ── help texts of the built-in courses ──────────────────────────────────────
+
+
+def _code_steps():
+    steps = {}
+    for fixture in FIXTURES:
+        for row in json.loads(fixture.read_text(encoding="utf-8")):
+            if row["model"] == "game.missiontask" and row["fields"]["task_type"] == "code":
+                steps[row["pk"]] = row["fields"]["data"]
+    return steps
+
+
+def test_every_code_step_has_hints_in_both_languages():
+    for pk, data in _code_steps().items():
+        hints = data.get("hints") or []
+        assert hints, f"step {pk} has no hints"
+        for hint in hints:
+            assert hint.get("ru") and hint.get("en"), f"step {pk}: a hint is missing a language"
+
+
+def test_outlines_exist_in_both_languages_and_are_valid_python():
+    for pk, data in _code_steps().items():
+        skeleton = data.get("skeleton")
+        if pk == 12:  # the first spell needs no outline
+            assert not skeleton
+            continue
+        assert skeleton and skeleton.get("ru") and skeleton.get("en"), f"step {pk} has no outline"
+        for text in skeleton.values():
+            compile(text, f"<outline {pk}>", "exec")
+
+
+def test_hints_and_outlines_never_contain_the_solution():
+    steps = _code_steps()
+    for pk, body in SOLUTIONS.items():
+        data = steps[pk]
+        texts = [h[lang] for h in data.get("hints", []) for lang in ("ru", "en")]
+        # an outline may name the outputs in its comments (the task text does too),
+        # but its code lines must not be the solution
+        for outline in (data.get("skeleton") or {}).values():
+            texts += [ln for ln in outline.split("\n") if not ln.strip().startswith("#")]
+        combined = "\n".join(texts)
+        for line in body.split("\n"):
+            line = line.strip()
+            # "return report" is also plain English ("do not forget to return report")
+            if re.fullmatch(r"return \w+", line):
+                continue
+            if len(line) >= 10 and not line.startswith(("try:", "except", "for ")):
+                assert line not in combined, f"step {pk}: the help gives away {line!r}"

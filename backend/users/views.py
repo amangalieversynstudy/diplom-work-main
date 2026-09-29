@@ -115,7 +115,7 @@ class ProfileMeView(APIView):
                         )
                     if not _email_change_allowed(user):
                         return Response(
-                            {"email": "Слишком много попыток смены email. Попробуйте позже."},
+                            {"email": "Слишком много попыток смены email. Попробуй позже."},
                             status=status.HTTP_429_TOO_MANY_REQUESTS,
                         )
                     # Смена/добавление email требует подтверждения владения новым
@@ -137,7 +137,7 @@ class ProfileMeView(APIView):
                             "[EMAIL-CHANGE] send failed for %s: %r", new_email, e
                         )
                         return Response(
-                            {"email": "Не удалось отправить письмо подтверждения. Попробуйте позже."},
+                            {"email": "Не удалось отправить письмо подтверждения. Попробуй позже."},
                             status=status.HTTP_502_BAD_GATEWAY,
                         )
                 else:
@@ -197,26 +197,63 @@ class UseItemView(APIView):
             )
             
         profile = request.user.profile
-        
+
+        # Зелье и свиток помогают с конкретным шагом. Текст живёт на сервере и
+        # выдаётся только здесь; если автор шага его не написал, предмет не тратим.
+        extra = {}
+        task = None
+        if item_type in ITEM_EVENTS and getattr(profile, item_type, 0) <= 0:
+            return Response(
+                {"detail": "Недостаточно предметов в инвентаре или неверный тип."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if item_type in ITEM_EVENTS:
+            from game.footprint import find_task
+            from game.help import next_hint, skeleton_text
+            from game.serializers import _resolve_language
+
+            task = find_task(request.data.get("task_id"), request.user)
+            lang = _resolve_language(request)
+            if item_type == "hint_scrolls":
+                hint = next_hint(task, request.user, lang) if task else None
+                if hint is None:
+                    return Response(
+                        {
+                            "detail": "У этого шага нет подсказки, и Зелье Ясности не потрачено. "
+                            "Позови Мудреца: он поможет разобраться, не выдавая ответ.",
+                            "code": "no_hint",
+                        },
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                extra["hint"] = hint
+            else:
+                outline = skeleton_text(task, lang) if task else ""
+                if not outline:
+                    return Response(
+                        {
+                            "detail": "У этого шага нет каркаса решения, и Свиток Архитектора не потрачен.",
+                            "code": "no_skeleton",
+                        },
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                extra["skeleton"] = outline
+
         # Используем метод, который мы написали на предыдущем шаге
         success = profile.use_item(item_type)
-        
+
         if success:
             event_type = ITEM_EVENTS.get(item_type)
             if event_type:
-                from game.footprint import find_task, log_event
+                from game.footprint import log_event
 
-                log_event(
-                    request.user,
-                    event_type,
-                    task=find_task(request.data.get("task_id"), request.user),
-                )
+                log_event(request.user, event_type, task=task)
             # Получаем актуальный остаток, чтобы фронтенд сразу обновил UI
             remaining = getattr(profile, item_type)
             return Response({
                 "detail": "Предмет успешно применен.",
                 "item_type": item_type,
-                "remaining": remaining
+                "remaining": remaining,
+                **extra,
             }, status=status.HTTP_200_OK)
         else:
             return Response({

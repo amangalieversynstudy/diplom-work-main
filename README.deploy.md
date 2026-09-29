@@ -31,9 +31,11 @@
 ```
 migrate → collectstatic → seed_course → daphne (ASGI)
 ```
-При каждом деплое применяются миграции, собирается статика, а `seed_course` загружает ranks, class_roles и вводный курс **только если их ещё нет** — правки курса в админке и Studio при перезапуске не затираются. Чтобы выкатить новую версию встроенного курса из фикстур (это перезапишет правки в нём), один раз выполни в Railway → backend → **Run a command**: `python manage.py seed_course --force`. Если `seed_course` упал, деплой считается неудачным (ошибка больше не скрывается).
+При каждом деплое применяются миграции, собирается статика, а `seed_course` загружает ranks, class_roles и оба курса (вводный и «Путь Мастера») **только если их ещё нет** — правки курса в админке и Studio при перезапуске не затираются. Чтобы выкатить новую версию встроенных курсов из фикстур (это перезапишет правки в них; владельцы курсов сохраняются), один раз выполни в Railway → backend → **Run a command**: `python manage.py seed_course --force`. Если `seed_course` упал, деплой считается неудачным (ошибка больше не скрывается).
 
 Код регистрации преподавателей **не встроен** в проект: задай в Railway переменную `TEACHER_INVITE_CODE` (длинная случайная строка). Пока она пуста, преподаватели самостоятельно зарегистрироваться не могут — роль выдаётся в `/admin/` (флаг «staff»).
+
+Преподаватель видит только учеников своих курсов. Встроенные курсы закрепляются за ним командой (в Railway → backend → **Run a command**): `python manage.py set_course_owner python-intro <логин>` и то же для `python-continued`. Без этого его кабинет остаётся пустым, пока он не создаст свой курс в Studio.
 
 ### 1.2. Базы
 - **Add → Database → PostgreSQL** → появится переменная `DATABASE_URL` (бэкенд её читает через `dj-database-url`).
@@ -111,7 +113,7 @@ cd backend && python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 export DJANGO_SETTINGS_MODULE=core.settings.local
 python manage.py migrate
-python manage.py loaddata ranks class_roles intro_course
+python manage.py loaddata ranks class_roles intro_course python_continued
 python manage.py runserver        # http://localhost:8000
 
 # frontend (в другом терминале)

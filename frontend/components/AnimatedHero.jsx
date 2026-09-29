@@ -1,13 +1,19 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import Link from "next/link";
 import { ArrowRight, Code, Sparkles } from "lucide-react";
 import { useI18n } from "../lib/i18n";
+import { getTokens } from "../lib/auth";
 
 export default function AnimatedHero() {
   const container = useRef(null);
   const { t } = useI18n();
+  // Кто уже вошёл, тому вместо «Начать игру» нужна кнопка «Продолжить».
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    setSignedIn(Boolean(getTokens().access));
+  }, []);
 
   useGSAP(
     () => {
@@ -17,31 +23,31 @@ export default function AnimatedHero() {
       tl.fromTo(
         ".hero-badge",
         { y: 20, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }
+        { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }
       );
 
       // Анимация строк заголовка (появляются по очереди)
       tl.fromTo(
         ".hero-title-line",
-        { y: 60, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, stagger: 0.15, ease: "expo.out" },
-        "-=0.4"
+        { y: 40, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.7, stagger: 0.1, ease: "expo.out" },
+        "-=0.3"
       );
 
       // Анимация описания
       tl.fromTo(
         ".hero-desc",
         { y: 20, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, ease: "power3.out" },
-        "-=0.6"
+        { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" },
+        "-=0.5"
       );
 
       // Анимация кнопок
       tl.fromTo(
         ".hero-btn",
         { y: 20, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, stagger: 0.15, ease: "power3.out" },
-        "-=0.6"
+        { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "power3.out" },
+        "-=0.4"
       );
     },
     { scope: container }
@@ -74,10 +80,10 @@ export default function AnimatedHero() {
 
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
           <Link
-            href="/register"
+            href={signedIn ? "/worlds" : "/register"}
             className="hero-btn group relative inline-flex items-center justify-center gap-2 px-8 py-4 bg-primary text-on-primary shadow-glow rounded-2xl font-semibold overflow-hidden transition-all hover:scale-105 hover:shadow-glow-lg active:scale-95 border border-primary-dk"
           >
-            <span className="relative z-10">{t("landing.primaryCta")}</span>
+            <span className="relative z-10">{signedIn ? t("landing.continueCta") : t("landing.primaryCta")}</span>
             <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
           </Link>
 

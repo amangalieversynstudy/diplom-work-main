@@ -125,7 +125,7 @@ export function StepStrip({ tasks = [], activeId, progress: progressMap = {}, on
               )}
             >
               {locked ? <Lock size={16} /> : <Icon size={18} />}
-              <span className="absolute -left-1 -top-1 grid h-4 min-w-[1rem] place-items-center rounded-full bg-[#fde68a] px-1 font-mono text-[10px] font-bold leading-none text-[#2b1d11]">
+              <span className="absolute -left-1.5 -top-1.5 grid h-5 min-w-[1.25rem] place-items-center rounded-full bg-[#fde68a] px-1 font-mono text-xs font-bold leading-none text-[#2b1d11]">
                 {index + 1}
               </span>
               {completed && !locked && (

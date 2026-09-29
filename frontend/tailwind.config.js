@@ -1,3 +1,14 @@
+// Цвета темы лежат в CSS-переменных (hex), а Tailwind не умеет добавлять прозрачность к var():
+// классы bg-primary/10, border-primary/20, ring-primary/50 и им подобные (в коде их около 150)
+// молча не создавались, и заливки, рамки и свечения, задуманные дизайном, не рисовались.
+// color-mix даёт нужную прозрачность для любого значения переменной. Без модификатора
+// (bg-primary) Tailwind передаёт вместо числа var(--tw-…-opacity): такой цвет остаётся обычным
+// var(--имя), чтобы весь интерфейс не зависел от поддержки color-mix.
+const themed = (name) => ({ opacityValue }) =>
+  opacityValue === undefined || String(opacityValue).startsWith("var(")
+    ? `var(--${name})`
+    : `color-mix(in srgb, var(--${name}) calc(${opacityValue} * 100%), transparent)`;
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: 'class',
@@ -20,29 +31,29 @@ module.exports = {
         mono: ["'JetBrains Mono'", "monospace"],
       },
       colors: {
-        primary:      'var(--primary)',
-        'primary-dk': 'var(--primary-dk)',
-        'on-primary': 'var(--on-primary)',
-        accent:       'var(--accent)',
-        'accent-dk':  'var(--accent-dk)',
-        gold:         'var(--gold)',
-        bg:           'var(--bg)',
-        surface:      'var(--surface)',
-        panel:        'var(--panel)',
-        text:         'var(--text)',
-        muted:        'var(--muted)',
-        faint:        'var(--faint)',
-        border:       'var(--border)',
-        success:      'var(--success)',
-        warning:      'var(--warning)',
-        error:        'var(--error)',
-        'card-bg':       'var(--card-bg)',
-        'card-border':   'var(--card-border)',
-        'card-text':     'var(--card-text)',
-        'card-muted':    'var(--card-text-muted)',
-        'modal-bg':      'var(--modal-bg)',
-        'modal-text':    'var(--modal-text)',
-        'modal-overlay': 'var(--modal-overlay)',
+        primary:      themed('primary'),
+        'primary-dk': themed('primary-dk'),
+        'on-primary': themed('on-primary'),
+        accent:       themed('accent'),
+        'accent-dk':  themed('accent-dk'),
+        gold:         themed('gold'),
+        bg:           themed('bg'),
+        surface:      themed('surface'),
+        panel:        themed('panel'),
+        text:         themed('text'),
+        muted:        themed('muted'),
+        faint:        themed('faint'),
+        border:       themed('border'),
+        success:      themed('success'),
+        warning:      themed('warning'),
+        error:        themed('error'),
+        'card-bg':       themed('card-bg'),
+        'card-border':   themed('card-border'),
+        'card-text':     themed('card-text'),
+        'card-muted':    themed('card-text-muted'),
+        'modal-bg':      themed('modal-bg'),
+        'modal-text':    themed('modal-text'),
+        'modal-overlay': themed('modal-overlay'),
       },
       boxShadow: {
         card:   "0 20px 60px rgba(0,0,0,0.55)",

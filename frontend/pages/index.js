@@ -6,7 +6,9 @@ import {
   Map, Swords, Compass, Crown, Sparkles,
   ChevronRight, BookOpen, Code2, Zap,
 } from "lucide-react";
-import { useDictionary } from "../lib/i18n";
+import { useDictionary, useI18n } from "../lib/i18n";
+import { Tracks } from "../lib/api";
+import { unit } from "../lib/plural";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -64,7 +66,7 @@ function TrackCard({ track, soonLabel }) {
       {...rootProps}
       className={`track-card block text-left group relative rounded-3xl border border-border bg-panel transition-all duration-300 ${
         track.soon
-          ? "opacity-60"
+          ? "border-dashed"
           : "cursor-pointer hover:-translate-y-2 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/20"
       }`}
     >
@@ -88,7 +90,7 @@ function TrackCard({ track, soonLabel }) {
         <p className="text-sm text-muted leading-relaxed mb-8 h-24">{track.desc}</p>
 
         <div className="flex items-center justify-end text-sm font-medium border-t border-border pt-5">
-          <span style={{ color: track.soon ? undefined : track.dot }} className={track.soon ? "text-muted" : undefined}>
+          <span style={{ color: track.soon ? undefined : `color-mix(in srgb, ${track.dot} 55%, var(--text))` }} className={track.soon ? "text-muted" : undefined}>
             {track.soon ? soonLabel : track.xp}
           </span>
         </div>
@@ -112,79 +114,77 @@ export default function Home() {
   const dict = useDictionary();
   const homeDict = dict.home || {};
 
-  // Числа совпадают с тем, что есть в курсе сейчас: 1 трек, 8 миссий, 3 класса
-  // (backend/game/fixtures). Изменится курс: поправьте здесь.
+  const { t, language } = useI18n();
+
+  // Курсы и цифры берём из настоящего каталога: лендинг не должен обещать того, чего нет.
+  // Пока каталог грузится (или сервер недоступен), показываем текущие значения.
+  const [catalog, setCatalog] = useState(null);
+  useEffect(() => {
+    let active = true;
+    Tracks.list()
+      .then((list) => {
+        if (active) setCatalog(list);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [language]);
+
+  const COURSE_LOOK = [
+    { icon: BookOpen, dot: "#10B981", label: homeDict.basicsLabel || "Основы" },
+    { icon: Code2, dot: "#F59E0B", label: homeDict.continuedLabel || "Продолжение" },
+  ];
+  const courses = (catalog || []).map((track, index) => {
+    const missions = (track.worlds || []).flatMap((world) => world.missions || []);
+    const xp = missions.reduce(
+      (sum, mission) =>
+        sum +
+        (mission.xp_reward || 0) +
+        (mission.tasks || []).reduce((acc, task) => acc + (task.xp_reward || 0), 0),
+      0
+    );
+    const look = COURSE_LOOK[index % COURSE_LOOK.length];
+    return {
+      id: `course-${track.id}`,
+      label: look.label,
+      title: track.title,
+      desc: track.description,
+      xp: `${xp} XP · ${missions.length} ${unit(t, language, "mission", missions.length)}`,
+      icon: look.icon,
+      dot: look.dot,
+      missions: missions.length,
+      worlds: (track.worlds || []).length,
+    };
+  });
+  const totalMissions = catalog ? courses.reduce((sum, c) => sum + c.missions, 0) : 16;
+  const totalCourses = catalog ? courses.length : 2;
+
   const STATS = [
-    { value: "8",   label: homeDict.stats?.totalMissions || "Всего миссий",    icon: Swords  },
-    { value: "1",   label: homeDict.stats?.learningWorlds || "Учебных миров",   icon: Map     },
-    { value: "3",   label: homeDict.stats?.heroClasses || "Классов героев",      icon: Crown   },
+    { value: String(totalMissions), label: homeDict.stats?.totalMissions || "Всего миссий", icon: Swords },
+    { value: String(totalCourses), label: homeDict.stats?.learningWorlds || "Курсов", icon: Map },
+    { value: "3", label: homeDict.stats?.heroClasses || "Классов героев", icon: Crown },
   ];
 
-  const TRACKS = [
-    {
-      id: 1,
-      label: homeDict.tracks?.[0]?.label || "Основы",
-      title: homeDict.tracks?.[0]?.title || "Основы Python",
-      desc: homeDict.tracks?.[0]?.desc || "Изучите переменные, циклы, функции и структуры данных через практические квесты на Островах Новичков.",
-      xp: "370 XP",
-      missions: 8,
-      icon: BookOpen,
-      dot: "#10B981",
-    },
-    {
-      id: 2,
-      label: homeDict.tracks?.[1]?.label || "Средний уровень",
-      title: homeDict.tracks?.[1]?.title || "ООП и Алгоритмы",
-      desc: homeDict.tracks?.[1]?.desc || "Откройте для себя объектно-ориентированное проектирование и изучите сортировку, поиск и рекурсию на Рубеже Адептов.",
-      soon: true,
-      missions: 18,
-      icon: Code2,
-      dot: "#F59E0B",
-    },
-    {
-      id: 3,
-      label: homeDict.tracks?.[2]?.label || "Продвинутый",
-      title: homeDict.tracks?.[2]?.title || "Django и REST API",
-      desc: homeDict.tracks?.[2]?.desc || "Создавайте реальные веб-приложения, конечные точки REST и развертывайте свой первый бэкенд в Мифическом Просторе.",
-      soon: true,
-      missions: 24,
-      icon: Zap,
-      dot: "#3B82F6",
-    },
-    {
-      id: 4,
-      label: homeDict.tracks?.[3]?.label || "Элита",
-      title: homeDict.tracks?.[3]?.title || "Готовность к Junior",
-      desc: homeDict.tracks?.[3]?.desc || "Docker, CI/CD, тестирование и системный дизайн — все, что вам нужно для вашей первой работы с Django.",
-      soon: true,
-      missions: 30,
-      icon: Crown,
-      dot: "#8B5CF6",
-    },
+  const SOON_LOOK = [
+    { icon: Zap, dot: "#3B82F6" },
+    { icon: Crown, dot: "#8B5CF6" },
   ];
+  const soon = (homeDict.soonTracks || []).map((track, index) => ({
+    id: `soon-${index}`,
+    label: track.label,
+    title: track.title,
+    desc: track.desc,
+    soon: true,
+    ...SOON_LOOK[index % SOON_LOOK.length],
+  }));
+  const TRACKS = [...courses, ...soon];
 
-  const HOW_IT_WORKS = [
-    {
-      num: "01",
-      title: homeDict.howItWorks?.[0]?.title || "Выберите класс героя",
-      body: homeDict.howItWorks?.[0]?.body || "Выберите Воина, Мага или Разбойника — каждый класс формирует ваш путь обучения и открывает уникальные миссии.",
-    },
-    {
-      num: "02",
-      title: homeDict.howItWorks?.[1]?.title || "Исследуйте карту мира",
-      body: homeDict.howItWorks?.[1]?.body || "Путешествуйте по красиво иллюстрированным учебным мирам. Каждый остров содержит тематические миссии, которые основываются друг на друге.",
-    },
-    {
-      num: "03",
-      title: homeDict.howItWorks?.[2]?.title || "Проходите Сюжет → Викторину → Код",
-      body: homeDict.howItWorks?.[2]?.body || "Каждая миссия следует одному и тому же трехэтапному циклу: прочитайте историю, ответьте на теоретические вопросы, а затем выполните реальный код.",
-    },
-    {
-      num: "04",
-      title: homeDict.howItWorks?.[3]?.title || "Зарабатывайте XP и повышайте уровень",
-      body: homeDict.howItWorks?.[3]?.body || "Каждое действие вознаграждается опытом. Поднимайтесь в таблице лидеров и открывайте новый контент, пока растете от Новичка до Элиты.",
-    },
-  ];
+  const HOW_IT_WORKS = (homeDict.howItWorks || []).map((step, index) => ({
+    num: String(index + 1).padStart(2, "0"),
+    title: step.title,
+    body: step.body,
+  }));
 
   useGSAP(() => {
     // Явный fromTo полностью решает проблему "невидимости"
@@ -207,18 +207,6 @@ export default function Home() {
       { y: 50, opacity: 0 },
       { scrollTrigger: { trigger: ".cta-section", start: "top 85%" }, y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }
     );
-
-    // Добавляем легкую анимацию "парения" для карточек
-    gsap.utils.toArray([".stat-item", ".track-card"]).forEach(card => {
-      gsap.to(card, {
-        y: (Math.random() * -12) - 6, // смещение вверх от -6px до -18px
-        duration: Math.random() * 2 + 3, // длительность от 3 до 5 секунд
-        ease: "sine.inOut",
-        yoyo: true,
-        repeat: -1,
-        delay: Math.random() * 1.5,
-      });
-    });
   }, []);
 
   return (
@@ -278,7 +266,7 @@ export default function Home() {
             </p>
             <TransitionLink 
               href="/worlds"
-              className="mt-8 inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 bg-accent text-white shadow-lg shadow-amber-600/25 rounded-2xl font-semibold overflow-hidden transition-all hover:scale-105 active:scale-95"
+              className="mt-8 inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 bg-accent text-white dark:text-bg shadow-lg shadow-amber-600/25 rounded-2xl font-semibold overflow-hidden transition-all hover:scale-105 active:scale-95"
             >
               <Compass size={18} /> {homeDict.howitworks_cta || "Начать исследование"}
             </TransitionLink>
@@ -292,10 +280,10 @@ export default function Home() {
                 className="hiw-item group flex gap-4 sm:gap-5 p-4 sm:p-6 rounded-3xl border border-border bg-panel shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
               >
                 <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border border-sky-100 dark:border-sky-500/20 bg-sky-50 dark:bg-sky-500/10 flex items-center justify-center">
-                  <span className="font-mono text-lg font-bold text-sky-600">{step.num}</span>
+                  <span className="font-mono text-lg font-bold text-sky-700 dark:text-sky-400">{step.num}</span>
                 </div>
                 <div>
-                  <h3 className="font-display text-lg sm:text-xl font-bold text-text mb-2 group-hover:text-sky-600 transition-colors">
+                  <h3 className="font-display text-lg sm:text-xl font-bold text-text mb-2 group-hover:text-sky-700 dark:group-hover:text-sky-400 transition-colors">
                     {step.title}
                   </h3>
                   <p className="text-muted text-sm leading-relaxed">{step.body}</p>

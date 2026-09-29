@@ -3,6 +3,7 @@ import { Download, Gauge, LifeBuoy, Repeat, TrendingDown } from "lucide-react";
 import { Analytics as AnalyticsAPI } from "../lib/api";
 import logger from "../lib/logger";
 import { useI18n } from "../lib/i18n";
+import { unit } from "../lib/plural";
 
 const WINDOW_OPTIONS = [3, 7, 14, 30];
 const RED = "239, 68, 68";
@@ -48,7 +49,7 @@ function Kpi({ label, value, hint }) {
 }
 
 export default function LearningMetrics() {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [days, setDays] = useState(7);
   const [data, setData] = useState(null);
   const [failed, setFailed] = useState(false);
@@ -181,7 +182,7 @@ export default function LearningMetrics() {
         />
       </div>
       <p className="text-xs text-muted">
-        {data.meta.learners} {t("analytics.metrics.learners")}
+        {data.meta.learners} {unit(t, language, "student", data.meta.learners)} {t("analytics.metrics.inSample")}
       </p>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -201,7 +202,7 @@ export default function LearningMetrics() {
                     {typeLabel(row.task_type)}
                   </span>
                   <span className="text-xs text-muted tabular-nums">
-                    {row.steps} {t("analytics.metrics.funnel.steps")}
+                    {row.steps} {unit(t, language, "step", row.steps)}
                   </span>
                 </div>
                 <p className="text-xs text-muted mt-1 tabular-nums">
@@ -364,8 +365,8 @@ export default function LearningMetrics() {
                 >
                   <code className="text-sm text-text">{row.error_type}</code>
                   <span className="text-xs text-muted tabular-nums">
-                    {row.runs} {t("analytics.metrics.errors.runs")} · {row.learners}{" "}
-                    {t("analytics.metrics.errors.learners")}
+                    {row.runs} {unit(t, language, "run", row.runs)} · {row.learners}{" "}
+                    {unit(t, language, "student", row.learners)}
                   </span>
                 </li>
               ))}

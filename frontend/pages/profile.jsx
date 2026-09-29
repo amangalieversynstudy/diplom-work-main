@@ -85,9 +85,10 @@ export default function ProfilePage() {
     }
   };
 
+  // Класс на сервере остаётся прежним, пока ученик не выберет другой, поэтому это переход к выбору,
+  // а не «сброс» (раньше тост уверял, что класс сброшен).
   const handleResetClass = () => {
     clearPlayerClass();
-    toast.success(t("profile.toasts.classReset"));
     router.push("/class");
   };
 
@@ -146,23 +147,23 @@ if (loading) {
     return (
       <Layout>
         <div className="max-w-4xl mx-auto pt-24 pb-16 px-4">
-          <div className="h-10 bg-[#2a2a2e] rounded w-1/3 mb-8 animate-pulse" />
+          <div className="h-10 bg-panel rounded w-1/3 mb-8 animate-pulse" />
           <div className="grid md:grid-cols-3 gap-8">
             <div className="md:col-span-1 space-y-6">
-              <div className="bg-[#2a2a2e] border border-[#222] rounded-3xl p-6 text-center animate-pulse">
-                <div className="w-24 h-24 mx-auto bg-[#3f3f46] rounded-full mb-4" />
-                <div className="h-6 bg-[#3f3f46] rounded w-1/2 mx-auto mb-2" />
-                <div className="h-4 bg-[#3f3f46] rounded w-1/3 mx-auto mb-6" />
-                <div className="h-2 bg-[#3f3f46] rounded w-full mb-8" />
-                <div className="h-10 bg-[#3f3f46] rounded w-full mb-3" />
-                <div className="h-10 bg-[#3f3f46] rounded w-full" />
+              <div className="bg-panel border border-border rounded-3xl p-6 text-center animate-pulse">
+                <div className="w-24 h-24 mx-auto bg-border rounded-full mb-4" />
+                <div className="h-6 bg-border rounded w-1/2 mx-auto mb-2" />
+                <div className="h-4 bg-border rounded w-1/3 mx-auto mb-6" />
+                <div className="h-2 bg-border rounded w-full mb-8" />
+                <div className="h-10 bg-border rounded w-full mb-3" />
+                <div className="h-10 bg-border rounded w-full" />
               </div>
             </div>
             <div className="md:col-span-2">
-              <div className="bg-[#2a2a2e] border border-[#222] rounded-3xl p-8 animate-pulse">
-                <div className="h-6 bg-[#3f3f46] rounded w-1/3 mb-8" />
-                <div className="h-16 bg-[#3f3f46] rounded-xl w-full mb-4" />
-                <div className="h-16 bg-[#3f3f46] rounded-xl w-full" />
+              <div className="bg-panel border border-border rounded-3xl p-8 animate-pulse">
+                <div className="h-6 bg-border rounded w-1/3 mb-8" />
+                <div className="h-16 bg-border rounded-xl w-full mb-4" />
+                <div className="h-16 bg-border rounded-xl w-full" />
               </div>
             </div>
           </div>
@@ -196,7 +197,7 @@ if (loading) {
                   {t("profile.level")} {profile?.level || 1}
                 </p>
                 {profile?.rank && (
-                  <span className="px-2 py-0.5 text-xs uppercase tracking-widest font-bold rounded-full bg-accent/15 border border-accent/40 text-accent">
+                  <span className="px-2 py-0.5 text-xs uppercase tracking-widest font-bold rounded-full bg-accent/15 border border-accent/40 text-accent-dk">
                     {profile.rank.title_ru || profile.rank.title_en || profile.rank.slug}
                   </span>
                 )}
@@ -232,9 +233,9 @@ if (loading) {
 
               <div className="mt-6 pt-6 border-t border-border space-y-3">
                 <Button onClick={handleResetClass} variant="outline" className="w-full text-sm">
-                  <Shield size={16} className="mr-2" /> {t("profile.changeClass")}
+                  <Shield size={16} className="mr-2" /> {profile?.class_role ? t("profile.changeClass") : t("profile.chooseClass")}
                 </Button>
-                <Button onClick={handleLogout} variant="ghost" className="w-full text-sm text-red-500 hover:text-red-600 hover:bg-red-500/10">
+                <Button onClick={handleLogout} variant="ghost" className="w-full text-sm text-red-700 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-500/10">
                   <LogOut size={16} className="mr-2" /> {t("profile.logout")}
                 </Button>
               </div>

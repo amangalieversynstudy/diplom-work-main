@@ -118,7 +118,7 @@ export default function ResetPasswordConfirm() {
                 )}
               </label>
               <label className="text-sm text-muted">
-                {copy.confirmLabel || "Повторите пароль"}
+                {copy.confirmLabel || "Повтори пароль"}
                 <PasswordInput
                   value={confirm}
                   autoComplete="new-password"

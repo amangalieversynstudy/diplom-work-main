@@ -78,7 +78,7 @@ export default function AchievementsPanel({ items = [] }) {
                     {t(`achievements.items.${a.slug}.desc`)}
                   </p>
                   {a.earned ? (
-                    <p className="text-xs text-accent uppercase tracking-widest font-bold mt-2">
+                    <p className="text-xs text-accent-dk uppercase tracking-widest font-bold mt-2">
                       {t("achievements.earnedLabel")}
                     </p>
                   ) : (

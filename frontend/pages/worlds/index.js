@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Layout from "../../components/Layout";
 import MissionPath from "../../components/MissionPath";
+import { toast } from "sonner";
 import { useDictionary } from "../../lib/i18n";
+import { lockReason, missionTitle, missionXp } from "../../lib/missions";
 import { Lock, CheckCircle, X as XIcon, Compass } from "lucide-react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -17,7 +19,7 @@ if (typeof window !== "undefined") {
 
 export default function Worlds() {
   const dict = useDictionary();
-  const { language } = useI18n();
+  const { t, language } = useI18n();
   const worldsDict = dict.worldsPage || {};
   
   const [missions, setMissions] = useState([]);
@@ -137,6 +139,9 @@ export default function Worlds() {
     }
   }, { scope: pinContainerRef, dependencies: [loading, missions] });
 
+  // Первая доступная миссия: её подсвечиваем, и к ней ведёт полоса «Продолжить» над картой.
+  const current = missions.find((m) => missionStatus(m) === "available") || null;
+
   // Текущий узел = первый доступный, иначе последний пройденный.
   const heroTarget = (() => {
     if (!missions.length) return 0;
@@ -157,19 +162,44 @@ export default function Worlds() {
     <Layout hideFooter noBottomPadding>
       <div className="max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 pt-24 pb-4">
         {/* ── Заголовок ── */}
-        <div className="mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-4">
+        <div className="mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-3">
             <Compass size={16} />
             <span>{worldsDict.atlasTitle || "Атлас"}</span>
           </div>
-          <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-text mb-6">
+          <h1 className="font-display text-4xl md:text-5xl font-bold text-text mb-4">
             {worldsDict.mapTitle || "Карта миров"}
           </h1>
-          <p className="text-muted text-lg max-w-2xl leading-relaxed">
+          <p className="text-muted text-base md:text-lg max-w-2xl leading-relaxed">
             {worldsDict.mapSubtitle ||
-              "Каждый архипелаг таит в себе знания и опасности. Следуйте по чернильным тропам, чтобы найти сокровища кода."}
+              "Каждый архипелаг таит в себе знания и опасности. Следуй по чернильным тропам, чтобы найти сокровища кода."}
           </p>
         </div>
+
+        {current ? (
+          <div className="hidden lg:flex items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-primary/10 px-6 py-4">
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                {t(current.user_progress?.status === "in_progress" ? "worldsPage.mobile.continue" : "worldsPage.mobile.start")}
+              </p>
+              <p className="mt-1 truncate font-display text-xl font-bold text-text">
+                {missionTitle(current, language, worldsDict.missionFallback || "Миссия")}
+              </p>
+              <p className="mt-0.5 text-sm text-muted">
+                {t("worldsPage.mobile.reward").replace("{xp}", missionXp(current))}
+                {(current.tasks || []).length
+                  ? ` · ${t("worldsPage.mobile.steps").replace("{n}", (current.tasks || []).length)}`
+                  : ""}
+              </p>
+            </div>
+            <Link
+              href={`/missions/${current.id}`}
+              className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 font-semibold text-on-primary shadow-glow transition hover:-translate-y-0.5 hover:bg-primary-dk"
+            >
+              {t(current.user_progress?.status === "in_progress" ? "worldsPage.mobile.continue" : "worldsPage.mobile.start")}
+            </Link>
+          </div>
+        ) : null}
       </div>
 
       {/* ── Контейнер карты ── */}
@@ -191,7 +221,8 @@ export default function Worlds() {
         {/* Холст пергамента */}
         <div 
           ref={mapScrollRef} 
-          className="relative h-[70vh] w-[300vw] sm:w-[250vw] md:w-[200vw] lg:w-[150vw] ml-6 mr-6 rounded-[2.5rem] border-8 border-[#5c3a21] bg-[#dcb98a] shadow-2xl shrink-0 overflow-hidden"
+          style={{ width: `${Math.max(150, missions.length * 13)}vw` }}
+          className="relative h-[70vh] ml-6 mr-6 rounded-[2.5rem] border-8 border-[#5c3a21] bg-[#dcb98a] shadow-2xl shrink-0 overflow-hidden"
         >
           {/* Бумажная текстура */}
           <div className="absolute inset-0 pointer-events-none opacity-30 mix-blend-multiply rounded-[inherit]">
@@ -252,6 +283,23 @@ export default function Worlds() {
                 />
               </svg>
 
+              {/* Названия курсов над первой миссией каждого */}
+              {missions.map((mission, index) => {
+                if (index > 0 && missions[index - 1].track_id === mission.track_id) return null;
+                if (!mission.track_title) return null;
+                const coords = getCoords(index, missions.length);
+                return (
+                  <span
+                    key={`course-${mission.id}`}
+                    aria-hidden="true"
+                    className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[210%] whitespace-nowrap rounded-full border border-[#5c3a21]/50 bg-[#f4e4bc]/90 px-3 py-1 text-xs font-bold uppercase tracking-widest text-[#5c3a21]"
+                    style={{ left: `${coords.x}%`, top: `${coords.y}%` }}
+                  >
+                    {mission.track_title}
+                  </span>
+                );
+              })}
+
               {/* Узлы миссий */}
               {missions.map((mission, index) => {
                 const coords = getCoords(index, missions.length);
@@ -259,18 +307,38 @@ export default function Worlds() {
                 const isCompleted = statusVal === "completed";
                 const isLocked = statusVal === "locked";
                 const isActive = statusVal === "available";
+                const isCurrent = mission.id === current?.id;
                 const Icon = isCompleted ? CheckCircle : (isLocked ? Lock : XIcon);
+                const title = missionTitle(mission, language, worldsDict.missionFallback || "Миссия");
+                const statusLabel = isCompleted
+                  ? worldsDict.statusCompleted || "Пройдено"
+                  : isLocked
+                  ? worldsDict.statusLocked || "Закрыто"
+                  : worldsDict.statusAvailable || "Доступно";
+                const reason = isLocked ? lockReason(mission, missions, t) : "";
+                // подпись всегда видна у текущей миссии, у остальных раскрывается по наведению и фокусу
+                const labelClass = isCurrent
+                  ? "max-w-[220px] opacity-100 ml-3 pr-4"
+                  : "max-w-0 opacity-0 group-hover:max-w-[220px] group-hover:opacity-100 group-hover:ml-3 group-hover:pr-4 group-focus-visible:max-w-[220px] group-focus-visible:opacity-100 group-focus-visible:ml-3 group-focus-visible:pr-4";
 
                 return (
                   <Link
                     href={isLocked ? "#" : `/missions/${mission.id}`}
                     key={mission.id}
-                    onClick={(e) => isLocked && e.preventDefault()}
-                    className={`mission-node absolute transform -translate-x-1/2 -translate-y-1/2 group z-10 ${isLocked ? 'cursor-default' : 'cursor-pointer'}`}
+                    aria-label={`${title}. ${statusLabel}${reason ? `. ${reason}` : ""}`}
+                    aria-disabled={isLocked ? "true" : undefined}
+                    title={reason || title}
+                    onClick={(e) => {
+                      if (!isLocked) return;
+                      e.preventDefault();
+                      // закрытая миссия объясняет, чего не хватает, а не молчит
+                      if (reason) toast(reason);
+                    }}
+                    className={`mission-node absolute transform -translate-x-1/2 -translate-y-1/2 group z-10 rounded-full outline-none focus-visible:ring-4 focus-visible:ring-[#8e1d1d]/60 ${isLocked ? 'cursor-default' : 'cursor-pointer'}`}
                     style={{ left: `${coords.x}%`, top: `${coords.y}%` }}
                   >
                     {isActive && (
-                      <span className="absolute inset-0 rounded-full bg-[#8e1d1d]/40 animate-ping group-hover:bg-[#8e1d1d]/60 transition-colors duration-300" style={{ zIndex: -1 }}></span>
+                      <span className="absolute inset-0 rounded-full bg-[#8e1d1d]/40 animate-ping motion-reduce:animate-none group-hover:bg-[#8e1d1d]/60 transition-colors duration-300" style={{ zIndex: -1 }}></span>
                     )}
 
                     <div className={`flex items-center p-1 md:p-1.5 rounded-full border-2 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_4px_10px_rgba(62,39,35,0.4)] group-hover:scale-110
@@ -282,12 +350,12 @@ export default function Worlds() {
                         <Icon size={isLocked ? 18 : 22} strokeWidth={isLocked ? 2 : 2.5} className="transition-transform duration-500 group-hover:scale-125 group-hover:rotate-12" />
                       </div>
 
-                      <div className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 group-hover:ml-3 group-hover:pr-4 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
+                      <div className={`overflow-hidden whitespace-nowrap transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${labelClass}`}>
                         <p className={`text-sm font-display font-bold tracking-wide ${isLocked ? 'text-[#5c3a21]' : 'text-[#3e2723]'}`}>
-                          {mission.title || mission.name || worldsDict.missionFallback || "Миссия"}
+                          {title}
                         </p>
                         <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${isLocked ? 'text-[#8b5a2b]' : 'text-[#8e1d1d]'}`}>
-                          {mission.chapter || mission.tier || worldsDict.chapterFallback || "Глава"}
+                          {statusLabel}
                         </p>
                       </div>
                     </div>

@@ -22,15 +22,18 @@ export default function MissionComplete({ data, onClose, onMap }) {
 
   return (
     <div
+      role="presentation"
       className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
-      onClick={onClose}
+      // закрытие по фону только когда нажали именно на фон; с клавиатуры есть Esc и кнопка «Остаться»
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        onClick={(e) => e.stopPropagation()}
         className="complete-card w-full max-w-md rounded-3xl border-2 border-card-border bg-modal-bg p-8 text-center text-modal-text shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)]"
       >
         <div
@@ -58,8 +61,22 @@ export default function MissionComplete({ data, onClose, onMap }) {
             : t("missionPage.complete.noXp")}
         </p>
         <p className="mt-2 text-sm leading-relaxed text-muted">{t("missionPage.complete.starsHint")}</p>
+        {data.suggestClass ? (
+          <p className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-semibold text-text">
+            {t("missionPage.complete.introDone")}
+          </p>
+        ) : null}
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-          <Button data-autofocus onClick={onMap} className="justify-center">
+          {data.suggestClass ? (
+            <Link
+              href="/class"
+              data-autofocus
+              className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 font-medium tracking-wide text-on-primary shadow-glow transition hover:bg-primary-dk"
+            >
+              {t("missionPage.complete.pickClass")}
+            </Link>
+          ) : null}
+          <Button data-autofocus={data.suggestClass ? undefined : true} variant={data.suggestClass ? "secondary" : "primary"} onClick={onMap} className="justify-center">
             {t("missionPage.complete.toMap")}
           </Button>
           <Link

@@ -46,7 +46,19 @@ const emptyForm = (order) => ({
   starter: "",
   expected_output: "",
   hidden_check: "",
+  hints_ru: "",
+  hints_en: "",
+  skeleton_ru: "",
+  skeleton_en: "",
 });
+
+// Подсказки разделяются пустой строкой; i-я русская парится с i-й английской.
+const splitHints = (text) =>
+  (text || "")
+    .split(/\n\s*\n/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+const joinHints = (hints, lang) => (hints || []).map((h) => h?.[lang] || "").join("\n\n");
 
 const fromTask = (task) => {
   const options = (task.data?.options || []).map((o) => o.value);
@@ -65,6 +77,10 @@ const fromTask = (task) => {
     starter: task.data?.starter || "",
     expected_output: task.data?.expected_output || "",
     hidden_check: task.data?.hidden_check || "",
+    hints_ru: joinHints(task.data?.hints, "ru"),
+    hints_en: joinHints(task.data?.hints, "en"),
+    skeleton_ru: task.data?.skeleton?.ru || "",
+    skeleton_en: task.data?.skeleton?.en || "",
   };
 };
 
@@ -90,10 +106,17 @@ const toPayload = (form, missionId) => {
       correct_answer: answer,
     };
   } else if (form.task_type === "code") {
+    const ru = splitHints(form.hints_ru);
+    const en = splitHints(form.hints_en);
     payload.data = {
       starter: form.starter,
       expected_output: form.expected_output,
       hidden_check: form.hidden_check,
+      hints: Array.from({ length: Math.max(ru.length, en.length) }, (_, i) => ({
+        ru: ru[i] || "",
+        en: en[i] || "",
+      })),
+      skeleton: { ru: form.skeleton_ru, en: form.skeleton_en },
     };
   } else {
     payload.data = {};
@@ -234,6 +257,40 @@ function TaskForm({ form, setForm, t }) {
               />
             </Field>
           </div>
+          <Field label={t("studio.tasks.hintsRu")} hint={t("studio.tasks.hintsHint")}>
+            <textarea
+              rows={5}
+              className={inputCls}
+              value={form.hints_ru}
+              onChange={(e) => set({ hints_ru: e.target.value })}
+            />
+          </Field>
+          <Field label={t("studio.tasks.hintsEn")} hint={t("studio.tasks.hintsHint")}>
+            <textarea
+              rows={5}
+              className={inputCls}
+              value={form.hints_en}
+              onChange={(e) => set({ hints_en: e.target.value })}
+            />
+          </Field>
+          <Field label={t("studio.tasks.skeletonRu")} hint={t("studio.tasks.skeletonHint")}>
+            <textarea
+              rows={5}
+              spellCheck={false}
+              className={`${inputCls} font-mono`}
+              value={form.skeleton_ru}
+              onChange={(e) => set({ skeleton_ru: e.target.value })}
+            />
+          </Field>
+          <Field label={t("studio.tasks.skeletonEn")} hint={t("studio.tasks.skeletonHint")}>
+            <textarea
+              rows={5}
+              spellCheck={false}
+              className={`${inputCls} font-mono`}
+              value={form.skeleton_en}
+              onChange={(e) => set({ skeleton_en: e.target.value })}
+            />
+          </Field>
         </div>
       ) : null}
 

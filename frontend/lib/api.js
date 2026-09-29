@@ -147,6 +147,11 @@ export async function logout() {
   if (typeof window !== "undefined") window.location.href = "/login";
 }
 
+// Каталог курсов: публичный, лендинг берёт из него настоящие цифры.
+export const Tracks = {
+  list: () => api.get("/tracks/").then((r) => (Array.isArray(r.data) ? r.data : r.data?.results || [])),
+};
+
 export const Missions = {
   list: () => api.get("/missions/").then((r) => r.data),
   get: (id) => api.get(`/missions/${id}/`).then((r) => r.data),
@@ -281,7 +286,6 @@ export const Runner = {
 // Сводная аналитика платформы (только для staff). Отвечает на вопрос
 // комиссии «как вы измеряете эффективность обучения».
 export const Analytics = {
-  get: () => api.get("/analytics/").then((r) => r.data),
   // KPI обучения: MCR, MAS, отсев, порог неудач подряд, эффект подсказок.
   metrics: (params = {}) =>
     api.get("/analytics/metrics/", { params }).then((r) => r.data),
@@ -303,6 +307,8 @@ export const Learning = {
 // флагом «застрял». Ответ — {students: [...], summary: {...}}.
 export const Teacher = {
   students: () => api.get("/teacher/students/").then((r) => r.data),
+  // Один ученик глазами преподавателя (только по его курсам).
+  studentLearning: (id) => api.get(`/teacher/students/${id}/learning/`).then((r) => r.data),
 };
 
 // Студия преподавателя (staff): CRUD по своим курсам. Бэкенд жёстко ограничивает

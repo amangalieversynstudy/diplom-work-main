@@ -2,7 +2,7 @@
  * CodeRunnerPanel — editor + interactive terminal wired to the WebSocket runner.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import {
   Play,
   Square,
@@ -60,17 +60,21 @@ const wrapWords = (text, width = 70) => {
 
 const MIN_TERMINAL_H = 160;
 const MAX_TERMINAL_H = 1000;
-const DEFAULT_TERMINAL_H = 320;
+const DEFAULT_TERMINAL_H = 260;
 
-export default function CodeRunnerPanel({
-  task,
-  code,
-  onChange,
-  onTaskResult,
-  onRunStateChange,
-  inventoryCounts = { ai_summons: 0, hint_scrolls: 0, skeleton_scrolls: 0 },
-  onInventoryUpdate,
-}) {
+function CodeRunnerPanel(
+  {
+    task,
+    code,
+    onChange,
+    onTaskResult,
+    onRunStateChange,
+    inventoryCounts = { ai_summons: 0, hint_scrolls: 0, skeleton_scrolls: 0 },
+    onInventoryUpdate,
+    pulseHelp = false, // после нескольких неудач подсвечиваем зелье и Мудреца
+  },
+  ref
+) {
   const { t } = useI18n();
   const termRef = useRef(null);
   const wsRef = useRef(null);
@@ -273,12 +277,12 @@ export default function CodeRunnerPanel({
             .replace("{count}", res.remaining)
         );
         if (onInventoryUpdate) onInventoryUpdate(itemType, res.remaining);
-        return true;
+        return res;
       } catch (error) {
         toast.error(
           error.response?.data?.detail || t("codeRunner.itemFail")
         );
-        return false;
+        return null;
       } finally {
         setUsingItem(false);
       }
@@ -286,30 +290,33 @@ export default function CodeRunnerPanel({
     [usingItem, onInventoryUpdate, task?.id, t]
   );
 
+  // Каркас решения приходит с сервера. Если ученик ещё ничего не менял, он заменяет
+  // заготовку; иначе добавляется под его кодом, ничего не стирая и не дублируя заготовку.
   const handleSkeletonScroll = async () => {
-    const ok = await handleUseItem("skeleton_scrolls", t("codeRunner.items.architect"));
-    if (ok) {
-      const boilerplate =
-        task?.data?.starter ||
-        `${t("codeRunner.starterComment")}\ndef main():\n    pass\n\nif __name__ == '__main__':\n    main()\n`;
-      onChange(code ? `${code}\n\n${boilerplate}` : boilerplate);
-    }
+    const res = await handleUseItem("skeleton_scrolls", t("codeRunner.items.architect"));
+    if (!res?.skeleton) return;
+    const starter = (task?.data?.starter || "").trim();
+    const untouched = !code?.trim() || code.trim() === starter;
+    onChange(
+      untouched
+        ? res.skeleton
+        : `${code.replace(/\s+$/, "")}\n\n${t("codeRunner.skeletonDivider")}\n${res.skeleton}\n`
+    );
   };
 
   const handleHintScroll = async () => {
-    const ok = await handleUseItem("hint_scrolls", t("codeRunner.items.clarity"));
-    if (!ok) return;
+    const res = await handleUseItem("hint_scrolls", t("codeRunner.items.clarity"));
+    if (!res?.hint) return;
 
-    const hint =
-      task?.data?.hint ||
-      t("codeRunner.hintFallback");
+    const hint = res.hint.text;
+    const level = res.hint.levels > 1 ? ` ${res.hint.level}/${res.hint.levels}` : "";
 
     // Подсказку выводим прямо в терминал редактора — он всегда
     // привязан к панели и виден на любой ширине экрана (на 32:9
     // top-right toast визуально «уходит за экран»). Если терминал
     // ещё не смонтирован — фоллбэк на тост.
     if (termRef.current?.writeln) {
-      termRef.current.writeln(`\r\n${ANSI_YELLOW}${t("codeRunner.clarityHeader")}${ANSI_RESET}`);
+      termRef.current.writeln(`\r\n${ANSI_YELLOW}${t("codeRunner.clarityHeader")}${level}${ANSI_RESET}`);
       wrapWords(hint, 70).forEach((line) => {
         termRef.current.writeln(`${ANSI_YELLOW}│${ANSI_RESET} ${line}`);
       });
@@ -318,6 +325,16 @@ export default function CodeRunnerPanel({
       toast(`💡 ${hint}`, { duration: 6000 });
     }
   };
+
+  // Баннер помощи на странице миссии вызывает те же действия, что и кнопки панели.
+  useImperativeHandle(ref, () => ({
+    spendHint: handleHintScroll,
+    callMentor: () => setMentorOpen(true),
+  }));
+
+  const hintAvailable = Boolean(task?.data?.has_hint);
+  const skeletonAvailable = Boolean(task?.data?.has_skeleton);
+  const pulse = "ring-2 ring-[#e5c07b] motion-safe:animate-pulse";
 
   const lines = code ? code.split("\n").length : 1;
   const lineArray = Array.from({ length: Math.max(25, lines) }, (_, i) => i + 1);
@@ -383,9 +400,9 @@ export default function CodeRunnerPanel({
         <div className="flex items-center gap-1 sm:gap-3 px-2 sm:px-4 py-1 sm:border-l border-[#333] sm:ml-2">
           <button
             onClick={handleSkeletonScroll}
-            disabled={usingItem || !inventoryCounts?.skeleton_scrolls}
-            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors ${inventoryCounts?.skeleton_scrolls > 0 ? "text-[#e5c07b] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
-            title={t("codeRunner.items.architect")}
+            disabled={usingItem || !inventoryCounts?.skeleton_scrolls || !skeletonAvailable}
+            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors ${inventoryCounts?.skeleton_scrolls > 0 && skeletonAvailable ? "text-[#e5c07b] hover:bg-[#333] cursor-pointer" : "text-[#8a8a8a] cursor-not-allowed"}`}
+            title={skeletonAvailable ? t("codeRunner.items.architect") : t("codeRunner.items.noSkeleton")}
           >
             <Scroll size={14} />
             <span>{inventoryCounts?.skeleton_scrolls || 0}</span>
@@ -393,9 +410,9 @@ export default function CodeRunnerPanel({
 
           <button
             onClick={handleHintScroll}
-            disabled={usingItem || !inventoryCounts?.hint_scrolls}
-            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors ${inventoryCounts?.hint_scrolls > 0 ? "text-[#98c379] hover:bg-[#333] cursor-pointer" : "text-gray-600 cursor-not-allowed"}`}
-            title={t("codeRunner.items.clarity")}
+            disabled={usingItem || !inventoryCounts?.hint_scrolls || !hintAvailable}
+            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors ${inventoryCounts?.hint_scrolls > 0 && hintAvailable ? "text-[#98c379] hover:bg-[#333] cursor-pointer" : "text-[#8a8a8a] cursor-not-allowed"} ${pulseHelp && hintAvailable && inventoryCounts?.hint_scrolls > 0 ? pulse : ""}`}
+            title={hintAvailable ? t("codeRunner.items.clarity") : t("codeRunner.items.noHint")}
           >
             <Lightbulb size={14} />
             <span>{inventoryCounts?.hint_scrolls || 0}</span>
@@ -403,7 +420,7 @@ export default function CodeRunnerPanel({
 
           <button
             onClick={() => setMentorOpen(true)}
-            className="flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors text-[#c678dd] hover:bg-[#333] cursor-pointer"
+            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors text-[#c678dd] hover:bg-[#333] cursor-pointer ${pulseHelp && inventoryCounts?.ai_summons > 0 ? pulse : ""}`}
             title={t("codeRunner.mentor.open")}
           >
             <Bot size={14} />
@@ -434,7 +451,7 @@ export default function CodeRunnerPanel({
             className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-1 rounded border border-[#a0432a] bg-gradient-to-b from-[#7a2b1a] to-[#3a0d06] hover:from-[#8e3420] hover:to-[#4a1208] text-[#f3e6c2] text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,220,140,0.2)]"
           >
             <RotateCcw size={11} />
-            <span className="hidden sm:inline">Reset</span>
+            <span className="hidden sm:inline">{t("codeRunner.reset")}</span>
           </button>
 
           {running ? (
@@ -443,7 +460,7 @@ export default function CodeRunnerPanel({
               className="flex items-center gap-1.5 px-3 py-2 sm:py-1 rounded border border-[#d14a4a] bg-gradient-to-b from-[#a31515] to-[#5e0c0c] hover:from-[#c41a1a] hover:to-[#6e0e0e] text-white text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,200,200,0.2)]"
             >
               <Square size={11} fill="currentColor" />
-              Stop
+              {t("codeRunner.stop")}
             </button>
           ) : (
             <button
@@ -451,7 +468,7 @@ export default function CodeRunnerPanel({
               className="flex items-center gap-1.5 px-3 py-2 sm:py-1 rounded border border-[#5a8a2a] bg-gradient-to-b from-[#3a6a22] to-[#1b3a0e] hover:from-[#46802a] hover:to-[#224a12] text-[#f1ffd6] text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,220,140,0.25)]"
             >
               <Play size={12} fill="currentColor" />
-              Run Code
+              {t("codeRunner.run")}
             </button>
           )}
         </div>
@@ -467,7 +484,7 @@ export default function CodeRunnerPanel({
       </div>
 
       {/* Editor */}
-      <div className="flex-1 relative bg-[#1e1e1e] flex border-l border-[#333] min-h-0">
+      <div className="flex-1 relative bg-[#1e1e1e] flex border-l border-[#333] min-h-[140px]">
         <div
           ref={gutterRef}
           aria-hidden="true"
@@ -515,12 +532,12 @@ export default function CodeRunnerPanel({
 
       {/* Terminal — adaptive height, сворачиваемый (xterm остаётся смонтирован) */}
       <div
-        style={termCollapsed ? undefined : { height: termH }}
+        style={termCollapsed ? undefined : { height: termH, maxHeight: "45%" }}
         className="flex flex-col bg-[#1e1e1e] border-l border-[#333] flex-shrink-0"
       >
         <div className="flex items-center gap-4 px-4 pt-2 border-b border-[#333] select-none">
           <span className="text-xs uppercase tracking-wider text-white border-b border-white pb-2 font-semibold flex items-center gap-2">
-            <TerminalIcon size={14} /> TERMINAL
+            <TerminalIcon size={14} /> {t("codeRunner.terminal")}
           </span>
           {running && (
             <span className="text-xs tracking-wider text-[#cca700] pb-2 flex items-center gap-1.5">
@@ -560,3 +577,5 @@ export default function CodeRunnerPanel({
     </div>
   );
 }
+
+export default forwardRef(CodeRunnerPanel);

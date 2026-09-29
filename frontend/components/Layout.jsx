@@ -174,6 +174,16 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
     };
   }, [isMenuOpen]);
 
+  // Преподавателю нужны кабинет, студия и аналитика, а «Мой путь» и «Класс» — экраны ученика.
+  const staffLinks = useMemo(
+    () => [
+      { href: "/teacher", label: t("nav.teacher") },
+      { href: "/studio", label: t("nav.studio") },
+      { href: "/analytics", label: t("nav.analytics") },
+    ],
+    [t]
+  );
+
   const translatedNavLinks = useMemo(
     () =>
       navLinks.map((item) => ({
@@ -182,6 +192,10 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
       })),
     [t]
   );
+
+  const menuLinks = isStaff
+    ? translatedNavLinks.filter((item) => !["/journey", "/class"].includes(item.href))
+    : translatedNavLinks;
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -280,7 +294,11 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
         <div className="max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 flex items-center justify-between relative">
           {/* Навигация видна на широких экранах, не только в выдвижном меню */}
           <nav aria-label={t("layout.nav")} className="hidden xl:flex w-[24rem] shrink-0 items-center gap-1">
-            {translatedNavLinks.map((item) => (
+            {(isStaff
+              ? // в верхней полосе четыре ссылки: больше не помещается рядом с логотипом, остальное в меню
+                [...staffLinks, ...translatedNavLinks.filter((item) => item.href === "/worlds")]
+              : translatedNavLinks
+            ).map((item) => (
               <TransitionLink
                 key={item.href}
                 href={item.href}
@@ -382,7 +400,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
           <div className="flex-1 overflow-y-auto pt-24 px-8 flex flex-col gap-6">
             <span className="text-sm font-semibold text-faint uppercase tracking-wider">{t("layout.nav")}</span>
             <div className="flex flex-col gap-6">
-            {translatedNavLinks.map((item) => (
+            {menuLinks.map((item) => (
               <TransitionLink
                 key={item.href}
                 href={item.href}
@@ -390,7 +408,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
                 className="group flex items-center gap-4 text-3xl font-bold text-text hover:text-primary transition-colors"
               >
                 <span className="group-hover:text-[var(--primary)] transition-colors">{item.label}</span>
-                <div className="w-8 h-8 rounded-full bg-[var(--primary)] text-white flex items-center justify-center opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                <div className="w-8 h-8 rounded-full bg-[var(--primary)] text-on-primary flex items-center justify-center opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
                   <ArrowUpRight className="w-5 h-5" />
                 </div>
               </TransitionLink>
@@ -404,7 +422,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
                 <span className="group-hover:text-[var(--primary)] transition-colors">
                   {t("analytics.title")}
                 </span>
-                <div className="w-8 h-8 rounded-full bg-[var(--primary)] text-white flex items-center justify-center opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                <div className="w-8 h-8 rounded-full bg-[var(--primary)] text-on-primary flex items-center justify-center opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
                   <ArrowUpRight className="w-5 h-5" />
                 </div>
               </TransitionLink>
@@ -418,7 +436,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
                 <span className="group-hover:text-[var(--primary)] transition-colors">
                   {t("teacher.title")}
                 </span>
-                <div className="w-8 h-8 rounded-full bg-[var(--primary)] text-white flex items-center justify-center opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                <div className="w-8 h-8 rounded-full bg-[var(--primary)] text-on-primary flex items-center justify-center opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
                   <ArrowUpRight className="w-5 h-5" />
                 </div>
               </TransitionLink>
@@ -432,7 +450,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
                 <span className="group-hover:text-[var(--primary)] transition-colors">
                   {t("studio.title")}
                 </span>
-                <div className="w-8 h-8 rounded-full bg-[var(--primary)] text-white flex items-center justify-center opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                <div className="w-8 h-8 rounded-full bg-[var(--primary)] text-on-primary flex items-center justify-center opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
                   <ArrowUpRight className="w-5 h-5" />
                 </div>
               </TransitionLink>
@@ -486,7 +504,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
               </div>
               <span>{t("layout.footerNote")}</span>
               <div className="flex items-center gap-4">
-                {translatedNavLinks
+                {menuLinks
                   .filter((item) => item.href !== "/class")
                   .map((item) => (
                     <Link

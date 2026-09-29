@@ -35,8 +35,8 @@ export default function Login() {
   function validate() {
     const e = {};
     if (!identifier.trim())
-      e.identifier = copy.errorIdentifier || "Укажите логин или e-mail";
-    if (!password) e.password = copy.errorPassword || "Введите пароль";
+      e.identifier = copy.errorIdentifier || "Укажи логин или e-mail";
+    if (!password) e.password = copy.errorPassword || "Введи пароль";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -50,7 +50,6 @@ export default function Login() {
       await login({ email: identifier, username: identifier, password });
       toast.success(copy.success || "Welcome!", { duration: 2000 });
 
-      // Smart redirect: newcomer → class picker, returning user → worlds
       const userData = await ProfileAPI.me();
 
       // Напоминание о стрике: если серия жива, но сегодня ещё не продлена —
@@ -64,11 +63,10 @@ export default function Login() {
         if (msg) toast(msg, { duration: 6000 });
       }
 
-      if (!userData?.profile?.class_role && !userData?.class_role) {
-        router.push("/class");
-      } else {
-        router.push("/worlds");
-      }
+      // Куда после входа: преподаватель в свой кабинет, ученик на карту. Выбор класса
+      // никуда не ведёт и не мешает начать, поэтому первым экраном он не показывается.
+      const staff = !!(userData?.is_staff ?? userData?.user?.is_staff);
+      router.push(staff ? "/teacher" : "/worlds");
     } catch (err) {
       const data = err?.response?.data || {};
       const detail = data.detail || "";
@@ -95,7 +93,7 @@ export default function Login() {
   async function onResend() {
     const email = identifier.trim();
     if (!email || !email.includes("@")) {
-      toast.error(copy.resendNeedsEmail || "Введите e-mail, на который пришлёт письмо.");
+      toast.error(copy.resendNeedsEmail || "Введи e-mail, на который пришлём письмо.");
       return;
     }
     setResending(true);

@@ -5,6 +5,7 @@ import Button from "../../components/Button";
 import { Studio as StudioAPI, Profile as ProfileAPI } from "../../lib/api";
 import logger from "../../lib/logger";
 import { useI18n } from "../../lib/i18n";
+import { unit } from "../../lib/plural";
 import {
   BookOpen,
   GraduationCap,
@@ -19,7 +20,7 @@ const inputCls =
   "w-full rounded-xl border border-border bg-panel px-3.5 py-2.5 text-sm text-text placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-primary/50";
 
 // Карточка одного курса в списке студии.
-function CourseCard({ track, onOpen, t }) {
+function CourseCard({ track, onOpen, t, language }) {
   return (
     <button
       onClick={onOpen}
@@ -39,7 +40,7 @@ function CourseCard({ track, onOpen, t }) {
         <span
           className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
             track.is_active
-              ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-400"
+              ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-700 dark:text-emerald-400"
               : "border-border bg-panel text-muted"
           }`}
         >
@@ -56,10 +57,10 @@ function CourseCard({ track, onOpen, t }) {
       )}
       <div className="flex items-center gap-4 text-xs text-muted">
         <span className="inline-flex items-center gap-1.5">
-          <Layers size={13} /> {track.locations_count} {t("studio.counts.locations")}
+          <Layers size={13} /> {track.locations_count} {unit(t, language, "section", track.locations_count)}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <Swords size={13} /> {track.missions_count} {t("studio.counts.missions")}
+          <Swords size={13} /> {track.missions_count} {unit(t, language, "mission", track.missions_count)}
         </span>
       </div>
     </button>
@@ -68,7 +69,7 @@ function CourseCard({ track, onOpen, t }) {
 
 export default function StudioIndexPage() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [allowed, setAllowed] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tracks, setTracks] = useState([]);
@@ -276,6 +277,7 @@ export default function StudioIndexPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {tracks.map((track) => (
               <CourseCard
+                language={language}
                 key={track.id}
                 track={track}
                 t={t}

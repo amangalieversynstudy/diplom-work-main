@@ -48,7 +48,7 @@ export default function ForgotPassword() {
           {sent ? (
             <div className="text-center py-4">
               <div className="grid h-16 w-16 mx-auto place-items-center rounded-2xl bg-emerald-400/10 border border-emerald-400/20 mb-5">
-                <CheckCircle2 size={30} className="text-emerald-400" />
+                <CheckCircle2 size={30} className="text-emerald-700 dark:text-emerald-400" />
               </div>
               <p className="text-text font-semibold mb-2">
                 {copy.sentTitle || "Проверь почту"}

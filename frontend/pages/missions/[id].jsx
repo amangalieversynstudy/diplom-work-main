@@ -19,6 +19,7 @@ import { Sparkles, Code2, BookOpen, Lock, ChevronRight, ScrollText, ArrowLeft } 
 import logger from "../../lib/logger";
 import { useI18n } from "../../lib/i18n";
 import { sanitizeHtml } from "../../lib/sanitize";
+import { fetchIntroStatus } from "../../lib/class";
 
 // Стили текста свитка: тёмно-коричневый на пергаменте (светлый фон, поэтому без prose-invert).
 const SCROLL_PROSE =
@@ -67,6 +68,7 @@ export default function MissionDetail() {
   // Телефон: у кодового шага две вкладки, условие и редактор. На широком экране видно всё сразу.
   const [mobileTab, setMobileTab] = useState("task");
   const stripRef = useRef(null);
+  const panelRef = useRef(null);
   const tabsRef = useRef(null);
   const prevStepRef = useRef(null);
 
@@ -207,17 +209,6 @@ export default function MissionDetail() {
   const finishMission = async () => {
     try {
       const result = await Missions.complete(id);
-      // итог миссии показываем чуть позже, чтобы успели отыграть тосты и рассвет уровня
-      const missionName =
-        (language === "en"
-          ? mission?.title_en || mission?.title_ru
-          : mission?.title_ru || mission?.title_en) ||
-        mission?.title ||
-        "";
-      setTimeout(
-        () => setCompletion({ title: missionName, xp: result?.xp_added || 0, stars: result?.stars ?? 0 }),
-        result?.leveled_up ? 2800 : 900
-      );
       // backend честно шлёт leveled_up/xp_added/new_level
       if (result?.xp_added > 0) {
         toast.success(
@@ -255,6 +246,8 @@ export default function MissionDetail() {
         });
       }
 
+      // Вводный курс закончился, а класса ещё нет: предложим выбрать (это и есть награда за курс).
+      let suggestClass = false;
       // refetch profile to show updated rank on level-up
       // and update inventory with any rewards granted
       try {
@@ -267,10 +260,31 @@ export default function MissionDetail() {
             skeleton_scrolls: p.skeleton_scrolls ?? 0,
           });
           setPlayerLevel(p.level ?? 1);
+          const intro = await fetchIntroStatus();
+          suggestClass = Boolean(intro?.class_unlocked) && !p.class_role && !profileData.class_role;
         }
       } catch (profileErr) {
         logger.error("Failed to refetch profile after mission complete:", profileErr);
       }
+
+      // итог миссии показываем чуть позже, чтобы успели отыграть тосты и рассвет уровня
+      const missionName =
+        (language === "en"
+          ? mission?.title_en || mission?.title_ru
+          : mission?.title_ru || mission?.title_en) ||
+        mission?.title ||
+        "";
+      setTimeout(
+        () =>
+          setCompletion({
+            title: missionName,
+            // впервые: всё, что миссия принесла (шаги и бонус); повтор: только бонус за повтор
+            xp: result?.first_completion ? result?.xp_earned || 0 : result?.xp_added || 0,
+            stars: result?.stars ?? 0,
+            suggestClass,
+          }),
+        result?.leveled_up ? 2000 : 300
+      );
     } catch (err) {
       logger.error("Mission.complete failed:", err);
       toast.error(err?.response?.data?.detail || t("missionPage.toasts.saveFail"));
@@ -280,9 +294,28 @@ export default function MissionDetail() {
   // Сервер засчитал шаг: обновляем прогресс, идём дальше или завершаем миссию.
   const onTaskSolved = async (taskId, progress) => {
     setTaskProgress((prev) => ({ ...prev, [taskId]: progress }));
-    toast.success(t("missionPage.toasts.stepSaved"));
-    const reward = tasks.find((task) => task.id === taskId)?.xp_reward;
-    if (reward > 0) setXpPop({ amount: reward, id: Date.now() });
+    // ровно столько XP сервер выдал за этот шаг (повторное решение не платит)
+    const paid = progress?.xp_added || 0;
+    toast.success(
+      paid > 0 ? t("missionPage.toasts.stepDoneXp").replace("{xp}", paid) : t("missionPage.toasts.stepSaved")
+    );
+    if (paid > 0) setXpPop({ amount: paid, id: Date.now() });
+    if (progress?.leveled_up) {
+      setLevelUp(progress.new_level);
+      setPlayerLevel(progress.new_level);
+      // новый уровень пополняет зелья и вызовы Мудреца
+      Profile.me()
+        .then((userDoc) => {
+          const p = userDoc?.profile ?? userDoc;
+          if (!p) return;
+          setInventory({
+            ai_summons: p.ai_summons ?? 0,
+            hint_scrolls: p.hint_scrolls ?? 0,
+            skeleton_scrolls: p.skeleton_scrolls ?? 0,
+          });
+        })
+        .catch(() => {});
+    }
 
     const currentIndex = tasks.findIndex((task) => task.id === taskId);
     if (currentIndex !== -1 && currentIndex < tasks.length - 1) {
@@ -405,6 +438,8 @@ export default function MissionDetail() {
     );
   }
 
+  // всё, что можно заработать в миссии: XP шагов плюс бонус за завершение
+  const totalXp = (mission.xp_reward || 0) + tasks.reduce((sum, task) => sum + (task.xp_reward || 0), 0);
   const isCodeTask = activeTask?.task_type === "code";
   const showEditor = isCodeTask && mobileTab === "code";
   const activeIndex = tasks.findIndex((task) => task.id === activeTask?.id);
@@ -416,6 +451,19 @@ export default function MissionDetail() {
       ""
   );
   const helpOffer = taskProgress[activeTaskId]?.help_offer;
+  // Кнопки баннера делают то же, что значки над редактором. На телефоне сначала
+  // открываем вкладку с кодом: подсказка печатается в терминал, и её надо увидеть.
+  const askForHelp = (kind) => {
+    openMobileTab("code");
+    setTimeout(() => {
+      if (kind === "hint") panelRef.current?.spendHint?.();
+      else panelRef.current?.callMentor?.();
+    }, 60);
+  };
+  const canHint = (inventory.hint_scrolls || 0) > 0 && Boolean(activeTask?.data?.has_hint);
+  const canMentor = (inventory.ai_summons || 0) > 0;
+  const helpButton =
+    "inline-flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-[#5c3a21]/70 bg-[#5c3a21] px-3 py-2 text-sm font-semibold text-[#fde68a] transition-colors hover:bg-[#3a2818] disabled:cursor-not-allowed disabled:opacity-50";
   const helpBanner = (cls) =>
     helpOffer && (
       <div
@@ -426,6 +474,19 @@ export default function MissionDetail() {
           {t("missionPage.helpOffer.title").replace("{n}", helpOffer.failures)}
         </p>
         <p className="mt-1 leading-snug">{t("missionPage.helpOffer.body")}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button type="button" className={helpButton} disabled={!canHint} onClick={() => askForHelp("hint")}>
+            {t("missionPage.helpOffer.hint")} · {inventory.hint_scrolls || 0}
+          </button>
+          <button type="button" className={helpButton} disabled={!canMentor} onClick={() => askForHelp("mentor")}>
+            {t("missionPage.helpOffer.mentor")} · {inventory.ai_summons || 0}
+          </button>
+        </div>
+        {!canHint && !canMentor ? (
+          <p className="mt-2 text-xs leading-snug">{t("missionPage.helpOffer.noItems")}</p>
+        ) : !activeTask?.data?.has_hint ? (
+          <p className="mt-2 text-xs leading-snug">{t("missionPage.helpOffer.noHint")}</p>
+        ) : null}
       </div>
     );
 
@@ -442,7 +503,7 @@ export default function MissionDetail() {
       <div className="min-h-screen xl:h-screen pt-24 bg-bg dark:bg-[#0f0f11] text-text dark:text-gray-200 font-sans flex flex-col">
         {/* Квест-шапка в RPG-стиле: deep-wood band + scroll icon + Melodrama.
             Светлая тема — чистая surface-полоса; тёмная — глубокое дерево. */}
-        <header className="border-b border-border dark:border-[#5c3a21]/40 px-4 sm:px-8 py-4 flex items-center justify-between gap-3 select-none shadow-md bg-surface dark:bg-gradient-to-r dark:from-[#2b1d11] dark:via-[#3a2818] dark:to-[#2b1d11]">
+        <header className="border-b border-border dark:border-[#5c3a21]/40 px-4 sm:px-8 py-3 xl:py-2.5 flex items-center justify-between gap-3 select-none shadow-md bg-surface dark:bg-gradient-to-r dark:from-[#2b1d11] dark:via-[#3a2818] dark:to-[#2b1d11]">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <div className="shrink-0 p-2.5 bg-primary/10 dark:bg-[#8b5a2b]/25 border border-primary/20 dark:border-[#d4a24c]/60 rounded-xl text-primary dark:text-[#fde68a] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
               <ScrollText size={22} />
@@ -455,7 +516,7 @@ export default function MissionDetail() {
                   mission.title}
               </h1>
               <p className="text-xs text-accent dark:text-[#d4a24c] font-mono mt-0.5 uppercase tracking-wider">
-                {t("missionPage.rewardLabel")}: <span className="text-text dark:text-[#fde68a] font-bold">{mission.xp_reward}</span> {t("missionPage.xpGained")}
+                {t("missionPage.rewardLabel")}: <span className="text-text dark:text-[#fde68a] font-bold">{totalXp}</span> {t("missionPage.xpGained")}
               </p>
             </div>
           </div>
@@ -639,7 +700,7 @@ export default function MissionDetail() {
 
           {/* Центральная панель (Свиток инструкций) — parchment под стать левой панели */}
           <div
-            className={`w-full xl:w-[420px] xl:flex-shrink-0 ${showEditor ? "hidden" : "flex"} xl:flex flex-col border-r-4 border-[#5c3a21]/60 min-w-0 relative`}
+            className={`w-full ${isCodeTask ? "xl:w-[420px] xl:flex-shrink-0" : "xl:flex-1"} ${showEditor ? "hidden" : "flex"} xl:flex flex-col border-r-4 border-[#5c3a21]/60 min-w-0 relative`}
             style={{
               backgroundColor: "#dcb98a",
               backgroundImage:
@@ -693,7 +754,8 @@ export default function MissionDetail() {
             {/* Тело свитка: тёмно-коричневый текст на пергаменте.
                 `prose-invert` снят — у нас светлый фон. Цвета через явные классы,
                 чтобы prose не пытался применить ни тёмную, ни системную палитру. */}
-            <div className={`flex-1 overflow-y-auto p-4 sm:p-6 ${SCROLL_PROSE}`}>
+            <div className={`flex-1 overflow-y-auto p-4 sm:p-6 ${SCROLL_PROSE} ${isCodeTask ? "" : "xl:px-12 xl:py-8"}`}>
+              <div className={isCodeTask ? "space-y-4" : "mx-auto w-full max-w-3xl space-y-4 xl:text-base"}>
               <div dangerouslySetInnerHTML={{ __html: taskBodyHtml }} />
 
               {tasks.length === 0 && (
@@ -744,12 +806,13 @@ export default function MissionDetail() {
                   </Button>
                 </div>
               )}
+              </div>
             </div>
           </div>
 
           {/* Правая панель (Editor + Terminal) */}
           <div
-            className={`w-full xl:flex-1 ${showEditor ? "flex" : "hidden"} xl:flex h-[calc(100dvh-10rem)] min-h-[480px] xl:h-auto xl:min-h-0 bg-surface dark:bg-[#1e1e1e] flex-col min-w-0`}
+            className={`w-full xl:flex-1 ${showEditor ? "flex" : "hidden"} ${isCodeTask ? "xl:flex" : "xl:hidden"} h-[calc(100dvh-10rem)] min-h-[480px] xl:h-auto xl:min-h-0 bg-surface dark:bg-[#1e1e1e] flex-col min-w-0`}
           >
             {isCodeTask ? (
               <>
@@ -767,6 +830,8 @@ export default function MissionDetail() {
                 {helpBanner("xl:hidden mx-3 my-2 shrink-0")}
                 <div className="min-h-0 flex-1">
                   <CodeRunnerPanel
+                    ref={panelRef}
+                    pulseHelp={Boolean(helpOffer)}
                     task={activeTask}
                     code={codeValue}
                     onChange={(val) => setCodeDrafts((prev) => ({ ...prev, [activeTask.id]: val }))}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import Button from "../components/Button";
@@ -24,8 +25,8 @@ import {
 function StatCard({ icon: Icon, label, value, accent = "primary" }) {
   const ring = {
     primary: "text-primary bg-primary/10 border-primary/20",
-    amber: "text-amber-400 bg-amber-400/10 border-amber-400/20",
-    green: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
+    amber: "text-amber-800 dark:text-amber-400 bg-amber-400/10 border-amber-400/20",
+    green: "text-emerald-700 dark:text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
   }[accent];
 
   return (
@@ -53,7 +54,7 @@ function StatCard({ icon: Icon, label, value, accent = "primary" }) {
 function StatusBadge({ student, t }) {
   if (!student.stuck) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-400">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
         <CheckCircle2 size={13} />
         {t("teacher.status.ok")}
       </span>
@@ -65,8 +66,8 @@ function StatusBadge({ student, t }) {
     ? t("teacher.status.manyAttempts")
     : t("teacher.status.inactive");
   const cls = isAttempts
-    ? "border-amber-400/20 bg-amber-400/10 text-amber-400"
-    : "border-rose-400/20 bg-rose-400/10 text-rose-400";
+    ? "border-amber-400/20 bg-amber-400/10 text-amber-800 dark:text-amber-400"
+    : "border-rose-400/20 bg-rose-400/10 text-rose-700 dark:text-rose-400";
   const title = isAttempts
     ? t("teacher.attemptsHint").replace("{n}", student.max_attempts)
     : undefined;
@@ -116,7 +117,7 @@ function EarlyWarningPanel({ warning, t }) {
         id="early-warning-title"
         className="text-lg font-bold text-text mb-1 flex items-center gap-2"
       >
-        <LifeBuoy size={18} className="text-amber-400" />
+        <LifeBuoy size={18} className="text-amber-700 dark:text-amber-400" />
         {t("teacher.warning.title")}
       </h2>
       <p className="text-xs text-muted mb-4">{t("teacher.warning.subtitle")}</p>
@@ -135,16 +136,19 @@ function EarlyWarningPanel({ warning, t }) {
               <span
                 className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
                   s.level === "high"
-                    ? "border-rose-400/30 bg-rose-400/10 text-rose-400"
-                    : "border-amber-400/30 bg-amber-400/10 text-amber-400"
+                    ? "border-rose-400/30 bg-rose-400/10 text-rose-700 dark:text-rose-400"
+                    : "border-amber-400/30 bg-amber-400/10 text-amber-800 dark:text-amber-400"
                 }`}
               >
                 {t(`teacher.warning.${s.level}`)}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-text truncate">
+                <Link
+                  href={`/teacher/student/${s.id}`}
+                  className="text-sm font-semibold text-text underline-offset-4 hover:text-primary hover:underline truncate block py-1.5 -my-1.5"
+                >
                   {s.display_name || s.username}
-                </p>
+                </Link>
                 <ul className="text-xs text-muted space-y-0.5 mt-0.5">
                   {s.reasons.map((reason) => (
                     <li key={reason.code}>{reasonText(reason)}</li>
@@ -338,9 +342,12 @@ export default function TeacherPage() {
                     {/* Имя + статус (статус виден на мобиле рядом с именем) */}
                     <div className="flex items-center justify-between gap-2 min-w-0 mb-2 md:mb-0">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-text truncate">
+                        <Link
+                          href={`/teacher/student/${s.id}`}
+                          className="text-sm font-semibold text-text underline-offset-4 hover:text-primary hover:underline truncate block py-1.5 -my-1.5"
+                        >
                           {s.display_name || s.username}
-                        </p>
+                        </Link>
                         {s.display_name ? (
                           <p className="text-xs text-muted truncate">
                             @{s.username}
@@ -373,7 +380,7 @@ export default function TeacherPage() {
                       <span className="md:hidden text-muted">
                         {t("teacher.table.completed")}
                       </span>
-                      <span className="font-semibold text-emerald-400 tabular-nums">
+                      <span className="font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">
                         {s.completed_count}
                       </span>
                     </div>

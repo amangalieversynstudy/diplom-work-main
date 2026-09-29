@@ -77,7 +77,7 @@ export default function StreakReminder() {
       <button
         type="button"
         onClick={() => router.push("/worlds")}
-        className="shrink-0 rounded-xl bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
+        className="shrink-0 rounded-xl bg-orange-700 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-800"
       >
         {t("streak.reminder.cta")}
       </button>

@@ -5,7 +5,7 @@ import Card from "../components/Card";
 import Button from "../components/Button";
 import PasswordInput from "../components/PasswordInput";
 import { toast } from "sonner";
-import { registerUser } from "../lib/api";
+import { registerUser, login as loginUser } from "../lib/api";
 import { useDictionary } from "../lib/i18n";
 import { clearPlayerClass } from "../lib/class"; // <--- Импортируем нашу новую функцию
 
@@ -30,7 +30,7 @@ export default function Register() {
   function validate() {
     const e = {};
     if (!username.trim())
-      e.username = copy.errUsername || "Придумайте имя пользователя";
+      e.username = copy.errUsername || "Придумай имя пользователя";
     const trimmedEmail = email.trim();
     if (trimmedEmail && !EMAIL_RE.test(trimmedEmail))
       e.email = copy.errEmail || "Неверный формат e-mail";
@@ -70,9 +70,15 @@ export default function Register() {
         );
         router.push(`/login?pending_verify=${encodeURIComponent(trimmedEmail)}`);
       } else {
-        // Email не указан → аккаунт активируется сразу, ведём прямо ко входу.
+        // Email не указан → аккаунт активен сразу: входим за человека и ведём к делу,
+        // а не заставляем второй раз вводить только что придуманные логин и пароль.
         toast.success(copy.success);
-        router.push("/login");
+        try {
+          await loginUser({ email: username, username, password });
+          router.push(teacherMode && teacherCode.trim() ? "/teacher" : "/worlds");
+        } catch {
+          router.push("/login");
+        }
       }
     } catch (err) {
       const detail = err?.response?.data || {};
@@ -155,7 +161,7 @@ export default function Register() {
               <FieldError k="password" />
             </label>
             <label className="text-sm text-muted">
-              {copy.confirmLabel || "Повторите пароль"}
+              {copy.confirmLabel || "Повтори пароль"}
               <PasswordInput
                 value={confirm}
                 autoComplete="new-password"
@@ -177,7 +183,7 @@ export default function Register() {
                 onClick={() => setTeacherMode(true)}
                 className="self-start text-xs text-primary hover:underline"
               >
-                {extra.teacherToggle || "Регистрируетесь как преподаватель?"}
+                {extra.teacherToggle || "Регистрируешься как преподаватель?"}
               </button>
             ) : (
               <label className="text-sm text-muted">
@@ -186,7 +192,7 @@ export default function Register() {
                   className={inputCls("teacher_code")}
                   placeholder={
                     extra.teacherCodePlaceholder ||
-                    "Введите код, выданный администратором"
+                    "Код, выданный администратором"
                   }
                   value={teacherCode}
                   onChange={(e) => {

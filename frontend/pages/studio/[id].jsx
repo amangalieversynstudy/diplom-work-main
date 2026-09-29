@@ -113,7 +113,7 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
           />
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5">
-              <Swords size={13} className="text-amber-400" />
+              <Swords size={13} className="text-amber-700 dark:text-amber-400" />
               <input
                 type="number"
                 min={0}
@@ -156,13 +156,13 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
           <p className="truncate text-xs text-muted">{mission.title_en}</p>
         ) : null}
       </div>
-      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold text-amber-400">
+      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:text-amber-400">
         {mission.xp_reward ?? 0} {t("studio.editor.xp")}
       </span>
       <span
         className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${
           mission.is_active
-            ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-400"
+            ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-700 dark:text-emerald-400"
             : "border-border bg-panel text-muted"
         }`}
       >
@@ -430,7 +430,7 @@ function SectionCard({
                   }
                 />
                 <div className="flex items-center gap-1.5">
-                  <Swords size={13} className="text-amber-400" />
+                  <Swords size={13} className="text-amber-700 dark:text-amber-400" />
                   <input
                     type="number"
                     min={0}
@@ -755,7 +755,7 @@ export default function StudioEditorPage() {
           {error && <p className="mt-3 text-sm text-error">{error}</p>}
           <div className="mt-5 flex items-center justify-end gap-3">
             {savedFlash && (
-              <span className="inline-flex items-center gap-1.5 text-sm text-emerald-400">
+              <span className="inline-flex items-center gap-1.5 text-sm text-emerald-700 dark:text-emerald-400">
                 <Check size={16} /> {t("studio.editor.saved")}
               </span>
             )}

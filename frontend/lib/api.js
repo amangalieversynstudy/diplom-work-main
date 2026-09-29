@@ -53,7 +53,7 @@ api.interceptors.response.use(
             original.headers.Authorization = `Bearer ${token}`;
             return api(original);
           })
-          .catch(Promise.reject);
+          .catch((e) => Promise.reject(e));
       }
       isRefreshing = true;
       try {
@@ -61,12 +61,25 @@ api.interceptors.response.use(
           refresh,
         });
         const newAccess = resp.data?.access;
-        setTokens({ access: newAccess });
+        // Бэкенд ротирует refresh-токен и заносит старый в чёрный список:
+        // если не сохранить новый, следующее обновление (через ~час) вернёт 401
+        // и выкинет ученика на /login посреди занятия.
+        setTokens({ access: newAccess, refresh: resp.data?.refresh });
         queue.forEach((p) => p.resolve(newAccess));
         queue = [];
         original.headers.Authorization = `Bearer ${newAccess}`;
         return api(original);
       } catch (e) {
+        // Другая вкладка могла обновить токены первой (localStorage общий):
+        // наш старый refresh уже в чёрном списке, но в хранилище лежит свежая
+        // пара. Тогда не выходим из аккаунта, а повторяем запрос с ней.
+        const latest = getTokens();
+        if (latest.refresh && latest.refresh !== refresh && latest.access) {
+          queue.forEach((p) => p.resolve(latest.access));
+          queue = [];
+          original.headers.Authorization = `Bearer ${latest.access}`;
+          return api(original);
+        }
         queue.forEach((p) => p.reject(e));
         queue = [];
         clearTokens();
@@ -84,7 +97,10 @@ api.interceptors.response.use(
   (error) => {
     if (error.response && error.response.status === 429) {
       const detail = error.response.data?.detail || "Too many requests. Please wait.";
-      throw new Error(detail);
+      // response сохраняем: по нему вызывающий код отличает 429 от сетевой ошибки.
+      const limited = new Error(detail);
+      limited.response = error.response;
+      throw limited;
     }
     return Promise.reject(error);
   }

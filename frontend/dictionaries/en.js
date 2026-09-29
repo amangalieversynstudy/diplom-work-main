@@ -964,7 +964,7 @@ export const en = {
       skeletonDivider: "# ── Solution outline ──",
       resetTitle: "Revert task code to original",
       reset: "Reset",
-      run: "Run code",
+      run: "Run Code",
       stop: "Stop",
       terminal: "Terminal",
       placeholder: "# Write your code here...",

@@ -172,14 +172,14 @@
       "title_en": "Run the Code and See the Magic",
       "title_ru": "Запусти код и увидь магию",
       "body_en": "<p>Your very first spell. The starter is ready in the Codex — press <strong>Run Code</strong> and watch the terminal greet the world.</p><p>Once you see the output, the trial is cleared.</p>",
-      "body_ru": "<p>Твоё самое первое заклинание. В Кодексе уже готов шаблон — нажми <strong>Run Code</strong> и посмотри, как терминал приветствует мир.</p><p>Как только увидишь вывод — испытание пройдено.</p>",
+      "body_ru": "<p>Твоё самое первое заклинание. В Кодексе уже готов шаблон — нажми <strong>Запустить</strong> и посмотри, как терминал приветствует мир.</p><p>Как только увидишь вывод — испытание пройдено.</p>",
       "data": {
         "language": "python",
         "starter": "# Напиши своё первое заклинание\nprint(\"Привет, мир!\")\n",
         "sampleOutput": "Привет, мир!",
         "hints": [
           {
-            "ru": "Код уже написан: нажми зелёную кнопку Run Code над терминалом.",
+            "ru": "Код уже написан: нажми зелёную кнопку «Запустить» над терминалом.",
             "en": "The code is already written: press the green Run Code button above the terminal."
           }
         ]

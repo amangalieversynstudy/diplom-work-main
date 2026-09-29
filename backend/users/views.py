@@ -1,21 +1,16 @@
 """API viewsets for user management."""
 
-from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 
 from .models import User
-from .serializers import ProfileSerializer, UserSerializer
+from .serializers import ProfileSerializer
 
-
-class UserViewSet(viewsets.ModelViewSet):
-    """ViewSet for listing and modifying users."""
-
-    # ОПТИМИЗАЦИЯ: подтягиваем связанный профиль сразу
-    queryset = User.objects.select_related('profile').all()
-    serializer_class = UserSerializer
+# NOTE: there is intentionally no generic /api/users/ endpoint. Users are only
+# ever read/changed through their own /profile/me/ (see ProfileMeView), and
+# user management goes through the Django admin.
 
 
 class ProfileMeView(APIView):

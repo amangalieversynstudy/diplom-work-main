@@ -150,6 +150,11 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    # Secure by default: an endpoint is closed to anonymous users unless it
+    # explicitly declares AllowAny (registration, login, public catalogue...).
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticated",
+    ),
     # Always return JSON for API (avoid HTML browsable API in load tests)
     "DEFAULT_RENDERER_CLASSES": (
         [

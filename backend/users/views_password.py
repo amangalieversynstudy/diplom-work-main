@@ -5,7 +5,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
-from rest_framework import generics, status
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 
 from .serializers_password import (
@@ -20,6 +20,7 @@ class PasswordResetRequestView(generics.GenericAPIView):
     """Accepts an email and sends a password reset link if the user exists."""
 
     serializer_class = PasswordResetRequestSerializer
+    permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
         """Handle password reset request by email."""
@@ -80,6 +81,7 @@ class PasswordResetConfirmView(generics.GenericAPIView):
     """Accepts a uid/token and new password to reset the user's password."""
 
     serializer_class = PasswordResetConfirmSerializer
+    permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
         """Validate token and set new password for the user."""

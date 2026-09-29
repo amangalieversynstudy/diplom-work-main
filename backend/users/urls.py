@@ -1,15 +1,10 @@
-"""URL routes for user viewsets and endpoints."""
+"""URL routes for user profile endpoints."""
 
-from django.urls import include, path
-from rest_framework.routers import DefaultRouter
-from .views import ProfileMeView, UseItemView, UserViewSet
+from django.urls import path
 
-router = DefaultRouter()
-router.register(r"users", UserViewSet)
-
+from .views import ProfileMeView, UseItemView
 
 urlpatterns = [
-    path("", include(router.urls)),
     path("profile", ProfileMeView.as_view(), name="profile"),
     path("profile/me/", ProfileMeView.as_view(), name="profile-me"),
     path('profile/use-item/', UseItemView.as_view(), name='use-item'),

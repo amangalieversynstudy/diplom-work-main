@@ -5,7 +5,11 @@ import XPBar from "../components/XPBar";
 import Button from "../components/Button";
 import AchievementsPanel from "../components/AchievementsPanel";
 import { clearPlayerClass } from "../lib/class";
-import { Profile as ProfileAPI, Achievements as AchievementsAPI } from "../lib/api";
+import {
+  Profile as ProfileAPI,
+  Achievements as AchievementsAPI,
+  revokeSession,
+} from "../lib/api";
 import logger from "../lib/logger";
 import { toast } from "sonner";
 import { LogOut, Settings, Mail, User, Shield, Flame } from "lucide-react";
@@ -87,9 +91,8 @@ export default function ProfilePage() {
     router.push("/class");
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+  const handleLogout = async () => {
+    await revokeSession();
     clearPlayerClass();
     router.push("/login");
   };

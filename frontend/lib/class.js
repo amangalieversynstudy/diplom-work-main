@@ -1,3 +1,6 @@
+import { api } from "./api";
+import { getTokens } from "./auth";
+
 const KEY = "player_class";
 
 export function getPlayerClass() {
@@ -15,31 +18,17 @@ export function clearPlayerClass() {
   localStorage.removeItem(KEY);
 }
 
-function getAuthToken() {
-  if (typeof window === "undefined") return null;
-  return (
-    localStorage.getItem("access") ||
-    localStorage.getItem("token") ||
-    localStorage.getItem("access_token")
-  );
-}
-
 /**
  * Ask the backend whether the current user can choose a class yet.
  * Returns the parsed payload `{ class_unlocked, intro_track, progress, reason }`
  * or `null` if the request fails — callers should fail-open on null.
+ * Goes through the shared axios client, so an expired token is refreshed.
  */
 export async function fetchIntroStatus() {
-  if (typeof window === "undefined") return null;
-  const token = getAuthToken();
-  if (!token) return null;
-  const base = process.env.NEXT_PUBLIC_API_BASE || process.env.NEXT_PUBLIC_API_URL || "/api";
+  if (typeof window === "undefined" || !getTokens().access) return null;
   try {
-    const res = await fetch(`${base}/intro-status/`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return null;
-    return await res.json();
+    const res = await api.get("/intro-status/");
+    return res.data;
   } catch {
     return null;
   }

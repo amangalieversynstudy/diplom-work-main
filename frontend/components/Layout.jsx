@@ -7,7 +7,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useI18n, languages as supportedLanguages } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
-import { Profile as ProfileAPI } from "../lib/api";
+import { Profile as ProfileAPI, revokeSession } from "../lib/api";
 import CustomCursor from "./CustomCursor";
 import TransitionLink from "./TransitionLink";
 import StreakReminder from "./StreakReminder";
@@ -366,7 +366,8 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
             ) : (
               <div className="flex flex-col gap-3">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    await revokeSession();
                     ["access", "refresh", "token", "access_token", "refresh_token"].forEach(k => localStorage.removeItem(k));
                     setIsAuthenticated(false);
                     setIsMenuOpen(false);

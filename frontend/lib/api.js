@@ -121,8 +121,29 @@ export async function login({ email, username, password }) {
   return data;
 }
 
-export function logout() {
+// Отзываем refresh-токен на сервере: иначе после выхода он жив до суток.
+// Вызов best effort: без сети или с просроченной сессией просто выходим локально.
+export async function revokeSession() {
+  const { access, refresh } = getTokens();
+  if (refresh) {
+    try {
+      await axios.post(
+        `${API_BASE}/auth/logout/`,
+        { refresh },
+        {
+          headers: access ? { Authorization: `Bearer ${access}` } : {},
+          timeout: 3000,
+        }
+      );
+    } catch {
+      /* токен всё равно удаляется ниже */
+    }
+  }
   clearTokens();
+}
+
+export async function logout() {
+  await revokeSession();
   if (typeof window !== "undefined") window.location.href = "/login";
 }
 
@@ -133,12 +154,6 @@ export const Missions = {
   complete: (id) => api.post(`/missions/${id}/complete/`).then((r) => r.data),
 };
 
-export const MissionTasks = {
-  list: (missionId, params = {}) =>
-    api
-      .get("/mission-tasks/", { params: { mission: missionId, ...params } })
-      .then((r) => r.data),
-};
 
 const unwrapList = (data) => {
   if (!data) return [];
@@ -164,9 +179,6 @@ export const TaskAPI = {
       .then((r) => r.data),
 };
 
-export const Ranks = {
-  list: () => api.get("/ranks/").then((r) => unwrapList(r.data)),
-};
 
 export const LeaderboardAPI = {
   list: (params = {}) =>
@@ -260,14 +272,7 @@ export const Locations = {
   get: (id) => api.get(`/locations/${id}/`).then((r) => r.data),
 };
 
-export const Tracks = {
-  list: () => api.get("/tracks/").then((r) => r.data),
-  get: (id) => api.get(`/tracks/${id}/`).then((r) => r.data),
-};
 
-export const ProgressAPI = {
-  list: () => api.get("/progress/").then((r) => r.data),
-};
 
 export const Runner = {
   execute: (code) => api.post("/runner/execute/", { code }),

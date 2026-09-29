@@ -9,7 +9,6 @@ export default function Leaderboard() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [period, setPeriod] = useState("all_time");
   const dict = useDictionary();
   const copy = dict.leaderboard;
   const worldsCopy = dict.worldsPage || {};
@@ -19,7 +18,7 @@ export default function Leaderboard() {
     else setLoading(true);
 
     try {
-      const res = await LeaderboardAPI.list({ period });
+      const res = await LeaderboardAPI.list();
       setData(res || []);
       if (isRefresh) toast.success(copy.successRefreshed || "Обновлено");
     } catch {
@@ -28,7 +27,7 @@ export default function Leaderboard() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [period, copy]);
+  }, [copy]);
 
   useEffect(() => {
     loadData();
@@ -63,22 +62,7 @@ export default function Leaderboard() {
         </header>
 
         {/* ── Фильтры ── */}
-        <div className="flex flex-wrap items-center justify-between gap-4 p-2 bg-panel rounded-2xl border border-border mb-8 transition-colors duration-300">
-          <div className="flex gap-2 w-full sm:w-auto overflow-x-auto hide-scrollbar">
-            {Object.entries(copy.filters.periodOptions).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setPeriod(key)}
-                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${
-                  period === key
-                    ? "bg-surface text-text shadow-sm border border-border"
-                    : "text-muted hover:text-text hover:bg-surface/50 border border-transparent"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center justify-end p-2 bg-panel rounded-2xl border border-border mb-8 transition-colors duration-300">
           <button
             onClick={() => loadData(true)}
             disabled={refreshing}

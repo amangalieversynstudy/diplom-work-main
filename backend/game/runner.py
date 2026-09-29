@@ -9,6 +9,7 @@
 
 import logging
 import os
+import queue
 import struct
 import subprocess
 import sys
@@ -302,15 +303,24 @@ def _stream_subprocess_fallback(code: str, timeout: int, stop_event, started_at:
         killed_by_stop = False
         deadline = time.time() + timeout
         total_bytes = 0
-        truncated = False
 
-        # читаем стрим неблокируясь по таймауту строки
-        import selectors
-        sel = selectors.DefaultSelector()
-        sel.register(proc.stdout, selectors.EVENT_READ, "stdout")
-        sel.register(proc.stderr, selectors.EVENT_READ, "stderr")
+        # Читаем stdout/stderr потоками: selectors на Windows умеют только сокеты
+        # (WinError 10038), а потоки работают одинаково везде. None в очереди —
+        # признак конца потока.
+        lines = queue.Queue()
 
-        while True:
+        def _pump(pipe, kind):
+            try:
+                for line in iter(pipe.readline, ""):
+                    lines.put((kind, line))
+            finally:
+                lines.put((kind, None))
+
+        for pipe, kind in ((proc.stdout, "stdout"), (proc.stderr, "stderr")):
+            threading.Thread(target=_pump, args=(pipe, kind), daemon=True).start()
+
+        open_streams = 2
+        while open_streams:
             if time.time() > deadline:
                 killed_by_timeout = True
                 _kill_proc_tree(proc)
@@ -320,37 +330,23 @@ def _stream_subprocess_fallback(code: str, timeout: int, stop_event, started_at:
                 _kill_proc_tree(proc)
                 break
 
-            events = sel.select(timeout=0.2)
-            if not events and proc.poll() is not None:
+            try:
+                kind, line = lines.get(timeout=0.2)
+            except queue.Empty:
+                continue
+            if line is None:
+                open_streams -= 1
+                continue
+
+            total_bytes += len(line)
+            if total_bytes > MAX_OUTPUT_SIZE:
+                yield {"type": "error", "message": f"Вывод обрезан: лимит {MAX_OUTPUT_SIZE // 1024} KB"}
+                _kill_proc_tree(proc)
                 break
+            yield {"type": kind, "data": line}
 
-            for key, _ in events:
-                line = key.fileobj.readline()
-                if not line:
-                    try:
-                        sel.unregister(key.fileobj)
-                    except KeyError:
-                        pass
-                    continue
-                total_bytes += len(line)
-                if total_bytes > MAX_OUTPUT_SIZE and not truncated:
-                    truncated = True
-                    yield {"type": "error", "message": f"Вывод обрезан: лимит {MAX_OUTPUT_SIZE // 1024} KB"}
-                    _kill_proc_tree(proc)
-                    break
-                if not truncated:
-                    yield {"type": key.data, "data": line}
-
-            if truncated:
-                break
-
-        # добиваем остатки
         try:
-            out, err = proc.communicate(timeout=1)
-            if out and not truncated:
-                yield {"type": "stdout", "data": out}
-            if err and not truncated:
-                yield {"type": "stderr", "data": err}
+            proc.wait(timeout=1)
         except subprocess.TimeoutExpired:
             _kill_proc_tree(proc)
 

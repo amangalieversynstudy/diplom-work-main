@@ -129,3 +129,41 @@ def test_using_the_unsafe_fallback_is_logged(settings, caplog):
     ):
         runner.execute_python_code("print('dev')")
     assert any("UNSAFE" in r.getMessage() for r in caplog.records)
+
+
+# ── the local streaming fallback itself (dev only, works on Windows too) ────
+
+
+def _stream_locally(settings, code, timeout=15):
+    settings.RUNNER_ALLOW_UNSAFE_FALLBACK = True
+    settings.RUNNER_JUDGE0_URL = ""
+    with patch.object(runner.docker, "from_env", _docker_unavailable):
+        return list(runner.stream_python_code(code, timeout=timeout))
+
+
+def test_local_stream_forwards_stdout_stderr_and_exit_code(settings):
+    events = _stream_locally(
+        settings,
+        "import sys\nprint('out')\nprint('err', file=sys.stderr)\nsys.exit(3)",
+    )
+    assert {"type": "stdout", "data": "out\n"} in events
+    assert {"type": "stderr", "data": "err\n"} in events
+    assert events[-1]["type"] == "exit"
+    assert events[-1]["code"] == 3
+
+
+def test_local_stream_kills_an_endless_loop_on_timeout(settings):
+    events = _stream_locally(settings, "while True:\n    pass", timeout=1)
+    assert any(e["type"] == "error" and "Timeout" in e["message"] for e in events)
+    assert events[-1]["type"] == "exit"
+    assert events[-1]["code"] != 0
+
+
+def test_local_stream_truncates_runaway_output(settings):
+    events = _stream_locally(
+        settings, "for _ in range(5000):\n    print('x' * 80)", timeout=10
+    )
+    assert any(e["type"] == "error" and "обрезан" in e["message"] for e in events)
+    streamed = sum(len(e["data"]) for e in events if e["type"] == "stdout")
+    assert streamed <= runner.MAX_OUTPUT_SIZE
+    assert events[-1]["type"] == "exit"

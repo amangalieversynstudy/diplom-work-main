@@ -180,6 +180,7 @@ REST_FRAMEWORK = {
         "anon": "30/min",
         "user": "120/min",
         "ai_assist": "10/min",        # Gemini — дорого
+        "task_submit": "60/min",       # ответы на квизы/сюжет
         "code_runner": "20/min",       # Docker sandbox — ресурсоёмко
         "code_runner_burst": "5/10s",  # Защита от спам-кликов Run
     },

@@ -44,6 +44,12 @@ class AIAssistThrottle(UserRateThrottle):
     scope = "ai_assist"
 
 
+class TaskSubmitThrottle(UserRateThrottle):
+    """Answer submissions (quiz/story): stops brute-forcing quiz options."""
+
+    scope = "task_submit"
+
+
 class CodeRunnerThrottle(UserRateThrottle):
     """Docker sandbox: ресурсоёмко. 20 запусков/мин на юзера."""
 

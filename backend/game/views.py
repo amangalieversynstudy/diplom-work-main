@@ -25,10 +25,23 @@ from users.models import Profile
 from rest_framework.views import APIView
 from rest_framework.exceptions import APIException
 
+from .achievements import evaluate_achievements
+from .services import (
+    RuleViolation,
+    check_mission_access,
+    check_task_order,
+    grade_quiz,
+    mission_stars,
+    only_published,
+    progress_payload,
+    record_task_attempt,
+    require_mission_tasks_done,
+)
 from .throttles import (
     AIAssistThrottle,
     CodeRunnerBurstThrottle,
     CodeRunnerThrottle,
+    TaskSubmitThrottle,
 )
 
 logger = logging.getLogger(__name__)
@@ -87,6 +100,9 @@ class LocationViewSet(viewsets.ModelViewSet):
     serializer_class = LocationSerializer
     permission_classes = [permissions.AllowAny]
 
+    def get_queryset(self):
+        return only_published(super().get_queryset(), self.request.user, "track")
+
     def get_permissions(self):
         # Reads public; writes superuser-only (teachers use the Studio API).
         if self.request.method in ("GET", "HEAD", "OPTIONS"):
@@ -101,6 +117,11 @@ class MissionViewSet(viewsets.ModelViewSet):
     queryset = Mission.objects.select_related('location').prefetch_related('prerequisites').order_by("order")
     serializer_class = MissionSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        return only_published(
+            super().get_queryset(), self.request.user, "location__track"
+        )
 
     def get_permissions(self):
         if self.action in ("start", "complete"):
@@ -126,23 +147,7 @@ class MissionViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def start(self, request, pk=None):
         mission = self.get_object()
-        profile: Profile = request.user.profile
-
-        if not mission.is_active:
-            return Response({"detail": "Mission is inactive"}, status=400)
-        if profile.level < mission.min_level:
-            return Response({"detail": "Level too low"}, status=403)
-        if mission.prerequisites.exists():
-            completed_ids = set(
-                Progress.objects.filter(user=request.user, completed=True).values_list(
-                    "mission_id", flat=True
-                )
-            )
-            missing = [
-                m.id for m in mission.prerequisites.all() if m.id not in completed_ids
-            ]
-            if missing:
-                return Response({"detail": "Prerequisites not completed"}, status=403)
+        check_mission_access(request.user, mission)
 
         prog, _ = Progress.objects.get_or_create(user=request.user, mission=mission)
         prog.start()
@@ -153,14 +158,8 @@ class MissionViewSet(viewsets.ModelViewSet):
         operation_summary="Complete mission",
         operation_description=(
             "Завершает миссию и начисляет XP: первый раз — полный reward, "
-            "повтор — процент (repeat_xp_rate).\n"
-        ),
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                "stars": openapi.Schema(type=openapi.TYPE_INTEGER, description="0..3"),
-            },
-            required=[],
+            "повтор — процент (repeat_xp_rate). Требует, чтобы все обязательные "
+            "задачи миссии были засчитаны сервером. Звёзды считает сервер."
         ),
         responses={200: ProgressSerializer},
     )
@@ -170,91 +169,81 @@ class MissionViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def complete(self, request, pk=None):
         mission = self.get_object()
-        profile: Profile = request.user.profile
-        
-        if not mission.is_active:
-            return Response({"detail": "Mission is inactive"}, status=400)
-        if profile.level < mission.min_level:
-            return Response({"detail": "Level too low"}, status=403)
-        if mission.prerequisites.exists():
-            completed_ids = set(
-                Progress.objects.filter(user=request.user, completed=True).values_list(
-                    "mission_id", flat=True
-                )
-            )
-            missing = [
-                m.id for m in mission.prerequisites.all() if m.id not in completed_ids
-            ]
-            if missing:
-                return Response({"detail": "Prerequisites not completed"}, status=403)
+        user = request.user
+        check_mission_access(user, mission)
 
-        prog, _ = Progress.objects.get_or_create(user=request.user, mission=mission)
+        prog, _ = Progress.objects.get_or_create(user=user, mission=mission)
+        # Lock the progress and profile rows: two parallel completions must not
+        # both see "not completed yet" and both award the XP.
+        prog = Progress.objects.select_for_update().get(pk=prog.pk)
+        profile: Profile = user.profile
+        Profile.objects.select_for_update().get(pk=profile.pk)
+        profile.refresh_from_db()
 
-        # дедупликация двойных кликов "Завершить миссию".
-        # Если миссия только что была завершена (< 5 секунд назад) — не
-        # начисляем XP повторно, возвращаем актуальное состояние без побочек.
-        from django.utils import timezone
-        from datetime import timedelta
+        # Double-click guard: a completion within 5 s of the previous one is
+        # answered with the current state and no side effects.
         if prog.completed and prog.completed_at and (
             timezone.now() - prog.completed_at < timedelta(seconds=5)
         ):
-            data = ProgressSerializer(prog).data
-            data.update({
-                "xp_added": 0,
-                "leveled_up": False,
-                "new_level": profile.level,
-                "profile_level": profile.level,
-                "profile_xp": profile.xp,
-                "deduplicated": True,
-            })
-            return Response(data)
+            return Response(
+                self._completion_payload(prog, profile, 0, False, deduplicated=True)
+            )
 
-        base_reward = mission.xp_reward
+        awards_xp = (not prog.completed) or mission.repeatable
+        if awards_xp:
+            require_mission_tasks_done(user, mission)
+
         xp_gain = 0
-        if prog.completed and not mission.repeatable:
-            xp_gain = 0
-        elif prog.completed and mission.repeatable:
-            xp_gain = max(0, (base_reward * mission.repeat_xp_rate) // 100)
-        else:
-            xp_gain = base_reward
+        if not prog.completed:
+            xp_gain = mission.xp_reward
+        elif mission.repeatable:
+            xp_gain = max(0, (mission.xp_reward * mission.repeat_xp_rate) // 100)
 
-        prog.complete()
-        prog.xp_earned += xp_gain
-        stars = int(request.data.get("stars", 0))
-        prog.stars = max(0, min(3, stars))
-        prog.save()
-
-        # НАЧИСЛЯЕМ ОПЫТ через add_xp(), который сам возвращает level-up флаг
-        # и инкрементирует инвентарь.
+        # XP first: the leaderboard signal fired by saving the progress below
+        # reads the profile, so it must already contain the new XP.
         leveled_up = False
         if xp_gain > 0:
             leveled_up, _old, _new = profile.add_xp(xp_gain)
 
-        # обновляем leaderboard асинхронно (signal на Progress.complete)
-        # запустится автоматически из game/signals.py.
+        prog.xp_earned += xp_gain
+        if awards_xp:
+            prog.stars = max(prog.stars, mission_stars(user, mission))
+        if prog.completed:
+            prog.save()
+        else:
+            prog.complete()
 
-        # Достижения: пересчитываем после начисления XP/level и возвращаем
-        # только что разблокированные, чтобы фронт показал toast-уведомление.
-        from .achievements import evaluate_achievements
-        new_achievements = evaluate_achievements(request.user)
+        # complete() also updated the streak on another Profile instance.
+        profile.refresh_from_db()
+        new_achievements = evaluate_achievements(user)
+        return Response(
+            self._completion_payload(
+                prog, profile, xp_gain, leveled_up, new_achievements=new_achievements
+            )
+        )
 
+    @staticmethod
+    def _completion_payload(
+        prog, profile, xp_added, leveled_up, new_achievements=None, deduplicated=False
+    ):
         data = ProgressSerializer(prog).data
         data.update(
             {
-                "xp_added": xp_gain,           # Подхватится фронтендом
-                "leveled_up": leveled_up,      # Триггер для салюта на клиенте!
+                "xp_added": xp_added,
+                "leveled_up": leveled_up,  # triggers the level-up burst on the client
                 "new_level": profile.level,
                 "profile_level": profile.level,
                 "profile_xp": profile.xp,
-                # Свежий инвентарь — если был level-up, фронт его увидит
                 "ai_summons": profile.ai_summons,
                 "hint_scrolls": profile.hint_scrolls,
                 "skeleton_scrolls": profile.skeleton_scrolls,
-                # Слаги новых достижений (фронт локализует и покажет toast)
-                "new_achievements": new_achievements,
+                # slugs of achievements unlocked just now (the client shows a toast)
+                "new_achievements": new_achievements or [],
             }
         )
-        return Response(data)
+        if deduplicated:
+            data["deduplicated"] = True
+        return data
 
     @swagger_auto_schema(
         method="post",
@@ -297,8 +286,8 @@ class MissionViewSet(viewsets.ModelViewSet):
         return Response({"detail": "Already completed"}, status=400)
 
 
-class ProgressViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing user progress on missions."""
+class ProgressViewSet(viewsets.ReadOnlyModelViewSet):
+    """A learner's own mission progress (read-only: the server writes it)."""
 
     permission_classes = [permissions.IsAuthenticated]
     queryset = Progress.objects.all()
@@ -309,9 +298,13 @@ class ProgressViewSet(viewsets.ModelViewSet):
 
 
 class MissionTaskViewSet(viewsets.ReadOnlyModelViewSet):
-    """Expose mission tasks/steps for Story → Quiz → Code UX."""
+    """Mission tasks/steps for Story → Quiz → Code UX.
 
-    # Тут уже отлично сделана оптимизация:
+    The answer key never leaves the server (see services.public_task_data);
+    story and quiz steps are answered through ``submit``, code steps by running
+    the code through the WebSocket runner with the task id.
+    """
+
     queryset = MissionTask.objects.select_related("mission", "mission__location").order_by(
         "mission_id", "order"
     )
@@ -319,45 +312,94 @@ class MissionTaskViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = only_published(
+            super().get_queryset(), self.request.user, "mission__location__track"
+        )
         mission_id = self.request.query_params.get("mission")
         if mission_id:
-            qs = qs.filter(mission_id=mission_id)
+            qs = qs.filter(mission_id=mission_id) if mission_id.isdigit() else qs.none()
         task_type = self.request.query_params.get("task_type")
         if task_type:
             qs = qs.filter(task_type=task_type)
         return qs
 
+    @swagger_auto_schema(
+        method="post",
+        operation_summary="Submit a story or quiz step",
+        operation_description=(
+            "Story: засчитывается сразу. Quiz: тело {\"answer\": \"...\"}, ответ "
+            "проверяет сервер. Код проверяется при запуске в раннере."
+        ),
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={"answer": openapi.Schema(type=openapi.TYPE_STRING)},
+            required=[],
+        ),
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[permissions.IsAuthenticated],
+        throttle_classes=[TaskSubmitThrottle],
+    )
+    def submit(self, request, pk=None):
+        task = self.get_object()
+        user = request.user
+        check_mission_access(user, task.mission)
+        check_task_order(user, task)
 
-class TaskProgressViewSet(viewsets.ModelViewSet):
-    """Allow learners to persist their progress on mission tasks."""
+        if task.task_type == "story":
+            passed, answer = True, {}
+        elif task.task_type == "quiz":
+            given = request.data.get("answer")
+            if (
+                isinstance(given, bool)
+                or not isinstance(given, (str, int, float))
+                or str(given).strip() == ""
+            ):
+                raise RuleViolation("answer is required", status.HTTP_400_BAD_REQUEST)
+            passed, answer = grade_quiz(task, given), {"selected": given}
+        else:
+            raise RuleViolation(
+                "Code tasks are checked when you run the code",
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        task_progress = record_task_attempt(
+            user, task, passed=passed, score=100 if passed else 0, answer=answer
+        )
+        return Response(
+            {
+                "correct": passed,
+                "completed": task_progress.status == "completed",
+                "progress": progress_payload(task_progress),
+            }
+        )
+
+
+class TaskProgressViewSet(viewsets.ReadOnlyModelViewSet):
+    """A learner's own progress on mission tasks (read-only).
+
+    Only the server records attempts, scores and completion, so nobody can mark
+    a task as solved by posting to this endpoint.
+    """
 
     queryset = TaskProgress.objects.none()
     serializer_class = TaskProgressSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Отличная оптимизация:
-        return TaskProgress.objects.filter(user=self.request.user).select_related(
+        qs = TaskProgress.objects.filter(user=self.request.user).select_related(
             "task", "task__mission"
         )
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        task = serializer.validated_data.get("task")
-        defaults = {k: v for k, v in serializer.validated_data.items() if k != "task"}
-        obj, created = TaskProgress.objects.update_or_create(
-            user=request.user,
-            task=task,
-            defaults=defaults,
-        )
-        out = self.get_serializer(obj)
-        code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
-        return Response(out.data, status=code)
-
-    def perform_update(self, serializer):
-        serializer.save(user=self.request.user)
+        mission_id = self.request.query_params.get("mission")
+        if mission_id:
+            qs = (
+                qs.filter(task__mission_id=mission_id)
+                if mission_id.isdigit()
+                else qs.none()
+            )
+        return qs
 
 
 class RankViewSet(viewsets.ReadOnlyModelViewSet):

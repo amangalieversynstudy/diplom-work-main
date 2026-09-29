@@ -49,7 +49,9 @@ def auth(client: APIClient, user: User):
     client.force_authenticate(user=user)
 
 
-def test_mission_availability_requires_prereq_and_level(api_client, user, content):
+def test_mission_availability_requires_prereq_and_level(
+    api_client, user, content, finish_mission
+):
     _, m1, m2, _ = content
     auth(api_client, user)
 
@@ -61,6 +63,7 @@ def test_mission_availability_requires_prereq_and_level(api_client, user, conten
     assert missions["Gate"]["available"] is False
 
     # complete m1 -> get 100 XP -> level becomes 2 (100 xp per level)
+    finish_mission(api_client, m1)
     resp = api_client.post(reverse("mission-complete", args=[m1.id]), {})
     assert resp.status_code == 200
     data = resp.json()
@@ -88,11 +91,14 @@ def test_start_increments_attempts_and_sets_status(api_client, user, content):
     assert r2.json()["attempts"] == 2
 
 
-def test_complete_awards_xp_first_time_and_handles_repeat(api_client, user, content):
+def test_complete_awards_xp_first_time_and_handles_repeat(
+    api_client, user, content, finish_mission
+):
     _, m1, _, m3 = content
     auth(api_client, user)
 
     # m1 first completion -> +100 xp
+    finish_mission(api_client, m1)
     r1 = api_client.post(reverse("mission-complete", args=[m1.id]))
     assert r1.status_code == 200
     d1 = r1.json()
@@ -107,6 +113,7 @@ def test_complete_awards_xp_first_time_and_handles_repeat(api_client, user, cont
     assert d2["profile_xp"] == 100
 
     # m3 repeatable: first +50, then +10 (20% of 50)
+    finish_mission(api_client, m3)
     r3 = api_client.post(reverse("mission-complete", args=[m3.id]))
     assert r3.status_code == 200
     d3 = r3.json()
@@ -139,7 +146,7 @@ def test_progress_view_returns_only_own(api_client, user, content, db):
 
 
 def test_start_and_complete_forbidden_without_prereqs_or_level(
-    api_client, user, content
+    api_client, user, content, finish_mission
 ):
     _, m1, m2, _ = content
     # m2 требует m1 и level>=2
@@ -148,6 +155,7 @@ def test_start_and_complete_forbidden_without_prereqs_or_level(
     r1 = api_client.post(reverse("mission-start", args=[m2.id]))
     assert r1.status_code in (401, 403, 400, 403)  # ожидаем отказ
     # сначала завершим m1 (даст уровень 2)
+    finish_mission(api_client, m1)
     ok = api_client.post(reverse("mission-complete", args=[m1.id]))
     assert ok.status_code == 200
     # теперь старт m2 должен пройти
@@ -155,9 +163,12 @@ def test_start_and_complete_forbidden_without_prereqs_or_level(
     assert r2.status_code == 200
 
 
-def test_repeat_non_repeatable_gives_zero_xp(api_client, user, content):
+def test_repeat_non_repeatable_gives_zero_xp(
+    api_client, user, content, finish_mission
+):
     _, m1, _, _ = content
     api_client.force_authenticate(user=user)
+    finish_mission(api_client, m1)
     r1 = api_client.post(reverse("mission-complete", args=[m1.id]))
     assert r1.status_code == 200
     r2 = api_client.post(reverse("mission-complete", args=[m1.id]))

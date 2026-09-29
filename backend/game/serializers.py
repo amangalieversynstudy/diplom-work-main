@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from users.models import Profile
 
+from .services import public_task_data
 from .models import (
     LeaderboardEntry,
     Location,
@@ -72,6 +73,12 @@ class MissionTaskSerializer(LocalizedSerializerMixin, serializers.ModelSerialize
 
     def get_language(self, obj):
         return self._preferred_language()
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # never send the answer key (correct_answer, expected_output ...)
+        data["data"] = public_task_data(instance)
+        return data
 
 
 class MissionSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
@@ -259,13 +266,17 @@ class ProgressSerializer(serializers.ModelSerializer):
             "last_started_at",
             "completed_at",
         ]
+        read_only_fields = fields
 
 
 class TaskProgressSerializer(serializers.ModelSerializer):
+    """Read-only view of a learner's task progress.
+
+    Progress is written by the server only (see game.services): the client
+    never sets status, attempts or score.
+    """
+
     task_detail = MissionTaskSerializer(source="task", read_only=True)
-    task = serializers.PrimaryKeyRelatedField(
-        queryset=MissionTask.objects.all(), write_only=False
-    )
 
     class Meta:
         model = TaskProgress
@@ -279,6 +290,7 @@ class TaskProgressSerializer(serializers.ModelSerializer):
             "last_submitted_at",
             "answer",
         ]
+        read_only_fields = fields
 
 
 class RankSerializer(serializers.ModelSerializer):

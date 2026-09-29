@@ -1,17 +1,24 @@
 """WebSocket-консьюмер для стриминга выполнения кода в реальном времени.
 
-Протокол: клиент шлёт {"type": "run", "code": "..."}, сервер шлёт обратно
-события stdout/stderr/error/exit. Один запуск на соединение, ограничение
-кода 100 KB. Безопасность держится на песочнице из runner.py.
+Протокол: клиент шлёт {"type": "run", "code": "...", "task_id": <id>?}, сервер
+шлёт обратно события stdout/stderr/error/exit. Один запуск на соединение,
+ограничение кода 100 KB. Безопасность держится на песочнице из runner.py.
+
+Если передан task_id, запуск засчитывается как попытка решения этой code-задачи:
+сервер сам сравнивает вывод с эталоном, записывает попытку и перед событием
+exit шлёт {"type": "result", "passed": bool, "progress": {...}}. Браузеру
+верить нельзя, поэтому эталонный вывод к клиенту вообще не уходит.
 """
 
 import asyncio
 import json
 import threading
 
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 from .runner import stream_python_code
+from .services import RuleViolation, grade_code_run, prepare_code_task
 
 MAX_CODE_BYTES = 100_000
 
@@ -68,12 +75,25 @@ class RunnerConsumer(AsyncWebsocketConsumer):
             })
             return
 
+        # Задача (если указана) проверяется ДО запуска: нет доступа — код не
+        # исполняется вовсе.
+        task = None
+        task_id = msg.get("task_id")
+        if task_id is not None:
+            try:
+                task = await database_sync_to_async(prepare_code_task)(
+                    self.scope["user"], task_id
+                )
+            except RuleViolation as exc:
+                await self._emit({"type": "error", "message": str(exc.detail)})
+                return
+
         # ставим _running перед стартом задачи, чтобы параллельный receive
         # увидел busy и отбил повторный run
         self._running = True
-        self._run_task = asyncio.create_task(self._stream_run(code))
+        self._run_task = asyncio.create_task(self._stream_run(code, task))
 
-    async def _stream_run(self, code: str) -> None:
+    async def _stream_run(self, code: str, task=None) -> None:
         """Гоняет синхронный генератор в треде, асинхронно форвардит события."""
         self._stop_event = threading.Event()
         loop = asyncio.get_running_loop()
@@ -96,11 +116,24 @@ class RunnerConsumer(AsyncWebsocketConsumer):
         thread = threading.Thread(target=producer, daemon=True)
         thread.start()
 
+        stdout_parts = []
         try:
             while True:
                 event = await queue.get()
                 if event is None:
                     break
+                if event.get("type") == "stdout":
+                    stdout_parts.append(event.get("data") or "")
+                elif event.get("type") == "exit" and task is not None:
+                    # Вердикт идёт раньше exit: клиент закрывает сокет на exit.
+                    verdict = await database_sync_to_async(grade_code_run)(
+                        self.scope["user"],
+                        task,
+                        code,
+                        "".join(stdout_parts),
+                        event.get("code"),
+                    )
+                    await self._emit({"type": "result", **verdict})
                 await self._emit(event)
         except asyncio.CancelledError:
             # disconnect() отменил задачу — гасим producer

@@ -154,7 +154,7 @@ def test_achievements_for_reports_progress_and_earned_flag():
 
 
 @pytest.mark.django_db
-def test_complete_endpoint_returns_new_achievements():
+def test_complete_endpoint_returns_new_achievements(finish_mission):
     """Completing a mission surfaces freshly-unlocked slugs for the toast."""
     user = _user()
     loc = Location.objects.create(title="Intro", description="loc")
@@ -162,6 +162,7 @@ def test_complete_endpoint_returns_new_achievements():
 
     client = APIClient()
     client.force_authenticate(user=user)
+    finish_mission(client, mission)
     resp = client.post(f"/api/missions/{mission.id}/complete/")
     assert resp.status_code == 200
 

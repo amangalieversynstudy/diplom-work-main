@@ -59,26 +59,21 @@ def test_mission_tasks_endpoint_returns_steps(api_client, gameplay_content):
     assert payload[1]["task_type"] == "quiz"
 
 
-def test_task_progress_crud_requires_auth(api_client, gameplay_content, user):
+def test_task_progress_is_read_only_and_requires_auth(
+    api_client, gameplay_content, user
+):
+    """Clients can read their progress but never write it (see test_grading)."""
     _, mission = gameplay_content
     task = mission.tasks.first()
-    create_url = reverse("task-progress-list")
-    # unauthenticated -> 401
-    r_unauth = api_client.post(create_url, {"task": task.id, "status": "in_progress"})
-    assert r_unauth.status_code == 401
+    list_url = reverse("task-progress-list")
+    assert api_client.get(list_url).status_code == 401
 
     api_client.force_authenticate(user=user)
-    r = api_client.post(create_url, {"task": task.id, "status": "in_progress"}, format="json")
-    assert r.status_code == 201
-    entry_id = r.json()["id"]
-
-    patch = api_client.patch(
-        reverse("task-progress-detail", args=[entry_id]),
-        {"status": "completed", "best_score": 100},
-        format="json",
+    assert api_client.get(list_url).status_code == 200
+    r = api_client.post(
+        list_url, {"task": task.id, "status": "completed", "best_score": 100}, format="json"
     )
-    assert patch.status_code == 200
-    assert patch.json()["status"] == "completed"
+    assert r.status_code == 405
 
 
 def test_rank_and_leaderboard_endpoints(api_client, gameplay_content, user):

@@ -94,12 +94,9 @@ for i in $(seq 1 30); do
 done
 
 # ── 8. Загружаем фикстуры ──────────────────────────────────────────
-echo "📦 Загружаю фикстуры (ranks, class_roles, intro_course)..."
+echo "Loading ranks, class_roles, intro_course (missing ones only)..."
 docker compose -f docker-compose.prod.yml --env-file "$ENV_FILE" exec -T backend \
-  python manage.py loaddata \
-  game/fixtures/ranks.json \
-  game/fixtures/class_roles.json \
-  game/fixtures/intro_course.json || echo "⚠️ Часть фикстур не загрузилась (возможно уже есть)"
+  python manage.py seed_course
 
 # ── 9. Итог ─────────────────────────────────────────────────────────
 echo ""

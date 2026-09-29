@@ -128,3 +128,20 @@ def test_teacher_registration_disabled_when_secret_unset():
     )
     assert resp.status_code == 400
     assert not User.objects.filter(username="ghost").exists()
+
+
+def test_production_settings_ship_no_builtin_invite_code(monkeypatch):
+    """Teacher sign-up must be opt-in via env, never via a code in the repo."""
+    import importlib
+    import sys
+
+    from core.settings import base
+
+    monkeypatch.setenv("DJANGO_SECRET_KEY", "x" * 50)
+    sys.modules.pop("core.settings.production", None)
+    try:
+        prod = importlib.import_module("core.settings.production")
+    finally:
+        sys.modules.pop("core.settings.production", None)
+    assert prod.TEACHER_INVITE_CODE == base.TEACHER_INVITE_CODE
+    assert "RPG-TEACHER" not in str(prod.TEACHER_INVITE_CODE)

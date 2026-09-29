@@ -58,7 +58,7 @@
 - Django Channels 4 + InMemoryChannelLayer для WS-роутинга
 - Docker Compose локально: PostgreSQL + Daphne + Next.js
 - **Production деплой**:
-  - Backend → **Railway** (`Dockerfile.backend` + `railway.toml`, миграции + collectstatic + loaddata в startCommand)
+  - Backend → **Railway** (`Dockerfile.backend` + `railway.toml`, миграции + collectstatic + `seed_course` (загружает курс, только если его нет) в startCommand)
   - Frontend → **Vercel** (Next.js, `NEXT_PUBLIC_API_BASE` указывает на Railway-домен)
   - Email → **Resend** (HTTP API, SMTP закрыт на Railway)
 - Celery + Redis: фоновые задачи (опционально)

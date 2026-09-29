@@ -284,6 +284,9 @@ export const en = {
       expected: "Expected output",
       expectedHint:
         "The step passes when the program finishes without errors and prints exactly this. Empty: a clean run is enough.",
+      hiddenCheck: "Hidden check (optional)",
+      hiddenCheckHint:
+        "Python code that runs after the student's solution and calls their functions with other values, for example assert power(3, 4) == 81. The student never sees it, so the step cannot be passed by just printing the answer.",
       minutes: "Minutes",
       moveUp: "Move up",
       moveDown: "Move down",
@@ -897,6 +900,7 @@ export const en = {
       noRunnerUrl: "Could not resolve the runner address.",
       sessionExpired: "Session expired. Sign in again.",
       wrongOutput: "Output doesn't match the expected result. Check your logic and try again.",
+      hiddenFailed: "The output is right for the example, but the solution fails the extra checks. Make sure it works for other values too.",
       itemUsed: "{item} used! Remaining: {count}",
       itemFail: "Could not use the item, or you've run out.",
       hintFallback: "Check your indentation and function declaration syntax.",

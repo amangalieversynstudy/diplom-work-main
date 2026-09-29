@@ -428,9 +428,20 @@ class StudioTaskSerializer(serializers.ModelSerializer):
     def _clean_code(data):
         starter = str(data.get("starter", ""))
         expected = str(data.get("expected_output", ""))
-        if len(starter) > MAX_CODE or len(expected) > MAX_CODE:
+        check = str(data.get("hidden_check", "")).strip()
+        if len(starter) > MAX_CODE or len(expected) > MAX_CODE or len(check) > MAX_CODE:
             raise serializers.ValidationError({"data": f"Код или вывод длиннее {MAX_CODE} символов."})
-        return {"language": "python", "starter": starter, "expected_output": expected}
+        if check:
+            try:
+                compile(check, "<hidden_check>", "exec")
+            except (SyntaxError, ValueError) as exc:
+                raise serializers.ValidationError(
+                    {"data": f"Скрытая проверка не компилируется: {exc}"}
+                )
+        cleaned = {"language": "python", "starter": starter, "expected_output": expected}
+        if check:
+            cleaned["hidden_check"] = check
+        return cleaned
 
     def _mirror_texts(self, validated, instance=None):
         get = (lambda k: validated.get(k, getattr(instance, k, ""))) if instance else validated.get

@@ -7,6 +7,7 @@ say "I solved it".
 """
 
 import hashlib
+import secrets
 
 from django.conf import settings
 from django.db import transaction
@@ -16,6 +17,7 @@ from rest_framework import status as http
 from rest_framework.exceptions import APIException
 
 from .models import MissionTask, Progress, TaskProgress
+from .runner import execute_python_code
 
 # Keys of ``MissionTask.data`` that are safe to show to learners. Anything else
 # (correct_answer, expected_output, sampleOutput, isCorrect ...) stays on the
@@ -171,6 +173,40 @@ def code_run_passed(task, exit_code, stdout):
     return not expected or _norm_output(stdout) == expected
 
 
+HIDDEN_CHECK_TIMEOUT = 5
+
+
+def hidden_check_of(task):
+    """The teacher's hidden check (Python source) of a code task, or ""."""
+    data = task.data if isinstance(task.data, dict) else {}
+    check = data.get("hidden_check")
+    return check.strip() if isinstance(check, str) else ""
+
+
+def run_hidden_check(task, code):
+    """Run the learner's code followed by the task's hidden check.
+
+    Matching the printed output is not enough: ``print("Charged")`` matches
+    without any function behind it. The check calls the learner's own functions
+    with other values. It runs in a separate, silent run, and passes only if the
+    program reaches its end and prints a one-time token that the learner never
+    sees (an early ``exit()`` or a faked output cannot produce it).
+
+    Returns True/False, or None when the sandbox itself failed (that must not
+    count as a failed attempt).
+    """
+    check = hidden_check_of(task)
+    if not check:
+        return True
+    token = secrets.token_hex(16)
+    result = execute_python_code(
+        f"{code}\n\n{check}\nprint({token!r})\n", timeout=HIDDEN_CHECK_TIMEOUT
+    )
+    if result.get("infra"):
+        return None
+    return result.get("status") == "success" and token in (result.get("output") or "")
+
+
 def prepare_code_task(user, task_id):
     """Load a code task for a run and check that *user* may attempt it."""
     if isinstance(task_id, bool) or not isinstance(task_id, int):
@@ -270,8 +306,19 @@ def progress_payload(task_progress):
 
 
 def grade_code_run(user, task, code, stdout, exit_code):
-    """Grade a finished run of a code task and record the attempt."""
+    """Grade a finished run of a code task and record the attempt.
+
+    Returns None when the hidden check could not be run (broken sandbox): the
+    attempt is then neither recorded nor counted.
+    """
     passed = code_run_passed(task, exit_code, stdout)
+    hidden_failed = False
+    if passed:
+        checked = run_hidden_check(task, code)
+        if checked is None:
+            return None
+        hidden_failed = not checked
+        passed = checked
     task_progress = record_task_attempt(
         user,
         task,
@@ -281,6 +328,8 @@ def grade_code_run(user, task, code, stdout, exit_code):
     )
     return {
         "passed": passed,
+        # the printed output was right but the hidden check failed
+        "hidden_failed": hidden_failed,
         "progress": progress_payload(task_progress),
         "counted": task_progress.counted,
     }

@@ -238,7 +238,8 @@
         "language": "python",
         "starter": "def mana_status(mana):\n    # Верни \"Charged\" для mana 50..100, иначе \"Low\" / \"Overcharged\"\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(mana_status(75))\n",
         "sampleOutput": "Charged",
-        "expected_output": "Charged"
+        "expected_output": "Charged",
+        "hidden_check": "assert mana_status(30) == \"Low\"\nassert mana_status(50) == \"Charged\"\nassert mana_status(100) == \"Charged\"\nassert mana_status(101) == \"Overcharged\""
       },
       "xp_reward": 20,
       "is_required": true
@@ -300,7 +301,8 @@
         "language": "python",
         "starter": "total = 0\nfor i in range(1, 11):\n    # Прибавь i к total\n    raise NotImplementedError(\"Допиши тело цикла\")\n\nprint(total)\n",
         "sampleOutput": "55",
-        "expected_output": "55"
+        "expected_output": "55",
+        "hidden_check": "assert total == 55"
       },
       "xp_reward": 20,
       "is_required": true
@@ -362,7 +364,8 @@
         "language": "python",
         "starter": "def power(base, exp):\n    result = 1\n    for _ in range(exp):\n        # Умножь result на base\n        raise NotImplementedError(\"Допиши умножение\")\n    return result\n\nprint(power(2, 8))\n",
         "sampleOutput": "256",
-        "expected_output": "256"
+        "expected_output": "256",
+        "hidden_check": "assert power(3, 4) == 81\nassert power(5, 0) == 1\nassert power(2, 1) == 2"
       },
       "xp_reward": 30,
       "is_required": true
@@ -446,7 +449,8 @@
         "language": "python",
         "starter": "def battle_cry(name):\n    # Верни name заглавными буквами и \"!\" в конце\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(battle_cry(\"айдан\"))\n",
         "sampleOutput": "АЙДАН!",
-        "expected_output": "АЙДАН!"
+        "expected_output": "АЙДАН!",
+        "hidden_check": "assert battle_cry(\"mira\") == \"MIRA!\"\nassert battle_cry(\"bo\") == \"BO!\""
       },
       "xp_reward": 20,
       "is_required": true
@@ -530,7 +534,8 @@
         "language": "python",
         "starter": "def count_big(numbers):\n    count = 0\n    for n in numbers:\n        # Увеличь count, если n > 10\n        raise NotImplementedError(\"Допиши условие\")\n    return count\n\nprint(count_big([4, 15, 9, 20, 11]))\n",
         "sampleOutput": "3",
-        "expected_output": "3"
+        "expected_output": "3",
+        "hidden_check": "assert count_big([1, 2, 3]) == 0\nassert count_big([11, 12, 13, 5]) == 3\nassert count_big([10, 10]) == 0"
       },
       "xp_reward": 20,
       "is_required": true
@@ -614,7 +619,8 @@
         "language": "python",
         "starter": "def total_gold(heroes):\n    total = 0\n    for gold in heroes.values():\n        # Прибавь gold к total\n        raise NotImplementedError(\"Допиши суммирование\")\n    return total\n\nprint(total_gold({\"Айдан\": 50, \"Мира\": 30, \"Бо\": 20}))\n",
         "sampleOutput": "100",
-        "expected_output": "100"
+        "expected_output": "100",
+        "hidden_check": "assert total_gold({\"a\": 1, \"b\": 2}) == 3\nassert total_gold({}) == 0"
       },
       "xp_reward": 20,
       "is_required": true
@@ -674,7 +680,8 @@
         "language": "python",
         "starter": "party = [\n    {\"name\": \"Aidan\", \"hp\": 80},\n    {\"name\": \"Mira\", \"hp\": 120},\n    {\"name\": \"Bo\", \"hp\": 95},\n]\n\ndef champion(heroes):\n    # Найди героя с наибольшим hp и верни \"Champion: name (hp)\"\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(champion(party))\n",
         "sampleOutput": "Champion: Mira (120)",
-        "expected_output": "Champion: Mira (120)"
+        "expected_output": "Champion: Mira (120)",
+        "hidden_check": "assert champion([{\"name\": \"Bo\", \"hp\": 5}, {\"name\": \"Cy\", \"hp\": 9}]) == \"Champion: Cy (9)\"\nassert champion([{\"name\": \"Solo\", \"hp\": 1}]) == \"Champion: Solo (1)\""
       },
       "xp_reward": 40,
       "is_required": true

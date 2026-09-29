@@ -91,7 +91,7 @@ def _runner_disabled_result() -> dict:
         "Code execution refused: no Docker sandbox, Judge0 unavailable and the "
         "unsafe local fallback is disabled"
     )
-    return {"status": "error", "output": _RUNNER_DISABLED_MSG}
+    return {"status": "error", "output": _RUNNER_DISABLED_MSG, "infra": True}
 
 
 def _runner_disabled_stream(started_at: float):
@@ -304,7 +304,7 @@ def _execute_subprocess_fallback(code: str, timeout: int = 5) -> dict:
     except subprocess.TimeoutExpired:
         return {"status": "error", "output": f"Timeout: код выполнялся дольше {timeout} сек."}
     except Exception as e:
-        return {"status": "error", "output": f"Ошибка выполнения: {e}"}
+        return {"status": "error", "output": f"Ошибка выполнения: {e}", "infra": True}
 
 
 def _stream_subprocess_fallback(code: str, timeout: int, stop_event, started_at: float):
@@ -484,7 +484,7 @@ def execute_python_code(code: str, timeout: int = 5) -> dict:
             "output": f"Timeout: код выполнялся дольше {timeout} сек.",
         }
     except Exception as e:
-        return {"status": "error", "output": f"Ошибка песочницы: {e}"}
+        return {"status": "error", "output": f"Ошибка песочницы: {e}", "infra": True}
     finally:
         if container is not None:
             try:

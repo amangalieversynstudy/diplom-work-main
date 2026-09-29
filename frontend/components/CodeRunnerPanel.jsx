@@ -232,7 +232,7 @@ export default function CodeRunnerPanel({
           onRunStateChange?.(passed ? "success" : "error");
           if (verdict && msg.code === 0 && !verdict.passed) {
             term?.write(
-              `\r\n${ANSI_YELLOW}${t("codeRunner.wrongOutput")}${ANSI_RESET}\r\n`
+              `\r\n${ANSI_YELLOW}${t(verdict.hidden_failed ? "codeRunner.hiddenFailed" : "codeRunner.wrongOutput")}${ANSI_RESET}\r\n`
             );
           }
           try { ws.close(); } catch { /* noop */ }

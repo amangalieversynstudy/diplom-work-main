@@ -11,7 +11,12 @@ import re
 from django.db import transaction
 
 from .models import CodeRun, LearningEvent, MissionTask
-from .runner import INFRASTRUCTURE_REASONS, REASON_OUTPUT_LIMIT, REASON_TIMEOUT
+from .runner import (
+    INFRASTRUCTURE_REASONS,
+    REASON_OUTPUT_LIMIT,
+    REASON_RUNNER_ERROR,
+    REASON_TIMEOUT,
+)
 from .services import (
     ARM_OFFER,
     HELP_AFTER_FAILURES,
@@ -166,9 +171,13 @@ def finish_code_run(
     counted = False
     if task is not None and not (set(reasons) & INFRASTRUCTURE_REASONS):
         verdict = grade_code_run(user, task, code, stdout, exit_code)
-        counted = verdict.pop("counted")
-        if counted and not verdict["passed"]:
-            log_help_offer(user, task, verdict["progress"])
+        if verdict is None:
+            # the hidden check could not run: a broken sandbox is not a failed attempt
+            reasons = set(reasons) | {REASON_RUNNER_ERROR}
+        else:
+            counted = verdict.pop("counted")
+            if counted and not verdict["passed"]:
+                log_help_offer(user, task, verdict["progress"])
 
     record_code_run(
         user,

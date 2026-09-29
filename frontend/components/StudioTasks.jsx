@@ -45,6 +45,7 @@ const emptyForm = (order) => ({
   correct: 0,
   starter: "",
   expected_output: "",
+  hidden_check: "",
 });
 
 const fromTask = (task) => {
@@ -63,6 +64,7 @@ const fromTask = (task) => {
     correct: Math.max(0, options.indexOf(task.data?.correct_answer)),
     starter: task.data?.starter || "",
     expected_output: task.data?.expected_output || "",
+    hidden_check: task.data?.hidden_check || "",
   };
 };
 
@@ -88,7 +90,11 @@ const toPayload = (form, missionId) => {
       correct_answer: answer,
     };
   } else if (form.task_type === "code") {
-    payload.data = { starter: form.starter, expected_output: form.expected_output };
+    payload.data = {
+      starter: form.starter,
+      expected_output: form.expected_output,
+      hidden_check: form.hidden_check,
+    };
   } else {
     payload.data = {};
   }
@@ -217,6 +223,17 @@ function TaskForm({ form, setForm, t }) {
               onChange={(e) => set({ expected_output: e.target.value })}
             />
           </Field>
+          <div className="lg:col-span-2">
+            <Field label={t("studio.tasks.hiddenCheck")} hint={t("studio.tasks.hiddenCheckHint")}>
+              <textarea
+                rows={4}
+                spellCheck={false}
+                className={`${inputCls} font-mono`}
+                value={form.hidden_check}
+                onChange={(e) => set({ hidden_check: e.target.value })}
+              />
+            </Field>
+          </div>
         </div>
       ) : null}
 

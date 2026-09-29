@@ -151,7 +151,13 @@ class LoginView(TokenObtainPairView):
                 request.data['username'] = user.username
 
         # If not found, let TokenObtainPairView handle the error (will return 401)
-        return super().post(request, *args, **kwargs)
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200 and user is not None:
+            from game.footprint import log_event
+            from game.models import LearningEvent
+
+            log_event(user, LearningEvent.LOGIN)
+        return response
 
 
 @method_decorator(ratelimit(key="ip", rate="5/m", method="POST", block=True), name="post")

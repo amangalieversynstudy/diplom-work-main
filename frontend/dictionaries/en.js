@@ -348,6 +348,9 @@ export const en = {
         teacherCodeLabel: "Teacher code",
         teacherCodePlaceholder: "Enter the code issued by your administrator",
         teacherCancel: "I'm a student",
+        researchConsent: "I allow my learning activity to be used in research (optional)",
+        researchConsentHint:
+          "Code runs, error types, hints used and time spent on tasks go into an anonymised dataset. Your name, e-mail and the code itself are never shared. You can withdraw consent in your profile at any time.",
       },
       register: {
         title: "Join the Guild",
@@ -483,6 +486,9 @@ export const en = {
       usernameLabel: "Username",
       emailLabel: "Email address",
       saveBtn: "Save",
+      researchConsentLabel: "Use my learning activity in research",
+      researchConsentHint:
+        "Code runs, error types, hints used and time spent on tasks go into an anonymised dataset. Your name, e-mail and the code itself are never shared. You can withdraw at any time.",
       cancelBtn: "Cancel",
       loginField: "Login",
       emailField: "Email",

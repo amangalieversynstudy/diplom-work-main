@@ -453,3 +453,128 @@ class UserAchievement(models.Model):
 
     def __str__(self):
         return f"{self.user_id}:{self.slug}"
+
+
+class CodeRun(models.Model):
+    """One run of a learner's code in the sandbox.
+
+    The raw material for "attempts to success" and error analytics. Only
+    measurements are stored (sizes, exit code, error class), never the code or
+    its output: the last attempted code already lives in ``TaskProgress.answer``.
+    """
+
+    OUTCOMES = (
+        ("success", "Ran and (if graded) passed"),
+        ("wrong_output", "Ran fine but the output did not match"),
+        ("error", "Crashed or exited with a non-zero code"),
+        ("timeout", "Killed by the time limit"),
+        ("output_limit", "Killed for printing too much"),
+        ("runner_error", "Sandbox failure, not the learner's fault"),
+    )
+
+    user = models.ForeignKey(
+        "users.User", on_delete=models.CASCADE, related_name="code_runs"
+    )
+    task = models.ForeignKey(
+        MissionTask,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="code_runs",
+        help_text="Empty for free practice runs outside a task.",
+    )
+    outcome = models.CharField(max_length=16, choices=OUTCOMES)
+    error_type = models.CharField(
+        max_length=64, blank=True, help_text="Exception class, e.g. NameError."
+    )
+    error_message = models.CharField(max_length=200, blank=True)
+    exit_code = models.IntegerField(null=True, blank=True)
+    duration_ms = models.PositiveIntegerField(default=0)
+    code_length = models.PositiveIntegerField(default=0)
+    stdout_size = models.PositiveIntegerField(default=0)
+    stderr_size = models.PositiveIntegerField(default=0)
+    passed = models.BooleanField(
+        null=True, blank=True, help_text="Null when the run was not graded."
+    )
+    attempt_no = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="The task's attempt counter after this run (graded runs only).",
+    )
+    after_solved = models.BooleanField(
+        default=False,
+        help_text="The task was already solved before this run (re-run for fun): "
+        "leave such runs out of 'attempts to success'.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "created_at"]),
+            models.Index(fields=["task", "created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id}:{self.task_id}:{self.outcome}"
+
+
+class LearningEvent(models.Model):
+    """Timeline of what a learner did (the behavioural footprint).
+
+    Code runs live in :class:`CodeRun`; quiz/story submissions, hints, AI
+    mentor calls, logins and mission milestones are recorded here.
+    """
+
+    LOGIN = "login"
+    MISSION_STARTED = "mission_started"
+    MISSION_COMPLETED = "mission_completed"
+    TASK_OPENED = "task_opened"
+    TASK_SUBMITTED = "task_submitted"
+    HINT_USED = "hint_used"
+    SKELETON_USED = "skeleton_used"
+    AI_HINT_USED = "ai_hint_used"
+    AI_MENTOR_USED = "ai_mentor_used"
+
+    TYPES = (
+        (LOGIN, "Login"),
+        (MISSION_STARTED, "Mission started"),
+        (MISSION_COMPLETED, "Mission completed"),
+        (TASK_OPENED, "Task opened"),
+        (TASK_SUBMITTED, "Story/quiz step submitted"),
+        (HINT_USED, "Hint scroll used"),
+        (SKELETON_USED, "Skeleton scroll used"),
+        (AI_HINT_USED, "AI hint used"),
+        (AI_MENTOR_USED, "AI mentor used"),
+    )
+
+    user = models.ForeignKey(
+        "users.User", on_delete=models.CASCADE, related_name="learning_events"
+    )
+    event_type = models.CharField(max_length=32, choices=TYPES)
+    task = models.ForeignKey(
+        MissionTask,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="learning_events",
+    )
+    mission = models.ForeignKey(
+        Mission,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="learning_events",
+    )
+    meta = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "created_at"]),
+            models.Index(fields=["event_type", "created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id}:{self.event_type}"

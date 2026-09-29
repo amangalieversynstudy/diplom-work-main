@@ -34,6 +34,18 @@ except ImportError:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
+# Why an "error" event was sent. Consumers (grading, analytics) branch on
+# these instead of parsing the human-readable message.
+REASON_TIMEOUT = "timeout"
+REASON_OUTPUT_LIMIT = "output_limit"
+REASON_STOPPED = "stopped"  # the client cancelled the run
+REASON_RUNNER_ERROR = "runner_error"  # the sandbox itself failed
+REASON_UNAVAILABLE = "unavailable"  # no sandbox is available at all
+# The learner's code did not get a fair run in these cases.
+INFRASTRUCTURE_REASONS = frozenset(
+    {REASON_RUNNER_ERROR, REASON_UNAVAILABLE, REASON_STOPPED}
+)
+
 # максимум 50 KB вывода — иначе обрезаем
 MAX_OUTPUT_SIZE = 50 * 1024
 
@@ -80,7 +92,7 @@ def _runner_disabled_stream(started_at: float):
         "Code execution refused: no Docker sandbox, Judge0 unavailable and the "
         "unsafe local fallback is disabled"
     )
-    yield {"type": "error", "message": _RUNNER_DISABLED_MSG}
+    yield {"type": "error", "message": _RUNNER_DISABLED_MSG, "reason": REASON_UNAVAILABLE}
     yield {"type": "exit", "code": -1, "duration": time.time() - started_at}
 
 
@@ -184,7 +196,13 @@ def _stream_via_judge0(code: str, timeout: int, started_at: float):
     if err:
         events.append({"type": "stderr", "data": err})
     if r.get("status_id") == _JUDGE0_STATUS_TLE:
-        events.append({"type": "error", "message": "Timeout: превышен лимит времени выполнения."})
+        events.append(
+            {
+                "type": "error",
+                "message": "Timeout: превышен лимит времени выполнения.",
+                "reason": REASON_TIMEOUT,
+            }
+        )
     code_val = 0 if r.get("status_id") == _JUDGE0_STATUS_ACCEPTED else 1
     events.append({"type": "exit", "code": code_val, "duration": time.time() - started_at})
     return events
@@ -340,7 +358,11 @@ def _stream_subprocess_fallback(code: str, timeout: int, stop_event, started_at:
 
             total_bytes += len(line)
             if total_bytes > MAX_OUTPUT_SIZE:
-                yield {"type": "error", "message": f"Вывод обрезан: лимит {MAX_OUTPUT_SIZE // 1024} KB"}
+                yield {
+                    "type": "error",
+                    "message": f"Вывод обрезан: лимит {MAX_OUTPUT_SIZE // 1024} KB",
+                    "reason": REASON_OUTPUT_LIMIT,
+                }
                 _kill_proc_tree(proc)
                 break
             yield {"type": kind, "data": line}
@@ -354,14 +376,26 @@ def _stream_subprocess_fallback(code: str, timeout: int, stop_event, started_at:
         duration = time.time() - started_at
 
         if killed_by_timeout:
-            yield {"type": "error", "message": f"Timeout: код прерван после {timeout}с"}
+            yield {
+                "type": "error",
+                "message": f"Timeout: код прерван после {timeout}с",
+                "reason": REASON_TIMEOUT,
+            }
         elif killed_by_stop:
-            yield {"type": "error", "message": "Сессия остановлена клиентом"}
+            yield {
+                "type": "error",
+                "message": "Сессия остановлена клиентом",
+                "reason": REASON_STOPPED,
+            }
 
         yield {"type": "exit", "code": exit_code, "duration": duration}
 
     except Exception as e:
-        yield {"type": "error", "message": f"Ошибка выполнения: {e}"}
+        yield {
+            "type": "error",
+            "message": f"Ошибка выполнения: {e}",
+            "reason": REASON_RUNNER_ERROR,
+        }
         yield {"type": "exit", "code": -1, "duration": time.time() - started_at}
     finally:
         if proc is not None and proc.poll() is None:
@@ -437,7 +471,7 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
 
     События:
         {"type": "stdout"|"stderr", "data": ...}
-        {"type": "error", "message": ...}
+        {"type": "error", "message": ..., "reason": REASON_*}
         {"type": "exit", "code": int, "duration": float}
     """
     started_at = time.time()
@@ -562,6 +596,7 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
                     yield {
                         "type": "error",
                         "message": f"Вывод обрезан: лимит {MAX_OUTPUT_SIZE // 1024} KB",
+                        "reason": REASON_OUTPUT_LIMIT,
                     }
                     try:
                         container.kill()
@@ -591,6 +626,7 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
                 yield {
                     "type": "error",
                     "message": f"Вывод обрезан: лимит {MAX_OUTPUT_SIZE // 1024} KB",
+                    "reason": REASON_OUTPUT_LIMIT,
                 }
                 break
             yield {
@@ -608,14 +644,26 @@ def stream_python_code(code: str, timeout: int = 15, stop_event=None):
         duration = time.time() - started_at
 
         if killed_by_timeout:
-            yield {"type": "error", "message": f"Timeout: код прерван после {timeout}с"}
+            yield {
+                "type": "error",
+                "message": f"Timeout: код прерван после {timeout}с",
+                "reason": REASON_TIMEOUT,
+            }
         elif killed_by_stop:
-            yield {"type": "error", "message": "Сессия остановлена клиентом"}
+            yield {
+                "type": "error",
+                "message": "Сессия остановлена клиентом",
+                "reason": REASON_STOPPED,
+            }
 
         yield {"type": "exit", "code": exit_code, "duration": duration}
 
     except Exception as e:
-        yield {"type": "error", "message": f"Ошибка песочницы: {e}"}
+        yield {
+            "type": "error",
+            "message": f"Ошибка песочницы: {e}",
+            "reason": REASON_RUNNER_ERROR,
+        }
         yield {"type": "exit", "code": -1, "duration": time.time() - started_at}
     finally:
         if raw_sock is not None:

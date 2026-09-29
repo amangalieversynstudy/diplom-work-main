@@ -241,7 +241,8 @@ export default function CodeRunnerPanel({
     ws.onclose = (ev) => {
       wsRef.current = null;
       setRunning(false);
-      if (!exited && (ev.code === 4401 || ev.code === 4403)) {
+      // 4403 = refused (locked task), 4429 = too many runs
+      if (!exited && (ev.code === 4401 || ev.code === 4403 || ev.code === 4429)) {
         // refused before the code ran: no "exit" event will come
         onRunStateChange?.("error");
       }
@@ -258,7 +259,7 @@ export default function CodeRunnerPanel({
       if (usingItem) return false;
       setUsingItem(true);
       try {
-        const res = await Profile.consumeItem(itemType);
+        const res = await Profile.consumeItem(itemType, task?.id);
         toast.success(
           t("codeRunner.itemUsed")
             .replace("{item}", itemName)
@@ -275,7 +276,7 @@ export default function CodeRunnerPanel({
         setUsingItem(false);
       }
     },
-    [usingItem, onInventoryUpdate, t]
+    [usingItem, onInventoryUpdate, task?.id, t]
   );
 
   const handleSkeletonScroll = async () => {

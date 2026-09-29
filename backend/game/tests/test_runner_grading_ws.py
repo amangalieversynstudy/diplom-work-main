@@ -225,3 +225,67 @@ async def test_real_run_is_graded_end_to_end(settings, source, passed):
     saved = await _progress(ctx["user"], ctx["code"])
     assert saved.status == ("completed" if passed else "in_progress")
     assert saved.attempts == 1
+
+
+# ── footprint and limits on the WebSocket runner ────────────────────────────
+
+
+@sync_to_async
+def _code_runs(user):
+    from game.models import CodeRun
+
+    return list(CodeRun.objects.filter(user=user).order_by("id"))
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_every_finished_run_is_recorded():
+    ctx = await _setup("ws_footprint")
+    message = {"code": "print('x')", "task_id": ctx["code"].id}
+    await _run(ctx, _stream("nope\n"), message)
+    await _run(ctx, _stream("Charged\n"), message)
+    await _run(ctx, _stream("free\n"), {"code": "print('free')"})  # free practice
+
+    graded_fail, graded_pass, free = await _code_runs(ctx["user"])
+    assert (graded_fail.outcome, graded_fail.attempt_no, graded_fail.passed) == (
+        "wrong_output",
+        1,
+        False,
+    )
+    assert (graded_pass.outcome, graded_pass.attempt_no, graded_pass.passed) == (
+        "success",
+        2,
+        True,
+    )
+    assert (free.task, free.outcome, free.passed) == (None, "success", None)
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_a_sandbox_failure_is_recorded_but_is_not_the_learners_attempt():
+    ctx = await _setup("ws_infra")
+
+    def broken_sandbox(code, timeout=15, stop_event=None):
+        yield {"type": "error", "message": "sandbox died", "reason": "runner_error"}
+        yield {"type": "exit", "code": -1, "duration": 0.0}
+
+    events = await _run(
+        ctx, broken_sandbox, {"code": "print(1)", "task_id": ctx["code"].id}
+    )
+    assert [e["type"] for e in events] == ["error", "exit"]  # no verdict
+    assert await _progress(ctx["user"], ctx["code"]) is None
+    (record,) = await _code_runs(ctx["user"])
+    assert record.outcome == "runner_error"
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_running_code_too_often_is_refused_and_closes_the_socket():
+    ctx = await _setup("ws_spam")
+    for _ in range(5):
+        await _run(ctx, _stream("free\n"), {"code": "print('free')"})
+
+    stream = MagicMock()
+    events = await _run(ctx, stream, {"code": "print('free')"}, expect_run=False)
+    assert events[-1]["type"] == "error"
+    assert events[-1]["reason"] == "rate_limited"
+    assert events[-1]["closed_with"] == 4429
+    stream.assert_not_called()
+    assert len(await _code_runs(ctx["user"])) == 5  # the refused run left no trace

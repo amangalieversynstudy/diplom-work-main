@@ -8,17 +8,27 @@
 сервер сам сравнивает вывод с эталоном, записывает попытку и перед событием
 exit шлёт {"type": "result", "passed": bool, "progress": {...}}. Браузеру
 верить нельзя, поэтому эталонный вывод к клиенту вообще не уходит.
+
+Каждый завершившийся запуск (в том числе без task_id) записывается в CodeRun:
+исход, тип ошибки, размеры, длительность. Запуски, оборванные самой
+инфраструктурой (сбой песочницы, отмена), не засчитываются как попытка.
+
+Частые запуски отсекаются (см. throttles.allow_code_run): сервер шлёт error и
+закрывает сокет кодом 4429.
 """
 
 import asyncio
 import json
 import threading
 
+from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
-from .runner import stream_python_code
-from .services import RuleViolation, grade_code_run, prepare_code_task
+from .footprint import finish_code_run
+from .runner import REASON_RUNNER_ERROR, stream_python_code
+from .services import RuleViolation, prepare_code_task
+from .throttles import allow_code_run
 
 MAX_CODE_BYTES = 100_000
 
@@ -75,6 +85,18 @@ class RunnerConsumer(AsyncWebsocketConsumer):
             })
             return
 
+        # Слишком частые запуски (спам кнопки Run, скрипты) отсекаем до любой работы.
+        if not await sync_to_async(allow_code_run)(self.scope["user"].id):
+            await self._emit(
+                {
+                    "type": "error",
+                    "message": "Слишком много запусков подряд. Подождите несколько секунд.",
+                    "reason": "rate_limited",
+                }
+            )
+            await self.close(code=4429)
+            return
+
         # Задача (если указана) проверяется ДО запуска: нет доступа — код не
         # исполняется вовсе.
         task = None
@@ -111,7 +133,11 @@ class RunnerConsumer(AsyncWebsocketConsumer):
             except Exception as exc:
                 loop.call_soon_threadsafe(
                     queue.put_nowait,
-                    {"type": "error", "message": f"Runner crashed: {exc}"},
+                    {
+                        "type": "error",
+                        "message": f"Runner crashed: {exc}",
+                        "reason": REASON_RUNNER_ERROR,
+                    },
                 )
             finally:
                 loop.call_soon_threadsafe(queue.put_nowait, None)  # sentinel
@@ -119,24 +145,34 @@ class RunnerConsumer(AsyncWebsocketConsumer):
         thread = threading.Thread(target=producer, daemon=True)
         thread.start()
 
-        stdout_parts = []
+        stdout_parts, stderr_parts, reasons = [], [], set()
         try:
             while True:
                 event = await queue.get()
                 if event is None:
                     break
-                if event.get("type") == "stdout":
+                kind = event.get("type")
+                if kind == "stdout":
                     stdout_parts.append(event.get("data") or "")
-                elif event.get("type") == "exit" and task is not None:
+                elif kind == "stderr":
+                    stderr_parts.append(event.get("data") or "")
+                elif kind == "error" and event.get("reason"):
+                    reasons.add(event["reason"])
+                elif kind == "exit":
+                    # Запуск дошёл до конца: оценить (если это задача) и записать.
                     # Вердикт идёт раньше exit: клиент закрывает сокет на exit.
-                    verdict = await database_sync_to_async(grade_code_run)(
+                    verdict = await database_sync_to_async(finish_code_run)(
                         self.scope["user"],
                         task,
-                        code,
-                        "".join(stdout_parts),
-                        event.get("code"),
+                        code=code,
+                        stdout="".join(stdout_parts),
+                        stderr="".join(stderr_parts),
+                        exit_code=event.get("code"),
+                        duration=event.get("duration"),
+                        reasons=reasons,
                     )
-                    await self._emit({"type": "result", **verdict})
+                    if verdict is not None:
+                        await self._emit({"type": "result", **verdict})
                 await self._emit(event)
         except asyncio.CancelledError:
             # disconnect() отменил задачу — гасим producer

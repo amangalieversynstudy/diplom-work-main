@@ -7,6 +7,7 @@ import LevelUpBurst from "../../components/LevelUpBurst";
 import { useRouter } from "next/router";
 import { toast } from "sonner";
 import {
+  Events,
   Missions,
   TaskAPI,
   TaskProgressAPI,
@@ -119,6 +120,16 @@ export default function MissionDetail() {
     };
     // при смене языка миссия перезагружается с правильными title_ru/title_en
   }, [id, language]);
+
+  // Открытие шага — событие для аналитики (сколько ученик сидит на каждом шаге).
+  // Один раз на шаг за посещение страницы; для закрытой миссии не шлём.
+  const openedTasksRef = useRef(new Set());
+  useEffect(() => {
+    if (!activeTaskId || mission?.available === false) return;
+    if (openedTasksRef.current.has(activeTaskId)) return;
+    openedTasksRef.current.add(activeTaskId);
+    Events.taskOpened(activeTaskId);
+  }, [activeTaskId, mission?.available]);
 
   // Сцена сама возвращается в покой после реакции на запуск кода.
   useEffect(() => {

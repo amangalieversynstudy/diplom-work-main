@@ -16,6 +16,7 @@ from .views import (
     CodeRunnerView,
     IntroStatusView,
     LeaderboardViewSet,
+    LearningEventView,
     LocationViewSet,
     MissionTaskViewSet,
     MissionViewSet,
@@ -54,6 +55,7 @@ urlpatterns = [
     path("ai-mentor/", AIMentorView.as_view(), name="ai_mentor"),
     path("analytics/", AnalyticsView.as_view(), name="analytics"),
     path("achievements/", AchievementsView.as_view(), name="achievements"),
+    path("events/", LearningEventView.as_view(), name="learning_events"),
     path(
         "teacher/students/",
         TeacherStudentsView.as_view(),

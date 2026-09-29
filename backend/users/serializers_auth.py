@@ -20,9 +20,22 @@ class RegisterSerializer(serializers.ModelSerializer):
         write_only=True, required=False, allow_blank=True
     )
 
+    # Opt-in consent to use this learner's activity in research. Off unless
+    # the sign-up form sends true.
+    research_consent = serializers.BooleanField(
+        write_only=True, required=False, default=False
+    )
+
     class Meta:
         model = User
-        fields = ("id", "username", "email", "password", "teacher_code")
+        fields = (
+            "id",
+            "username",
+            "email",
+            "password",
+            "teacher_code",
+            "research_consent",
+        )
 
     def validate_email(self, value):
         if value and User.objects.filter(email__iexact=value).exists():
@@ -39,6 +52,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         teacher_code = (validated_data.pop("teacher_code", "") or "").strip()
+        research_consent = validated_data.pop("research_consent", False)
         username = validated_data["username"]
         if User.objects.filter(username=username).exists():
             raise serializers.ValidationError({"username": "Это имя пользователя уже занято."})
@@ -64,6 +78,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         if is_teacher:
             user.is_staff = True
             user.save(update_fields=["is_staff"])
+        if research_consent:
+            profile = user.profile
+            profile.set_research_consent(True)
+            profile.save(update_fields=["research_consent", "research_consent_at"])
         return user
 
 

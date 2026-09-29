@@ -117,7 +117,8 @@ export default function AIMentorChat({
         nextHistory,
         code || "",
         taskDesc,
-        language
+        language,
+        task?.id
       );
       setMessages([...nextHistory, { role: "assistant", content: reply }]);
       if (onInventoryUpdate && remaining_summons !== undefined) {

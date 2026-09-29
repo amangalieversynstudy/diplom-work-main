@@ -76,6 +76,25 @@ class Profile(models.Model):
         help_text="Дата последнего email-напоминания о стрике"
     )
 
+    # Consent to use this learner's activity for research (the master's project
+    # dataset). Off by default; the learner opts in at sign-up or in the profile.
+    research_consent = models.BooleanField(
+        default=False,
+        help_text="Согласие на использование учебной активности в исследовании"
+    )
+    research_consent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Когда согласие дано или отозвано в последний раз"
+    )
+
+    def set_research_consent(self, value: bool) -> None:
+        """Record a change of consent (and when it happened)."""
+        value = bool(value)
+        if value != self.research_consent or self.research_consent_at is None:
+            self.research_consent = value
+            self.research_consent_at = timezone.now()
+
     def use_item(self, item_field_name: str) -> bool:
         """
         Пытается списать 1 предмет из инвентаря.

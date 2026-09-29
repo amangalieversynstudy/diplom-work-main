@@ -189,7 +189,8 @@ def record_task_attempt(user, task, *, passed, score, answer):
 
     ``attempts`` counts tries up to and including the first success, so the
     "attempts to success" metric is not polluted by later re-runs of a task
-    that is already solved.
+    that is already solved. The returned object carries ``counted``: whether
+    this call was one of those counted tries.
     """
     progress, _ = Progress.objects.get_or_create(user=user, mission=task.mission)
     if progress.started_at is None:
@@ -197,7 +198,8 @@ def record_task_attempt(user, task, *, passed, score, answer):
 
     task_progress, _ = TaskProgress.objects.get_or_create(user=user, task=task)
     task_progress = TaskProgress.objects.select_for_update().get(pk=task_progress.pk)
-    if task_progress.status != "completed":
+    task_progress.counted = task_progress.status != "completed"
+    if task_progress.counted:
         task_progress.attempts += 1
         task_progress.last_submitted_at = timezone.now()
         task_progress.best_score = max(task_progress.best_score or 0, score)
@@ -229,4 +231,8 @@ def grade_code_run(user, task, code, stdout, exit_code):
         score=100 if passed else 0,
         answer={"code": code},
     )
-    return {"passed": passed, "progress": progress_payload(task_progress)}
+    return {
+        "passed": passed,
+        "progress": progress_payload(task_progress),
+        "counted": task_progress.counted,
+    }

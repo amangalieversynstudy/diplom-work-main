@@ -181,10 +181,17 @@ REST_FRAMEWORK = {
         "user": "120/min",
         "ai_assist": "10/min",        # Gemini — дорого
         "task_submit": "60/min",       # ответы на квизы/сюжет
+        "learning_event": "120/min",   # события UI (открытие шага)
         "code_runner": "20/min",       # Docker sandbox — ресурсоёмко
         "code_runner_burst": "5/10s",  # Защита от спам-кликов Run
     },
 }
+
+# Learning-analytics footprint: how long code runs / events are kept, and the
+# secret that turns user ids into pseudonyms in exports (falls back to
+# SECRET_KEY when empty). See game/management/commands/export_learning_data.py.
+LEARNING_DATA_RETENTION_DAYS = int(os.getenv("LEARNING_DATA_RETENTION_DAYS", "730"))
+ANALYTICS_EXPORT_SALT = os.getenv("ANALYTICS_EXPORT_SALT", "")
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),

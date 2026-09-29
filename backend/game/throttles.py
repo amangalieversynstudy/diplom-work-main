@@ -10,6 +10,7 @@ parse_rate(), который поддерживает синтаксис вид�
 за 10 секунд.
 """
 
+from django.core.cache import cache
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
 
@@ -50,6 +51,12 @@ class TaskSubmitThrottle(UserRateThrottle):
     scope = "task_submit"
 
 
+class LearningEventThrottle(UserRateThrottle):
+    """Client-reported timeline events (e.g. a step was opened)."""
+
+    scope = "learning_event"
+
+
 class CodeRunnerThrottle(UserRateThrottle):
     """Docker sandbox: ресурсоёмко. 20 запусков/мин на юзера."""
 
@@ -69,3 +76,30 @@ class AnonHardLimit(AnonRateThrottle):
     """Аноны получают жёсткий лимит на любой защищённый эндпоинт."""
 
     rate = "10/min"
+
+
+# ── WebSocket runner limits ─────────────────────────────────────────────────
+# DRF throttles only see HTTP, so the WebSocket runner counts runs itself, per
+# user, in the shared cache (Redis in production). Same numbers as the REST
+# runner: 5 runs per 10 seconds and 20 per minute.
+
+RUNNER_LIMITS = (("burst", 5, 10), ("minute", 20, 60))
+
+
+def _within_limit(key, limit, window_seconds):
+    """Count one hit in a fixed window; False once *limit* is exceeded."""
+    if cache.add(key, 1, window_seconds):
+        return limit >= 1
+    try:
+        return cache.incr(key) <= limit
+    except ValueError:  # the window expired between add() and incr()
+        cache.set(key, 1, window_seconds)
+        return True
+
+
+def allow_code_run(user_id):
+    """Register a run for *user_id*; False if they are running code too fast."""
+    return all(
+        _within_limit(f"runner:{user_id}:{name}", limit, window)
+        for name, limit, window in RUNNER_LIMITS
+    )

@@ -8,6 +8,15 @@ from rest_framework import status
 from .models import User
 from .serializers import ProfileSerializer
 
+
+def _parse_bool(value):
+    """True/False for JSON booleans and 'true'/'false' strings, else None."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str) and value.strip().lower() in ("true", "false"):
+        return value.strip().lower() == "true"
+    return None
+
 # NOTE: there is intentionally no generic /api/users/ endpoint. Users are only
 # ever read/changed through their own /profile/me/ (see ProfileMeView), and
 # user management goes through the Django admin.
@@ -46,6 +55,9 @@ class ProfileMeView(APIView):
             "longest_streak": profile.longest_streak,
             "streak_active": profile.streak_active,
             "streak_at_risk": profile.streak_at_risk,
+            # согласие на использование активности в исследовании
+            "research_consent": profile.research_consent,
+            "research_consent_at": profile.research_consent_at,
         }
 
     def get(self, request):
@@ -106,6 +118,16 @@ class ProfileMeView(APIView):
         if user_dirty:
             user.save(update_fields=user_dirty)
 
+        if "research_consent" in data:
+            consent = _parse_bool(data["research_consent"])
+            if consent is None:
+                return Response(
+                    {"research_consent": "Ожидается true или false."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            profile.set_research_consent(consent)
+            profile.save(update_fields=["research_consent", "research_consent_at"])
+
         # Profile-поля — через сериализатор (нужна валидация class_role)
         profile_payload = {k: data[k] for k in ("bio", "class_role") if k in data}
         if profile_payload:
@@ -120,6 +142,10 @@ class ProfileMeView(APIView):
             # Фронт показывает баннер «подтверждение отправлено на <email>».
             payload["email_change_pending"] = email_change_pending
         return Response(payload)
+
+# inventory item -> timeline event (ai_summons is logged by the AI views)
+ITEM_EVENTS = {"hint_scrolls": "hint_used", "skeleton_scrolls": "skeleton_used"}
+
 
 class UseItemView(APIView):
     """
@@ -144,6 +170,15 @@ class UseItemView(APIView):
         success = profile.use_item(item_type)
         
         if success:
+            event_type = ITEM_EVENTS.get(item_type)
+            if event_type:
+                from game.footprint import find_task, log_event
+
+                log_event(
+                    request.user,
+                    event_type,
+                    task=find_task(request.data.get("task_id"), request.user),
+                )
             # Получаем актуальный остаток, чтобы фронтенд сразу обновил UI
             remaining = getattr(profile, item_type)
             return Response({

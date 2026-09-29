@@ -260,3 +260,30 @@ class LeaderboardEntryAdmin(admin.ModelAdmin):
     list_select_related = ("user", "track")
     search_fields = ("user__username", "track__slug")
     ordering = ("period_label", "position")
+
+
+from .models import CodeRun, LearningEvent  # noqa: E402
+
+
+class _ReadOnlyAdmin(admin.ModelAdmin):
+    """The footprint is written by the server only; the admin just looks."""
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(CodeRun)
+class CodeRunAdmin(_ReadOnlyAdmin):
+    list_display = ("created_at", "user", "task", "outcome", "error_type", "passed")
+    list_filter = ("outcome", "error_type", "passed", "after_solved")
+    date_hierarchy = "created_at"
+
+
+@admin.register(LearningEvent)
+class LearningEventAdmin(_ReadOnlyAdmin):
+    list_display = ("created_at", "user", "event_type", "task", "mission")
+    list_filter = ("event_type",)
+    date_hierarchy = "created_at"

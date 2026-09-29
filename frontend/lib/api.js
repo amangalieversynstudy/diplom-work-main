@@ -184,20 +184,33 @@ export const Profile = {
     return data;
   },
   // ДОБАВЛЕННЫЙ МЕТОД ДЛЯ ИНВЕНТАРЯ:
-  consumeItem: async (itemType) => {
-    const { data } = await api.post("/profile/use-item/", { item_type: itemType });
+  // taskId (необязателен): к какой задаче относится подсказка — для аналитики.
+  consumeItem: async (itemType, taskId) => {
+    const { data } = await api.post("/profile/use-item/", {
+      item_type: itemType,
+      ...(taskId ? { task_id: taskId } : {}),
+    });
     return data;
   },
 };
 
-export async function registerUser({ username, email, password, teacher_code }) {
+export async function registerUser({
+  username,
+  email,
+  password,
+  teacher_code,
+  research_consent,
+}) {
   // DRF: POST /api/auth/register/
   // teacher_code необязателен: верный код → бэкенд выдаёт is_staff (учитель).
+  // research_consent — добровольное согласие на использование активности в
+  // исследовании (по умолчанию выключено).
   const { data } = await api.post("/auth/register/", {
     username,
     email,
     password,
     ...(teacher_code ? { teacher_code } : {}),
+    research_consent: !!research_consent,
   });
   return data;
 }
@@ -311,9 +324,14 @@ export const AIAssist = {
    * @param {string} language    Programming language ("python")
    * @returns {Promise<{hint: string}>}
    */
-  getHint: (code, taskDesc, language = "python") =>
+  getHint: (code, taskDesc, language = "python", taskId) =>
     api
-      .post("/ai-assist/", { code, task_description: taskDesc, language })
+      .post("/ai-assist/", {
+        code,
+        task_description: taskDesc,
+        language,
+        ...(taskId ? { task_id: taskId } : {}),
+      })
       .then((r) => r.data),
 
   /**
@@ -330,15 +348,26 @@ export const AIAssist = {
    * @param {string} language  Programming language ("python")
    * @returns {Promise<{reply: string, remaining_summons: number}>}
    */
-  mentor: (messages, code, taskDesc, language = "python") =>
+  mentor: (messages, code, taskDesc, language = "python", taskId) =>
     api
       .post("/ai-mentor/", {
         messages,
         code,
         task_description: taskDesc,
         language,
+        ...(taskId ? { task_id: taskId } : {}),
       })
       .then((r) => r.data),
+};
+
+// Timeline events reported by the browser. Only "a step was opened" is accepted:
+// attempts, hints and completions are recorded by the server itself. Analytics
+// must never break the lesson, so failures are swallowed here.
+export const Events = {
+  taskOpened: (taskId) =>
+    api
+      .post("/events/", { event_type: "task_opened", task_id: taskId })
+      .catch(() => {}),
 };
 
 /**

@@ -18,6 +18,7 @@ export default function Register() {
   const [confirm, setConfirm] = useState("");
   const [teacherMode, setTeacherMode] = useState(false);
   const [teacherCode, setTeacherCode] = useState("");
+  const [researchConsent, setResearchConsent] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const dict = useDictionary();
@@ -55,6 +56,7 @@ export default function Register() {
         email: trimmedEmail,
         password,
         teacher_code: teacherMode ? teacherCode.trim() : "",
+        research_consent: researchConsent,
       });
 
       clearPlayerClass();
@@ -206,6 +208,21 @@ export default function Register() {
                 </button>
               </label>
             )}
+
+            <label className="flex items-start gap-3 text-sm text-muted cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 shrink-0 accent-[var(--primary)]"
+                checked={researchConsent}
+                onChange={(e) => setResearchConsent(e.target.checked)}
+              />
+              <span>
+                {extra.researchConsent}
+                <span className="block text-xs text-faint mt-1">
+                  {extra.researchConsentHint}
+                </span>
+              </span>
+            </label>
 
             <Button type="submit" disabled={loading}>
               {loading ? copy.submitting : copy.submit}

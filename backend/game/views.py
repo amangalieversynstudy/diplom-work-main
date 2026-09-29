@@ -26,6 +26,7 @@ from rest_framework.views import APIView
 from rest_framework.exceptions import APIException
 
 from .achievements import evaluate_achievements
+from .footprint import find_task, log_event
 from .services import (
     RuleViolation,
     check_mission_access,
@@ -41,12 +42,14 @@ from .throttles import (
     AIAssistThrottle,
     CodeRunnerBurstThrottle,
     CodeRunnerThrottle,
+    LearningEventThrottle,
     TaskSubmitThrottle,
 )
 
 logger = logging.getLogger(__name__)
 
 from .models import (
+    LearningEvent,
     LeaderboardEntry,
     Location,
     Mission,
@@ -151,6 +154,12 @@ class MissionViewSet(viewsets.ModelViewSet):
 
         prog, _ = Progress.objects.get_or_create(user=request.user, mission=mission)
         prog.start()
+        log_event(
+            request.user,
+            LearningEvent.MISSION_STARTED,
+            mission=mission,
+            attempt=prog.attempts,
+        )
         return Response(ProgressSerializer(prog).data)
 
     @swagger_auto_schema(
@@ -193,6 +202,7 @@ class MissionViewSet(viewsets.ModelViewSet):
         if awards_xp:
             require_mission_tasks_done(user, mission)
 
+        was_completed = prog.completed
         xp_gain = 0
         if not prog.completed:
             xp_gain = mission.xp_reward
@@ -213,6 +223,14 @@ class MissionViewSet(viewsets.ModelViewSet):
         else:
             prog.complete()
 
+        log_event(
+            user,
+            LearningEvent.MISSION_COMPLETED,
+            mission=mission,
+            xp_added=xp_gain,
+            stars=prog.stars,
+            first_time=not was_completed,
+        )
         # complete() also updated the streak on another Profile instance.
         profile.refresh_from_db()
         new_achievements = evaluate_achievements(user)
@@ -367,6 +385,15 @@ class MissionTaskViewSet(viewsets.ReadOnlyModelViewSet):
 
         task_progress = record_task_attempt(
             user, task, passed=passed, score=100 if passed else 0, answer=answer
+        )
+        log_event(
+            user,
+            LearningEvent.TASK_SUBMITTED,
+            task=task,
+            task_type=task.task_type,
+            correct=passed,
+            attempt=task_progress.attempts,
+            after_solved=not task_progress.counted,
         )
         return Response(
             {
@@ -613,6 +640,11 @@ class AIAssistView(APIView):
         if ok:
             # Списываем расход только при успешном ответе AI
             profile.use_item("ai_summons")
+            log_event(
+                request.user,
+                LearningEvent.AI_HINT_USED,
+                task=find_task(request.data.get("task_id"), request.user),
+            )
 
         return Response(
             {
@@ -964,6 +996,11 @@ class AIMentorView(APIView):
         reply, ok = _call_gemini_chat(system_instruction, history)
         if ok:
             profile.use_item("ai_summons")
+            log_event(
+                request.user,
+                LearningEvent.AI_MENTOR_USED,
+                task=find_task(request.data.get("task_id"), request.user),
+            )
 
         return Response(
             {
@@ -1281,3 +1318,30 @@ class TeacherStudentsView(APIView):
                 },
             }
         )
+
+
+class LearningEventView(APIView):
+    """Timeline events reported by the browser.
+
+    Only harmless UI events are accepted here (a step was opened). Everything
+    with consequences - attempts, hints, completions - is recorded by the
+    server itself when it happens, never on the client's word.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [LearningEventThrottle]
+    ALLOWED_TYPES = {LearningEvent.TASK_OPENED}
+
+    def post(self, request):
+        event_type = request.data.get("event_type")
+        if event_type not in self.ALLOWED_TYPES:
+            return Response(
+                {"detail": "Unsupported event type"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        task = find_task(request.data.get("task_id"), request.user)
+        if task is None:
+            return Response(
+                {"detail": "Task not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        log_event(request.user, event_type, task=task)
+        return Response(status=status.HTTP_204_NO_CONTENT)

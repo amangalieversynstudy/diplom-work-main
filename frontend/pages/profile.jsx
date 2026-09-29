@@ -65,6 +65,7 @@ export default function ProfilePage() {
         longest_streak: profileBlock.longest_streak ?? 0,
         streak_active: profileBlock.streak_active ?? false,
         streak_at_risk: profileBlock.streak_at_risk ?? false,
+        research_consent: profileBlock.research_consent ?? false,
       };
 
       setProfile(merged);
@@ -91,6 +92,22 @@ export default function ProfilePage() {
     localStorage.removeItem("refresh_token");
     clearPlayerClass();
     router.push("/login");
+  };
+
+  // Согласие на использование активности в исследовании: сохраняется сразу,
+  // без кнопки «Сохранить», чтобы отзыв согласия был в один клик.
+  const handleConsentChange = async (checked) => {
+    const previous = !!profile?.research_consent;
+    setProfile((p) => ({ ...p, research_consent: checked }));
+    try {
+      const updated = await ProfileAPI.update({ research_consent: checked });
+      setProfile((p) => ({ ...p, research_consent: !!updated?.research_consent }));
+      toast.success(t("profile.toasts.saved"));
+    } catch (error) {
+      logger.error(error);
+      setProfile((p) => ({ ...p, research_consent: previous }));
+      toast.error(t("profile.toasts.saveError"));
+    }
   };
 
   const handleSaveProfile = async (e) => {
@@ -282,6 +299,23 @@ if (loading) {
                   </div>
                 </div>
               )}
+
+              <div className="mt-6 pt-6 border-t border-border">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--primary)]"
+                    checked={!!profile?.research_consent}
+                    onChange={(e) => handleConsentChange(e.target.checked)}
+                  />
+                  <span className="text-sm text-text">
+                    {t("profile.researchConsentLabel")}
+                    <span className="block text-xs text-muted mt-1">
+                      {t("profile.researchConsentHint")}
+                    </span>
+                  </span>
+                </label>
+              </div>
             </div>
           </div>
         </div>

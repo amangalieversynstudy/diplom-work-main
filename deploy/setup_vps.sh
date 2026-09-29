@@ -45,7 +45,7 @@ echo "────────────────────────�
 echo "Дальше — руками:"
 echo ""
 echo "  1. nano /opt/rpg-academy/.env"
-echo "     Заполни: SECRET_KEY, POSTGRES_PASSWORD, EMAIL_*, GEMINI_API_KEY,"
+echo "     Заполни: DJANGO_SECRET_KEY, POSTGRES_PASSWORD, EMAIL_*, GEMINI_API_KEY,"
 echo "     FRONTEND_URL=https://$DOMAIN, ALLOWED_HOSTS=$DOMAIN"
 echo ""
 echo "  2. cp deploy/nginx.conf /etc/nginx/sites-available/rpg-academy"

@@ -96,7 +96,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
-      SECRET_KEY: ${SECRET_KEY}
+      # Настройки читают именно DJANGO_SECRET_KEY; с прежним именем SECRET_KEY
+      # backend падал при старте.
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?задайте DJANGO_SECRET_KEY в .env.prod}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS}
       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
       FRONTEND_URL: ${FRONTEND_URL}
@@ -110,9 +112,19 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      TEACHER_INVITE_CODE: ${TEACHER_INVITE_CODE:-}
+      ANALYTICS_EXPORT_SALT: ${ANALYTICS_EXPORT_SALT:-}
+      LEARNING_DATA_RETENTION_DAYS: ${LEARNING_DATA_RETENTION_DAYS:-730}
+      HELP_OFFER_SHARE: ${HELP_OFFER_SHARE:-100}
+      RISK_MODEL_PATH: ${RISK_MODEL_PATH:-}
+      # Внешняя песочница (Judge0) вместо Docker: тогда сокет ниже не нужен.
+      RUNNER_JUDGE0_URL: ${RUNNER_JUDGE0_URL:-}
+      RUNNER_JUDGE0_KEY: ${RUNNER_JUDGE0_KEY:-}
     volumes:
       - static-files:/app/staticfiles
-      # для песочницы — пробрасываем docker daemon хоста
+      # ВНИМАНИЕ: доступ к docker.sock фактически даёт root на хосте любому, кто
+      # найдёт уязвимость в backend. Если задан RUNNER_JUDGE0_URL, удалите эту
+      # строку; иначе выносите песочницу в отдельный сервис или rootless Docker.
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       db:

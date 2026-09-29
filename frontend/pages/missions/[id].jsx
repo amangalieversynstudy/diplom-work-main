@@ -17,6 +17,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Sword, Sparkles, Code2, BookOpen, Lock, ChevronRight, ScrollText } from "lucide-react";
 import logger from "../../lib/logger";
 import { useI18n } from "../../lib/i18n";
+import { sanitizeHtml } from "../../lib/sanitize";
 
 export default function MissionDetail() {
   const router = useRouter();
@@ -560,11 +561,13 @@ export default function MissionDetail() {
               prose-pre:bg-[#3a2818] prose-pre:text-[#fde68a]
               prose-a:text-[#8e1d1d] prose-li:marker:text-[#5c3a21]">
               <div dangerouslySetInnerHTML={{
-                __html: (language === "en"
-                  ? activeTask?.body_en || activeTask?.body_ru
-                  : activeTask?.body_ru || activeTask?.body_en) ||
-                  activeTask?.body ||
-                  "",
+                __html: sanitizeHtml(
+                  (language === "en"
+                    ? activeTask?.body_en || activeTask?.body_ru
+                    : activeTask?.body_ru || activeTask?.body_en) ||
+                    activeTask?.body ||
+                    ""
+                ),
               }} />
 
               {tasks.length === 0 && (

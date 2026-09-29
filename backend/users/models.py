@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import F
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -99,22 +100,31 @@ class Profile(models.Model):
             self.research_consent = value
             self.research_consent_at = timezone.now()
 
+    INVENTORY_ITEMS = ("ai_summons", "hint_scrolls", "skeleton_scrolls")
+
     def use_item(self, item_field_name: str) -> bool:
+        """Списать 1 предмет из инвентаря.
+
+        True при успехе; False, если предмета нет или имя поля не из инвентаря.
         """
-        Пытается списать 1 предмет из инвентаря.
-        Возвращает True в случае успеха, False если предмета нет в наличии или поле не найдено.
-        """
-        # Проверяем, что запрашиваемое поле действительно относится к инвентарю
-        allowed_items = ["ai_summons", "hint_scrolls", "skeleton_scrolls"]
-        
-        if item_field_name in allowed_items and hasattr(self, item_field_name):
-            current_amount = getattr(self, item_field_name)
-            if current_amount > 0:
-                setattr(self, item_field_name, current_amount - 1)
-                # update_fields оптимизирует запрос к БД, обновляя только одно поле
-                self.save(update_fields=[item_field_name])
-                return True
-        return False
+        if item_field_name not in self.INVENTORY_ITEMS:
+            return False
+        # Один атомарный UPDATE ... WHERE n > 0: два одновременных запроса не
+        # спишут один и тот же предмет дважды, а остаток не уйдёт в минус.
+        # Схема «прочитал, вычел в Python, сохранил» этого не гарантирует.
+        spent = type(self).objects.filter(
+            pk=self.pk, **{f"{item_field_name}__gt": 0}
+        ).update(**{item_field_name: F(item_field_name) - 1})
+        self.refresh_from_db(fields=[item_field_name])
+        return bool(spent)
+
+    def refund_item(self, item_field_name: str) -> None:
+        """Вернуть предмет, списанный заранее (например, если AI не ответил)."""
+        if item_field_name in self.INVENTORY_ITEMS:
+            type(self).objects.filter(pk=self.pk).update(
+                **{item_field_name: F(item_field_name) + 1}
+            )
+            self.refresh_from_db(fields=[item_field_name])
 
     def add_xp(self, amount):
         """Add XP to the profile and adjust level when thresholds are crossed.

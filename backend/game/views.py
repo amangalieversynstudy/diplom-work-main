@@ -588,7 +588,9 @@ class AIAssistView(APIView):
             )
 
         profile = request.user.profile
-        if profile.ai_summons <= 0:
+        # Вызов резервируем ДО обращения к AI: иначе параллельные запросы при
+        # одном оставшемся вызове получили бы по ответу, а списался бы один.
+        if not profile.use_item("ai_summons"):
             return Response(
                 {
                     "detail": (
@@ -600,10 +602,15 @@ class AIAssistView(APIView):
                 status=status.HTTP_402_PAYMENT_REQUIRED,
             )
 
-        hint, ok = self._call_gemini(code, task_description, language)
+        try:
+            hint, ok = self._call_gemini(code, task_description, language)
+        except Exception:
+            profile.refund_item("ai_summons")
+            raise
+        if not ok:
+            # текст — заглушка «AI недоступен»: расход возвращаем
+            profile.refund_item("ai_summons")
         if ok:
-            # Списываем расход только при успешном ответе AI
-            profile.use_item("ai_summons")
             log_event(
                 request.user,
                 LearningEvent.AI_HINT_USED,
@@ -935,7 +942,8 @@ class AIMentorView(APIView):
             )
 
         profile = request.user.profile
-        if profile.ai_summons <= 0:
+        # Резервируем вызов до обращения к AI (см. AIAssistView).
+        if not profile.use_item("ai_summons"):
             return Response(
                 {
                     "detail": (
@@ -957,9 +965,14 @@ class AIMentorView(APIView):
                 f"\n\n# Student's current code\n```{language}\n{code}\n```"
             )
 
-        reply, ok = _call_gemini_chat(system_instruction, history)
+        try:
+            reply, ok = _call_gemini_chat(system_instruction, history)
+        except Exception:
+            profile.refund_item("ai_summons")
+            raise
+        if not ok:
+            profile.refund_item("ai_summons")
         if ok:
-            profile.use_item("ai_summons")
             log_event(
                 request.user,
                 LearningEvent.AI_MENTOR_USED,

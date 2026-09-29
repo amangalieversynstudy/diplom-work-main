@@ -90,7 +90,7 @@ export default function ForgotPassword() {
                     />
                   </div>
                   {error && (
-                    <span className="mt-1 block text-xs text-red-400">{error}</span>
+                    <span role="alert" className="mt-1 block text-xs text-error">{error}</span>
                   )}
                 </label>
                 <Button type="submit" disabled={loading}>

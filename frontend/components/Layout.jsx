@@ -238,6 +238,14 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
 
   return (
     <div className="min-h-screen text-text bg-bg relative overflow-x-hidden transition-colors duration-300">
+      {/* Ссылка для клавиатуры: сразу к содержимому, минуя шапку и меню */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[1200] focus:rounded-lg focus:bg-panel focus:px-4 focus:py-2 focus:text-text focus:shadow-lg focus:ring-2 focus:ring-primary"
+      >
+        {t("layout.skipToContent")}
+      </a>
+
       {/* ── Page Transition Overlay ── */}
       {/* ── Page Transition Overlay ──
            Slides DOWN to cover page (TransitionLink on click)
@@ -319,7 +327,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
 
       <StreakReminder />
 
-      <main className={fullBleed ? "relative" : `max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 relative ${noBottomPadding ? "pt-10 pb-0" : "py-10"}`}>
+      <main id="main-content" tabIndex={-1} className={fullBleed ? "relative" : `max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 relative ${noBottomPadding ? "pt-10 pb-0" : "py-10"}`}>
         {children}
       </main>
 

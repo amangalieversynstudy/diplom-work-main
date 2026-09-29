@@ -104,7 +104,7 @@ export default function Register() {
 
   const FieldError = ({ k }) =>
     errors[k] ? (
-      <span className="mt-1 block text-xs text-red-400">{errors[k]}</span>
+      <span role="alert" className="mt-1 block text-xs text-error">{errors[k]}</span>
     ) : null;
 
   return (

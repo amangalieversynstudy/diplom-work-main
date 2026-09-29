@@ -160,6 +160,7 @@ export default function Login() {
                     : "border-border focus:border-primary focus:ring-primary/30"
                 }`}
                 placeholder={copy.identifierPlaceholder}
+                aria-invalid={errors.identifier ? "true" : undefined}
                 value={identifier}
                 onChange={(e) => {
                   setIdentifier(e.target.value);
@@ -168,7 +169,7 @@ export default function Login() {
                 }}
               />
               {errors.identifier && (
-                <span className="mt-1 block text-xs text-red-400">
+                <span role="alert" className="mt-1 block text-xs text-error">
                   {errors.identifier}
                 </span>
               )}
@@ -197,7 +198,7 @@ export default function Login() {
                 }}
               />
               {errors.password && (
-                <span className="mt-1 block text-xs text-red-400">
+                <span role="alert" className="mt-1 block text-xs text-error">
                   {errors.password}
                 </span>
               )}

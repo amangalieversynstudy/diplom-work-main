@@ -112,7 +112,7 @@ export default function ResetPasswordConfirm() {
                   }}
                 />
                 {errors.password && (
-                  <span className="mt-1 block text-xs text-red-400">
+                  <span role="alert" className="mt-1 block text-xs text-error">
                     {errors.password}
                   </span>
                 )}
@@ -132,7 +132,7 @@ export default function ResetPasswordConfirm() {
                   }}
                 />
                 {errors.confirm && (
-                  <span className="mt-1 block text-xs text-red-400">
+                  <span role="alert" className="mt-1 block text-xs text-error">
                     {errors.confirm}
                   </span>
                 )}

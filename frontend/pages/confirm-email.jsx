@@ -152,9 +152,9 @@ function ErrorState({ t, message, onBack }) {
   return (
     <>
       <div className="w-20 h-20 mx-auto rounded-full bg-red-500/10 border border-red-500/40 flex items-center justify-center mb-6 shadow-inner">
-        <Mail size={36} className="text-red-400" />
+        <Mail size={36} className="text-error" />
       </div>
-      <p className="text-xs uppercase tracking-widest text-red-400 mb-3 font-bold">
+      <p className="text-xs uppercase tracking-widest text-error mb-3 font-bold">
         {t("auth.confirm.errorKicker")}
       </p>
       <h1 className="text-3xl md:text-4xl font-display font-bold text-text mb-3">

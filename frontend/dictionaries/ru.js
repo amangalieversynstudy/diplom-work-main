@@ -19,6 +19,7 @@ export const ru = {
     login: "Вход",
     register: "Присоединиться",
     logout: "Выйти",
+    skipToContent: "Перейти к содержимому",
     footerNote: "Сделано для дипломного квеста",
     nav: "Навигация",
     themeLight: "Светлая тема",

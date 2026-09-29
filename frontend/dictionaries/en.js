@@ -18,6 +18,7 @@ export const en = {
     badge: "RPG Academy",
     login: "Login",
     logout: "Sign out",
+    skipToContent: "Skip to content",
     nav: "Navigation",
     themeLight: "Light theme",
     themeDark: "Dark theme",

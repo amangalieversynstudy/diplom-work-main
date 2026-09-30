@@ -291,6 +291,16 @@ def test_code_steps_without_a_hidden_check_are_flagged(ready):
     assert "есть скрытая проверка" in _run_check()
 
 
+def test_a_database_from_before_the_protection_is_told_to_sync(ready):
+    from game.models import Mission, MissionTask
+
+    mission = Mission.objects.filter(is_active=True).first()
+    MissionTask.objects.create(pk=22, mission=mission, order=60, task_type="code", data={"starter": "x"})
+    assert "sync_course_protection" in _run_check()
+    call_command("sync_course_protection", stdout=StringIO())
+    assert "sync_course_protection" not in _run_check()
+
+
 @pytest.mark.parametrize(
     "setting, value, fragment",
     [

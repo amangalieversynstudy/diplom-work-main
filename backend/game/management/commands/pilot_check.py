@@ -146,6 +146,21 @@ def check_data():
     else:
         yield OK, "У всех кодовых шагов с эталонным выводом есть скрытая проверка."
 
+    # the built-in steps that came with "not taught yet" lists and personal variants later
+    from game.management.commands.sync_course_protection import PROTECTION_KEYS, protected_steps
+
+    present = MissionTask.objects.in_bulk(list(protected_steps()))
+    bare = [
+        pk
+        for pk, step in present.items()
+        if not any(key in (step.data or {}) for key in PROTECTION_KEYS)
+    ]
+    if bare:
+        yield WARN, (
+            f"У {len(bare)} встроенных кодовых шагов нет персональных вариантов и списков «не проходили» "
+            "(база развёрнута до их появления): выполните sync_course_protection."
+        )
+
     User = get_user_model()
     if not User.objects.filter(is_staff=True, is_active=True).exists():
         yield FAIL, "Нет ни одного преподавателя (staff): некому смотреть аналитику."

@@ -93,7 +93,9 @@
 
 ```bash
 python manage.py migrate
-python manage.py seed_course                       # если курса ещё нет (на живой базе подсказки и скрытые проверки добавляйте через Studio)
+python manage.py seed_course                       # если курса ещё нет
+python manage.py sync_course_protection --dry-run  # на живой базе: какие шаги получат варианты и списки «не проходили»
+python manage.py sync_course_protection            # и применить (правки преподавателей в других шагах не трогает)
 python manage.py set_course_owner python-intro <логин_преподавателя>
 python manage.py set_course_owner python-continued <логин_преподавателя>
 python manage.py pilot_check                       # не должно быть FAIL

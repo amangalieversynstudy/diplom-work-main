@@ -11,12 +11,15 @@ Hierarchy: Track (course) → Location (section) → Mission → Task
 could open it but never finish it.
 """
 
+import re
+
 from django.utils.text import slugify
 from rest_framework import permissions, serializers, viewsets
 from rest_framework.exceptions import PermissionDenied
 
 from .codeanalysis import CONSTRUCTS
 from .models import Location, Mission, MissionTask, Track
+from .variants import MAX_VARIANTS, MIN_VARIANTS
 
 # Rewards are authored by teachers, so they are capped: an absurd value would
 # distort the leaderboard for the whole platform.
@@ -363,6 +366,40 @@ def _clean_not_yet(raw):
     return names
 
 
+def _clean_variants(raw):
+    """Personal variants of a code step (game/variants.py): 2-30 dicts with ``vars`` and maybe ``expected_output``."""
+    if raw in (None, "", []):
+        return []
+    if not isinstance(raw, list) or not MIN_VARIANTS <= len(raw) <= MAX_VARIANTS:
+        raise serializers.ValidationError(
+            {"data": f"Варианты: список из {MIN_VARIANTS}-{MAX_VARIANTS} вариантов."}
+        )
+    cleaned, names = [], None
+    for item in raw:
+        variables = item.get("vars") if isinstance(item, dict) else None
+        if not isinstance(variables, dict) or not variables:
+            raise serializers.ValidationError({"data": "Вариант: объект vars с подстановками."})
+        clean_vars = {}
+        for key, value in variables.items():
+            if not re.fullmatch(r"\w{1,30}", str(key)) or isinstance(value, (bool, dict, list)) or value is None:
+                raise serializers.ValidationError({"data": f"Вариант: неверная подстановка «{key}»."})
+            text = str(value)
+            if len(text) > 200:
+                raise serializers.ValidationError({"data": "Вариант: значение длиннее 200 символов."})
+            clean_vars[str(key)] = value
+        if names is not None and set(clean_vars) != names:
+            raise serializers.ValidationError({"data": "У всех вариантов одни и те же имена подстановок."})
+        names = set(clean_vars)
+        entry = {"vars": clean_vars}
+        expected = item.get("expected_output")
+        if expected is not None:
+            if not isinstance(expected, str) or len(expected) > MAX_CODE:
+                raise serializers.ValidationError({"data": "Вариант: expected_output должен быть строкой."})
+            entry["expected_output"] = expected
+        cleaned.append(entry)
+    return cleaned
+
+
 def _clean_hints(raw):
     """Progressive hints, easiest first: at most MAX_HINTS, each in ru and/or en."""
     if raw in (None, "", []):
@@ -500,6 +537,9 @@ class StudioTaskSerializer(serializers.ModelSerializer):
         not_yet = _clean_not_yet(data.get("not_yet"))
         if not_yet:
             cleaned["not_yet"] = not_yet
+        variants = _clean_variants(data.get("variants"))
+        if variants:
+            cleaned["variants"] = variants
         return cleaned
 
     def _mirror_texts(self, validated, instance=None):

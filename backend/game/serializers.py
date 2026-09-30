@@ -2,6 +2,7 @@ from rest_framework import serializers
 from users.models import Profile
 
 from .services import help_offer, public_task_data
+from .variants import personalize
 from .models import (
     LeaderboardEntry,
     Location,
@@ -74,6 +75,9 @@ class MissionTaskSerializer(LocalizedSerializerMixin, serializers.ModelSerialize
         return self._preferred_language()
 
     def to_representation(self, instance):
+        # a step with personal variants reads differently for every learner
+        user = getattr(self.context.get("request"), "user", None)
+        instance = personalize(instance, user.pk if user is not None and user.is_authenticated else None)
         data = super().to_representation(instance)
         # never send the answer key (correct_answer, expected_output ...)
         data["data"] = public_task_data(instance)

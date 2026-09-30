@@ -213,6 +213,10 @@ class UseItemView(APIView):
             from game.serializers import _resolve_language
 
             task = find_task(request.data.get("task_id"), request.user)
+            if task is not None:
+                from game.variants import personalize
+
+                task = personalize(task, request.user.pk)  # hints mention the learner's own numbers
             lang = _resolve_language(request)
             if item_type == "hint_scrolls":
                 hint = next_hint(task, request.user, lang) if task else None

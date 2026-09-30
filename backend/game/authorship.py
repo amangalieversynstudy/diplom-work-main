@@ -17,6 +17,7 @@ Nothing here decides anything about a learner: the teacher sees the facts and th
 
 from .metrics import scoped_tasks
 from .models import CodeRun, LearningEvent
+from .variants import variant_index, variants_of
 from .warning import scoped_learners
 
 # provenance fields the editor may send; anything else is dropped, values are clamped
@@ -139,6 +140,11 @@ def authorship_report(student, viewer, *, lang="ru"):
         )
         for other in others:
             mine = solving.get(other.task_id)
+            count = len(variants_of(tasks[other.task_id].data))
+            if count > 1 and variant_index(other.user_id, other.task_id, count) == variant_index(
+                student.pk, other.task_id, count
+            ):
+                continue  # the same variant has the same natural solution: not a sign of anything
             if mine is not None and mine.fingerprint == other.fingerprint:
                 twins.setdefault(other.task_id, [])
                 if other.user.username not in twins[other.task_id]:

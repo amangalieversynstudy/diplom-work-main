@@ -278,3 +278,36 @@ def test_learners_of_another_teacher_are_never_named(student, step, teacher):
 def test_the_run_stores_the_analysis_and_not_the_code(student, step):
     run = solve(student, step, typed(), code=OWN)
     assert len(run.fingerprint) == 32 and run.ast_nodes > 20 and run.constructs == []
+
+
+def _variant_step(step):
+    step.data = {**step.data, "variants": [{"vars": {"n": 1}, "expected_output": "ok"}, {"vars": {"n": 2}, "expected_output": "ok"}]}
+    step.save()
+
+
+def _friend_with_variant(step, same_as, name):
+    from game.variants import variant_index
+
+    want = variant_index(same_as.pk, step.pk, 2)
+    for i in range(200):
+        other = User.objects.create_user(f"{name}{i}", f"{name}{i}@example.com", "S3cure-pass-1")
+        if (variant_index(other.pk, step.pk, 2) == want) == name.startswith("same"):
+            Progress.objects.create(user=other, mission=step.mission, status="in_progress")
+            solve(other, step, typed(), code=OWN)
+            return other
+        other.delete()
+    raise AssertionError("no friend found")
+
+
+def test_identical_solutions_of_the_same_variant_are_expected_not_suspicious(student, step, teacher):
+    _variant_step(step)
+    _friend_with_variant(step, student, "same")
+    solve(student, step, typed(), code=OWN)
+    assert all(s["code"] != "same_as_others" for s in authorship_report(student, teacher)["steps"][0]["signals"])
+
+
+def test_identical_solutions_of_different_variants_are_reported(student, step, teacher):
+    _variant_step(step)
+    _friend_with_variant(step, student, "other")
+    solve(student, step, typed(), code=OWN)
+    assert any(s["code"] == "same_as_others" for s in authorship_report(student, teacher)["steps"][0]["signals"])

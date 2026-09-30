@@ -51,6 +51,7 @@ const emptyForm = (order) => ({
   skeleton_ru: "",
   skeleton_en: "",
   not_yet: [],
+  variants_json: "",
 });
 
 // Конструкции, которые преподаватель может отметить как «ещё не проходили» (game/codeanalysis.py).
@@ -86,6 +87,7 @@ const fromTask = (task) => {
     skeleton_ru: task.data?.skeleton?.ru || "",
     skeleton_en: task.data?.skeleton?.en || "",
     not_yet: Array.isArray(task.data?.not_yet) ? task.data.not_yet : [],
+    variants_json: Array.isArray(task.data?.variants) ? JSON.stringify(task.data.variants, null, 2) : "",
   };
 };
 
@@ -113,6 +115,14 @@ const toPayload = (form, missionId) => {
   } else if (form.task_type === "code") {
     const ru = splitHints(form.hints_ru);
     const en = splitHints(form.hints_en);
+    let variants = [];
+    if (form.variants_json.trim()) {
+      try {
+        variants = JSON.parse(form.variants_json);
+      } catch {
+        return null; // не JSON: форма заполнена неверно
+      }
+    }
     payload.data = {
       starter: form.starter,
       expected_output: form.expected_output,
@@ -123,6 +133,7 @@ const toPayload = (form, missionId) => {
       })),
       skeleton: { ru: form.skeleton_ru, en: form.skeleton_en },
       not_yet: form.not_yet,
+      variants,
     };
   } else {
     payload.data = {};
@@ -291,6 +302,17 @@ function TaskForm({ form, setForm, t }) {
                 })}
               </div>
             </fieldset>
+          </div>
+          <div className="lg:col-span-2">
+            <Field label={t("studio.tasks.variants")} hint={t("studio.tasks.variantsHint")}>
+              <textarea
+                rows={6}
+                spellCheck={false}
+                className={`${inputCls} font-mono`}
+                value={form.variants_json}
+                onChange={(e) => set({ variants_json: e.target.value })}
+              />
+            </Field>
           </div>
           <Field label={t("studio.tasks.hintsRu")} hint={t("studio.tasks.hintsHint")}>
             <textarea

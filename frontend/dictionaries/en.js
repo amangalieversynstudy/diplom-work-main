@@ -328,6 +328,9 @@ export const en = {
       skeletonEn: "Solution outline, English (optional)",
       skeletonHint:
         "A structure sketch with comments instead of code: the learner who spends a Scroll of the Architect gets it. Without an outline the scroll is not spent on this step.",
+      variants: "Personal variants (optional, JSON)",
+      variantsHint:
+        'Every learner gets their own variant, so a ready answer from another learner fails on yours. Write {{name}} in the text, starter code, hidden check, hints and skeleton, and list the variants like this: [{"vars": {"n": 7}, "expected_output": "28"}, {"vars": {"n": 9}, "expected_output": "45"}]. 2 to 30 variants with the same names.',
       notYet: "Not taught yet (optional)",
       notYetHint: "If the learner's solution uses any of the ticked ones, the teacher sees a note on the learner's page. It is a hint, not a ban: running and checking work as usual.",
       constructs: {

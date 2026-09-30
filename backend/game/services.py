@@ -19,6 +19,7 @@ from rest_framework.exceptions import APIException
 from . import help as help_module
 from .achievements import evaluate_achievements
 from .models import MissionTask, Progress, TaskProgress
+from .variants import personalize
 from .runner import execute_python_code
 
 # Keys of ``MissionTask.data`` that are safe to show to learners. Anything else
@@ -357,6 +358,7 @@ def grade_code_run(user, task, code, stdout, exit_code):
     Returns None when the hidden check could not be run (broken sandbox): the
     attempt is then neither recorded nor counted.
     """
+    task = personalize(task, user.pk)  # the learner is graded on their own variant of the step
     passed = code_run_passed(task, exit_code, stdout)
     hidden_failed = False
     if passed:

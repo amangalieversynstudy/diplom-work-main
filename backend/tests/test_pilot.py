@@ -291,6 +291,11 @@ def test_code_steps_without_a_hidden_check_are_flagged(ready):
     assert "есть скрытая проверка" in _run_check()
 
 
+def test_demo_learners_are_flagged_before_a_pilot(ready):
+    _user("demo_01")
+    assert "seed_demo_cohort --remove" in _run_check()
+
+
 def test_a_database_from_before_the_protection_is_told_to_sync(ready):
     from game.models import Mission, MissionTask
 

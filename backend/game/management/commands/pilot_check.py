@@ -184,6 +184,15 @@ def check_data():
     elif tracks:
         yield OK, "У всех курсов есть владелец."
 
+    from game.management.commands.seed_demo_cohort import demo_users
+
+    demo = demo_users().count()
+    if demo:
+        yield WARN, (
+            f"В базе {demo} демонстрационных учеников (demo_*): их цифры попадут в кабинет и рейтинг. "
+            "Перед пилотом уберите их: seed_demo_cohort --remove."
+        )
+
     yield OK, (
         f"Согласились на исследование: {Profile.objects.filter(research_consent=True).count()} "
         f"из {Profile.objects.filter(user__is_staff=False).count()} учеников."

@@ -1,4 +1,4 @@
-import { ClipboardPaste, Eye, ShieldCheck } from "lucide-react";
+import { ClipboardPaste, Copy, Eye, GraduationCap, ShieldCheck } from "lucide-react";
 import { useI18n } from "../lib/i18n";
 
 const fmt = (template, values = {}) =>
@@ -11,6 +11,8 @@ const ASSISTANCE_STYLE = {
   skeleton: "border-primary/30 bg-primary/10 text-primary",
   mentor: "border-accent/40 bg-accent/15 text-accent-dk",
 };
+
+const SIGNAL_ICON = { no_editor_data: Eye, untaught_construct: GraduationCap, same_as_others: Copy };
 
 const T = "teacherStudent.authorship";
 
@@ -89,15 +91,18 @@ export default function AuthorshipPanel({ data }) {
                       <ul className="mt-3 space-y-1.5">
                         {step.signals.map((signal) => (
                           <li key={signal.code} className="flex items-start gap-2 text-sm text-text">
-                            {signal.code === "no_editor_data" ? (
-                              <Eye size={15} className="mt-0.5 shrink-0 text-muted" aria-hidden="true" />
-                            ) : (
-                              <ClipboardPaste
-                                size={15}
-                                className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-400"
-                                aria-hidden="true"
-                              />
-                            )}
+                            {(() => {
+                              const Icon = SIGNAL_ICON[signal.code] || ClipboardPaste;
+                              return (
+                                <Icon
+                                  size={15}
+                                  className={`mt-0.5 shrink-0 ${
+                                    signal.code === "no_editor_data" ? "text-muted" : "text-amber-700 dark:text-amber-400"
+                                  }`}
+                                  aria-hidden="true"
+                                />
+                              );
+                            })()}
                             <span>{fmt(t(`${T}.signals.${signal.code}`), signal)}</span>
                           </li>
                         ))}

@@ -125,6 +125,7 @@
       "is_required": true,
       "data": {
         "language": "python",
+        "not_yet": ["lambda", "comprehension", "try", "import", "class"],
         "starter": "def initials(full_name):\n    # Верни первые буквы всех слов заглавными, каждую с точкой\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(initials(\"ada lovelace\"))\n",
         "sampleOutput": "A.L.",
         "expected_output": "A.L.",
@@ -237,6 +238,7 @@
       "is_required": true,
       "data": {
         "language": "python",
+        "not_yet": ["lambda", "comprehension", "try", "import", "class"],
         "starter": "def unique_count(items):\n    # Верни число разных значений\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(unique_count([\"orc\", \"elf\", \"orc\", \"dwarf\", \"elf\"]))\n",
         "sampleOutput": "3",
         "expected_output": "3",
@@ -349,6 +351,7 @@
       "is_required": true,
       "data": {
         "language": "python",
+        "not_yet": ["lambda", "comprehension", "import", "class"],
         "starter": "def safe_divide(a, b):\n    # Верни a / b, а при делении на ноль верни None\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(safe_divide(10, 4))\nprint(safe_divide(1, 0))\n",
         "sampleOutput": "2.5\nNone",
         "expected_output": "2.5\nNone",
@@ -461,6 +464,7 @@
       "is_required": true,
       "data": {
         "language": "python",
+        "not_yet": ["import", "class"],
         "starter": "def squares_of_evens(numbers):\n    # Верни квадраты чётных чисел, порядок сохрани\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(squares_of_evens([1, 2, 3, 4, 5, 6]))\n",
         "sampleOutput": "[4, 16, 36]",
         "expected_output": "[4, 16, 36]",
@@ -573,6 +577,7 @@
       "is_required": true,
       "data": {
         "language": "python",
+        "not_yet": ["class"],
         "starter": "def word_count(text):\n    # Верни словарь {слово: сколько раз встретилось}, регистр не важен\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(sorted(word_count(\"Fire ice fire\").items()))\n",
         "sampleOutput": "[('fire', 2), ('ice', 1)]",
         "expected_output": "[('fire', 2), ('ice', 1)]",

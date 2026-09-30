@@ -67,6 +67,8 @@ export const en = {
         paste_then_run: "{share}% of the code was pasted and run with almost no edits (edits: {edits}).",
         large_paste: "{share}% of the code was pasted, then edits: {edits}.",
         fast_typing: "{chars} characters typed in {seconds} s: faster than hand typing.",
+        untaught_construct: "The solution uses something not taught for this step yet: {constructs}.",
+        same_as_others: "Same structure as the solution of {count} other learner(s): {with}. Renaming variables does not change it.",
         no_editor_data: "No editor data for the solving run.",
       },
     },
@@ -326,6 +328,17 @@ export const en = {
       skeletonEn: "Solution outline, English (optional)",
       skeletonHint:
         "A structure sketch with comments instead of code: the learner who spends a Scroll of the Architect gets it. Without an outline the scroll is not spent on this step.",
+      notYet: "Not taught yet (optional)",
+      notYetHint: "If the learner's solution uses any of the ticked ones, the teacher sees a note on the learner's page. It is a hint, not a ban: running and checking work as usual.",
+      constructs: {
+        def: "def: functions",
+        lambda: "lambda",
+        comprehension: "comprehensions",
+        try: "try/except",
+        import: "import",
+        class: "class",
+        with: "with",
+      },
       hiddenCheck: "Hidden check (optional)",
       hiddenCheckHint:
         "Python code that runs after the student's solution and calls their functions with other values, for example assert power(3, 4) == 81. The student never sees it, so the step cannot be passed by just printing the answer.",

@@ -211,3 +211,70 @@ def test_the_research_export_carries_the_counts_for_consenting_learners(student,
     assert rows[0]["pasted_chars"] == str(len(CODE))
     assert rows[0]["paste_count"] == "1"
     assert "code" not in rows[0]
+
+
+# ── what the code is made of ───────────────────────────────────────────────
+
+OWN = "total = 0\nfor n in range(5):\n    total += n\n    if total > 3:\n        total -= 1\nprint('ok', total, n, len(str(total)))\n"
+
+
+def test_a_construct_the_author_marked_as_untaught_is_reported(student, step, teacher):
+    step.data = {**step.data, "not_yet": ["comprehension", "lambda"]}
+    step.save()
+    solve(student, step, typed(), code="print('ok')\nsquares = [i * i for i in range(3)]\n")
+    row = authorship_report(student, teacher)["steps"][0]
+    assert {"code": "untaught_construct", "constructs": "comprehension"} in row["signals"]
+
+
+def test_a_taught_construct_is_not_reported(student, step, teacher):
+    step.data = {**step.data, "not_yet": ["class"]}
+    step.save()
+    solve(student, step, typed(), code="print('ok')\nsquares = [i * i for i in range(3)]\n")
+    assert authorship_report(student, teacher)["steps"][0]["signals"] == []
+
+
+def _second_student(step, name, code):
+    other = User.objects.create_user(name, f"{name}@example.com", "S3cure-pass-1")
+    Progress.objects.create(user=other, mission=step.mission, status="in_progress")
+    solve(other, step, typed(), code=code)
+    return other
+
+
+def test_the_same_structure_as_another_learner_is_reported_despite_renaming(student, step, teacher):
+    friend_code = OWN.replace("total", "acc")
+    _second_student(step, "friend", friend_code)
+    solve(student, step, typed(), code=OWN)
+    signals = authorship_report(student, teacher)["steps"][0]["signals"]
+    same = [s for s in signals if s["code"] == "same_as_others"]
+    assert same == [{"code": "same_as_others", "count": 1, "with": "friend"}]
+
+
+def test_small_solutions_are_not_compared(student, step, teacher):
+    _second_student(step, "friend", "print('ok')\n")
+    solve(student, step, typed(), code="print('ok')\n")
+    assert authorship_report(student, teacher)["steps"][0]["signals"] == []
+
+
+def test_a_different_solution_is_not_a_twin(student, step, teacher):
+    _second_student(step, "friend", OWN)
+    solve(student, step, typed(), code=OWN.replace("total -= 1", "total -= 2"))
+    assert all(s["code"] != "same_as_others" for s in authorship_report(student, teacher)["steps"][0]["signals"])
+
+
+def test_learners_of_another_teacher_are_never_named(student, step, teacher):
+    other_teacher = User.objects.create_user("t2", "t2@example.com", "S3cure-pass-1", is_staff=True)
+    track = Track.objects.create(slug="theirs", title="T", is_active=True, owner=other_teacher)
+    location = Location.objects.create(track=track, title="L", order=1)
+    mission = Mission.objects.create(location=location, title="M", order=1)
+    theirs = MissionTask.objects.create(mission=mission, order=1, task_type="code", data={"expected_output": "ok"})
+    stranger = User.objects.create_user("stranger", "st@example.com", "S3cure-pass-1")
+    Progress.objects.create(user=stranger, mission=mission, status="in_progress")
+    # same structure, but another step and another teacher's course: nothing to report
+    solve(stranger, theirs, typed(), code=OWN)
+    solve(student, step, typed(), code=OWN)
+    assert authorship_report(student, teacher)["steps"][0]["signals"] == []
+
+
+def test_the_run_stores_the_analysis_and_not_the_code(student, step):
+    run = solve(student, step, typed(), code=OWN)
+    assert len(run.fingerprint) == 32 and run.ast_nodes > 20 and run.constructs == []

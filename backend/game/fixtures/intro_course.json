@@ -175,6 +175,7 @@
       "body_ru": "<p>Твоё самое первое заклинание. В Кодексе уже готов шаблон — нажми <strong>Запустить</strong> и посмотри, как терминал приветствует мир.</p><p>Как только увидишь вывод — испытание пройдено.</p>",
       "data": {
         "language": "python",
+        "not_yet": ["def", "lambda", "comprehension", "try", "import", "class"],
         "starter": "# Напиши своё первое заклинание\nprint(\"Привет, мир!\")\n",
         "sampleOutput": "Привет, мир!",
         "hints": [
@@ -242,6 +243,7 @@
       "body_ru": "<p>Напиши функцию <code>mana_status(mana)</code>, которая возвращает:</p><ul><li><code>\"Overcharged\"</code> если mana &gt; 100</li><li><code>\"Charged\"</code> если mana от 50 до 100 включительно</li><li><code>\"Low\"</code> если mana меньше 50</li></ul><p>Вызови её: <code>print(mana_status(75))</code> — должно вывести <code>Charged</code>.</p>",
       "data": {
         "language": "python",
+        "not_yet": ["lambda", "comprehension", "try", "import", "class"],
         "starter": "def mana_status(mana):\n    # Верни \"Charged\" для mana 50..100, иначе \"Low\" / \"Overcharged\"\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(mana_status(75))\n",
         "sampleOutput": "Charged",
         "expected_output": "Charged",
@@ -319,6 +321,7 @@
       "body_ru": "<p>Напиши код, который выводит сумму чисел от 1 до 10 с помощью цикла <code>for</code>.</p><p>Ожидаемый вывод: <code>55</code></p>",
       "data": {
         "language": "python",
+        "not_yet": ["lambda", "comprehension", "try", "import", "class"],
         "starter": "total = 0\nfor i in range(1, 11):\n    # Прибавь i к total\n    raise NotImplementedError(\"Допиши тело цикла\")\n\nprint(total)\n",
         "sampleOutput": "55",
         "expected_output": "55",
@@ -396,6 +399,7 @@
       "body_ru": "<p>Напиши функцию <code>power(base, exp)</code>, которая возвращает <code>base</code> в степени <code>exp</code> <strong>без</strong> оператора <code>**</code> — используй цикл.</p><p>Затем выведи: <code>print(power(2, 8))</code> — ожидаемый вывод: <code>256</code></p>",
       "data": {
         "language": "python",
+        "not_yet": ["lambda", "comprehension", "try", "import", "class"],
         "starter": "def power(base, exp):\n    result = 1\n    for _ in range(exp):\n        # Умножь result на base\n        raise NotImplementedError(\"Допиши умножение\")\n    return result\n\nprint(power(2, 8))\n",
         "sampleOutput": "256",
         "expected_output": "256",
@@ -495,6 +499,7 @@
       "body_ru": "<p>Напиши функцию <code>battle_cry(name)</code>, которая возвращает <code>name</code> ЗАГЛАВНЫМИ буквами и с <code>\"!\"</code> в конце.</p><p><code>print(battle_cry(\"айдан\"))</code> должно вывести <code>АЙДАН!</code></p>",
       "data": {
         "language": "python",
+        "not_yet": ["lambda", "comprehension", "try", "import", "class"],
         "starter": "def battle_cry(name):\n    # Верни name заглавными буквами и \"!\" в конце\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(battle_cry(\"айдан\"))\n",
         "sampleOutput": "АЙДАН!",
         "expected_output": "АЙДАН!",
@@ -594,6 +599,7 @@
       "body_ru": "<p>Напиши функцию <code>count_big(numbers)</code>, которая возвращает, сколько чисел больше 10.</p><p><code>print(count_big([4, 15, 9, 20, 11]))</code> должно вывести <code>3</code>.</p>",
       "data": {
         "language": "python",
+        "not_yet": ["lambda", "comprehension", "try", "import", "class"],
         "starter": "def count_big(numbers):\n    count = 0\n    for n in numbers:\n        # Увеличь count, если n > 10\n        raise NotImplementedError(\"Допиши условие\")\n    return count\n\nprint(count_big([4, 15, 9, 20, 11]))\n",
         "sampleOutput": "3",
         "expected_output": "3",
@@ -693,6 +699,7 @@
       "body_ru": "<p>Напиши функцию <code>total_gold(heroes)</code>, которая принимает словарь имя → золото и возвращает сумму всего золота.</p><p><code>print(total_gold({\"Айдан\": 50, \"Мира\": 30, \"Бо\": 20}))</code> должно вывести <code>100</code>.</p>",
       "data": {
         "language": "python",
+        "not_yet": ["lambda", "comprehension", "try", "import", "class"],
         "starter": "def total_gold(heroes):\n    total = 0\n    for gold in heroes.values():\n        # Прибавь gold к total\n        raise NotImplementedError(\"Допиши суммирование\")\n    return total\n\nprint(total_gold({\"Айдан\": 50, \"Мира\": 30, \"Бо\": 20}))\n",
         "sampleOutput": "100",
         "expected_output": "100",
@@ -768,6 +775,7 @@
       "body_ru": "<p>Напиши функцию <code>champion(heroes)</code>, которая принимает список словарей с ключами <code>name</code> и <code>hp</code> и возвращает строку <code>\"Champion: ИМЯ (HP)\"</code> для героя с наибольшим hp.</p><p>Для данного отряда <code>print(champion(party))</code> должно вывести <code>Champion: Mira (120)</code>.</p>",
       "data": {
         "language": "python",
+        "not_yet": ["lambda", "comprehension", "try", "import", "class"],
         "starter": "party = [\n    {\"name\": \"Aidan\", \"hp\": 80},\n    {\"name\": \"Mira\", \"hp\": 120},\n    {\"name\": \"Bo\", \"hp\": 95},\n]\n\ndef champion(heroes):\n    # Найди героя с наибольшим hp и верни \"Champion: name (hp)\"\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(champion(party))\n",
         "sampleOutput": "Champion: Mira (120)",
         "expected_output": "Champion: Mira (120)",

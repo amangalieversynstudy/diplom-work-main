@@ -496,6 +496,17 @@ class CodeRun(models.Model):
         "pasted_chars, typed_chars, paste_count, edit_events, edits_after_paste, elapsed_ms. "
         "Sent by the editor, so a hint at authorship and not a proof.",
     )
+    fingerprint = models.CharField(
+        max_length=32,
+        blank=True,
+        db_index=True,
+        help_text="Hash of the code's structure with the author's own names, comments and "
+        "docstrings left out (game/codeanalysis.py). The code itself is not stored.",
+    )
+    ast_nodes = models.PositiveIntegerField(default=0, help_text="Size of the parsed code, 0 if it did not parse.")
+    constructs = models.JSONField(
+        default=list, blank=True, help_text="Language constructs used: def, lambda, comprehension, try, ..."
+    )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:

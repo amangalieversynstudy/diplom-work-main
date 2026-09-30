@@ -11,6 +11,7 @@ import re
 from django.db import transaction
 
 from .authorship import clean_provenance
+from .codeanalysis import analyse
 from .models import CodeRun, LearningEvent, MissionTask
 from .runner import (
     INFRASTRUCTURE_REASONS,
@@ -138,6 +139,7 @@ def record_code_run(
     outcome, error_type, error_message = classify_run(
         exit_code, stderr, reasons, passed
     )
+    analysis = analyse(code) or {}
     try:
         with transaction.atomic():
             CodeRun.objects.create(
@@ -155,6 +157,9 @@ def record_code_run(
                 attempt_no=attempt_no,
                 after_solved=after_solved,
                 provenance=clean_provenance(provenance),
+                fingerprint=analysis.get("fingerprint", ""),
+                ast_nodes=analysis.get("nodes", 0),
+                constructs=analysis.get("constructs", []),
             )
     except Exception:
         logger.exception("Could not record code run")

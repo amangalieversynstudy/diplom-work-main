@@ -50,7 +50,11 @@ const emptyForm = (order) => ({
   hints_en: "",
   skeleton_ru: "",
   skeleton_en: "",
+  not_yet: [],
 });
+
+// Конструкции, которые преподаватель может отметить как «ещё не проходили» (game/codeanalysis.py).
+const CONSTRUCTS = ["def", "lambda", "comprehension", "try", "import", "class", "with"];
 
 // Подсказки разделяются пустой строкой; i-я русская парится с i-й английской.
 const splitHints = (text) =>
@@ -81,6 +85,7 @@ const fromTask = (task) => {
     hints_en: joinHints(task.data?.hints, "en"),
     skeleton_ru: task.data?.skeleton?.ru || "",
     skeleton_en: task.data?.skeleton?.en || "",
+    not_yet: Array.isArray(task.data?.not_yet) ? task.data.not_yet : [],
   };
 };
 
@@ -117,6 +122,7 @@ const toPayload = (form, missionId) => {
         en: en[i] || "",
       })),
       skeleton: { ru: form.skeleton_ru, en: form.skeleton_en },
+      not_yet: form.not_yet,
     };
   } else {
     payload.data = {};
@@ -256,6 +262,35 @@ function TaskForm({ form, setForm, t }) {
                 onChange={(e) => set({ hidden_check: e.target.value })}
               />
             </Field>
+          </div>
+          <div className="lg:col-span-2">
+            <fieldset>
+              <legend className="text-xs font-semibold text-muted">{t("studio.tasks.notYet")}</legend>
+              <p className="mt-1 text-xs text-faint">{t("studio.tasks.notYetHint")}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {CONSTRUCTS.map((name) => {
+                  const on = form.not_yet.includes(name);
+                  return (
+                    <label
+                      key={name}
+                      className={`inline-flex min-h-[36px] cursor-pointer items-center gap-2 rounded-full border px-3 text-sm ${
+                        on ? "border-primary bg-primary/10 text-primary" : "border-border text-muted"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-border text-primary"
+                        checked={on}
+                        onChange={() =>
+                          set({ not_yet: on ? form.not_yet.filter((n) => n !== name) : [...form.not_yet, name] })
+                        }
+                      />
+                      {t(`studio.tasks.constructs.${name}`)}
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
           </div>
           <Field label={t("studio.tasks.hintsRu")} hint={t("studio.tasks.hintsHint")}>
             <textarea

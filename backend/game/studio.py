@@ -15,6 +15,7 @@ from django.utils.text import slugify
 from rest_framework import permissions, serializers, viewsets
 from rest_framework.exceptions import PermissionDenied
 
+from .codeanalysis import CONSTRUCTS
 from .models import Location, Mission, MissionTask, Track
 
 # Rewards are authored by teachers, so they are capped: an absurd value would
@@ -347,6 +348,21 @@ def _clean_pair(value, limit, label):
     return pair or None
 
 
+def _clean_not_yet(raw):
+    """Constructs the author marks as not taught yet (game/codeanalysis.CONSTRUCTS), without repeats."""
+    if raw in (None, "", []):
+        return []
+    if not isinstance(raw, list):
+        raise serializers.ValidationError({"data": "«Ещё не проходили»: список названий."})
+    names = list(dict.fromkeys(str(item).strip() for item in raw if str(item).strip()))
+    unknown = [name for name in names if name not in CONSTRUCTS]
+    if unknown:
+        raise serializers.ValidationError(
+            {"data": f"«Ещё не проходили»: неизвестно {', '.join(unknown)}; можно {', '.join(CONSTRUCTS)}."}
+        )
+    return names
+
+
 def _clean_hints(raw):
     """Progressive hints, easiest first: at most MAX_HINTS, each in ru and/or en."""
     if raw in (None, "", []):
@@ -481,6 +497,9 @@ class StudioTaskSerializer(serializers.ModelSerializer):
         skeleton = _clean_pair(data.get("skeleton"), MAX_CODE, "Каркас решения")
         if skeleton:
             cleaned["skeleton"] = skeleton
+        not_yet = _clean_not_yet(data.get("not_yet"))
+        if not_yet:
+            cleaned["not_yet"] = not_yet
         return cleaned
 
     def _mirror_texts(self, validated, instance=None):

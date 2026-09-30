@@ -1,6 +1,6 @@
 """Who did a solved code step: the learner alone, with the platform's help, or with signs of outside help.
 
-Two independent sources, both about the step's solving run (the first graded run that passed):
+Three independent sources, all about the step's solving run (the first graded run that passed):
 
 * **Assistance** comes from what the platform itself recorded: hint potions, the skeleton scroll and the
   AI mentor used on that step before it was solved. It is exact.
@@ -8,12 +8,16 @@ Two independent sources, both about the step's solving run (the first graded run
   The editor sends them, so a learner who talks to the API directly can leave them out or forge them:
   they point to steps worth a look and never prove anything. Only counts are kept, never keystrokes
   or the pasted text.
+* **The code itself** (``codeanalysis``): does the solution use a construct the course author marked as
+  not taught yet for this step, and did another learner of the same teacher hand in a solution of the same
+  structure. The code is not kept, only a structural fingerprint.
 
 Nothing here decides anything about a learner: the teacher sees the facts and the reasons.
 """
 
-from .models import CodeRun, LearningEvent
 from .metrics import scoped_tasks
+from .models import CodeRun, LearningEvent
+from .warning import scoped_learners
 
 # provenance fields the editor may send; anything else is dropped, values are clamped
 PROVENANCE_FIELDS = (
@@ -32,6 +36,8 @@ LARGE_PASTE_SHARE = 0.6
 FEW_EDITS_AFTER_PASTE = 2
 FAST_TYPING_MIN_CHARS = 80
 FAST_TYPING_CHARS_PER_SECOND = 10
+# solutions smaller than this are compared by nobody: a three-line exercise has one natural answer
+SIMILAR_MIN_NODES = 30
 
 # what a learner used on a step, weakest to strongest
 ASSISTANCE_LEVELS = ("independent", "hint", "skeleton", "mentor")
@@ -63,12 +69,21 @@ def paste_share(provenance, code_length):
     return min(1.0, provenance.get("pasted_chars", 0) / code_length)
 
 
-def signals_for(run):
-    """[{code, ...values}] describing the solving run; empty when nothing stands out."""
+def signals_for(run, *, not_yet=(), twins=()):
+    """[{code, ...values}] describing the solving run; empty when nothing stands out.
+
+    ``not_yet`` are the constructs the author marked as not taught for this step, ``twins`` the
+    usernames of other learners whose solving run has the same structure.
+    """
+    signals = []
+    early = sorted(set(run.constructs or []) & set(not_yet))
+    if early:
+        signals.append({"code": "untaught_construct", "constructs": ", ".join(early)})
+    if twins:
+        signals.append({"code": "same_as_others", "count": len(twins), "with": ", ".join(list(twins)[:3])})
     data = run.provenance or {}
     if not data:
-        return [{"code": "no_editor_data"}]
-    signals = []
+        return signals + [{"code": "no_editor_data"}]
     pasted = data.get("pasted_chars", 0)
     share = paste_share(data, run.code_length) or 0
     if pasted >= LARGE_PASTE_MIN_CHARS and share >= LARGE_PASTE_SHARE:
@@ -106,6 +121,29 @@ def authorship_report(student, viewer, *, lang="ru"):
     for run in runs:
         solving.setdefault(run.task_id, run)
 
+    # other learners of this teacher who solved the same step with the same structure
+    twins = {}
+    prints = {run.fingerprint for run in solving.values() if run.fingerprint and run.ast_nodes >= SIMILAR_MIN_NODES}
+    if prints:
+        others = (
+            CodeRun.objects.filter(
+                task_id__in=list(solving),
+                fingerprint__in=prints,
+                passed=True,
+                after_solved=False,
+                user__in=scoped_learners(viewer),
+            )
+            .exclude(user=student)
+            .select_related("user")
+            .order_by("created_at")
+        )
+        for other in others:
+            mine = solving.get(other.task_id)
+            if mine is not None and mine.fingerprint == other.fingerprint:
+                twins.setdefault(other.task_id, [])
+                if other.user.username not in twins[other.task_id]:
+                    twins[other.task_id].append(other.user.username)
+
     helped = {}
     for event in LearningEvent.objects.filter(
         user=student, task_id__in=list(solving), event_type__in=list(_EVENT_LEVEL)
@@ -137,7 +175,11 @@ def authorship_report(student, viewer, *, lang="ru"):
                     + events.count(LearningEvent.AI_MENTOR_USED),
                 },
                 "paste_share": None if share is None else round(share * 100),
-                "signals": signals_for(run),
+                "signals": signals_for(
+                    run,
+                    not_yet=(task.data or {}).get("not_yet", []) if isinstance(task.data, dict) else [],
+                    twins=twins.get(task_id, []),
+                ),
             }
         )
 

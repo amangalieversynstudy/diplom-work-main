@@ -30,11 +30,11 @@ def _strip_protection(pk):
     task.save()
 
 
-def test_thirteen_steps_carry_protection():
-    # 13 steps have not_yet (missions 1-13); the nine with variants are among them
+def test_sixteen_steps_carry_protection():
+    # all 16 code steps carry not_yet or variants; 15 have variants (the first only asks to press Run)
     steps = protected_steps()
-    assert len(steps) == 13
-    assert sum("variants" in f["data"] for f in steps.values()) == 9
+    assert len(steps) == 16
+    assert sum("variants" in f["data"] for f in steps.values()) == 15
 
 
 def test_a_fresh_database_is_already_protected():

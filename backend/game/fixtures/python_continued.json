@@ -621,16 +621,66 @@
       "task_type": "code",
       "title_en": "Safe Division",
       "title_ru": "Безопасное деление",
-      "body_en": "<p>Write a function <code>safe_divide(a, b)</code> that returns <code>a / b</code> and returns <code>None</code> on division by zero. Catch only division by zero: other errors must pass through.</p><p>The example prints <code>2.5</code> and <code>None</code>.</p>",
-      "body_ru": "<p>Напиши функцию <code>safe_divide(a, b)</code>: она возвращает <code>a / b</code>, а при делении на ноль возвращает <code>None</code>. Лови только деление на ноль: другие ошибки должны проходить.</p><p>Пример выведет <code>2.5</code> и <code>None</code>.</p>",
+      "body_en": "<p>Write a function <code>safe_divide(a, b)</code> that returns <code>a / b</code> and returns <code>None</code> on division by zero. Catch only division by zero: other errors must pass through.</p><p>The example prints <code>{{first}}</code> and <code>None</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>safe_divide(a, b)</code>: она возвращает <code>a / b</code>, а при делении на ноль возвращает <code>None</code>. Лови только деление на ноль: другие ошибки должны проходить.</p><p>Пример выведет <code>{{first}}</code> и <code>None</code>.</p>",
       "xp_reward": 20,
       "is_required": true,
       "data": {
         "language": "python",
         "not_yet": ["lambda", "comprehension", "import", "class"],
-        "starter": "def safe_divide(a, b):\n    # Верни a / b, а при делении на ноль верни None\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(safe_divide(10, 4))\nprint(safe_divide(1, 0))\n",
+        "variants": [
+          {
+            "vars": {
+              "a": 10,
+              "b": 4,
+              "c": 1,
+              "first": "2.5"
+            }
+          },
+          {
+            "vars": {
+              "a": 9,
+              "b": 2,
+              "c": 5,
+              "first": "4.5"
+            }
+          },
+          {
+            "vars": {
+              "a": 7,
+              "b": 4,
+              "c": 2,
+              "first": "1.75"
+            }
+          },
+          {
+            "vars": {
+              "a": 1,
+              "b": 8,
+              "c": 3,
+              "first": "0.125"
+            }
+          },
+          {
+            "vars": {
+              "a": 15,
+              "b": 6,
+              "c": 4,
+              "first": "2.5"
+            }
+          },
+          {
+            "vars": {
+              "a": 100,
+              "b": 8,
+              "c": 7,
+              "first": "12.5"
+            }
+          }
+        ],
+        "starter": "def safe_divide(a, b):\n    # Верни a / b, а при делении на ноль верни None\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(safe_divide({{a}}, {{b}}))\nprint(safe_divide({{c}}, 0))\n",
         "sampleOutput": "2.5\nNone",
-        "expected_output": "2.5\nNone",
+        "expected_output": "{{first}}\nNone",
         "hidden_check": "assert safe_divide(9, 3) == 3\nassert safe_divide(5, 0) is None\nassert safe_divide(-1, 2) == -0.5\ntry:\n    safe_divide(\"a\", 2)\nexcept TypeError:\n    pass\nelse:\n    raise AssertionError(\"TypeError must not be swallowed\")",
         "hints": [
           {
@@ -643,8 +693,8 @@
           }
         ],
         "skeleton": {
-          "ru": "def safe_divide(a, b):\n    # 1. в try: верни a / b\n    # 2. в except ZeroDivisionError: верни None\n    pass\n\nprint(safe_divide(10, 4))\nprint(safe_divide(1, 0))\n",
-          "en": "def safe_divide(a, b):\n    # 1. in try: return a / b\n    # 2. in except ZeroDivisionError: return None\n    pass\n\nprint(safe_divide(10, 4))\nprint(safe_divide(1, 0))\n"
+          "ru": "def safe_divide(a, b):\n    # 1. в try: верни a / b\n    # 2. в except ZeroDivisionError: верни None\n    pass\n\nprint(safe_divide({{a}}, {{b}}))\nprint(safe_divide({{c}}, 0))\n",
+          "en": "def safe_divide(a, b):\n    # 1. in try: return a / b\n    # 2. in except ZeroDivisionError: return None\n    pass\n\nprint(safe_divide({{a}}, {{b}}))\nprint(safe_divide({{c}}, 0))\n"
         }
       }
     }
@@ -985,16 +1035,54 @@
       "task_type": "code",
       "title_en": "Count the Words",
       "title_ru": "Считаем слова",
-      "body_en": "<p>Write a function <code>word_count(text)</code> that returns a dict <code>{word: how many times it appears}</code>. Letter case does not matter, extra spaces do not matter.</p><p>The example prints <code>[('fire', 2), ('ice', 1)]</code>.</p>",
-      "body_ru": "<p>Напиши функцию <code>word_count(text)</code>: она возвращает словарь <code>{слово: сколько раз встретилось}</code>. Регистр букв не важен, лишние пробелы не мешают.</p><p>Пример выведет <code>[('fire', 2), ('ice', 1)]</code>.</p>",
+      "body_en": "<p>Write a function <code>word_count(text)</code> that returns a dict <code>{word: how many times it appears}</code>. Letter case does not matter, extra spaces do not matter.</p><p>The example prints <code>{{result}}</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>word_count(text)</code>: она возвращает словарь <code>{слово: сколько раз встретилось}</code>. Регистр букв не важен, лишние пробелы не мешают.</p><p>Пример выведет <code>{{result}}</code>.</p>",
       "xp_reward": 20,
       "is_required": true,
       "data": {
         "language": "python",
         "not_yet": ["class"],
-        "starter": "def word_count(text):\n    # Верни словарь {слово: сколько раз встретилось}, регистр не важен\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(sorted(word_count(\"Fire ice fire\").items()))\n",
+        "variants": [
+          {
+            "vars": {
+              "text": "Fire ice fire",
+              "result": "[('fire', 2), ('ice', 1)]"
+            }
+          },
+          {
+            "vars": {
+              "text": "Wolf wolf bear WOLF",
+              "result": "[('bear', 1), ('wolf', 3)]"
+            }
+          },
+          {
+            "vars": {
+              "text": "a b a b c",
+              "result": "[('a', 2), ('b', 2), ('c', 1)]"
+            }
+          },
+          {
+            "vars": {
+              "text": "Red  red  blue",
+              "result": "[('blue', 1), ('red', 2)]"
+            }
+          },
+          {
+            "vars": {
+              "text": "Ice Fire ice ICE fire",
+              "result": "[('fire', 2), ('ice', 3)]"
+            }
+          },
+          {
+            "vars": {
+              "text": "x Y y X x",
+              "result": "[('x', 3), ('y', 2)]"
+            }
+          }
+        ],
+        "starter": "def word_count(text):\n    # Верни словарь {слово: сколько раз встретилось}, регистр не важен\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(sorted(word_count(\"{{text}}\").items()))\n",
         "sampleOutput": "[('fire', 2), ('ice', 1)]",
-        "expected_output": "[('fire', 2), ('ice', 1)]",
+        "expected_output": "{{result}}",
         "hidden_check": "assert word_count(\"A a b\") == {\"a\": 2, \"b\": 1}\nassert word_count(\"\") == {}\nassert word_count(\"x  x\") == {\"x\": 2}\nassert dict(word_count(\"Z\")) == {\"z\": 1}",
         "hints": [
           {
@@ -1007,8 +1095,8 @@
           }
         ],
         "skeleton": {
-          "ru": "def word_count(text):\n    # 1. text.lower().split() — список слов\n    # 2. пустой словарь counts\n    # 3. для каждого слова увеличь счётчик\n    # 4. верни counts\n    pass\n\nprint(sorted(word_count(\"Fire ice fire\").items()))\n",
-          "en": "def word_count(text):\n    # 1. text.lower().split() is the list of words\n    # 2. an empty dict counts\n    # 3. for each word increase its counter\n    # 4. return counts\n    pass\n\nprint(sorted(word_count(\"Fire ice fire\").items()))\n"
+          "ru": "def word_count(text):\n    # 1. text.lower().split() — список слов\n    # 2. пустой словарь counts\n    # 3. для каждого слова увеличь счётчик\n    # 4. верни counts\n    pass\n\nprint(sorted(word_count(\"{{text}}\").items()))\n",
+          "en": "def word_count(text):\n    # 1. text.lower().split() is the list of words\n    # 2. an empty dict counts\n    # 3. for each word increase its counter\n    # 4. return counts\n    pass\n\nprint(sorted(word_count(\"{{text}}\").items()))\n"
         }
       }
     }
@@ -1098,15 +1186,71 @@
       "task_type": "code",
       "title_en": "A Hit on the Hero",
       "title_ru": "Удар по герою",
-      "body_en": "<p>Finish the method <code>take_hit(damage)</code> of the <code>Hero</code> class: it lowers <code>hp</code> by <code>damage</code>, but health must never go below zero.</p><p>The example prints <code>18</code>, then <code>0 False</code>.</p>",
-      "body_ru": "<p>Допиши метод <code>take_hit(damage)</code> класса <code>Hero</code>: он уменьшает <code>hp</code> на <code>damage</code>, но здоровье не должно уходить ниже нуля.</p><p>Пример выведет <code>18</code>, а затем <code>0 False</code>.</p>",
+      "body_en": "<p>Finish the method <code>take_hit(damage)</code> of the <code>Hero</code> class: it lowers <code>hp</code> by <code>damage</code>, but health must never go below zero.</p><p>The example prints <code>{{first}}</code>, then <code>0 False</code>.</p>",
+      "body_ru": "<p>Допиши метод <code>take_hit(damage)</code> класса <code>Hero</code>: он уменьшает <code>hp</code> на <code>damage</code>, но здоровье не должно уходить ниже нуля.</p><p>Пример выведет <code>{{first}}</code>, а затем <code>0 False</code>.</p>",
       "xp_reward": 30,
       "is_required": true,
       "data": {
         "language": "python",
-        "starter": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def take_hit(self, damage):\n        # Уменьши hp на damage, но не ниже нуля\n        raise NotImplementedError(\"Допиши метод\")\n\n    def is_alive(self):\n        return self.hp > 0\n\nhero = Hero(\"Aidan\", 30)\nhero.take_hit(12)\nprint(hero.hp)\nhero.take_hit(100)\nprint(hero.hp, hero.is_alive())\n",
+        "variants": [
+          {
+            "vars": {
+              "name": "Aidan",
+              "hp": 30,
+              "d1": 12,
+              "d2": 100,
+              "first": 18
+            }
+          },
+          {
+            "vars": {
+              "name": "Mira",
+              "hp": 50,
+              "d1": 20,
+              "d2": 80,
+              "first": 30
+            }
+          },
+          {
+            "vars": {
+              "name": "Bo",
+              "hp": 25,
+              "d1": 5,
+              "d2": 30,
+              "first": 20
+            }
+          },
+          {
+            "vars": {
+              "name": "Kai",
+              "hp": 100,
+              "d1": 45,
+              "d2": 200,
+              "first": 55
+            }
+          },
+          {
+            "vars": {
+              "name": "Lia",
+              "hp": 18,
+              "d1": 3,
+              "d2": 50,
+              "first": 15
+            }
+          },
+          {
+            "vars": {
+              "name": "Tor",
+              "hp": 40,
+              "d1": 39,
+              "d2": 10,
+              "first": 1
+            }
+          }
+        ],
+        "starter": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def take_hit(self, damage):\n        # Уменьши hp на damage, но не ниже нуля\n        raise NotImplementedError(\"Допиши метод\")\n\n    def is_alive(self):\n        return self.hp > 0\n\nhero = Hero(\"{{name}}\", {{hp}})\nhero.take_hit({{d1}})\nprint(hero.hp)\nhero.take_hit({{d2}})\nprint(hero.hp, hero.is_alive())\n",
         "sampleOutput": "18\n0 False",
-        "expected_output": "18\n0 False",
+        "expected_output": "{{first}}\n0 False",
         "hidden_check": "h = Hero(\"x\", 5)\nh.take_hit(0)\nassert h.hp == 5 and h.is_alive()\nh.take_hit(3)\nassert h.hp == 2\nh.take_hit(5)\nassert h.hp == 0 and not h.is_alive()\nother = Hero(\"y\", 9)\nassert other.hp == 9 and h.hp == 0",
         "hints": [
           {
@@ -1119,8 +1263,8 @@
           }
         ],
         "skeleton": {
-          "ru": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def take_hit(self, damage):\n        # 1. посчитай новое здоровье: self.hp - damage\n        # 2. не давай ему стать меньше нуля\n        # 3. сохрани в self.hp\n        pass\n\n    def is_alive(self):\n        return self.hp > 0\n\nhero = Hero(\"Aidan\", 30)\nhero.take_hit(12)\nprint(hero.hp)\nhero.take_hit(100)\nprint(hero.hp, hero.is_alive())\n",
-          "en": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def take_hit(self, damage):\n        # 1. compute the new health: self.hp - damage\n        # 2. do not let it drop below zero\n        # 3. store it in self.hp\n        pass\n\n    def is_alive(self):\n        return self.hp > 0\n\nhero = Hero(\"Aidan\", 30)\nhero.take_hit(12)\nprint(hero.hp)\nhero.take_hit(100)\nprint(hero.hp, hero.is_alive())\n"
+          "ru": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def take_hit(self, damage):\n        # 1. посчитай новое здоровье: self.hp - damage\n        # 2. не давай ему стать меньше нуля\n        # 3. сохрани в self.hp\n        pass\n\n    def is_alive(self):\n        return self.hp > 0\n\nhero = Hero(\"{{name}}\", {{hp}})\nhero.take_hit({{d1}})\nprint(hero.hp)\nhero.take_hit({{d2}})\nprint(hero.hp, hero.is_alive())\n",
+          "en": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def take_hit(self, damage):\n        # 1. compute the new health: self.hp - damage\n        # 2. do not let it drop below zero\n        # 3. store it in self.hp\n        pass\n\n    def is_alive(self):\n        return self.hp > 0\n\nhero = Hero(\"{{name}}\", {{hp}})\nhero.take_hit({{d1}})\nprint(hero.hp)\nhero.take_hit({{d2}})\nprint(hero.hp, hero.is_alive())\n"
         }
       }
     }
@@ -1210,15 +1354,65 @@
       "task_type": "code",
       "title_en": "The Mage's Constructor",
       "title_ru": "Конструктор мага",
-      "body_en": "<p>Finish the constructor of the <code>Mage</code> class: it must call the <code>Hero</code> constructor and store <code>mana</code>.</p><p>The example prints <code>Mira (70 hp), mana 120</code>.</p>",
-      "body_ru": "<p>Допиши конструктор класса <code>Mage</code>: он должен вызвать конструктор <code>Hero</code> и сохранить <code>mana</code>.</p><p>Пример выведет <code>Mira (70 hp), mana 120</code>.</p>",
+      "body_en": "<p>Finish the constructor of the <code>Mage</code> class: it must call the <code>Hero</code> constructor and store <code>mana</code>.</p><p>The example prints <code>{{result}}</code>.</p>",
+      "body_ru": "<p>Допиши конструктор класса <code>Mage</code>: он должен вызвать конструктор <code>Hero</code> и сохранить <code>mana</code>.</p><p>Пример выведет <code>{{result}}</code>.</p>",
       "xp_reward": 30,
       "is_required": true,
       "data": {
         "language": "python",
-        "starter": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def describe(self):\n        return f\"{self.name} ({self.hp} hp)\"\n\nclass Mage(Hero):\n    def __init__(self, name, hp, mana):\n        # Вызови конструктор родителя и запомни mana\n        raise NotImplementedError(\"Допиши конструктор\")\n\n    def describe(self):\n        return f\"{super().describe()}, mana {self.mana}\"\n\nprint(Mage(\"Mira\", 70, 120).describe())\n",
+        "variants": [
+          {
+            "vars": {
+              "name": "Mira",
+              "hp": 70,
+              "mana": 120,
+              "result": "Mira (70 hp), mana 120"
+            }
+          },
+          {
+            "vars": {
+              "name": "Aidan",
+              "hp": 55,
+              "mana": 80,
+              "result": "Aidan (55 hp), mana 80"
+            }
+          },
+          {
+            "vars": {
+              "name": "Bo",
+              "hp": 90,
+              "mana": 30,
+              "result": "Bo (90 hp), mana 30"
+            }
+          },
+          {
+            "vars": {
+              "name": "Lia",
+              "hp": 40,
+              "mana": 200,
+              "result": "Lia (40 hp), mana 200"
+            }
+          },
+          {
+            "vars": {
+              "name": "Kai",
+              "hp": 120,
+              "mana": 15,
+              "result": "Kai (120 hp), mana 15"
+            }
+          },
+          {
+            "vars": {
+              "name": "Tor",
+              "hp": 65,
+              "mana": 65,
+              "result": "Tor (65 hp), mana 65"
+            }
+          }
+        ],
+        "starter": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def describe(self):\n        return f\"{self.name} ({self.hp} hp)\"\n\nclass Mage(Hero):\n    def __init__(self, name, hp, mana):\n        # Вызови конструктор родителя и запомни mana\n        raise NotImplementedError(\"Допиши конструктор\")\n\n    def describe(self):\n        return f\"{super().describe()}, mana {self.mana}\"\n\nprint(Mage(\"{{name}}\", {{hp}}, {{mana}}).describe())\n",
         "sampleOutput": "Mira (70 hp), mana 120",
-        "expected_output": "Mira (70 hp), mana 120",
+        "expected_output": "{{result}}",
         "hidden_check": "m = Mage(\"A\", 1, 2)\nassert m.name == \"A\" and m.hp == 1 and m.mana == 2\nassert isinstance(m, Hero)\nassert m.describe() == \"A (1 hp), mana 2\"\nclass Rogue(Hero):\n    pass\nassert Rogue(\"r\", 3).describe() == \"r (3 hp)\"",
         "hints": [
           {
@@ -1231,8 +1425,8 @@
           }
         ],
         "skeleton": {
-          "ru": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def describe(self):\n        return f\"{self.name} ({self.hp} hp)\"\n\nclass Mage(Hero):\n    def __init__(self, name, hp, mana):\n        # 1. вызови конструктор родителя с name и hp\n        # 2. сохрани mana в self.mana\n        pass\n\n    def describe(self):\n        return f\"{super().describe()}, mana {self.mana}\"\n\nprint(Mage(\"Mira\", 70, 120).describe())\n",
-          "en": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def describe(self):\n        return f\"{self.name} ({self.hp} hp)\"\n\nclass Mage(Hero):\n    def __init__(self, name, hp, mana):\n        # 1. call the parent constructor with name and hp\n        # 2. store mana in self.mana\n        pass\n\n    def describe(self):\n        return f\"{super().describe()}, mana {self.mana}\"\n\nprint(Mage(\"Mira\", 70, 120).describe())\n"
+          "ru": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def describe(self):\n        return f\"{self.name} ({self.hp} hp)\"\n\nclass Mage(Hero):\n    def __init__(self, name, hp, mana):\n        # 1. вызови конструктор родителя с name и hp\n        # 2. сохрани mana в self.mana\n        pass\n\n    def describe(self):\n        return f\"{super().describe()}, mana {self.mana}\"\n\nprint(Mage(\"{{name}}\", {{hp}}, {{mana}}).describe())\n",
+          "en": "class Hero:\n    def __init__(self, name, hp):\n        self.name = name\n        self.hp = hp\n\n    def describe(self):\n        return f\"{self.name} ({self.hp} hp)\"\n\nclass Mage(Hero):\n    def __init__(self, name, hp, mana):\n        # 1. call the parent constructor with name and hp\n        # 2. store mana in self.mana\n        pass\n\n    def describe(self):\n        return f\"{super().describe()}, mana {self.mana}\"\n\nprint(Mage(\"{{name}}\", {{hp}}, {{mana}}).describe())\n"
         }
       }
     }
@@ -1322,16 +1516,60 @@
       "task_type": "code",
       "title_en": "The Guild Report",
       "title_ru": "Отчёт гильдии",
-      "body_en": "<p>Write a function <code>guild_report(heroes)</code>: <code>heroes</code> is a list of dicts with keys <code>name</code>, <code>class</code>, <code>hp</code>. Return a dict <code>{class: total hp}</code>.</p><p>The example prints <code>[('mage', 120), ('warrior', 175)]</code>.</p>",
-      "body_ru": "<p>Напиши функцию <code>guild_report(heroes)</code>: <code>heroes</code> — список словарей с ключами <code>name</code>, <code>class</code>, <code>hp</code>. Верни словарь <code>{класс: суммарный hp}</code>.</p><p>Для примера выведется <code>[('mage', 120), ('warrior', 175)]</code>.</p>",
+      "body_en": "<p>Write a function <code>guild_report(heroes)</code>: <code>heroes</code> is a list of dicts with keys <code>name</code>, <code>class</code>, <code>hp</code>. Return a dict <code>{class: total hp}</code>.</p><p>The example prints <code>{{result}}</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>guild_report(heroes)</code>: <code>heroes</code> — список словарей с ключами <code>name</code>, <code>class</code>, <code>hp</code>. Верни словарь <code>{класс: суммарный hp}</code>.</p><p>Для примера выведется <code>{{result}}</code>.</p>",
       "xp_reward": 60,
       "is_required": true,
       "data": {
         "language": "python",
-        "starter": "heroes = [\n    {\"name\": \"Aidan\", \"class\": \"warrior\", \"hp\": 80},\n    {\"name\": \"Mira\", \"class\": \"mage\", \"hp\": 120},\n    {\"name\": \"Bo\", \"class\": \"warrior\", \"hp\": 95},\n]\n\ndef guild_report(heroes):\n    # Верни словарь {класс: суммарный hp героев этого класса}\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(sorted(guild_report(heroes).items()))\n",
+        "variants": [
+          {
+            "vars": {
+              "heroes": "[\n    {\"name\": \"Aidan\", \"class\": \"warrior\", \"hp\": 80},\n    {\"name\": \"Mira\", \"class\": \"mage\", \"hp\": 120},\n    {\"name\": \"Bo\", \"class\": \"warrior\", \"hp\": 95},\n]",
+              "report": "{\"warrior\": 175, \"mage\": 120}",
+              "result": "[('mage', 120), ('warrior', 175)]"
+            }
+          },
+          {
+            "vars": {
+              "heroes": "[\n    {\"name\": \"Kai\", \"class\": \"warrior\", \"hp\": 100},\n    {\"name\": \"Lia\", \"class\": \"mage\", \"hp\": 60},\n    {\"name\": \"Tor\", \"class\": \"mage\", \"hp\": 40},\n    {\"name\": \"Orc\", \"class\": \"warrior\", \"hp\": 10},\n]",
+              "report": "{\"warrior\": 110, \"mage\": 100}",
+              "result": "[('mage', 100), ('warrior', 110)]"
+            }
+          },
+          {
+            "vars": {
+              "heroes": "[\n    {\"name\": \"A\", \"class\": \"rogue\", \"hp\": 30},\n    {\"name\": \"B\", \"class\": \"rogue\", \"hp\": 45},\n    {\"name\": \"C\", \"class\": \"mage\", \"hp\": 20},\n]",
+              "report": "{\"rogue\": 75, \"mage\": 20}",
+              "result": "[('mage', 20), ('rogue', 75)]"
+            }
+          },
+          {
+            "vars": {
+              "heroes": "[\n    {\"name\": \"A\", \"class\": \"mage\", \"hp\": 10},\n    {\"name\": \"B\", \"class\": \"mage\", \"hp\": 20},\n    {\"name\": \"C\", \"class\": \"mage\", \"hp\": 30},\n]",
+              "report": "{\"mage\": 60}",
+              "result": "[('mage', 60)]"
+            }
+          },
+          {
+            "vars": {
+              "heroes": "[\n    {\"name\": \"A\", \"class\": \"warrior\", \"hp\": 50},\n    {\"name\": \"B\", \"class\": \"rogue\", \"hp\": 70},\n    {\"name\": \"C\", \"class\": \"mage\", \"hp\": 90},\n    {\"name\": \"D\", \"class\": \"warrior\", \"hp\": 25},\n]",
+              "report": "{\"warrior\": 75, \"rogue\": 70, \"mage\": 90}",
+              "result": "[('mage', 90), ('rogue', 70), ('warrior', 75)]"
+            }
+          },
+          {
+            "vars": {
+              "heroes": "[\n    {\"name\": \"A\", \"class\": \"rogue\", \"hp\": 5},\n    {\"name\": \"B\", \"class\": \"warrior\", \"hp\": 8},\n]",
+              "report": "{\"rogue\": 5, \"warrior\": 8}",
+              "result": "[('rogue', 5), ('warrior', 8)]"
+            }
+          }
+        ],
+        "starter": "heroes = {{heroes}}\n\ndef guild_report(heroes):\n    # Верни словарь {класс: суммарный hp героев этого класса}\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(sorted(guild_report(heroes).items()))\n",
         "sampleOutput": "[('mage', 120), ('warrior', 175)]",
-        "expected_output": "[('mage', 120), ('warrior', 175)]",
-        "hidden_check": "assert guild_report([]) == {}\nassert guild_report([{\"name\": \"a\", \"class\": \"x\", \"hp\": 1}, {\"name\": \"b\", \"class\": \"x\", \"hp\": 2}]) == {\"x\": 3}\nassert guild_report(heroes) == {\"warrior\": 175, \"mage\": 120}",
+        "expected_output": "{{result}}",
+        "hidden_check": "assert guild_report([]) == {}\nassert guild_report([{\"name\": \"a\", \"class\": \"x\", \"hp\": 1}, {\"name\": \"b\", \"class\": \"x\", \"hp\": 2}]) == {\"x\": 3}\nassert guild_report(heroes) == {{report}}",
         "hints": [
           {
             "ru": "Нужен словарь «класс → сумма»: пройди по героям и копи здоровье в нём.",
@@ -1343,8 +1581,8 @@
           }
         ],
         "skeleton": {
-          "ru": "heroes = [\n    {\"name\": \"Aidan\", \"class\": \"warrior\", \"hp\": 80},\n    {\"name\": \"Mira\", \"class\": \"mage\", \"hp\": 120},\n    {\"name\": \"Bo\", \"class\": \"warrior\", \"hp\": 95},\n]\n\ndef guild_report(heroes):\n    # 1. пустой словарь report\n    # 2. для каждого героя прибавь его hp к своему классу\n    # 3. верни report\n    pass\n\nprint(sorted(guild_report(heroes).items()))\n",
-          "en": "heroes = [\n    {\"name\": \"Aidan\", \"class\": \"warrior\", \"hp\": 80},\n    {\"name\": \"Mira\", \"class\": \"mage\", \"hp\": 120},\n    {\"name\": \"Bo\", \"class\": \"warrior\", \"hp\": 95},\n]\n\ndef guild_report(heroes):\n    # 1. an empty dict report\n    # 2. for every hero add his hp to his class\n    # 3. return report\n    pass\n\nprint(sorted(guild_report(heroes).items()))\n"
+          "ru": "heroes = {{heroes}}\n\ndef guild_report(heroes):\n    # 1. пустой словарь report\n    # 2. для каждого героя прибавь его hp к своему классу\n    # 3. верни report\n    pass\n\nprint(sorted(guild_report(heroes).items()))\n",
+          "en": "heroes = {{heroes}}\n\ndef guild_report(heroes):\n    # 1. an empty dict report\n    # 2. for every hero add his hp to his class\n    # 3. return report\n    pass\n\nprint(sorted(guild_report(heroes).items()))\n"
         }
       }
     }

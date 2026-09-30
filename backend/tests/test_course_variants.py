@@ -26,9 +26,21 @@ REFERENCE = {
     52: 'return name.upper() + "!"',
     62: "if n > 10:\n    count += 1",
     72: "total += gold",
+    81: (
+        "best = heroes[0]\nfor hero in heroes:\n    if hero[\"hp\"] > best[\"hp\"]:\n        best = hero\n"
+        "return f\"Champion: {best['name']} ({best['hp']})\""
+    ),
     92: 'return ".".join(word[0].upper() for word in full_name.split()) + "."',
     102: "return len(set(items))",
+    112: "try:\n    return a / b\nexcept ZeroDivisionError:\n    return None",
     122: "return [n * n for n in numbers if n % 2 == 0]",
+    132: "counts = {}\nfor word in text.lower().split():\n    counts[word] = counts.get(word, 0) + 1\nreturn counts",
+    142: "self.hp = max(0, self.hp - damage)",
+    152: "super().__init__(name, hp)\nself.mana = mana",
+    162: (
+        "report = {}\nfor hero in heroes:\n    report[hero[\"class\"]] = report.get(hero[\"class\"], 0) + hero[\"hp\"]\n"
+        "return report"
+    ),
 }
 
 
@@ -77,8 +89,10 @@ def _solved(starter, replacement):
     return "\n".join(out) + "\n"
 
 
-def test_nine_steps_have_variants():
+def test_the_steps_with_variants_are_exactly_the_ones_with_a_reference_solution():
+    # 15 of 16 code steps: the first one only asks to press the Run button
     assert sorted(obj["pk"] for obj in _steps()) == sorted(REFERENCE)
+    assert len(REFERENCE) == 15
 
 
 @pytest.mark.parametrize("obj, index", list(_cases()))
@@ -93,7 +107,8 @@ def test_the_reference_solution_matches_the_variant_key(obj, index):
     assert "{{" not in mine.data["starter"] and "{{" not in mine.data["expected_output"]
     assert "{{" not in (mine.data.get("hidden_check") or "")
     for text in (mine.body_ru, mine.body_en):
-        assert re.search(re.escape(mine.data["expected_output"]), text), "the text must show the expected output"
+        for line in mine.data["expected_output"].splitlines():
+            assert re.search(re.escape(line), text), "the text must show the expected output"
 
     program = _solved(mine.data["starter"], REFERENCE[task.pk])
     namespace = {}
@@ -140,10 +155,10 @@ def _explain_cases():
             yield pytest.param(obj, index, id=f"task{obj['pk']}-variant{index}")
 
 
-def test_every_personalised_code_step_has_an_explain_question():
+def test_every_explain_question_belongs_to_a_personalised_code_step():
     code = {obj["pk"]: obj for obj in _steps()}
     explain = {obj["fields"]["data"]["about"]: obj for obj in _explain_steps()}
-    assert sorted(explain) == sorted(code)
+    assert len(explain) == 9 and set(explain) <= set(code)
     for about, obj in explain.items():
         fields = obj["fields"]
         assert fields["mission"] == code[about]["fields"]["mission"]

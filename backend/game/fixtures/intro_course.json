@@ -1611,14 +1611,52 @@
       "task_type": "code",
       "title_en": "Find the Champion",
       "title_ru": "Найди чемпиона",
-      "body_en": "<p>Write a function <code>champion(heroes)</code> that takes a list of dicts with keys <code>name</code> and <code>hp</code>, and returns the string <code>\"Champion: NAME (HP)\"</code> for the hero with the highest hp.</p><p>For the given party, <code>print(champion(party))</code> should print <code>Champion: Mira (120)</code>.</p>",
-      "body_ru": "<p>Напиши функцию <code>champion(heroes)</code>, которая принимает список словарей с ключами <code>name</code> и <code>hp</code> и возвращает строку <code>\"Champion: ИМЯ (HP)\"</code> для героя с наибольшим hp.</p><p>Для данного отряда <code>print(champion(party))</code> должно вывести <code>Champion: Mira (120)</code>.</p>",
+      "body_en": "<p>Write a function <code>champion(heroes)</code> that takes a list of dicts with keys <code>name</code> and <code>hp</code>, and returns the string <code>\"Champion: NAME (HP)\"</code> for the hero with the highest hp.</p><p>For the given party, <code>print(champion(party))</code> should print <code>{{result}}</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>champion(heroes)</code>, которая принимает список словарей с ключами <code>name</code> и <code>hp</code> и возвращает строку <code>\"Champion: ИМЯ (HP)\"</code> для героя с наибольшим hp.</p><p>Для данного отряда <code>print(champion(party))</code> должно вывести <code>{{result}}</code>.</p>",
       "data": {
         "language": "python",
         "not_yet": ["lambda", "comprehension", "try", "import", "class"],
-        "starter": "party = [\n    {\"name\": \"Aidan\", \"hp\": 80},\n    {\"name\": \"Mira\", \"hp\": 120},\n    {\"name\": \"Bo\", \"hp\": 95},\n]\n\ndef champion(heroes):\n    # Найди героя с наибольшим hp и верни \"Champion: name (hp)\"\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(champion(party))\n",
+        "variants": [
+          {
+            "vars": {
+              "party": "[\n    {\"name\": \"Aidan\", \"hp\": 80},\n    {\"name\": \"Mira\", \"hp\": 120},\n    {\"name\": \"Bo\", \"hp\": 95},\n]",
+              "result": "Champion: Mira (120)"
+            }
+          },
+          {
+            "vars": {
+              "party": "[\n    {\"name\": \"Rex\", \"hp\": 70},\n    {\"name\": \"Lia\", \"hp\": 140},\n    {\"name\": \"Ox\", \"hp\": 99},\n]",
+              "result": "Champion: Lia (140)"
+            }
+          },
+          {
+            "vars": {
+              "party": "[\n    {\"name\": \"Kai\", \"hp\": 210},\n    {\"name\": \"Nox\", \"hp\": 55},\n]",
+              "result": "Champion: Kai (210)"
+            }
+          },
+          {
+            "vars": {
+              "party": "[\n    {\"name\": \"Ann\", \"hp\": 60},\n    {\"name\": \"Ben\", \"hp\": 61},\n    {\"name\": \"Cat\", \"hp\": 59},\n    {\"name\": \"Dan\", \"hp\": 58},\n]",
+              "result": "Champion: Ben (61)"
+            }
+          },
+          {
+            "vars": {
+              "party": "[\n    {\"name\": \"Tor\", \"hp\": 88},\n    {\"name\": \"Eli\", \"hp\": 92},\n    {\"name\": \"Orc\", \"hp\": 130},\n    {\"name\": \"Gim\", \"hp\": 101},\n]",
+              "result": "Champion: Orc (130)"
+            }
+          },
+          {
+            "vars": {
+              "party": "[\n    {\"name\": \"Zed\", \"hp\": 15},\n    {\"name\": \"Yan\", \"hp\": 45},\n    {\"name\": \"Xia\", \"hp\": 30},\n]",
+              "result": "Champion: Yan (45)"
+            }
+          }
+        ],
+        "starter": "party = {{party}}\n\ndef champion(heroes):\n    # Найди героя с наибольшим hp и верни \"Champion: name (hp)\"\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(champion(party))\n",
         "sampleOutput": "Champion: Mira (120)",
-        "expected_output": "Champion: Mira (120)",
+        "expected_output": "{{result}}",
         "hidden_check": "assert champion([{\"name\": \"Bo\", \"hp\": 5}, {\"name\": \"Cy\", \"hp\": 9}]) == \"Champion: Cy (9)\"\nassert champion([{\"name\": \"Solo\", \"hp\": 1}]) == \"Champion: Solo (1)\"",
         "hints": [
           {
@@ -1631,8 +1669,8 @@
           }
         ],
         "skeleton": {
-          "ru": "party = [\n    {\"name\": \"Aidan\", \"hp\": 80},\n    {\"name\": \"Mira\", \"hp\": 120},\n    {\"name\": \"Bo\", \"hp\": 95},\n]\n\ndef champion(heroes):\n    # 1. найди героя с наибольшим hp\n    # 2. верни строку \"Champion: имя (hp)\"\n    pass\n\nprint(champion(party))\n",
-          "en": "party = [\n    {\"name\": \"Aidan\", \"hp\": 80},\n    {\"name\": \"Mira\", \"hp\": 120},\n    {\"name\": \"Bo\", \"hp\": 95},\n]\n\ndef champion(heroes):\n    # 1. find the hero with the highest hp\n    # 2. return the string \"Champion: name (hp)\"\n    pass\n\nprint(champion(party))\n"
+          "ru": "party = {{party}}\n\ndef champion(heroes):\n    # 1. найди героя с наибольшим hp\n    # 2. верни строку \"Champion: имя (hp)\"\n    pass\n\nprint(champion(party))\n",
+          "en": "party = {{party}}\n\ndef champion(heroes):\n    # 1. find the hero with the highest hp\n    # 2. return the string \"Champion: name (hp)\"\n    pass\n\nprint(champion(party))\n"
         }
       },
       "xp_reward": 40,

@@ -155,10 +155,19 @@ def check_data():
         for pk, step in present.items()
         if not any(key in (step.data or {}) for key in PROTECTION_KEYS)
     ]
+    from game.management.commands.sync_course_protection import explain_steps
+
+    missing_explain = [
+        pk
+        for pk, fields in explain_steps().items()
+        if not MissionTask.objects.filter(pk=pk).exists() and Mission.objects.filter(pk=fields["mission"]).exists()
+    ]
+    if missing_explain:
+        bare = bare or missing_explain
     if bare:
         yield WARN, (
-            f"У {len(bare)} встроенных кодовых шагов нет персональных вариантов и списков «не проходили» "
-            "(база развёрнута до их появления): выполните sync_course_protection."
+            "У встроенных кодовых шагов нет персональных вариантов, списков «не проходили» или вопроса "
+            "«объясни своё решение» (база развёрнута до их появления): выполните sync_course_protection."
         )
 
     User = get_user_model()

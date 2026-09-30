@@ -10,7 +10,7 @@ yours. The course author writes the step once with ``{{placeholders}}`` and list
     ]
 
 Placeholders are filled in the titles, the text, the starter code, the expected output (unless the
-variant gives its own), the hidden check, the hints and the skeleton. Which variant a learner gets is a
+variant gives its own), the hidden check, the hints, the skeleton and, in a quiz, the options and the key. Which variant a learner gets is a
 stable function of the learner and the step, so it does not change between visits and needs no table.
 Anonymous visitors of the public catalogue see the first variant.
 
@@ -78,6 +78,14 @@ def personalize(task, user_id):
         setattr(personal, field, fill(getattr(task, field, ""), variables))
 
     new_data = {key: value for key, value in data.items() if key != "variants"}
+    # a quiz question about the learner's own number: the options and the key follow the variant too
+    if isinstance(new_data.get("correct_answer"), str):
+        new_data["correct_answer"] = fill(new_data["correct_answer"], variables)
+    if isinstance(new_data.get("options"), list):
+        new_data["options"] = [
+            {key: fill(text, variables) for key, text in option.items()} if isinstance(option, dict) else option
+            for option in new_data["options"]
+        ]
     for key in _DATA_STRINGS:
         if key in new_data:
             new_data[key] = fill(new_data[key], variables)

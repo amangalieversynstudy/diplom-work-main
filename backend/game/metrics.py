@@ -275,7 +275,7 @@ def compute_metrics(viewer, *, track_id=None, inactive_days=DEFAULT_INACTIVE_DAY
                 "mission_id": task.mission_id,
                 "mission_title": _title(task.mission),
                 "order": task.order,
-                "task_type": task.task_type,
+                "task_type": task.kind,
                 "title": _title(task) if task.title or task.title_ru or task.title_en else "",
                 "opened": stats["opened"],
                 "solved": stats["solved"],
@@ -313,7 +313,7 @@ def compute_metrics(viewer, *, track_id=None, inactive_days=DEFAULT_INACTIVE_DAY
 
     # ── by step type (the Story -> Quiz -> Code funnel) ─────────────────────
     funnel = []
-    for task_type in ("story", "quiz", "code"):
+    for task_type in ("story", "quiz", "code", "explain"):
         rows = [row for row in task_table if row["task_type"] == task_type]
         opened_n = sum(row["opened"] for row in rows)
         funnel.append(
@@ -327,7 +327,7 @@ def compute_metrics(viewer, *, track_id=None, inactive_days=DEFAULT_INACTIVE_DAY
                 "mas": _mean(
                     tries
                     for task in tasks
-                    if task.task_type == task_type
+                    if task.kind == task_type
                     for tries in by_task[task.pk]["tries"]
                 ),
             }

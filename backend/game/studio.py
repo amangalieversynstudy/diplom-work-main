@@ -473,6 +473,11 @@ class StudioTaskSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"title_ru": "Укажите название шага."})
         if not isinstance(data, dict):
             raise serializers.ValidationError({"data": "Ожидается объект."})
+        if instance is not None and isinstance(instance.data, dict) and instance.data.get("kind") == "explain":
+            # the question about a learner's own code has placeholders in its options and key: the
+            # Studio form cannot edit those safely, so its data stays as it is (the texts stay editable)
+            attrs["data"] = instance.data
+            return attrs
         attrs["data"] = self._clean_data(task_type, data)
         return attrs
 

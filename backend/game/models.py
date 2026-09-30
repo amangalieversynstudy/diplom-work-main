@@ -245,6 +245,13 @@ class MissionTask(models.Model):
     def __str__(self):
         return f"{self.mission_id}:{self.order}:{self.get_localized_title()}"
 
+    @property
+    def kind(self):
+        """What the analytics call this step: "explain" for the question about a learner's own code
+        (a quiz marked ``data.kind = "explain"``), otherwise the task type."""
+        data = self.data if isinstance(self.data, dict) else {}
+        return "explain" if self.task_type == "quiz" and data.get("kind") == "explain" else self.task_type
+
     def _get_localized_value(self, field_name: str, lang: str = "ru") -> str:
         lang = (lang or "ru").lower()
         if lang not in {"ru", "en"}:

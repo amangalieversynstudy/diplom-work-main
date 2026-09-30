@@ -12,7 +12,12 @@ const ASSISTANCE_STYLE = {
   mentor: "border-accent/40 bg-accent/15 text-accent-dk",
 };
 
-const SIGNAL_ICON = { no_editor_data: Eye, untaught_construct: GraduationCap, same_as_others: Copy };
+const SIGNAL_ICON = {
+  no_editor_data: Eye,
+  untaught_construct: GraduationCap,
+  same_as_others: Copy,
+  explain_missed: GraduationCap,
+};
 
 const T = "teacherStudent.authorship";
 
@@ -85,6 +90,11 @@ export default function AuthorshipPanel({ data }) {
                     {step.assistance !== "independent" && (
                       <p className="mt-2 text-xs text-muted">
                         {fmt(t(`${T}.helpUses`), step.help_uses)}
+                      </p>
+                    )}
+                    {step.explain && (
+                      <p className="mt-2 text-xs text-muted">
+                        {t(`${T}.explain.title`)}: {fmt(t(`${T}.explain.${step.explain.status}`), step.explain)}
                       </p>
                     )}
                     {step.signals.length > 0 && (

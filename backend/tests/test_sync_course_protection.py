@@ -94,3 +94,23 @@ def test_a_database_without_a_step_skips_it():
     _seed()
     MissionTask.objects.filter(pk=62).delete()
     assert "step 62: not in this database" in _run()
+
+
+def test_a_missing_explain_question_is_created_with_its_fixture_id():
+    _seed()
+    MissionTask.objects.filter(pk=23).delete()
+    out = _run("--dry-run")
+    assert "explain step 23: would create" in out
+    assert not MissionTask.objects.filter(pk=23).exists()
+    assert "explain step 23: created" in _run()
+    step = MissionTask.objects.get(pk=23)
+    assert step.kind == "explain" and step.data["about"] == 22 and step.mission_id == 2
+    assert "explain step 23: present" in _run()
+
+
+def test_an_explain_question_whose_mission_is_missing_is_skipped():
+    _seed()
+    from game.models import Mission
+
+    Mission.objects.filter(pk=2).delete()
+    assert "explain step 23: its mission is not in this database" in _run()

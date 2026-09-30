@@ -16,7 +16,7 @@ Nothing here decides anything about a learner: the teacher sees the facts and th
 """
 
 from .metrics import scoped_tasks
-from .models import CodeRun, LearningEvent
+from .models import CodeRun, LearningEvent, TaskProgress
 from .variants import variant_index, variants_of
 from .warning import scoped_learners
 
@@ -39,6 +39,10 @@ FAST_TYPING_MIN_CHARS = 80
 FAST_TYPING_CHARS_PER_SECOND = 10
 # solutions smaller than this are compared by nobody: a three-line exercise has one natural answer
 SIMILAR_MIN_NODES = 30
+
+# wrong answers to the "explain your solution" question that, together with other signals, say that
+# the solution was not understood (with four options a guess alone fails twice about half the time)
+EXPLAIN_MISSED_AFTER = 2
 
 # what a learner used on a step, weakest to strongest
 ASSISTANCE_LEVELS = ("independent", "hint", "skeleton", "mentor")
@@ -103,6 +107,17 @@ def signals_for(run, *, not_yet=(), twins=()):
     return signals
 
 
+def _explain_result(progress):
+    """{"status", "wrong"} of the learner's answers to the explain question, None if there is none."""
+    if progress is None or progress.attempts == 0 and progress.status != "completed":
+        return {"status": "none", "wrong": 0}
+    solved = progress.status == "completed"
+    wrong = max(0, progress.attempts - 1) if solved else progress.attempts
+    if not solved:
+        return {"status": "unsolved", "wrong": wrong}
+    return {"status": "first_try" if wrong == 0 else "retried", "wrong": wrong}
+
+
 def _title(obj, lang):
     return obj.get_localized_title(lang) or f"#{obj.pk}"
 
@@ -150,6 +165,17 @@ def authorship_report(student, viewer, *, lang="ru"):
                 if other.user.username not in twins[other.task_id]:
                     twins[other.task_id].append(other.user.username)
 
+    # the "explain your solution" question that follows a code step, and how the learner did on it
+    explain_of = {}
+    for candidate in scoped_tasks(viewer).filter(task_type="quiz"):
+        about = (candidate.data or {}).get("about") if candidate.kind == "explain" else None
+        if isinstance(about, int) and about in solving:
+            explain_of[about] = candidate
+    explain_progress = {
+        row.task_id: row
+        for row in TaskProgress.objects.filter(user=student, task_id__in=[t.pk for t in explain_of.values()])
+    }
+
     helped = {}
     for event in LearningEvent.objects.filter(
         user=student, task_id__in=list(solving), event_type__in=list(_EVENT_LEVEL)
@@ -166,6 +192,16 @@ def authorship_report(student, viewer, *, lang="ru"):
         events = helped.get(task_id, [])
         level = max((_EVENT_LEVEL[e] for e in events), key=ASSISTANCE_LEVELS.index, default="independent")
         share = paste_share(run.provenance, run.code_length)
+        signals = signals_for(
+            run,
+            not_yet=(task.data or {}).get("not_yet", []) if isinstance(task.data, dict) else [],
+            twins=twins.get(task_id, []),
+        )
+        explain = _explain_result(explain_progress.get(explain_of[task_id].pk)) if task_id in explain_of else None
+        if explain and explain["wrong"] >= EXPLAIN_MISSED_AFTER and any(
+            sig["code"] != "no_editor_data" for sig in signals
+        ):
+            signals.append({"code": "explain_missed", "wrong": explain["wrong"]})
         steps.append(
             {
                 "task_id": task_id,
@@ -181,11 +217,8 @@ def authorship_report(student, viewer, *, lang="ru"):
                     + events.count(LearningEvent.AI_MENTOR_USED),
                 },
                 "paste_share": None if share is None else round(share * 100),
-                "signals": signals_for(
-                    run,
-                    not_yet=(task.data or {}).get("not_yet", []) if isinstance(task.data, dict) else [],
-                    twins=twins.get(task_id, []),
-                ),
+                "explain": explain,
+                "signals": signals,
             }
         )
 

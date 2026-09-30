@@ -50,6 +50,13 @@ export const en = {
       empty: "No solved code steps yet.",
       attempts: "attempts: {n}",
       pasteShare: "{n}% of the code pasted",
+      explain: {
+        title: "Question about their own solution",
+        none: "not answered yet",
+        first_try: "right on the first try",
+        retried: "right, wrong answers: {wrong}",
+        unsolved: "still wrong, answers: {wrong}",
+      },
       helpUses: "Clarity potion: {hint} · Architect scroll: {skeleton} · Sage: {mentor}",
       tiles: {
         solved: "Steps solved",
@@ -69,6 +76,7 @@ export const en = {
         fast_typing: "{chars} characters typed in {seconds} s: faster than hand typing.",
         untaught_construct: "The solution uses something not taught for this step yet: {constructs}.",
         same_as_others: "Same structure as the solution of {count} other learner(s): {with}. Renaming variables does not change it.",
+        explain_missed: "Answered the 'explain your solution' question wrong {wrong} time(s), and there are signals above.",
         no_editor_data: "No editor data for the solving run.",
       },
     },
@@ -108,6 +116,7 @@ export const en = {
         code: "Code",
         quiz: "Quiz",
         story: "Story",
+        explain: "Explanation",
       },
     },
     metrics: {
@@ -129,7 +138,7 @@ export const en = {
         dropoutHint: "Opened a step, did not solve it and stopped coming",
       },
       funnel: {
-        title: "Funnel: story → quiz → code",
+        title: "Funnel: story → quiz → code → explanation",
         subtitle: "How many learners opened each kind of step and where they leave.",
         opened: "opened",
         solved: "solved",

@@ -57,6 +57,7 @@ from .models import (
     Track,
 )
 from .permissions import IsSuperUser
+from .variants import personalize
 from .warning import assess_students
 from .serializers import (
     LeaderboardEntrySerializer,
@@ -353,7 +354,8 @@ class MissionTaskViewSet(viewsets.ReadOnlyModelViewSet):
                 or str(given).strip() == ""
             ):
                 raise RuleViolation("answer is required", status.HTTP_400_BAD_REQUEST)
-            passed, answer = grade_quiz(task, given), {"selected": given}
+            # graded on the learner's own variant of the question (game/variants.py)
+            passed, answer = grade_quiz(personalize(task, user.pk), given), {"selected": given}
         else:
             raise RuleViolation(
                 "Code tasks are checked when you run the code",

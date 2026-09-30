@@ -1676,5 +1676,105 @@
       "xp_reward": 40,
       "is_required": true
     }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 82,
+    "fields": {
+      "mission": 8,
+      "order": 3,
+      "task_type": "quiz",
+      "title_en": "Explain your solution",
+      "title_ru": "Объясни своё решение",
+      "body_en": "<p>What does <code>champion({{party}})</code> return?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
+      "body_ru": "<p>Что вернёт <code>champion({{party}})</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "data": {
+        "kind": "explain",
+        "about": 81,
+        "correct_answer": "{{right}}",
+        "options": [
+          {
+            "value": "{{o1}}",
+            "label": "{{o1}}"
+          },
+          {
+            "value": "{{o2}}",
+            "label": "{{o2}}"
+          },
+          {
+            "value": "{{o3}}",
+            "label": "{{o3}}"
+          },
+          {
+            "value": "{{o4}}",
+            "label": "{{o4}}"
+          }
+        ],
+        "variants": [
+          {
+            "vars": {
+              "party": "[{\"name\": \"Aidan\", \"hp\": 80}, {\"name\": \"Mira\", \"hp\": 120}, {\"name\": \"Bo\", \"hp\": 95}, {\"name\": \"Kai\", \"hp\": 60}]",
+              "o1": "Champion: Mira (120)",
+              "o2": "Champion: Kai (60)",
+              "o3": "Champion: Aidan (80)",
+              "o4": "Champion: 120 (Mira)",
+              "right": "Champion: Mira (120)"
+            }
+          },
+          {
+            "vars": {
+              "party": "[{\"name\": \"Rex\", \"hp\": 70}, {\"name\": \"Lia\", \"hp\": 140}, {\"name\": \"Ox\", \"hp\": 99}]",
+              "o1": "Champion: 140 (Lia)",
+              "o2": "Champion: Lia (140)",
+              "o3": "Champion: Rex (70)",
+              "o4": "Champion: Ox (99)",
+              "right": "Champion: Lia (140)"
+            }
+          },
+          {
+            "vars": {
+              "party": "[{\"name\": \"Ann\", \"hp\": 61}, {\"name\": \"Ben\", \"hp\": 200}, {\"name\": \"Cat\", \"hp\": 59}, {\"name\": \"Dan\", \"hp\": 58}]",
+              "o1": "Champion: Ann (61)",
+              "o2": "Champion: 200 (Ben)",
+              "o3": "Champion: Ben (200)",
+              "o4": "Champion: Dan (58)",
+              "right": "Champion: Ben (200)"
+            }
+          },
+          {
+            "vars": {
+              "party": "[{\"name\": \"Tor\", \"hp\": 88}, {\"name\": \"Eli\", \"hp\": 92}, {\"name\": \"Orc\", \"hp\": 130}, {\"name\": \"Gim\", \"hp\": 101}]",
+              "o1": "Champion: Tor (88)",
+              "o2": "Champion: Gim (101)",
+              "o3": "Champion: 130 (Orc)",
+              "o4": "Champion: Orc (130)",
+              "right": "Champion: Orc (130)"
+            }
+          },
+          {
+            "vars": {
+              "party": "[{\"name\": \"Zed\", \"hp\": 15}, {\"name\": \"Yan\", \"hp\": 45}, {\"name\": \"Xia\", \"hp\": 30}]",
+              "o1": "Champion: Yan (45)",
+              "o2": "Champion: Zed (15)",
+              "o3": "Champion: Xia (30)",
+              "o4": "Champion: 45 (Yan)",
+              "right": "Champion: Yan (45)"
+            }
+          },
+          {
+            "vars": {
+              "party": "[{\"name\": \"Nox\", \"hp\": 300}, {\"name\": \"Sol\", \"hp\": 150}, {\"name\": \"Ira\", \"hp\": 299}]",
+              "o1": "Champion: 300 (Nox)",
+              "o2": "Champion: Nox (300)",
+              "o3": "Champion: Sol (150)",
+              "o4": "Champion: Ira (299)",
+              "right": "Champion: Nox (300)"
+            }
+          }
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
   }
 ]

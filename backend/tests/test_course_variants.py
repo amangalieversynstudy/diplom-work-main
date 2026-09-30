@@ -146,6 +146,19 @@ def _answer(about, vars_):
         return len(set(ast.literal_eval(vars_["items"])))
     if about == 122:
         return sum(1 for n in ast.literal_eval(vars_["numbers"]) if n % 2 == 0)
+    if about == 81:
+        best = max(ast.literal_eval(vars_["party"]), key=lambda hero: hero["hp"])
+        return f"Champion: {best['name']} ({best['hp']})"
+    if about == 112:
+        return "None" if vars_["b"] == 0 else vars_["a"] / vars_["b"]
+    if about == 132:
+        return len(set(vars_["text"].lower().split()))
+    if about == 142:
+        return max(0, vars_["hp"] - vars_["d"] * vars_["times"])
+    if about == 152:
+        return f"{vars_['name']} ({vars_['hp']} hp)"
+    if about == 162:
+        return len(set(ast.literal_eval(vars_["classes"])))
     raise AssertionError(about)
 
 
@@ -158,7 +171,7 @@ def _explain_cases():
 def test_every_explain_question_belongs_to_a_personalised_code_step():
     code = {obj["pk"]: obj for obj in _steps()}
     explain = {obj["fields"]["data"]["about"]: obj for obj in _explain_steps()}
-    assert len(explain) == 9 and set(explain) <= set(code)
+    assert set(explain) == set(code) and len(explain) == 15  # every personalised step has its question
     for about, obj in explain.items():
         fields = obj["fields"]
         assert fields["mission"] == code[about]["fields"]["mission"]

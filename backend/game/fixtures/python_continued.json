@@ -700,6 +700,112 @@
     }
   },
   {
+    "model": "game.missiontask",
+    "pk": 113,
+    "fields": {
+      "mission": 11,
+      "order": 4,
+      "task_type": "quiz",
+      "title_en": "Explain your solution",
+      "title_ru": "Объясни своё решение",
+      "body_en": "<p>What will your function return for <code>safe_divide({{a}}, {{b}})</code>?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
+      "body_ru": "<p>Что вернёт твоя функция при вызове <code>safe_divide({{a}}, {{b}})</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "data": {
+        "kind": "explain",
+        "about": 112,
+        "correct_answer": "{{right}}",
+        "options": [
+          {
+            "value": "{{o1}}",
+            "label": "{{o1}}"
+          },
+          {
+            "value": "{{o2}}",
+            "label": "{{o2}}"
+          },
+          {
+            "value": "{{o3}}",
+            "label": "{{o3}}"
+          },
+          {
+            "value": "{{o4}}",
+            "label": "{{o4}}"
+          }
+        ],
+        "variants": [
+          {
+            "vars": {
+              "a": 7,
+              "b": 2,
+              "o1": "3.5",
+              "o2": "3",
+              "o3": "None",
+              "o4": "ZeroDivisionError",
+              "right": "3.5"
+            }
+          },
+          {
+            "vars": {
+              "a": 9,
+              "b": 0,
+              "o1": "inf",
+              "o2": "None",
+              "o3": "0",
+              "o4": "ZeroDivisionError",
+              "right": "None"
+            }
+          },
+          {
+            "vars": {
+              "a": 1,
+              "b": 4,
+              "o1": "None",
+              "o2": "ZeroDivisionError",
+              "o3": "0.25",
+              "o4": "0",
+              "right": "0.25"
+            }
+          },
+          {
+            "vars": {
+              "a": 6,
+              "b": 3,
+              "o1": "2",
+              "o2": "None",
+              "o3": "ZeroDivisionError",
+              "o4": "2.0",
+              "right": "2.0"
+            }
+          },
+          {
+            "vars": {
+              "a": 5,
+              "b": 0,
+              "o1": "None",
+              "o2": "0",
+              "o3": "ZeroDivisionError",
+              "o4": "inf",
+              "right": "None"
+            }
+          },
+          {
+            "vars": {
+              "a": -3,
+              "b": 2,
+              "o1": "ZeroDivisionError",
+              "o2": "-1.5",
+              "o3": "-2",
+              "o4": "None",
+              "right": "-1.5"
+            }
+          }
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
     "model": "game.mission",
     "pk": 12,
     "fields": {
@@ -1102,6 +1208,106 @@
     }
   },
   {
+    "model": "game.missiontask",
+    "pk": 133,
+    "fields": {
+      "mission": 13,
+      "order": 4,
+      "task_type": "quiz",
+      "title_en": "Explain your solution",
+      "title_ru": "Объясни своё решение",
+      "body_en": "<p>How many keys are in the dict <code>word_count(\"{{text}}\")</code> returns?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
+      "body_ru": "<p>Сколько ключей будет в словаре, который вернёт <code>word_count(\"{{text}}\")</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "data": {
+        "kind": "explain",
+        "about": 132,
+        "correct_answer": "{{right}}",
+        "options": [
+          {
+            "value": "{{o1}}",
+            "label": "{{o1}}"
+          },
+          {
+            "value": "{{o2}}",
+            "label": "{{o2}}"
+          },
+          {
+            "value": "{{o3}}",
+            "label": "{{o3}}"
+          },
+          {
+            "value": "{{o4}}",
+            "label": "{{o4}}"
+          }
+        ],
+        "variants": [
+          {
+            "vars": {
+              "text": "Fire FIRE ice",
+              "o1": "2",
+              "o2": "3",
+              "o3": "1",
+              "o4": "4",
+              "right": "2"
+            }
+          },
+          {
+            "vars": {
+              "text": "wolf Wolf bear WOLF bear",
+              "o1": "1",
+              "o2": "2",
+              "o3": "5",
+              "o4": "3",
+              "right": "2"
+            }
+          },
+          {
+            "vars": {
+              "text": "a b a b c",
+              "o1": "4",
+              "o2": "2",
+              "o3": "3",
+              "o4": "5",
+              "right": "3"
+            }
+          },
+          {
+            "vars": {
+              "text": "Red  red  blue  Blue",
+              "o1": "4",
+              "o2": "3",
+              "o3": "1",
+              "o4": "2",
+              "right": "2"
+            }
+          },
+          {
+            "vars": {
+              "text": "Ice Fire ice ICE fire",
+              "o1": "2",
+              "o2": "5",
+              "o3": "3",
+              "o4": "1",
+              "right": "2"
+            }
+          },
+          {
+            "vars": {
+              "text": "x Y y X x z",
+              "o1": "2",
+              "o2": "3",
+              "o3": "6",
+              "o4": "4",
+              "right": "3"
+            }
+          }
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
     "model": "game.mission",
     "pk": 14,
     "fields": {
@@ -1270,6 +1476,118 @@
     }
   },
   {
+    "model": "game.missiontask",
+    "pk": 143,
+    "fields": {
+      "mission": 14,
+      "order": 4,
+      "task_type": "quiz",
+      "title_en": "Explain your solution",
+      "title_ru": "Объясни своё решение",
+      "body_en": "<p>A hero has <code>hp = {{hp}}</code>. Each hit takes {{d}}, hits in a row: {{times}}. What is <code>hero.hp</code> in your implementation?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
+      "body_ru": "<p>У героя <code>hp = {{hp}}</code>. Каждый удар отнимает {{d}}, ударов подряд: {{times}}. Чему будет равно <code>hero.hp</code> в твоей реализации?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "data": {
+        "kind": "explain",
+        "about": 142,
+        "correct_answer": "{{right}}",
+        "options": [
+          {
+            "value": "{{o1}}",
+            "label": "{{o1}}"
+          },
+          {
+            "value": "{{o2}}",
+            "label": "{{o2}}"
+          },
+          {
+            "value": "{{o3}}",
+            "label": "{{o3}}"
+          },
+          {
+            "value": "{{o4}}",
+            "label": "{{o4}}"
+          }
+        ],
+        "variants": [
+          {
+            "vars": {
+              "hp": 10,
+              "d": 4,
+              "times": 3,
+              "o1": "0",
+              "o2": "6",
+              "o3": "10",
+              "o4": "12",
+              "right": "0"
+            }
+          },
+          {
+            "vars": {
+              "hp": 20,
+              "d": 5,
+              "times": 2,
+              "o1": "25",
+              "o2": "10",
+              "o3": "15",
+              "o4": "20",
+              "right": "10"
+            }
+          },
+          {
+            "vars": {
+              "hp": 9,
+              "d": 3,
+              "times": 4,
+              "o1": "9",
+              "o2": "12",
+              "o3": "0",
+              "o4": "6",
+              "right": "0"
+            }
+          },
+          {
+            "vars": {
+              "hp": 30,
+              "d": 7,
+              "times": 5,
+              "o1": "23",
+              "o2": "30",
+              "o3": "35",
+              "o4": "0",
+              "right": "0"
+            }
+          },
+          {
+            "vars": {
+              "hp": 12,
+              "d": 12,
+              "times": 1,
+              "o1": "0",
+              "o2": "12",
+              "o3": "-12",
+              "o4": "24",
+              "right": "0"
+            }
+          },
+          {
+            "vars": {
+              "hp": 8,
+              "d": 3,
+              "times": 2,
+              "o1": "6",
+              "o2": "2",
+              "o3": "5",
+              "o4": "8",
+              "right": "2"
+            }
+          }
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
     "model": "game.mission",
     "pk": 15,
     "fields": {
@@ -1432,6 +1750,118 @@
     }
   },
   {
+    "model": "game.missiontask",
+    "pk": 153,
+    "fields": {
+      "mission": 15,
+      "order": 4,
+      "task_type": "quiz",
+      "title_en": "Explain your solution",
+      "title_ru": "Объясни своё решение",
+      "body_en": "<p>What string does <code>describe()</code> return for a plain <code>Hero(\"{{name}}\", {{hp}})</code>, not a mage? (The mage's mana is {{mana}}.)</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
+      "body_ru": "<p>Какую строку вернёт <code>describe()</code> у обычного <code>Hero(\"{{name}}\", {{hp}})</code>, не у мага? (Мана мага: {{mana}}.)</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "data": {
+        "kind": "explain",
+        "about": 152,
+        "correct_answer": "{{right}}",
+        "options": [
+          {
+            "value": "{{o1}}",
+            "label": "{{o1}}"
+          },
+          {
+            "value": "{{o2}}",
+            "label": "{{o2}}"
+          },
+          {
+            "value": "{{o3}}",
+            "label": "{{o3}}"
+          },
+          {
+            "value": "{{o4}}",
+            "label": "{{o4}}"
+          }
+        ],
+        "variants": [
+          {
+            "vars": {
+              "name": "Mira",
+              "hp": 70,
+              "mana": 120,
+              "o1": "Mira (70 hp)",
+              "o2": "Mira (70 hp), mana 120",
+              "o3": "Mira (120 hp)",
+              "o4": "70 (Mira hp)",
+              "right": "Mira (70 hp)"
+            }
+          },
+          {
+            "vars": {
+              "name": "Aidan",
+              "hp": 55,
+              "mana": 80,
+              "o1": "55 (Aidan hp)",
+              "o2": "Aidan (55 hp)",
+              "o3": "Aidan (55 hp), mana 80",
+              "o4": "Aidan (80 hp)",
+              "right": "Aidan (55 hp)"
+            }
+          },
+          {
+            "vars": {
+              "name": "Bo",
+              "hp": 90,
+              "mana": 30,
+              "o1": "Bo (30 hp)",
+              "o2": "90 (Bo hp)",
+              "o3": "Bo (90 hp)",
+              "o4": "Bo (90 hp), mana 30",
+              "right": "Bo (90 hp)"
+            }
+          },
+          {
+            "vars": {
+              "name": "Lia",
+              "hp": 40,
+              "mana": 200,
+              "o1": "Lia (40 hp), mana 200",
+              "o2": "Lia (200 hp)",
+              "o3": "40 (Lia hp)",
+              "o4": "Lia (40 hp)",
+              "right": "Lia (40 hp)"
+            }
+          },
+          {
+            "vars": {
+              "name": "Kai",
+              "hp": 120,
+              "mana": 15,
+              "o1": "Kai (120 hp)",
+              "o2": "Kai (120 hp), mana 15",
+              "o3": "Kai (15 hp)",
+              "o4": "120 (Kai hp)",
+              "right": "Kai (120 hp)"
+            }
+          },
+          {
+            "vars": {
+              "name": "Tor",
+              "hp": 65,
+              "mana": 10,
+              "o1": "65 (Tor hp)",
+              "o2": "Tor (65 hp)",
+              "o3": "Tor (65 hp), mana 10",
+              "o4": "Tor (10 hp)",
+              "right": "Tor (65 hp)"
+            }
+          }
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
     "model": "game.mission",
     "pk": 16,
     "fields": {
@@ -1585,6 +2015,106 @@
           "en": "heroes = {{heroes}}\n\ndef guild_report(heroes):\n    # 1. an empty dict report\n    # 2. for every hero add his hp to his class\n    # 3. return report\n    pass\n\nprint(sorted(guild_report(heroes).items()))\n"
         }
       }
+    }
+  },
+  {
+    "model": "game.missiontask",
+    "pk": 163,
+    "fields": {
+      "mission": 16,
+      "order": 4,
+      "task_type": "quiz",
+      "title_en": "Explain your solution",
+      "title_ru": "Объясни своё решение",
+      "body_en": "<p>How many keys are in the dict your function returns if the heroes' classes are <code>{{classes}}</code>?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
+      "body_ru": "<p>Сколько ключей будет в словаре, который вернёт твоя функция, если у героев такие классы: <code>{{classes}}</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "data": {
+        "kind": "explain",
+        "about": 162,
+        "correct_answer": "{{right}}",
+        "options": [
+          {
+            "value": "{{o1}}",
+            "label": "{{o1}}"
+          },
+          {
+            "value": "{{o2}}",
+            "label": "{{o2}}"
+          },
+          {
+            "value": "{{o3}}",
+            "label": "{{o3}}"
+          },
+          {
+            "value": "{{o4}}",
+            "label": "{{o4}}"
+          }
+        ],
+        "variants": [
+          {
+            "vars": {
+              "classes": "[\"mage\", \"warrior\", \"mage\"]",
+              "o1": "2",
+              "o2": "3",
+              "o3": "1",
+              "o4": "4",
+              "right": "2"
+            }
+          },
+          {
+            "vars": {
+              "classes": "[\"rogue\", \"rogue\", \"rogue\", \"rogue\"]",
+              "o1": "0",
+              "o2": "1",
+              "o3": "4",
+              "o4": "2",
+              "right": "1"
+            }
+          },
+          {
+            "vars": {
+              "classes": "[\"warrior\", \"rogue\", \"mage\", \"warrior\", \"mage\"]",
+              "o1": "4",
+              "o2": "2",
+              "o3": "3",
+              "o4": "5",
+              "right": "3"
+            }
+          },
+          {
+            "vars": {
+              "classes": "[\"mage\", \"mage\"]",
+              "o1": "2",
+              "o2": "0",
+              "o3": "3",
+              "o4": "1",
+              "right": "1"
+            }
+          },
+          {
+            "vars": {
+              "classes": "[\"rogue\", \"warrior\", \"mage\", \"rogue\", \"elf\", \"warrior\"]",
+              "o1": "4",
+              "o2": "6",
+              "o3": "5",
+              "o4": "3",
+              "right": "4"
+            }
+          },
+          {
+            "vars": {
+              "classes": "[\"elf\", \"orc\", \"elf\", \"orc\", \"elf\"]",
+              "o1": "1",
+              "o2": "2",
+              "o3": "5",
+              "o4": "3",
+              "right": "2"
+            }
+          }
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
     }
   }
 ]

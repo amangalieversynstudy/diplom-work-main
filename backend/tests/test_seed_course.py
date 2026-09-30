@@ -19,7 +19,7 @@ def test_seeds_an_empty_database():
     track = Track.objects.get(slug="python-intro")
     assert track.is_intro is True
     assert Mission.objects.filter(location__track=track).count() == 8
-    assert MissionTask.objects.filter(mission__location__track=track).count() == 29
+    assert MissionTask.objects.filter(mission__location__track=track).count() == 30
 
 
 def test_the_second_course_follows_the_intro_and_does_not_gate_class_selection():
@@ -30,7 +30,7 @@ def test_the_second_course_follows_the_intro_and_does_not_gate_class_selection()
     assert Track.get_intro() == intro  # class selection still opens after the first course
     missions = list(Mission.objects.filter(location__track=second).order_by("order"))
     assert len(missions) == 8
-    assert MissionTask.objects.filter(mission__location__track=second).count() == 27
+    assert MissionTask.objects.filter(mission__location__track=second).count() == 32
     # the first mission of the second course waits for the last one of the intro
     last_intro = Mission.objects.filter(location__track=intro).order_by("order").last()
     assert list(missions[0].prerequisites.all()) == [last_intro]

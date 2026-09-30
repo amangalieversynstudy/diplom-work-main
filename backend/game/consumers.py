@@ -1,6 +1,6 @@
 """WebSocket-консьюмер для стриминга выполнения кода в реальном времени.
 
-Протокол: клиент шлёт {"type": "run", "code": "...", "task_id": <id>?}, сервер
+Протокол: клиент шлёт {"type": "run", "code": "...", "task_id": <id>?, "provenance": {...}?}, сервер
 шлёт обратно события stdout/stderr/error/exit. Один запуск на соединение,
 ограничение кода 100 KB. Безопасность держится на песочнице из runner.py.
 
@@ -12,6 +12,8 @@ exit шлёт {"type": "result", "passed": bool, "progress": {...}}. Брауз�
 Каждый завершившийся запуск (в том числе без task_id) записывается в CodeRun:
 исход, тип ошибки, размеры, длительность. Запуски, оборванные самой
 инфраструктурой (сбой песочницы, отмена), не засчитываются как попытка.
+Необязательное provenance: счётчики редактора (сколько символов набрано и вставлено),
+без самого текста; см. authorship.py.
 
 Частые запуски отсекаются (см. throttles.allow_code_run): сервер шлёт error и
 закрывает сокет кодом 4429.
@@ -116,9 +118,11 @@ class RunnerConsumer(AsyncWebsocketConsumer):
         # ставим _running перед стартом задачи, чтобы параллельный receive
         # увидел busy и отбил повторный run
         self._running = True
-        self._run_task = asyncio.create_task(self._stream_run(code, task))
+        self._run_task = asyncio.create_task(
+            self._stream_run(code, task, msg.get("provenance"))
+        )
 
-    async def _stream_run(self, code: str, task=None) -> None:
+    async def _stream_run(self, code: str, task=None, provenance=None) -> None:
         """Гоняет синхронный генератор в треде, асинхронно форвардит события."""
         self._stop_event = threading.Event()
         loop = asyncio.get_running_loop()
@@ -170,6 +174,7 @@ class RunnerConsumer(AsyncWebsocketConsumer):
                         exit_code=event.get("code"),
                         duration=event.get("duration"),
                         reasons=reasons,
+                        provenance=provenance,
                     )
                     if verdict is not None:
                         await self._emit({"type": "result", **verdict})

@@ -8,6 +8,7 @@ from .analytics_views import (
     LearningMetricsExportView,
     LearningMetricsView,
     MyLearningView,
+    TeacherStudentAuthorshipView,
     TeacherStudentLearningView,
 )
 from .studio import (
@@ -66,6 +67,11 @@ urlpatterns = [
         "teacher/students/<int:pk>/learning/",
         TeacherStudentLearningView.as_view(),
         name="teacher_student_learning",
+    ),
+    path(
+        "teacher/students/<int:pk>/authorship/",
+        TeacherStudentAuthorshipView.as_view(),
+        name="teacher_student_authorship",
     ),
     path(
         "analytics/metrics/",

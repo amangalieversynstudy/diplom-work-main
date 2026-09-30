@@ -44,6 +44,32 @@ export const en = {
     back: "Back to the cabinet",
     loadFail: "Could not load the student.",
     notFound: "There is no such student among your courses.",
+    authorship: {
+      title: "Independence of solutions",
+      note: "How the code steps were solved. Help from the platform (hints, skeleton, the Sage) is recorded exactly. The editor signals are only a hint: they come from the learner's browser, can be incomplete and do not prove copying. Talk to the learner about them; do not grade on them.",
+      empty: "No solved code steps yet.",
+      attempts: "attempts: {n}",
+      pasteShare: "{n}% of the code pasted",
+      helpUses: "Clarity potion: {hint} · Architect scroll: {skeleton} · Sage: {mentor}",
+      tiles: {
+        solved: "Steps solved",
+        independent: "Alone",
+        assisted: "With platform help",
+        flagged: "With signals",
+      },
+      assistance: {
+        independent: "Alone",
+        hint: "With a hint",
+        skeleton: "With a skeleton",
+        mentor: "With the Sage",
+      },
+      signals: {
+        paste_then_run: "{share}% of the code was pasted and run with almost no edits (edits: {edits}).",
+        large_paste: "{share}% of the code was pasted, then edits: {edits}.",
+        fast_typing: "{chars} characters typed in {seconds} s: faster than hand typing.",
+        no_editor_data: "No editor data for the solving run.",
+      },
+    },
     status: {
       new: { title: "Just starting", body: "No solved steps yet. Make sure they found the first mission." },
       great: { title: "Going strong", body: "Steps are solved on the first tries." },
@@ -471,7 +497,7 @@ export const en = {
         teacherCancel: "I'm a student",
         researchConsent: "I allow my learning activity to be used in research (optional)",
         researchConsentHint:
-          "Code runs, error types, hints used and time spent on tasks go into an anonymised dataset. Your name, e-mail and the code itself are never shared. You can withdraw consent in your profile at any time.",
+          "Code runs, error types, hints used, time spent on tasks and the number of typed and pasted characters (numbers only) go into an anonymised dataset. Your name, e-mail and the code itself are never shared. You can withdraw consent in your profile at any time.",
       },
       register: {
         title: "Join the Guild",
@@ -591,7 +617,7 @@ export const en = {
       saveBtn: "Save",
       researchConsentLabel: "Use my learning activity in research",
       researchConsentHint:
-        "Code runs, error types, hints used and time spent on tasks go into an anonymised dataset. Your name, e-mail and the code itself are never shared. You can withdraw at any time.",
+        "Code runs, error types, hints used, time spent on tasks and the number of typed and pasted characters (numbers only) go into an anonymised dataset. Your name, e-mail and the code itself are never shared. You can withdraw at any time.",
       cancelBtn: "Cancel",
       loginField: "Login",
       emailField: "Email",

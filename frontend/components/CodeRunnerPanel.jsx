@@ -23,6 +23,7 @@ import { Profile, getRunnerWsUrl } from "../lib/api";
 import { getTokens } from "../lib/auth";
 import { useI18n } from "../lib/i18n";
 import { indentAction, newlineAction } from "../lib/editorKeys";
+import { createTracker } from "../lib/provenance";
 import Terminal from "./Terminal";
 import AIMentorChat from "./AIMentorChat";
 
@@ -96,12 +97,18 @@ function CodeRunnerPanel(
   // и не тратит инвентарь (в отличие от Skeleton Scroll, который добавляет
   // boilerplate сверх текущего кода и расходует item).
   const initialCodeRef = useRef("");
+  // Сколько символов набрано и сколько вставлено (только числа, см. lib/provenance.js): уходит
+  // на сервер вместе с запуском, чтобы преподаватель видел, как появилось решение.
+  const trackerRef = useRef(null);
+  if (!trackerRef.current) trackerRef.current = createTracker();
   useEffect(() => {
     if (!task?.id) return;
     initialCodeRef.current = task?.data?.starter || "";
+    trackerRef.current.reset();
   }, [task?.id]);
 
   const handleResetCode = useCallback(() => {
+    trackerRef.current.reset(); // код начат заново, и счёт тоже
     onChange(initialCodeRef.current || "");
     toast(
       initialCodeRef.current
@@ -202,7 +209,7 @@ function CodeRunnerPanel(
           type: "run",
           code: code || "",
           language: "python",
-          ...(task?.id ? { task_id: task.id } : {}),
+          ...(task?.id ? { task_id: task.id, provenance: trackerRef.current.snapshot() } : {}),
         })
       );
     };
@@ -357,6 +364,7 @@ function CodeRunnerPanel(
 
   const applyEdit = (result) => {
     pendingSelection.current = { start: result.start, end: result.end };
+    trackerRef.current.record("insertText", code || "", result.text);
     onChange(result.text);
   };
 
@@ -497,7 +505,11 @@ function CodeRunnerPanel(
         <textarea
           ref={editorRef}
           value={code || ""}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            trackerRef.current.record(e.nativeEvent?.inputType, code || "", e.target.value);
+            onChange(e.target.value);
+          }}
+          onPaste={(e) => trackerRef.current.paste(e.clipboardData?.getData("text")?.length || 0)}
           onKeyDown={onEditorKeyDown}
           // номера строк едут вместе с текстом, иначе «ошибка в строке N» врёт
           onScroll={(e) => {

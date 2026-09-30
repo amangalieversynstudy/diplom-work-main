@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { toast } from "sonner";
 import Layout from "../../../components/Layout";
 import JourneyView from "../../../components/JourneyView";
+import AuthorshipPanel from "../../../components/AuthorshipPanel";
 import { Teacher as TeacherAPI } from "../../../lib/api";
 import { useI18n } from "../../../lib/i18n";
 import logger from "../../../lib/logger";
@@ -15,6 +16,7 @@ export default function TeacherStudentPage() {
   const { t, language } = useI18n();
   const [data, setData] = useState(null);
   const [failure, setFailure] = useState(null);
+  const [authorship, setAuthorship] = useState(null);
 
   useEffect(() => {
     if (!id) return undefined;
@@ -32,6 +34,12 @@ export default function TeacherStudentPage() {
           if (status !== 404 && status !== 403) toast.error(t("teacherStudent.loadFail"));
         }
       });
+    // самостоятельность решений дополняет страницу: если не загрузилась, страница остаётся как есть
+    TeacherAPI.studentAuthorship(id)
+      .then((result) => {
+        if (active) setAuthorship(result);
+      })
+      .catch((err) => logger.error("teacher authorship load failed", err));
     return () => {
       active = false;
     };
@@ -42,7 +50,10 @@ export default function TeacherStudentPage() {
   return (
     <Layout>
       {data ? (
-        <JourneyView data={data} mode="teacher" backHref="/teacher" />
+        <>
+          <JourneyView data={data} mode="teacher" backHref="/teacher" />
+          <AuthorshipPanel data={authorship} />
+        </>
       ) : failure ? (
         <div className="mx-auto max-w-2xl pt-24 text-center">
           <p role="alert" className="text-lg text-muted">

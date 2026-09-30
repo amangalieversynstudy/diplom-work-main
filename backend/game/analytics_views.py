@@ -9,6 +9,7 @@ from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .authorship import authorship_report
 from .me import my_learning
 from .metrics import CSV_COLUMNS, clamp_inactive_days, compute_metrics
 from .serializers import _resolve_language
@@ -81,6 +82,31 @@ class TeacherStudentLearningView(APIView):
             "xp": student.profile.xp,
         }
         return Response(data)
+
+
+class TeacherStudentAuthorshipView(APIView):
+    """Who solved each code step of one student: alone, with the platform's help, or with signs of outside help.
+
+    GET /api/teacher/students/<id>/authorship/
+
+    The platform's own help (potions, skeleton, mentor) is exact; the editor signals
+    (pasting, typing speed) are hints for a conversation, not evidence. Limited to the
+    teacher's courses like the learning view.
+    """
+
+    permission_classes = [permissions.IsAdminUser]
+
+    @swagger_auto_schema(
+        operation_summary="Authorship of a student's solved code steps (teacher)",
+        operation_description=(
+            "По каждому решённому кодовому шагу: самостоятельно, с подсказкой, "
+            "со скелетом или с Мудрецом, и признаки внешней помощи по данным "
+            "редактора. Признаки не доказательство. Только курсы преподавателя."
+        ),
+    )
+    def get(self, request, pk):
+        student = get_object_or_404(scoped_learners(request.user), pk=pk)
+        return Response(authorship_report(student, request.user, lang=_resolve_language(request)))
 
 
 class LearningMetricsView(APIView):

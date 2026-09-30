@@ -489,6 +489,13 @@ class CodeRun(models.Model):
         help_text="The task was already solved before this run (re-run for fun): "
         "leave such runs out of 'attempts to success'.",
     )
+    provenance = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="How the code got into the editor (counts only, never the keystrokes): "
+        "pasted_chars, typed_chars, paste_count, edit_events, edits_after_paste, elapsed_ms. "
+        "Sent by the editor, so a hint at authorship and not a proof.",
+    )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:

@@ -10,6 +10,7 @@ import re
 
 from django.db import transaction
 
+from .authorship import clean_provenance
 from .models import CodeRun, LearningEvent, MissionTask
 from .runner import (
     INFRASTRUCTURE_REASONS,
@@ -131,6 +132,7 @@ def record_code_run(
     passed=None,
     attempt_no=None,
     after_solved=False,
+    provenance=None,
 ):
     """Store the measurements of one run. Never raises."""
     outcome, error_type, error_message = classify_run(
@@ -152,13 +154,14 @@ def record_code_run(
                 passed=passed,
                 attempt_no=attempt_no,
                 after_solved=after_solved,
+                provenance=clean_provenance(provenance),
             )
     except Exception:
         logger.exception("Could not record code run")
 
 
 def finish_code_run(
-    user, task, *, code, stdout, stderr, exit_code, duration, reasons
+    user, task, *, code, stdout, stderr, exit_code, duration, reasons, provenance=None
 ):
     """Handle a run that reached its end: grade it (if it belongs to a task),
     record it, and return the task verdict (None for free practice).
@@ -191,5 +194,6 @@ def finish_code_run(
         passed=verdict["passed"] if verdict else None,
         attempt_no=verdict["progress"]["attempts"] if verdict else None,
         after_solved=bool(verdict) and not counted,
+        provenance=provenance,
     )
     return verdict

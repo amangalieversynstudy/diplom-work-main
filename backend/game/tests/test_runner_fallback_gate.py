@@ -26,7 +26,8 @@ def test_execute_refuses_unsafe_fallback_when_disabled(settings):
     with patch.object(runner.docker, "from_env", _docker_unavailable):
         result = runner.execute_python_code("print('should-not-run')")
     assert result["status"] == "error"
-    assert "RUNNER_ALLOW_UNSAFE_FALLBACK" in result["output"]
+    assert "не засчитана" in result["output"]  # said to the learner in plain words
+    assert "RUNNER_ALLOW_UNSAFE_FALLBACK" not in result["output"]  # the technical reason stays in the log
     assert "should-not-run" not in result["output"]
 
 
@@ -36,7 +37,7 @@ def test_stream_refuses_unsafe_fallback_when_disabled(settings):
     with patch.object(runner.docker, "from_env", _docker_unavailable):
         events = list(runner.stream_python_code("print('should-not-run')"))
     assert any(
-        e["type"] == "error" and "RUNNER_ALLOW_UNSAFE_FALLBACK" in e.get("message", "")
+        e["type"] == "error" and "не засчитана" in e.get("message", "")
         for e in events
     )
     assert events[-1]["type"] == "exit"
@@ -95,8 +96,9 @@ def test_local_settings_allow_the_fallback_for_development(monkeypatch):
 
 
 def test_judge0_connection_error_is_logged_and_code_is_not_run_locally(
-    settings, caplog
+    settings, caplog, monkeypatch
 ):
+    monkeypatch.setattr(runner, "_JUDGE0_PAUSE", 0)
     settings.RUNNER_ALLOW_UNSAFE_FALLBACK = False
     settings.RUNNER_JUDGE0_URL = "https://judge0.example"
     with patch.object(runner.docker, "from_env", _docker_unavailable), patch.object(
@@ -110,7 +112,8 @@ def test_judge0_connection_error_is_logged_and_code_is_not_run_locally(
     assert "refused" in messages
 
 
-def test_judge0_http_error_is_logged(settings, caplog):
+def test_judge0_http_error_is_logged(settings, caplog, monkeypatch):
+    monkeypatch.setattr(runner, "_JUDGE0_PAUSE", 0)
     settings.RUNNER_ALLOW_UNSAFE_FALLBACK = False
     settings.RUNNER_JUDGE0_URL = "https://judge0.example"
     with patch.object(runner.docker, "from_env", _docker_unavailable), patch.object(
@@ -167,3 +170,61 @@ def test_local_stream_truncates_runaway_output(settings):
     streamed = sum(len(e["data"]) for e in events if e["type"] == "stdout")
     assert streamed <= runner.MAX_OUTPUT_SIZE
     assert events[-1]["type"] == "exit"
+
+
+# ── a class pressing "Run" together: busy answers are retried, the queue is bounded ────
+
+
+def _ok_response():
+    return MagicMock(
+        status_code=201,
+        json=lambda: {"stdout": "4\n", "stderr": None, "compile_output": None, "status": {"id": 3}},
+    )
+
+
+def _judge0_only(settings, monkeypatch):
+    monkeypatch.setattr(runner, "_JUDGE0_PAUSE", 0)
+    settings.RUNNER_ALLOW_UNSAFE_FALLBACK = False
+    settings.RUNNER_JUDGE0_URL = "https://judge0.example"
+
+
+def test_a_busy_judge0_is_retried_and_the_learner_never_notices(settings, monkeypatch):
+    _judge0_only(settings, monkeypatch)
+    answers = [MagicMock(status_code=429), requests.ConnectionError("blip"), _ok_response()]
+    with patch.object(runner.docker, "from_env", _docker_unavailable), patch.object(
+        runner.requests, "post", side_effect=answers
+    ) as post:
+        result = runner.execute_python_code("print(2 + 2)")
+    assert result == {"status": "success", "output": "4\n"}
+    assert post.call_count == 3
+
+
+def test_a_judge0_that_stays_busy_gives_up_after_the_tries(settings, monkeypatch):
+    _judge0_only(settings, monkeypatch)
+    with patch.object(runner.docker, "from_env", _docker_unavailable), patch.object(
+        runner.requests, "post", return_value=MagicMock(status_code=429)
+    ) as post:
+        result = runner.execute_python_code("print(2 + 2)")
+    assert result["status"] == "error" and result["infra"] is True
+    assert post.call_count == runner._JUDGE0_TRIES
+
+
+def test_a_refusal_that_is_not_about_load_is_not_retried(settings, monkeypatch):
+    _judge0_only(settings, monkeypatch)
+    with patch.object(runner.docker, "from_env", _docker_unavailable), patch.object(
+        runner.requests, "post", return_value=MagicMock(status_code=400)
+    ) as post:
+        runner.execute_python_code("print(2 + 2)")
+    assert post.call_count == 1
+
+
+def test_a_full_queue_gives_up_without_calling_judge0(settings, monkeypatch):
+    _judge0_only(settings, monkeypatch)
+    monkeypatch.setattr(runner, "_JUDGE0_WAIT_FOR_SLOT", 0.01)
+    monkeypatch.setattr(runner, "_JUDGE0_SLOTS", runner.threading.BoundedSemaphore(1))
+    runner._JUDGE0_SLOTS.acquire()  # somebody else is running
+    with patch.object(runner.docker, "from_env", _docker_unavailable), patch.object(
+        runner.requests, "post", return_value=_ok_response()
+    ) as post:
+        result = runner.execute_python_code("print(2 + 2)")
+    assert result["infra"] is True and post.call_count == 0

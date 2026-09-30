@@ -371,3 +371,21 @@ def test_a_configured_ai_key_reminds_about_the_information_sheet(ready):
     text = _run_check()
     assert "уходят в Google Gemini" in text
     assert "Проверка пройдена" in text
+
+
+def test_check_runner_reports_a_working_runner_and_a_broken_one(monkeypatch):
+    import io
+
+    from django.core.management import call_command
+    from django.core.management.base import CommandError
+
+    from game import runner
+
+    out = io.StringIO()
+    monkeypatch.setattr(runner, "execute_python_code", lambda code, **kw: {"status": "success", "output": "55\n"})
+    call_command("check_runner", "--times", "2", stdout=out)
+    assert "Code runs here" in out.getvalue()
+
+    monkeypatch.setattr(runner, "execute_python_code", lambda code, **kw: {"status": "error", "output": "busy", "infra": True})
+    with pytest.raises(CommandError):
+        call_command("check_runner", "--times", "2", stdout=io.StringIO())

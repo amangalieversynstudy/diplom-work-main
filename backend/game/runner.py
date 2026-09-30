@@ -69,9 +69,11 @@ _SANDBOX_KWARGS = dict(
     nano_cpus=500_000_000,                # 0.5 CPU
 )
 
+# The learner sees this; the technical reason goes to the log. The run is not counted as an attempt
+# (REASON_UNAVAILABLE is an infrastructure reason), so the wording says so.
 _RUNNER_DISABLED_MSG = (
-    "Запуск кода недоступен в этом окружении: безопасной Docker-песочницы нет, "
-    "а небезопасный режим отключён (RUNNER_ALLOW_UNSAFE_FALLBACK=False)."
+    "Проверяющая служба сейчас занята или недоступна. Твоя попытка не засчитана: "
+    "подожди минуту и запусти код ещё раз."
 )
 
 
@@ -90,7 +92,7 @@ def _unsafe_fallback_allowed() -> bool:
 def _runner_disabled_result() -> dict:
     logger.error(
         "Code execution refused: no Docker sandbox, Judge0 unavailable and the "
-        "unsafe local fallback is disabled"
+        "unsafe local fallback is disabled (RUNNER_ALLOW_UNSAFE_FALLBACK=False)"
     )
     return {"status": "error", "output": _RUNNER_DISABLED_MSG, "infra": True}
 
@@ -98,7 +100,7 @@ def _runner_disabled_result() -> dict:
 def _runner_disabled_stream(started_at: float):
     logger.error(
         "Code execution refused: no Docker sandbox, Judge0 unavailable and the "
-        "unsafe local fallback is disabled"
+        "unsafe local fallback is disabled (RUNNER_ALLOW_UNSAFE_FALLBACK=False)"
     )
     yield {"type": "error", "message": _RUNNER_DISABLED_MSG, "reason": REASON_UNAVAILABLE}
     yield {"type": "exit", "code": -1, "duration": time.time() - started_at}
@@ -128,6 +130,16 @@ def _judge0_settings():
         return "", "", "judge0-ce.p.rapidapi.com", 71
 
 
+# A class pressing "Run" at the same moment must not hit the public instance all at once (it answers 429):
+# at most _JUDGE0_SLOTS requests of this process are in flight, the others wait their turn, and a busy
+# answer (429 / 502 / 503 / 504) or a dropped connection is retried with a growing pause.
+_JUDGE0_SLOTS = threading.BoundedSemaphore(4)
+_JUDGE0_WAIT_FOR_SLOT = 25     # seconds a run may wait for its turn before giving up
+_JUDGE0_TRIES = 3
+_JUDGE0_PAUSE = 1.5            # seconds; multiplied by the number of the try
+_JUDGE0_BUSY = frozenset({429, 502, 503, 504})
+
+
 def _judge0_run(code: str, timeout: int):
     """Гоняет код в Judge0. Возвращает разобранный ответ или None, если Judge0
     не сконфигурирован/недоступен/ответил ошибкой (тогда вызывающий уходит в
@@ -139,32 +151,44 @@ def _judge0_run(code: str, timeout: int):
     if key:  # RapidAPI-режим (или self-host с ключом)
         headers["X-RapidAPI-Key"] = key
         headers["X-RapidAPI-Host"] = host
-    try:
-        resp = requests.post(
-            f"{url}/submissions?base64_encoded=false&wait=true",
-            json={
-                "source_code": code,
-                "language_id": lang,
-                "cpu_time_limit": max(1, timeout),
-                "wall_time_limit": max(1, timeout) + 5,
-            },
-            headers=headers,
-            timeout=max(1, timeout) + 20,
-        )
-        if resp.status_code not in (200, 201):
-            logger.warning("Judge0 answered HTTP %s; the code was not run there", resp.status_code)
-            return None
-        data = resp.json()
-        status = data.get("status") or {}
-        return {
-            "stdout": data.get("stdout") or "",
-            "stderr": data.get("stderr") or "",
-            "compile_output": data.get("compile_output") or "",
-            "status_id": status.get("id"),
-        }
-    except Exception as exc:
-        logger.warning("Judge0 request failed: %r", exc)
+    payload = {
+        "source_code": code,
+        "language_id": lang,
+        "cpu_time_limit": max(1, timeout),
+        "wall_time_limit": max(1, timeout) + 5,
+    }
+    if not _JUDGE0_SLOTS.acquire(timeout=_JUDGE0_WAIT_FOR_SLOT):
+        logger.warning("Judge0 queue is full: the run waited %s s for its turn", _JUDGE0_WAIT_FOR_SLOT)
         return None
+    try:
+        for attempt in range(1, _JUDGE0_TRIES + 1):
+            try:
+                resp = requests.post(
+                    f"{url}/submissions?base64_encoded=false&wait=true",
+                    json=payload,
+                    headers=headers,
+                    timeout=max(1, timeout) + 20,
+                )
+            except Exception as exc:
+                logger.warning("Judge0 request failed: %r", exc)
+            else:
+                if resp.status_code in (200, 201):
+                    data = resp.json()
+                    status = data.get("status") or {}
+                    return {
+                        "stdout": data.get("stdout") or "",
+                        "stderr": data.get("stderr") or "",
+                        "compile_output": data.get("compile_output") or "",
+                        "status_id": status.get("id"),
+                    }
+                logger.warning("Judge0 answered HTTP %s; the code was not run there", resp.status_code)
+                if resp.status_code not in _JUDGE0_BUSY:
+                    return None
+            if attempt < _JUDGE0_TRIES:
+                time.sleep(_JUDGE0_PAUSE * attempt)
+        return None
+    finally:
+        _JUDGE0_SLOTS.release()
 
 
 def _judge0_streams(r) -> tuple:

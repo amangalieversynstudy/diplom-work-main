@@ -87,3 +87,26 @@ def test_it_refuses_without_a_course_to_play():
 def test_it_refuses_a_silly_size(teacher):
     with pytest.raises(CommandError):
         _seed("--count", "1")
+
+
+def test_real_accounts_named_like_a_demo_learner_are_never_touched(teacher):
+    anna = User.objects.create_user("demo_anna", "anna@example.com", "S3cure-pass-1")  # a real learner
+    boss = User.objects.create_user("demo_boss", "boss@example.com", None, is_staff=True)  # no password, but staff
+    _seed("--count", "12")
+    call_command("seed_demo_cohort", "--remove", stdout=io.StringIO())
+    assert User.objects.filter(pk__in=[anna.pk, boss.pk]).count() == 2
+    assert demo_users().count() == 0
+
+
+def test_a_refused_run_leaves_the_existing_class_alone(teacher):
+    _seed("--count", "12")
+    with pytest.raises(CommandError):
+        _seed("--count", "1")
+    assert demo_users().count() == 12
+
+
+def test_a_real_account_with_a_demo_name_stops_the_seeding(teacher):
+    User.objects.create_user("demo_01", "x@example.com", "S3cure-pass-1")
+    with pytest.raises(CommandError):
+        _seed("--count", "12")
+    assert User.objects.filter(username="demo_01").exists() and demo_users().count() == 0

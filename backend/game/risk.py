@@ -126,6 +126,7 @@ def activity_rows(user_ids, since=None, until=None):
         graded = (
             kind == LearningEvent.TASK_SUBMITTED
             and meta.get("task_type") == "quiz"
+            and meta.get("kind") != "explain"  # guessing among four answers is not a measure of progress
             and not meta.get("after_solved")
         )
         rows[user_id].append((stamp, graded, graded and not meta.get("correct")))

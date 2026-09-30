@@ -223,3 +223,30 @@ def test_my_journey_does_not_call_explain_guesses_being_stuck(world, teacher):
     picture = my_learning(user)
     assert picture["stuck"] == [] and picture["status"] != "stuck"
     assert picture["attempts"]["solved"] == 1  # the code step only
+
+
+def test_three_unsolved_explain_questions_do_not_push_real_trouble_off_the_list(world, teacher):
+    from game.me import my_learning
+
+    user = _learner(world, "o", variant=0)
+    hard = MissionTask.objects.create(mission=world["mission"], order=9, task_type="code", title="Hard")
+    TaskProgress.objects.create(user=user, task=hard, status="in_progress", attempts=3)
+    for n in range(3):
+        extra = MissionTask.objects.create(
+            mission=world["mission"], order=10 + n, task_type="quiz", title=f"E{n}",
+            data={"kind": "explain", "about": world["code"].pk, "correct_answer": "x", "options": []},
+        )
+        TaskProgress.objects.create(user=user, task=extra, status="in_progress", attempts=4)
+    picture = my_learning(user)
+    assert [item["task_id"] for item in picture["stuck"]] == [hard.pk]
+    assert picture["status"] == "stuck"
+
+
+def test_the_risk_model_does_not_count_explain_guesses(world):
+    from game.risk import activity_rows
+
+    user = _learner(world, "p", variant=0)
+    before = [row for row in activity_rows([user.pk])[user.pk] if row[1]]
+    _miss(user, world, 3)
+    after = [row for row in activity_rows([user.pk])[user.pk] if row[1]]
+    assert len(after) == len(before) == 1  # the code run that solved the step, not the three wrong answers

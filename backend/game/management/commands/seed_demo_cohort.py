@@ -18,6 +18,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 from django.utils import timezone
 
 from game.models import CodeRun, LearningEvent, Mission, MissionTask, Progress, TaskProgress, Track
@@ -39,7 +40,12 @@ TWIN_NODES = 60
 
 
 def demo_users():
-    return get_user_model().objects.filter(username__startswith=DEMO_PREFIX)
+    """Only what this command made: ``demo_*`` names, no staff, and a password no one can use. A real
+    learner who happens to register as ``demo_anna`` has a password, so neither removal nor the
+    pilot_check warning ever touches them."""
+    return get_user_model().objects.filter(
+        username__startswith=DEMO_PREFIX, is_staff=False, is_superuser=False, password__startswith="!"
+    )
 
 
 def _typed(length, rng):
@@ -62,8 +68,8 @@ class Command(BaseCommand):
         parser.add_argument("--seed", type=int, default=7, help="Random seed (same seed, same class).")
 
     def handle(self, *args, **options):
-        removed = demo_users().delete()[0]
         if options["remove"]:
+            removed = demo_users().delete()[0]
             self.stdout.write(self.style.SUCCESS(f"removed demo rows: {removed}"))
             return
         count = options["count"]
@@ -97,14 +103,21 @@ class Command(BaseCommand):
         roster = (roster + ["steady"] * count)[:count]
         rng.shuffle(roster)
 
-        now = timezone.now()
+        names = [f"{DEMO_PREFIX}{index:02d}" for index in range(1, count + 1)]
         User = get_user_model()
-        twins = []
-        for index, archetype in enumerate(roster, start=1):
-            user = User.objects.create_user(f"{DEMO_PREFIX}{index:02d}", password=None)  # no one can log in
-            if archetype == "twin":
-                twins.append(user)
-            self._play(user, archetype, steps, now, rng, twin_of=twins[-2] if archetype == "twin" and len(twins) % 2 == 0 else None)
+        taken = set(User.objects.filter(username__in=names).exclude(pk__in=demo_users()).values_list("username", flat=True))
+        if taken:
+            raise CommandError(f"These usernames belong to real accounts, not to a demo class: {', '.join(sorted(taken))}.")
+
+        now = timezone.now()
+        with transaction.atomic():  # a failure midway leaves the previous class as it was
+            removed = demo_users().delete()[0]
+            twins = []
+            for archetype, name in zip(roster, names):
+                user = User.objects.create_user(name, password=None)  # no one can log in
+                if archetype == "twin":
+                    twins.append(user)
+                self._play(user, archetype, steps, now, rng, twin_of=twins[-2] if archetype == "twin" and len(twins) % 2 == 0 else None)
         self.stdout.write(self.style.SUCCESS(f"demo learners: {count} ({removed} old rows removed)"))
 
     # ── one learner ────────────────────────────────────────────────────────

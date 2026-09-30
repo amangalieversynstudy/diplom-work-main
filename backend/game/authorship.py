@@ -244,8 +244,14 @@ def authorship_overview(viewer, *, limit=8):
     carries a sign other than "no editor data". It says where to look first, nothing more.
     """
     context = _context(viewer)
+    if not context["tasks"]:
+        return []
+    # a learner who has not solved a code step has nothing to report: do not build a report for them
+    solvers = CodeRun.objects.filter(
+        task_id__in=list(context["tasks"]), passed=True, after_solved=False
+    ).values("user_id")
     rows = []
-    for student in scoped_learners(viewer):
+    for student in scoped_learners(viewer).filter(pk__in=solvers):
         summary = authorship_report(student, viewer, context=context)["summary"]
         if summary["flagged"]:
             rows.append(

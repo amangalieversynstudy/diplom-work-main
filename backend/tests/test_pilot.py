@@ -292,8 +292,15 @@ def test_code_steps_without_a_hidden_check_are_flagged(ready):
 
 
 def test_demo_learners_are_flagged_before_a_pilot(ready):
-    _user("demo_01")
+    demo = _user("demo_01")
+    demo.set_unusable_password()  # the way the command makes them
+    demo.save()
     assert "seed_demo_cohort --remove" in _run_check()
+
+
+def test_a_real_learner_with_a_demo_name_is_not_called_a_demo_learner(ready):
+    _user("demo_anna")  # has a password
+    assert "seed_demo_cohort --remove" not in _run_check()
 
 
 def test_a_database_from_before_the_protection_is_told_to_sync(ready):

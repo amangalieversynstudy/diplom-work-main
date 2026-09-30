@@ -370,6 +370,7 @@ class MissionTaskViewSet(viewsets.ReadOnlyModelViewSet):
             LearningEvent.TASK_SUBMITTED,
             task=task,
             task_type=task.task_type,
+            kind=task.kind,
             correct=passed,
             attempt=task_progress.attempts,
             after_solved=not task_progress.counted,

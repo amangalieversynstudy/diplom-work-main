@@ -142,17 +142,17 @@ def my_learning(user, *, lang="ru", now=None, owner=None):
     )
 
     # what is hard right now / what was hard before
+    # the "explain your solution" question does not count as being stuck (and stays out of the averages);
+    # it is dropped before the list is cut, or three wrong answers to it would push real trouble out
     stuck = sorted(
         (
             (tid, row.attempts)
             for tid, row in progress.items()
-            if row.status != "completed" and row.attempts >= 1
+            if row.status != "completed" and row.attempts >= 1 and not _is_explain(task_by_id[tid])
         ),
         key=lambda pair: -pair[1],
     )[:LIST_LIMIT]
     stuck = [_step_ref(task_by_id[tid], lang, attempts) for tid, attempts in stuck]
-    # the "explain your solution" question does not count as being stuck (and stays out of the averages)
-    stuck = [item for item in stuck if not _is_explain(task_by_id[item["task_id"]])]
     review = sorted(
         (
             (tid, row.attempts)

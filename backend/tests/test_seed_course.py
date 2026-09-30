@@ -125,6 +125,7 @@ def test_railway_start_command_seeds_safely():
 
     toml = (Path(settings.BASE_DIR).parent / "railway.toml").read_text(encoding="utf-8")
     assert "seed_course" in toml
+    assert "sync_course_protection" in toml  # a running database gets the variants and explain steps too
     assert "loaddata" not in toml
     assert ".delete()" not in toml
     assert "|| true" not in toml

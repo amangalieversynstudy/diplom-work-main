@@ -535,6 +535,7 @@ export const ru = {
         subtitle: "Создай нового героя",
         usernameLabel: "Имя пользователя",
         usernamePlaceholder: "adventurer",
+        usernameHint: "Это имя видят все игроки в таблице лидеров. Придумай прозвище, настоящее имя писать не нужно.",
         emailLabel: "Email (необязательно)",
         emailPlaceholder: "you@example.com",
         passwordLabel: "Пароль",

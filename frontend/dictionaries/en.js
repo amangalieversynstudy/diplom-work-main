@@ -535,6 +535,7 @@ export const en = {
         subtitle: "Provision new hero",
         usernameLabel: "Username",
         usernamePlaceholder: "adventurer",
+        usernameHint: "Every player sees this name on the leaderboard. Pick a nickname, there is no need to use your real name.",
         emailLabel: "Email (optional)",
         emailPlaceholder: "you@example.com",
         passwordLabel: "Password",

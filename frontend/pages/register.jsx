@@ -129,6 +129,7 @@ export default function Register() {
                   clearError("username");
                 }}
               />
+              <span className="mt-1 block text-xs text-muted">{copy.usernameHint}</span>
               <FieldError k="username" />
             </label>
             <label className="text-sm text-muted">

@@ -105,6 +105,8 @@ function CodeRunnerPanel(
     if (!task?.id) return;
     initialCodeRef.current = task?.data?.starter || "";
     trackerRef.current.reset();
+    // снимок заготовки и счётчики только при смене шага, а не при каждой правке данных задачи
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task?.id]);
 
   const handleResetCode = useCallback(() => {

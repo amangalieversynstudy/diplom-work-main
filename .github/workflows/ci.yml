@@ -122,8 +122,7 @@ jobs:
 
       - name: Lint
         working-directory: frontend
-        run: npm run lint --if-present
-        continue-on-error: true  # пока не падаем на lint warnings
+        run: npm run lint --if-present  # замечаний нет, так что теперь новые валят сборку
 
       - name: Build
         working-directory: frontend
@@ -185,6 +184,22 @@ jobs:
         run: |
           docker compose -f docker-compose.yml config --quiet
           docker compose -f docker-compose.prod.yml config --quiet
+
+  # ──────────────────────────────────────────────────────────────
+  # DOCKER IMAGES: Railway собирает их сам, и ошибка в Dockerfile иначе всплывает только при выкладке
+  # ──────────────────────────────────────────────────────────────
+  docker-images:
+    name: Docker images build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Backend image
+        run: docker build -f Dockerfile.backend -t rpg-backend-ci .
+
+      - name: Frontend image
+        run: docker build --build-arg NEXT_PUBLIC_API_BASE=http://localhost:8000/api -t rpg-frontend-ci frontend
 
   # ──────────────────────────────────────────────────────────────
   # SECURITY: проверка зависимостей на известные уязвимости

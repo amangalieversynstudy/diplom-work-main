@@ -146,6 +146,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
   // закрывает из любого места, а при закрытии фокус возвращается на кнопку меню.
   useEffect(() => {
     if (!isMenuOpen) return undefined;
+    const burger = burgerRef.current; // кнопка на странице остаётся той же, пока открыто меню
     closeRef.current?.focus();
     const onKey = (e) => {
       if (e.key === "Escape") {
@@ -170,7 +171,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
-      burgerRef.current?.focus();
+      burger?.focus();
     };
   }, [isMenuOpen]);
 

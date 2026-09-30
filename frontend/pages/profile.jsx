@@ -31,6 +31,8 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchProfile();
     fetchAchievements();
+    // загрузка один раз при открытии страницы
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchAchievements = async () => {

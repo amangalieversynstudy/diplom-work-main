@@ -103,6 +103,7 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
             value={form.title_ru}
             placeholder={t("studio.editor.missionNameRu")}
             onChange={(e) => setForm({ ...form, title_ru: e.target.value })}
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- поле появляется после нажатия кнопки
             autoFocus
           />
           <input
@@ -324,6 +325,7 @@ function SectionCard({
               onChange={(e) =>
                 setEditForm({ ...editForm, title_ru: e.target.value })
               }
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- поле появляется после нажатия кнопки
               autoFocus
             />
             <input
@@ -419,6 +421,7 @@ function SectionCard({
                   onChange={(e) =>
                     setMissionForm({ ...missionForm, title_ru: e.target.value })
                   }
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- поле появляется после нажатия кнопки
                   autoFocus
                 />
                 <input
@@ -549,6 +552,8 @@ export default function StudioEditorPage() {
     return () => {
       cancelled = true;
     };
+    // смена языка не должна перезагружать редактор и затирать несохранённые правки
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.isReady, router.query.id]);
 
   const reloadMissions = async (locId) => {
@@ -794,6 +799,7 @@ export default function StudioEditorPage() {
                 onChange={(e) =>
                   setSectionForm({ ...sectionForm, title_ru: e.target.value })
                 }
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- поле появляется после нажатия кнопки
                 autoFocus
               />
               <input

@@ -107,7 +107,7 @@ export default function StudioIndexPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -222,6 +222,7 @@ export default function StudioIndexPage() {
                   value={form.title_ru}
                   placeholder={t("studio.form.titlePlaceholder")}
                   onChange={(e) => setForm({ ...form, title_ru: e.target.value })}
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- поле появляется после нажатия кнопки
                   autoFocus
                 />
               </div>

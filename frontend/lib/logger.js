@@ -19,18 +19,14 @@ const isDev =
 
 const noop = () => {};
 
+/* eslint-disable no-console -- единственное место, где консоль разрешена: остальной код зовёт logger */
 const logger = {
   log: isDev ? console.log.bind(console) : noop,
   info: isDev ? console.info.bind(console) : noop,
   warn: isDev ? console.warn.bind(console) : noop,
-  error: isDev
-    ? console.error.bind(console)
-    : (...args) => {
-        // В проде ошибки можно прокинуть в Sentry/аналог:
-        // if (typeof window !== "undefined" && window.Sentry) {
-        //   window.Sentry.captureException(args[args.length - 1]);
-        // }
-      },
+  // В проде ошибки можно прокинуть в Sentry/аналог (window.Sentry.captureException), не меняя места вызова.
+  error: isDev ? console.error.bind(console) : noop,
 };
+/* eslint-enable no-console */
 
 export default logger;

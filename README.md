@@ -286,6 +286,12 @@ After enabling Codecov and adding the token (if needed), add the Codecov badge U
 
 Подробный гайд по деплою (локально и staging), настройке раннера/хоста и авто-заливке демо-данных — в `README.deploy.md`.
 
+Про исследование и пилот:
+
+- `docs/METRICS.md`: показатели (MCR, MAS, отсев), список «кому нужна помощь», модель риска, самостоятельность решений;
+- `docs/PILOT.md`: протокол пилота, информационный лист для студентов, чеклист выкладки;
+- `docs/DEMO.md`: сценарий показа на 15 минут и демонстрационный класс (`seed_demo_cohort`).
+
 Дальнейшие шаги см. TODOs в .github/ or project board
 
 ## Manual testing (локально)

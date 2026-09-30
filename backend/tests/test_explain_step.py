@@ -174,3 +174,52 @@ def test_editing_an_explain_step_in_the_studio_keeps_its_data(world, teacher):
     assert task.title_ru == "Новое название"
     assert task.data["kind"] == "explain" and len(task.data["variants"]) == 2
     assert task.data["correct_answer"] == "{{right}}"
+
+
+# ── explain questions stay out of the research measures ────────────────────
+
+
+def _miss(user, world, times):
+    for wrong in ("1", "4", "3")[:times]:
+        _answer(user, world, wrong)
+
+
+def test_three_wrong_guesses_do_not_put_a_learner_on_the_warning_list(world, teacher):
+    from game.warning import early_warning
+
+    user = _learner(world, "k", variant=0)
+    _miss(user, world, 3)
+    assert early_warning(teacher)["students"] == []
+
+
+def test_no_help_is_offered_or_logged_for_an_explain_question(world):
+    from game.models import LearningEvent
+
+    user = _learner(world, "l", variant=0)
+    for wrong in ("1", "4", "3"):
+        response = _api(user).post(
+            f"/api/mission-tasks/{world['explain'].pk}/submit/", {"answer": wrong}, format="json"
+        ).json()
+        assert response["progress"]["help_offer"] is None
+    assert not LearningEvent.objects.filter(event_type=LearningEvent.HELP_OFFERED).exists()
+
+
+def test_explain_guesses_do_not_enter_the_failure_curve_or_the_overall_mas(world, teacher):
+    user = _learner(world, "m", variant=0)
+    _miss(user, world, 3)
+    _answer(user, world, "2")
+    metrics = compute_metrics(teacher)
+    assert metrics["kpi"]["mean_attempts_to_success"] == 1.0  # only the code step (solved at once) counts
+    assert all(row["pairs"] <= 1 for row in metrics["help_effect"])
+    explain_row = next(row for row in metrics["tasks"] if row["task_id"] == world["explain"].pk)
+    assert explain_row["solved"] == 1 and explain_row["mas"] == 4.0
+
+
+def test_my_journey_does_not_call_explain_guesses_being_stuck(world, teacher):
+    from game.me import my_learning
+
+    user = _learner(world, "n", variant=0)
+    _miss(user, world, 3)
+    picture = my_learning(user)
+    assert picture["stuck"] == [] and picture["status"] != "stuck"
+    assert picture["attempts"]["solved"] == 1  # the code step only

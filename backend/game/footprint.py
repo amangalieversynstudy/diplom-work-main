@@ -108,7 +108,7 @@ def log_help_offer(user, task, progress):
     Later failures do not repeat it.
     """
     failures = 0 if progress["status"] == "completed" else progress["attempts"]
-    if failures == HELP_AFTER_FAILURES:
+    if failures == HELP_AFTER_FAILURES and task.kind != "explain":
         arm = help_arm(user.pk)
         log_event(
             user,

@@ -4,7 +4,7 @@ Two things come out of ``analyse``: the language constructs the code uses (``def
 comprehensions, ``try``...) and a fingerprint of its structure. The fingerprint ignores the names the
 author chose for variables, functions and arguments, comments and docstrings, so two solutions that
 differ only in naming get the same one. Only the fingerprint, the node count and the construct names are
-stored (see ``CodeRun``); the code is not.
+stored in ``CodeRun``; the learner's last attempt stays where it always was, in ``TaskProgress.answer``.
 
 A same-fingerprint pair is a reason for a teacher to look, never proof: for a short exercise there is
 often just one natural solution, which is why ``authorship`` only compares solutions of a minimum size.

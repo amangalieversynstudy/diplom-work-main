@@ -329,6 +329,8 @@ def help_offer(task_progress):
     failures = failures_in_a_row(task_progress)
     if failures < HELP_AFTER_FAILURES:
         return None
+    if task_progress.task.kind == "explain":
+        return None  # there is no hint to offer for a question about one's own solution
     if help_arm(task_progress.user_id) != ARM_OFFER:
         return None
     return {"failures": failures, "threshold": HELP_AFTER_FAILURES}

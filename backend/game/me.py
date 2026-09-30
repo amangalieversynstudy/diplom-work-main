@@ -31,6 +31,15 @@ def _pick(obj, lang):
     return obj.get_localized_title(lang) or obj.title or f"#{obj.pk}"
 
 
+def _is_explain(task):
+    return task.kind == "explain"
+
+
+def _counts(task):
+    """Does this step count for "attempts to success": a quiz or code step, but not an explain question."""
+    return task.task_type in GRADED and not _is_explain(task)
+
+
 def _step_ref(task, lang, attempts=None):
     ref = {
         "task_id": task.pk,
@@ -47,9 +56,18 @@ def _step_ref(task, lang, attempts=None):
 def _cohort_mean_attempts(exclude_user_id):
     """Mean tries-to-success of everyone else, or None when the group is too small
     to show without pointing at individuals."""
-    rows = TaskProgress.objects.filter(
-        status="completed", task__task_type__in=GRADED
-    ).exclude(user_id=exclude_user_id)
+    # guessing among options is not debugging: explain questions stay out (filtered here, not in SQL,
+    # because "key is not equal" on a JSON field also drops the rows that lack the key)
+    explain_ids = [
+        pk
+        for pk, data in MissionTask.objects.filter(task_type="quiz").values_list("pk", "data")
+        if isinstance(data, dict) and data.get("kind") == "explain"
+    ]
+    rows = (
+        TaskProgress.objects.filter(status="completed", task__task_type__in=GRADED)
+        .exclude(task_id__in=explain_ids)
+        .exclude(user_id=exclude_user_id)
+    )
     per_user = {}
     for user_id, attempts in rows.values_list("user_id", "attempts"):
         per_user.setdefault(user_id, []).append(attempts)
@@ -133,12 +151,14 @@ def my_learning(user, *, lang="ru", now=None, owner=None):
         key=lambda pair: -pair[1],
     )[:LIST_LIMIT]
     stuck = [_step_ref(task_by_id[tid], lang, attempts) for tid, attempts in stuck]
+    # the "explain your solution" question does not count as being stuck (and stays out of the averages)
+    stuck = [item for item in stuck if not _is_explain(task_by_id[item["task_id"]])]
     review = sorted(
         (
             (tid, row.attempts)
             for tid, row in progress.items()
             if row.status == "completed"
-            and task_by_id[tid].task_type in GRADED
+            and _counts(task_by_id[tid])
             and row.attempts >= REVIEW_ATTEMPTS
         ),
         key=lambda pair: -pair[1],
@@ -146,7 +166,7 @@ def my_learning(user, *, lang="ru", now=None, owner=None):
     review = [_step_ref(task_by_id[tid], lang, attempts) for tid, attempts in review]
 
     solved_graded = [
-        progress[tid].attempts for tid in solved if task_by_id[tid].task_type in GRADED
+        progress[tid].attempts for tid in solved if _counts(task_by_id[tid])
     ]
     mean_attempts = _mean(solved_graded)
     first_try = (

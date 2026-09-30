@@ -247,7 +247,10 @@ def compute_metrics(viewer, *, track_id=None, inactive_days=DEFAULT_INACTIVE_DAY
         if task is None or task.task_type not in GRADED_TYPES or not attempts.get(pair):
             continue
         is_solved = pair in solved
-        graded_pairs[pair] = (attempts[pair] - 1 if is_solved else attempts[pair], is_solved)
+        # Guessing among four options fails differently from debugging code: explain questions stay
+        # out of the failure curve, the overall MAS and the help effect (their own funnel row has them).
+        if task.kind != "explain":
+            graded_pairs[pair] = (attempts[pair] - 1 if is_solved else attempts[pair], is_solved)
         if is_solved:
             by_task[pair[1]]["tries"].append(attempts[pair])
 

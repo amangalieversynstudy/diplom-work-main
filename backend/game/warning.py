@@ -67,7 +67,8 @@ def assess_students(viewer, *, now=None):
     now = now or timezone.now()
     students = list(_scoped_learners(viewer).select_related("profile"))
     learner_ids = [student.pk for student in students]
-    tasks = {task.pk: task for task in scoped_tasks(viewer)}
+    # three wrong guesses at an "explain" question say little about being stuck: leave them out
+    tasks = {task.pk: task for task in scoped_tasks(viewer) if task.kind != "explain"}
 
     open_missions = set(
         Progress.objects.filter(user_id__in=learner_ids, completed=False)

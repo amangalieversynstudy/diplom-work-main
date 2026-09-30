@@ -508,7 +508,7 @@ class CodeRun(models.Model):
         blank=True,
         db_index=True,
         help_text="Hash of the code's structure with the author's own names, comments and "
-        "docstrings left out (game/codeanalysis.py). The code itself is not stored.",
+        "docstrings left out (game/codeanalysis.py). The code itself is not kept in this table.",
     )
     ast_nodes = models.PositiveIntegerField(default=0, help_text="Size of the parsed code, 0 if it did not parse.")
     constructs = models.JSONField(

@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
             field=models.CharField(
                 blank=True,
                 db_index=True,
-                help_text="Hash of the code's structure with the author's own names, comments and docstrings left out (game/codeanalysis.py). The code itself is not stored.",
+                help_text="Hash of the code's structure with the author's own names, comments and docstrings left out (game/codeanalysis.py). The code itself is not kept in this table.",
                 max_length=32,
             ),
         ),

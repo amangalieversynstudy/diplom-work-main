@@ -311,3 +311,28 @@ def test_identical_solutions_of_different_variants_are_reported(student, step, t
     _friend_with_variant(step, student, "other")
     solve(student, step, typed(), code=OWN)
     assert any(s["code"] == "same_as_others" for s in authorship_report(student, teacher)["steps"][0]["signals"])
+
+
+# ── where to look first ────────────────────────────────────────────────────
+
+
+def test_the_overview_lists_only_learners_with_signs_most_first(student, step, teacher):
+    from game.authorship import authorship_overview
+
+    solve(student, step, pasted())  # a pasted solution
+    calm = User.objects.create_user("calm", "calm@example.com", "S3cure-pass-1")
+    Progress.objects.create(user=calm, mission=step.mission, status="in_progress")
+    solve(calm, step, typed(chars=13), code="print('ok')\n")
+    rows = authorship_overview(teacher)
+    assert [(r["username"], r["flagged"], r["solved"]) for r in rows] == [("student", 1, 1)]
+
+
+def test_the_overview_endpoint_is_for_teachers_and_scoped(student, step, teacher):
+    solve(student, step, pasted())
+    response = _api(teacher).get("/api/teacher/authorship/")
+    assert response.status_code == 200
+    assert [r["username"] for r in response.json()["students"]] == ["student"]
+    stranger = User.objects.create_user("t3", "t3@example.com", "S3cure-pass-1", is_staff=True)
+    assert _api(stranger).get("/api/teacher/authorship/").json() == {"students": []}
+    assert _api(student).get("/api/teacher/authorship/").status_code == 403
+    assert APIClient().get("/api/teacher/authorship/").status_code in (401, 403)

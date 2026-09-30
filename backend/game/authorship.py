@@ -122,11 +122,21 @@ def _title(obj, lang):
     return obj.get_localized_title(lang) or f"#{obj.pk}"
 
 
-def authorship_report(student, viewer, *, lang="ru"):
+def _context(viewer):
+    """What does not depend on the learner: the viewer's code steps and their explain questions."""
+    tasks = {task.pk: task for task in scoped_tasks(viewer).filter(task_type="code")}
+    explain_of = {}
+    for candidate in scoped_tasks(viewer).filter(task_type="quiz"):
+        about = (candidate.data or {}).get("about") if candidate.kind == "explain" else None
+        if isinstance(about, int) and about in tasks:
+            explain_of[about] = candidate
+    return {"tasks": tasks, "explain_of": explain_of}
+
+
+def authorship_report(student, viewer, *, lang="ru", context=None):
     """Per solved code step of *student* inside *viewer*'s courses: assistance and signals."""
-    tasks = {
-        task.pk: task for task in scoped_tasks(viewer).filter(task_type="code")
-    }
+    context = context or _context(viewer)
+    tasks = context["tasks"]
     solving = {}
     runs = (
         CodeRun.objects.filter(
@@ -166,11 +176,7 @@ def authorship_report(student, viewer, *, lang="ru"):
                     twins[other.task_id].append(other.user.username)
 
     # the "explain your solution" question that follows a code step, and how the learner did on it
-    explain_of = {}
-    for candidate in scoped_tasks(viewer).filter(task_type="quiz"):
-        about = (candidate.data or {}).get("about") if candidate.kind == "explain" else None
-        if isinstance(about, int) and about in solving:
-            explain_of[about] = candidate
+    explain_of = {about: task for about, task in context["explain_of"].items() if about in solving}
     explain_progress = {
         row.task_id: row
         for row in TaskProgress.objects.filter(user=student, task_id__in=[t.pk for t in explain_of.values()])
@@ -229,3 +235,26 @@ def authorship_report(student, viewer, *, lang="ru"):
         "flagged": sum(1 for s in steps if any(sig["code"] != "no_editor_data" for sig in s["signals"])),
     }
     return {"summary": summary, "steps": steps}
+
+
+def authorship_overview(viewer, *, limit=8):
+    """Learners of *viewer* with signs worth a conversation, most first.
+
+    [{"id", "username", "flagged", "solved"}]: only learners with at least one solved code step that
+    carries a sign other than "no editor data". It says where to look first, nothing more.
+    """
+    context = _context(viewer)
+    rows = []
+    for student in scoped_learners(viewer):
+        summary = authorship_report(student, viewer, context=context)["summary"]
+        if summary["flagged"]:
+            rows.append(
+                {
+                    "id": student.pk,
+                    "username": student.username,
+                    "flagged": summary["flagged"],
+                    "solved": summary["solved"],
+                }
+            )
+    rows.sort(key=lambda row: (-row["flagged"], -row["solved"], row["username"]))
+    return rows[:limit]

@@ -9,7 +9,7 @@ from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .authorship import authorship_report
+from .authorship import authorship_overview, authorship_report
 from .me import my_learning
 from .metrics import CSV_COLUMNS, clamp_inactive_days, compute_metrics
 from .serializers import _resolve_language
@@ -107,6 +107,25 @@ class TeacherStudentAuthorshipView(APIView):
     def get(self, request, pk):
         student = get_object_or_404(scoped_learners(request.user), pk=pk)
         return Response(authorship_report(student, request.user, lang=_resolve_language(request)))
+
+
+class TeacherAuthorshipOverviewView(APIView):
+    """Learners of the teacher's courses whose solutions are worth a conversation, most first.
+
+    GET /api/teacher/authorship/ -> {"students": [{id, username, flagged, solved}]}
+    """
+
+    permission_classes = [permissions.IsAdminUser]
+
+    @swagger_auto_schema(
+        operation_summary="Whose solutions to look at first (teacher)",
+        operation_description=(
+            "Ученики преподавателя, у которых есть кодовые шаги с признаками внешней помощи. "
+            "Это подсказка, с кого начать разговор, а не вывод о списывании."
+        ),
+    )
+    def get(self, request):
+        return Response({"students": authorship_overview(request.user)})
 
 
 class LearningMetricsView(APIView):

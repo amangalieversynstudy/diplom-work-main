@@ -309,6 +309,8 @@ export const Teacher = {
   students: () => api.get("/teacher/students/").then((r) => r.data),
   // Один ученик глазами преподавателя (только по его курсам).
   studentLearning: (id) => api.get(`/teacher/students/${id}/learning/`).then((r) => r.data),
+  // С кого начать разговор о решениях: ученики с признаками внешней помощи (подсказка, не вывод).
+  authorshipOverview: () => api.get("/teacher/authorship/").then((r) => r.data),
   // Как решены его кодовые шаги: помощь платформы и признаки по данным редактора.
   studentAuthorship: (id) => api.get(`/teacher/students/${id}/authorship/`).then((r) => r.data),
 };

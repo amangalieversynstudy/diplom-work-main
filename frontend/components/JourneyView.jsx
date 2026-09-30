@@ -333,6 +333,9 @@ export default function JourneyView({ data, mode = "student", backHref }) {
           </ul>
         </section>
       </Reveal>
+
+      {/* ученик знает, что видит преподаватель: это часть честных правил пилота */}
+      {!teacher && <p className="px-1 pb-2 text-xs leading-relaxed text-muted">{t("journey.privacyNote")}</p>}
     </div>
   );
 }

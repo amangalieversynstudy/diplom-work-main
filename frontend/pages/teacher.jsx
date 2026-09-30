@@ -18,6 +18,7 @@ import {
   LifeBuoy,
   Lock,
   Moon,
+  ShieldCheck,
   Users,
 } from "lucide-react";
 
@@ -171,12 +172,54 @@ function EarlyWarningPanel({ warning, t }) {
   );
 }
 
+// С кого начать разговор о решениях. Признаки приходят из браузера и могут быть неполными, поэтому
+// здесь только «где посмотреть», а подробности и оговорки на странице ученика.
+function AuthorshipWatchPanel({ overview, t }) {
+  const students = overview?.students;
+  if (!students) return null; // не загрузилось: кабинет остаётся как есть
+  return (
+    <section
+      aria-labelledby="authorship-watch-title"
+      className="bg-surface border border-border rounded-3xl p-4 sm:p-6 shadow-sm mb-6"
+    >
+      <h2 id="authorship-watch-title" className="text-lg font-bold text-text mb-1 flex items-center gap-2">
+        <ShieldCheck size={18} className="text-primary" aria-hidden="true" />
+        {t("teacher.authorshipWatch.title")}
+      </h2>
+      <p className="text-xs text-muted mb-4">{t("teacher.authorshipWatch.subtitle")}</p>
+      {students.length === 0 ? (
+        <p className="text-sm text-muted">{t("teacher.authorshipWatch.empty")}</p>
+      ) : (
+        <ul className="space-y-2">
+          {students.map((s) => (
+            <li
+              key={s.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-panel px-4 py-2"
+            >
+              <Link
+                href={`/teacher/student/${s.id}`}
+                className="block py-1.5 -my-1.5 text-sm font-semibold text-text underline-offset-4 hover:text-primary hover:underline"
+              >
+                {s.username}
+              </Link>
+              <span className="text-xs text-muted">
+                {fill(t("teacher.authorshipWatch.row"), { flagged: s.flagged, solved: s.solved })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export default function TeacherPage() {
   const router = useRouter();
   const { t } = useI18n();
   const [allowed, setAllowed] = useState(null); // null = проверяем, false = не staff
   const [data, setData] = useState(null);
   const [warning, setWarning] = useState(null);
+  const [authorship, setAuthorship] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -201,6 +244,11 @@ export default function TeacherPage() {
           setData(res);
           setWarning(warned);
         }
+        TeacherAPI.authorshipOverview()
+          .then((overview) => {
+            if (!cancelled) setAuthorship(overview);
+          })
+          .catch((error) => logger.error("Authorship overview load failed:", error));
       } catch (error) {
         // 401 перехватит axios-интерсептор (редирект на /login).
         if (error?.response?.status === 403) {
@@ -311,6 +359,7 @@ export default function TeacherPage() {
         </div>
 
         <EarlyWarningPanel warning={warning} t={t} />
+        <AuthorshipWatchPanel overview={authorship} t={t} />
 
         {/* ── Таблица учеников ── */}
         <div className="bg-surface border border-border rounded-3xl p-4 sm:p-6 shadow-sm">

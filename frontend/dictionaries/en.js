@@ -247,6 +247,12 @@ export const en = {
       daysAgo: "{n} days ago",
       never: "never active",
     },
+    authorshipWatch: {
+      title: "Whom to talk to about solutions",
+      subtitle: "These learners have code steps with signs of outside help: pasted code, constructs not taught yet, the same structure as others, wrong answers to the 'explain' question. It is a reason to ask about the solution, not a verdict; details are on the learner's page.",
+      empty: "No signs of outside help yet.",
+      row: "steps with signs: {flagged} of {solved}",
+    },
     empty: "No learners yet. Learners show up here once they open a step of your course. You can create your own course in the Studio; an administrator assigns the built-in courses to a teacher.",
     loadError: "Couldn't load the learner list.",
   },
@@ -852,6 +858,8 @@ export const en = {
       activitySummary: "Code runs: {runs}, steps solved: {solved}.",
       activityLegend: "A bar is the code runs of that day. A check above it means at least one step was solved that day.",
       missionsTitle: "Missions",
+      privacyNote:
+        "Your teacher sees what you see here, plus how the tasks were solved: alone, with a hint or with the Sage, and how much code was typed and how much pasted (numbers only, not the text). It is there to help in time, not to grade you.",
     },
     leaderboard: {
       eyebrow: "Hall of legends",
@@ -934,9 +942,6 @@ export const en = {
       },
     },
     worldsPage: {
-      toasts: {
-        locationFail: "Failed to load location data.",
-      },
       missionFallback: "Mission",
       chapterFallback: "Chapter",
       heroFallback: "Unknown hero",
@@ -950,9 +955,6 @@ export const en = {
       statusLocked: "Locked",
       loading: "Loading scouting intel…",
       empty: "No worlds discovered for this track yet.",
-      loadingLocation: "Loading world map...",
-      locationBadge: "Location",
-      backToWorlds: "Back to worlds list",
       mobile: {
         progress: "{done} of {total} completed",
         progressLabel: "Mission progress",

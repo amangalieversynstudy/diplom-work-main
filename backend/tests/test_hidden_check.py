@@ -22,6 +22,7 @@ from rest_framework.test import APIClient
 from game.footprint import finish_code_run
 from game.models import CodeRun, Location, Mission, MissionTask, TaskProgress, Track
 from game.services import grade_code_run, public_task_data, run_hidden_check
+from game.variants import personalize
 
 User = get_user_model()
 
@@ -266,7 +267,9 @@ def _course_tasks():
     for fixture in FIXTURES:
         for row in json.loads(fixture.read_text(encoding="utf-8")):
             if row["model"] == "game.missiontask" and row["pk"] in SOLUTIONS:
-                tasks[row["pk"]] = row["fields"]["data"]
+                # a step with personal variants is checked on its first variant (see test_course_variants)
+                task = MissionTask(pk=row["pk"], data=row["fields"]["data"])
+                tasks[row["pk"]] = personalize(task, None).data
     return tasks
 
 

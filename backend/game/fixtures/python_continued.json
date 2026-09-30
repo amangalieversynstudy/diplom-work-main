@@ -119,16 +119,54 @@
       "task_type": "code",
       "title_en": "Hero Initials",
       "title_ru": "Инициалы героя",
-      "body_en": "<p>Write a function <code>initials(full_name)</code> that returns the first letters of all words in capitals, each followed by a dot. Extra spaces must not matter.</p><p><code>print(initials(\"ada lovelace\"))</code> should print <code>A.L.</code></p>",
-      "body_ru": "<p>Напиши функцию <code>initials(full_name)</code>: она возвращает первые буквы всех слов заглавными, каждую с точкой. Лишние пробелы не должны мешать.</p><p><code>print(initials(\"ada lovelace\"))</code> должен вывести <code>A.L.</code></p>",
+      "body_en": "<p>Write a function <code>initials(full_name)</code> that returns the first letters of all words in capitals, each followed by a dot. Extra spaces must not matter.</p><p><code>print(initials(\"{{name}}\"))</code> should print <code>{{result}}</code></p>",
+      "body_ru": "<p>Напиши функцию <code>initials(full_name)</code>: она возвращает первые буквы всех слов заглавными, каждую с точкой. Лишние пробелы не должны мешать.</p><p><code>print(initials(\"{{name}}\"))</code> должен вывести <code>{{result}}</code></p>",
       "xp_reward": 20,
       "is_required": true,
       "data": {
         "language": "python",
         "not_yet": ["lambda", "comprehension", "try", "import", "class"],
-        "starter": "def initials(full_name):\n    # Верни первые буквы всех слов заглавными, каждую с точкой\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(initials(\"ada lovelace\"))\n",
+        "variants": [
+          {
+            "vars": {
+              "name": "ada lovelace",
+              "result": "A.L."
+            }
+          },
+          {
+            "vars": {
+              "name": "grace brewster hopper",
+              "result": "G.B.H."
+            }
+          },
+          {
+            "vars": {
+              "name": "alan turing",
+              "result": "A.T."
+            }
+          },
+          {
+            "vars": {
+              "name": "linus torvalds",
+              "result": "L.T."
+            }
+          },
+          {
+            "vars": {
+              "name": "mary jane watson",
+              "result": "M.J.W."
+            }
+          },
+          {
+            "vars": {
+              "name": "tim berners lee",
+              "result": "T.B.L."
+            }
+          }
+        ],
+        "starter": "def initials(full_name):\n    # Верни первые буквы всех слов заглавными, каждую с точкой\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(initials(\"{{name}}\"))\n",
         "sampleOutput": "A.L.",
-        "expected_output": "A.L.",
+        "expected_output": "{{result}}",
         "hidden_check": "assert initials(\"john ronald reuel tolkien\") == \"J.R.R.T.\"\nassert initials(\"Bo\") == \"B.\"\nassert initials(\"  ada   lovelace \") == \"A.L.\"",
         "hints": [
           {
@@ -141,8 +179,8 @@
           }
         ],
         "skeleton": {
-          "ru": "def initials(full_name):\n    # 1. разбей full_name на слова (split)\n    # 2. для каждого слова: первая буква, заглавная, плюс точка\n    # 3. склей результаты и верни\n    pass\n\nprint(initials(\"ada lovelace\"))\n",
-          "en": "def initials(full_name):\n    # 1. split full_name into words\n    # 2. for each word: first letter, capital, plus a dot\n    # 3. join the results and return\n    pass\n\nprint(initials(\"ada lovelace\"))\n"
+          "ru": "def initials(full_name):\n    # 1. разбей full_name на слова (split)\n    # 2. для каждого слова: первая буква, заглавная, плюс точка\n    # 3. склей результаты и верни\n    pass\n\nprint(initials(\"{{name}}\"))\n",
+          "en": "def initials(full_name):\n    # 1. split full_name into words\n    # 2. for each word: first letter, capital, plus a dot\n    # 3. join the results and return\n    pass\n\nprint(initials(\"{{name}}\"))\n"
         }
       }
     }
@@ -232,16 +270,54 @@
       "task_type": "code",
       "title_en": "How Many Different Creatures",
       "title_ru": "Сколько разных существ",
-      "body_en": "<p>Write a function <code>unique_count(items)</code> that returns how many different values a sequence holds.</p><p><code>print(unique_count([\"orc\", \"elf\", \"orc\", \"dwarf\", \"elf\"]))</code> should print <code>3</code>.</p>",
-      "body_ru": "<p>Напиши функцию <code>unique_count(items)</code>, которая возвращает, сколько разных значений в последовательности.</p><p><code>print(unique_count([\"orc\", \"elf\", \"orc\", \"dwarf\", \"elf\"]))</code> должен вывести <code>3</code>.</p>",
+      "body_en": "<p>Write a function <code>unique_count(items)</code> that returns how many different values a sequence holds.</p><p><code>print(unique_count({{items}}))</code> should print <code>{{result}}</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>unique_count(items)</code>, которая возвращает, сколько разных значений в последовательности.</p><p><code>print(unique_count({{items}}))</code> должен вывести <code>{{result}}</code>.</p>",
       "xp_reward": 20,
       "is_required": true,
       "data": {
         "language": "python",
         "not_yet": ["lambda", "comprehension", "try", "import", "class"],
-        "starter": "def unique_count(items):\n    # Верни число разных значений\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(unique_count([\"orc\", \"elf\", \"orc\", \"dwarf\", \"elf\"]))\n",
+        "variants": [
+          {
+            "vars": {
+              "items": "[\"orc\", \"elf\", \"orc\", \"dwarf\", \"elf\"]",
+              "result": 3
+            }
+          },
+          {
+            "vars": {
+              "items": "[\"cat\", \"dog\", \"cat\", \"cat\"]",
+              "result": 2
+            }
+          },
+          {
+            "vars": {
+              "items": "[\"a\", \"b\", \"c\", \"d\"]",
+              "result": 4
+            }
+          },
+          {
+            "vars": {
+              "items": "[\"x\", \"x\", \"x\", \"x\", \"y\", \"y\"]",
+              "result": 2
+            }
+          },
+          {
+            "vars": {
+              "items": "[\"wolf\", \"fox\", \"wolf\", \"bear\", \"fox\", \"owl\"]",
+              "result": 4
+            }
+          },
+          {
+            "vars": {
+              "items": "[\"z\", \"z\"]",
+              "result": 1
+            }
+          }
+        ],
+        "starter": "def unique_count(items):\n    # Верни число разных значений\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(unique_count({{items}}))\n",
         "sampleOutput": "3",
-        "expected_output": "3",
+        "expected_output": "{{result}}",
         "hidden_check": "assert unique_count([]) == 0\nassert unique_count([1, 1, 1]) == 1\nassert unique_count(\"aabbc\") == 3\nassert unique_count([(1, 2), (1, 2), (2, 1)]) == 2",
         "hints": [
           {
@@ -254,8 +330,8 @@
           }
         ],
         "skeleton": {
-          "ru": "def unique_count(items):\n    # 1. преврати items в множество\n    # 2. верни, сколько в нём элементов\n    pass\n\nprint(unique_count([\"orc\", \"elf\", \"orc\", \"dwarf\", \"elf\"]))\n",
-          "en": "def unique_count(items):\n    # 1. turn items into a set\n    # 2. return how many elements it has\n    pass\n\nprint(unique_count([\"orc\", \"elf\", \"orc\", \"dwarf\", \"elf\"]))\n"
+          "ru": "def unique_count(items):\n    # 1. преврати items в множество\n    # 2. верни, сколько в нём элементов\n    pass\n\nprint(unique_count({{items}}))\n",
+          "en": "def unique_count(items):\n    # 1. turn items into a set\n    # 2. return how many elements it has\n    pass\n\nprint(unique_count({{items}}))\n"
         }
       }
     }
@@ -458,16 +534,54 @@
       "task_type": "code",
       "title_en": "Squares of Evens",
       "title_ru": "Квадраты чётных",
-      "body_en": "<p>Write a function <code>squares_of_evens(numbers)</code> that returns the squares of the even numbers in the same order.</p><p><code>print(squares_of_evens([1, 2, 3, 4, 5, 6]))</code> should print <code>[4, 16, 36]</code>.</p>",
-      "body_ru": "<p>Напиши функцию <code>squares_of_evens(numbers)</code>: она возвращает список квадратов чётных чисел в том же порядке.</p><p><code>print(squares_of_evens([1, 2, 3, 4, 5, 6]))</code> должен вывести <code>[4, 16, 36]</code>.</p>",
+      "body_en": "<p>Write a function <code>squares_of_evens(numbers)</code> that returns the squares of the even numbers in the same order.</p><p><code>print(squares_of_evens({{numbers}}))</code> should print <code>{{result}}</code>.</p>",
+      "body_ru": "<p>Напиши функцию <code>squares_of_evens(numbers)</code>: она возвращает список квадратов чётных чисел в том же порядке.</p><p><code>print(squares_of_evens({{numbers}}))</code> должен вывести <code>{{result}}</code>.</p>",
       "xp_reward": 20,
       "is_required": true,
       "data": {
         "language": "python",
         "not_yet": ["import", "class"],
-        "starter": "def squares_of_evens(numbers):\n    # Верни квадраты чётных чисел, порядок сохрани\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(squares_of_evens([1, 2, 3, 4, 5, 6]))\n",
+        "variants": [
+          {
+            "vars": {
+              "numbers": "[1, 2, 3, 4, 5, 6]",
+              "result": "[4, 16, 36]"
+            }
+          },
+          {
+            "vars": {
+              "numbers": "[2, 7, 8, 9]",
+              "result": "[4, 64]"
+            }
+          },
+          {
+            "vars": {
+              "numbers": "[10, 3, 5, 12]",
+              "result": "[100, 144]"
+            }
+          },
+          {
+            "vars": {
+              "numbers": "[1, 3, 5]",
+              "result": "[]"
+            }
+          },
+          {
+            "vars": {
+              "numbers": "[6, 6, 1]",
+              "result": "[36, 36]"
+            }
+          },
+          {
+            "vars": {
+              "numbers": "[4, 8, 15, 16]",
+              "result": "[16, 64, 256]"
+            }
+          }
+        ],
+        "starter": "def squares_of_evens(numbers):\n    # Верни квадраты чётных чисел, порядок сохрани\n    raise NotImplementedError(\"Допиши функцию\")\n\nprint(squares_of_evens({{numbers}}))\n",
         "sampleOutput": "[4, 16, 36]",
-        "expected_output": "[4, 16, 36]",
+        "expected_output": "{{result}}",
         "hidden_check": "assert squares_of_evens([]) == []\nassert squares_of_evens([1, 3]) == []\nassert squares_of_evens([2, 10]) == [4, 100]\nassert squares_of_evens([4, 2]) == [16, 4]\nassert squares_of_evens([-2]) == [4]",
         "hints": [
           {
@@ -480,8 +594,8 @@
           }
         ],
         "skeleton": {
-          "ru": "def squares_of_evens(numbers):\n    # 1. пройди по числам\n    # 2. оставь только чётные (n % 2 == 0)\n    # 3. для каждого верни квадрат\n    pass\n\nprint(squares_of_evens([1, 2, 3, 4, 5, 6]))\n",
-          "en": "def squares_of_evens(numbers):\n    # 1. go through the numbers\n    # 2. keep only the even ones (n % 2 == 0)\n    # 3. return the square of each\n    pass\n\nprint(squares_of_evens([1, 2, 3, 4, 5, 6]))\n"
+          "ru": "def squares_of_evens(numbers):\n    # 1. пройди по числам\n    # 2. оставь только чётные (n % 2 == 0)\n    # 3. для каждого верни квадрат\n    pass\n\nprint(squares_of_evens({{numbers}}))\n",
+          "en": "def squares_of_evens(numbers):\n    # 1. go through the numbers\n    # 2. keep only the even ones (n % 2 == 0)\n    # 3. return the square of each\n    pass\n\nprint(squares_of_evens({{numbers}}))\n"
         }
       }
     }

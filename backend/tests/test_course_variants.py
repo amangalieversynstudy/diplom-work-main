@@ -32,11 +32,19 @@ REFERENCE = {
 }
 
 
-def _steps():
+def _all_steps():
     for name in ("intro_course.json", "python_continued.json"):
         for obj in json.loads((FIXTURES / name).read_text(encoding="utf-8")):
             if obj["model"] == "game.missiontask" and variants_of(obj["fields"].get("data", {})):
                 yield obj
+
+
+def _steps():
+    return (obj for obj in _all_steps() if obj["fields"]["task_type"] == "code")
+
+
+def _explain_steps():
+    return (obj for obj in _all_steps() if obj["fields"]["data"].get("kind") == "explain")
 
 
 def _cases():
@@ -96,3 +104,63 @@ def test_the_reference_solution_matches_the_variant_key(obj, index):
     check = mine.data.get("hidden_check")
     if check:
         exec(check, namespace)
+
+
+# ── "explain your solution": a question about the learner's own program ────
+
+def _answer(about, vars_):
+    """The right answer to the explain question of code step *about*, worked out from the task's spec."""
+    import ast
+
+    if about == 22:
+        mana = vars_["probe"]
+        return "Overcharged" if mana > 100 else "Charged" if mana >= 50 else "Low"
+    if about == 32:
+        return vars_["n"]
+    if about == 42:
+        return vars_["base"] ** 2
+    if about == 52:
+        return len(vars_["name"]) + 1
+    if about == 62:
+        return sum(1 for n in ast.literal_eval(vars_["numbers"]) if n > vars_["t"])
+    if about == 72:
+        return len(ast.literal_eval(vars_["heroes"]))
+    if about == 92:
+        return len(vars_["name"].split())
+    if about == 102:
+        return len(set(ast.literal_eval(vars_["items"])))
+    if about == 122:
+        return sum(1 for n in ast.literal_eval(vars_["numbers"]) if n % 2 == 0)
+    raise AssertionError(about)
+
+
+def _explain_cases():
+    for obj in _explain_steps():
+        for index in range(len(obj["fields"]["data"]["variants"])):
+            yield pytest.param(obj, index, id=f"task{obj['pk']}-variant{index}")
+
+
+def test_every_personalised_code_step_has_an_explain_question():
+    code = {obj["pk"]: obj for obj in _steps()}
+    explain = {obj["fields"]["data"]["about"]: obj for obj in _explain_steps()}
+    assert sorted(explain) == sorted(code)
+    for about, obj in explain.items():
+        fields = obj["fields"]
+        assert fields["mission"] == code[about]["fields"]["mission"]
+        assert fields["order"] > code[about]["fields"]["order"]
+        assert fields["task_type"] == "quiz" and fields["is_required"] is True
+
+
+@pytest.mark.parametrize("obj, index", list(_explain_cases()))
+def test_the_explain_key_is_the_right_answer_and_the_options_are_fair(obj, index):
+    data = obj["fields"]["data"]
+    task = _task(obj)
+    count = len(data["variants"])
+    uid = next(u for u in range(1, 5000) if variant_index(u, task.pk, count) == index)
+    mine = personalize(task, uid)
+    assert "{{" not in mine.body_ru and "{{" not in mine.body_en
+    values = [option["value"] for option in mine.data["options"]]
+    assert len(values) == 4 and len(set(values)) == 4
+    assert mine.data["correct_answer"] in values
+    assert mine.data["correct_answer"] == str(_answer(data["about"], data["variants"][index]["vars"]))
+    assert all(option["value"] == option["label"] for option in mine.data["options"])

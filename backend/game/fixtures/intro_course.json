@@ -308,6 +308,106 @@
 
   {
     "model": "game.missiontask",
+    "pk": 23,
+    "fields": {
+      "mission": 2,
+      "order": 4,
+      "task_type": "quiz",
+      "title_en": "Explain your solution",
+      "title_ru": "Объясни своё решение",
+      "body_en": "<p>What will your function return for <code>mana_status({{probe}})</code>?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
+      "body_ru": "<p>Что вернёт твоя функция при вызове <code>mana_status({{probe}})</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "data": {
+        "kind": "explain",
+        "about": 22,
+        "correct_answer": "{{right}}",
+        "options": [
+          {
+            "value": "{{o1}}",
+            "label": "{{o1}}"
+          },
+          {
+            "value": "{{o2}}",
+            "label": "{{o2}}"
+          },
+          {
+            "value": "{{o3}}",
+            "label": "{{o3}}"
+          },
+          {
+            "value": "{{o4}}",
+            "label": "{{o4}}"
+          }
+        ],
+        "variants": [
+          {
+            "vars": {
+              "probe": 50,
+              "o1": "Low",
+              "o2": "Charged",
+              "o3": "Overcharged",
+              "o4": "Error",
+              "right": "Charged"
+            }
+          },
+          {
+            "vars": {
+              "probe": 100,
+              "o1": "Low",
+              "o2": "Charged",
+              "o3": "Overcharged",
+              "o4": "Error",
+              "right": "Charged"
+            }
+          },
+          {
+            "vars": {
+              "probe": 101,
+              "o1": "Low",
+              "o2": "Charged",
+              "o3": "Overcharged",
+              "o4": "Error",
+              "right": "Overcharged"
+            }
+          },
+          {
+            "vars": {
+              "probe": 49,
+              "o1": "Low",
+              "o2": "Charged",
+              "o3": "Overcharged",
+              "o4": "Error",
+              "right": "Low"
+            }
+          },
+          {
+            "vars": {
+              "probe": 0,
+              "o1": "Low",
+              "o2": "Charged",
+              "o3": "Overcharged",
+              "o4": "Error",
+              "right": "Low"
+            }
+          },
+          {
+            "vars": {
+              "probe": 150,
+              "o1": "Low",
+              "o2": "Charged",
+              "o3": "Overcharged",
+              "o4": "Error",
+              "right": "Overcharged"
+            }
+          }
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
+    "model": "game.missiontask",
     "pk": 30,
     "fields": {
       "mission": 3,
@@ -422,6 +522,106 @@
     }
   },
 
+  {
+    "model": "game.missiontask",
+    "pk": 33,
+    "fields": {
+      "mission": 3,
+      "order": 4,
+      "task_type": "quiz",
+      "title_en": "Explain your solution",
+      "title_ru": "Объясни своё решение",
+      "body_en": "<p>How many times does the body of <code>for i in range(1, {{n}} + 1)</code> run?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
+      "body_ru": "<p>Сколько раз выполнится тело цикла <code>for i in range(1, {{n}} + 1)</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "data": {
+        "kind": "explain",
+        "about": 32,
+        "correct_answer": "{{right}}",
+        "options": [
+          {
+            "value": "{{o1}}",
+            "label": "{{o1}}"
+          },
+          {
+            "value": "{{o2}}",
+            "label": "{{o2}}"
+          },
+          {
+            "value": "{{o3}}",
+            "label": "{{o3}}"
+          },
+          {
+            "value": "{{o4}}",
+            "label": "{{o4}}"
+          }
+        ],
+        "variants": [
+          {
+            "vars": {
+              "n": 5,
+              "o1": "5",
+              "o2": "4",
+              "o3": "6",
+              "o4": "7",
+              "right": "5"
+            }
+          },
+          {
+            "vars": {
+              "n": 7,
+              "o1": "9",
+              "o2": "7",
+              "o3": "6",
+              "o4": "8",
+              "right": "7"
+            }
+          },
+          {
+            "vars": {
+              "n": 9,
+              "o1": "10",
+              "o2": "11",
+              "o3": "9",
+              "o4": "8",
+              "right": "9"
+            }
+          },
+          {
+            "vars": {
+              "n": 10,
+              "o1": "9",
+              "o2": "11",
+              "o3": "12",
+              "o4": "10",
+              "right": "10"
+            }
+          },
+          {
+            "vars": {
+              "n": 12,
+              "o1": "12",
+              "o2": "11",
+              "o3": "13",
+              "o4": "14",
+              "right": "12"
+            }
+          },
+          {
+            "vars": {
+              "n": 4,
+              "o1": "6",
+              "o2": "4",
+              "o3": "3",
+              "o4": "5",
+              "right": "4"
+            }
+          }
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
   {
     "model": "game.missiontask",
     "pk": 40,
@@ -544,6 +744,106 @@
     }
   },
 
+  {
+    "model": "game.missiontask",
+    "pk": 43,
+    "fields": {
+      "mission": 4,
+      "order": 4,
+      "task_type": "quiz",
+      "title_en": "Explain your solution",
+      "title_ru": "Объясни своё решение",
+      "body_en": "<p>What is <code>result</code> in your function after two turns of the loop for <code>power({{base}}, 5)</code>?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
+      "body_ru": "<p>Чему равно <code>result</code> в твоей функции после двух оборотов цикла при вызове <code>power({{base}}, 5)</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "data": {
+        "kind": "explain",
+        "about": 42,
+        "correct_answer": "{{right}}",
+        "options": [
+          {
+            "value": "{{o1}}",
+            "label": "{{o1}}"
+          },
+          {
+            "value": "{{o2}}",
+            "label": "{{o2}}"
+          },
+          {
+            "value": "{{o3}}",
+            "label": "{{o3}}"
+          },
+          {
+            "value": "{{o4}}",
+            "label": "{{o4}}"
+          }
+        ],
+        "variants": [
+          {
+            "vars": {
+              "base": 3,
+              "o1": "9",
+              "o2": "3",
+              "o3": "12",
+              "o4": "27",
+              "right": "9"
+            }
+          },
+          {
+            "vars": {
+              "base": 4,
+              "o1": "64",
+              "o2": "16",
+              "o3": "4",
+              "o4": "20",
+              "right": "16"
+            }
+          },
+          {
+            "vars": {
+              "base": 5,
+              "o1": "30",
+              "o2": "125",
+              "o3": "25",
+              "o4": "5",
+              "right": "25"
+            }
+          },
+          {
+            "vars": {
+              "base": 6,
+              "o1": "6",
+              "o2": "42",
+              "o3": "216",
+              "o4": "36",
+              "right": "36"
+            }
+          },
+          {
+            "vars": {
+              "base": 7,
+              "o1": "49",
+              "o2": "7",
+              "o3": "56",
+              "o4": "343",
+              "right": "49"
+            }
+          },
+          {
+            "vars": {
+              "base": 2,
+              "o1": "8",
+              "o2": "4",
+              "o3": "2",
+              "o4": "6",
+              "right": "4"
+            }
+          }
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
   {
     "model": "game.mission",
     "pk": 5,
@@ -683,6 +983,106 @@
   },
 
   {
+    "model": "game.missiontask",
+    "pk": 53,
+    "fields": {
+      "mission": 5,
+      "order": 4,
+      "task_type": "quiz",
+      "title_en": "Explain your solution",
+      "title_ru": "Объясни своё решение",
+      "body_en": "<p>How many characters are in the string <code>battle_cry(\"{{name}}\")</code> returns?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
+      "body_ru": "<p>Сколько символов в строке, которую вернёт <code>battle_cry(\"{{name}}\")</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "data": {
+        "kind": "explain",
+        "about": 52,
+        "correct_answer": "{{right}}",
+        "options": [
+          {
+            "value": "{{o1}}",
+            "label": "{{o1}}"
+          },
+          {
+            "value": "{{o2}}",
+            "label": "{{o2}}"
+          },
+          {
+            "value": "{{o3}}",
+            "label": "{{o3}}"
+          },
+          {
+            "value": "{{o4}}",
+            "label": "{{o4}}"
+          }
+        ],
+        "variants": [
+          {
+            "vars": {
+              "name": "айдан",
+              "o1": "6",
+              "o2": "5",
+              "o3": "7",
+              "o4": "10",
+              "right": "6"
+            }
+          },
+          {
+            "vars": {
+              "name": "мила",
+              "o1": "8",
+              "o2": "5",
+              "o3": "4",
+              "o4": "6",
+              "right": "5"
+            }
+          },
+          {
+            "vars": {
+              "name": "борис",
+              "o1": "7",
+              "o2": "10",
+              "o3": "6",
+              "o4": "5",
+              "right": "6"
+            }
+          },
+          {
+            "vars": {
+              "name": "ласка",
+              "o1": "5",
+              "o2": "7",
+              "o3": "10",
+              "o4": "6",
+              "right": "6"
+            }
+          },
+          {
+            "vars": {
+              "name": "рысь",
+              "o1": "5",
+              "o2": "4",
+              "o3": "6",
+              "o4": "8",
+              "right": "5"
+            }
+          },
+          {
+            "vars": {
+              "name": "тор",
+              "o1": "6",
+              "o2": "4",
+              "o3": "3",
+              "o4": "5",
+              "right": "4"
+            }
+          }
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
     "model": "game.mission",
     "pk": 6,
     "fields": {
@@ -821,6 +1221,112 @@
   },
 
   {
+    "model": "game.missiontask",
+    "pk": 63,
+    "fields": {
+      "mission": 6,
+      "order": 4,
+      "task_type": "quiz",
+      "title_en": "Explain your solution",
+      "title_ru": "Объясни своё решение",
+      "body_en": "<p>What would <code>count_big({{numbers}})</code> return if the condition became <code>n &gt; {{t}}</code>?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
+      "body_ru": "<p>Что вернёт <code>count_big({{numbers}})</code>, если заменить условие на <code>n &gt; {{t}}</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "data": {
+        "kind": "explain",
+        "about": 62,
+        "correct_answer": "{{right}}",
+        "options": [
+          {
+            "value": "{{o1}}",
+            "label": "{{o1}}"
+          },
+          {
+            "value": "{{o2}}",
+            "label": "{{o2}}"
+          },
+          {
+            "value": "{{o3}}",
+            "label": "{{o3}}"
+          },
+          {
+            "value": "{{o4}}",
+            "label": "{{o4}}"
+          }
+        ],
+        "variants": [
+          {
+            "vars": {
+              "numbers": "[4, 15, 9, 20, 11]",
+              "t": 12,
+              "o1": "2",
+              "o2": "3",
+              "o3": "1",
+              "o4": "4",
+              "right": "2"
+            }
+          },
+          {
+            "vars": {
+              "numbers": "[12, 3, 18, 7]",
+              "t": 5,
+              "o1": "5",
+              "o2": "3",
+              "o3": "4",
+              "o4": "2",
+              "right": "3"
+            }
+          },
+          {
+            "vars": {
+              "numbers": "[1, 22, 10, 30, 5, 11]",
+              "t": 20,
+              "o1": "1",
+              "o2": "4",
+              "o3": "2",
+              "o4": "3",
+              "right": "2"
+            }
+          },
+          {
+            "vars": {
+              "numbers": "[50, 60, 2, 9]",
+              "t": 8,
+              "o1": "4",
+              "o2": "2",
+              "o3": "5",
+              "o4": "3",
+              "right": "3"
+            }
+          },
+          {
+            "vars": {
+              "numbers": "[10, 11, 12, 13, 14]",
+              "t": 11,
+              "o1": "3",
+              "o2": "4",
+              "o3": "2",
+              "o4": "5",
+              "right": "3"
+            }
+          },
+          {
+            "vars": {
+              "numbers": "[8, 25, 31, 6, 14, 2]",
+              "t": 13,
+              "o1": "5",
+              "o2": "3",
+              "o3": "4",
+              "o4": "2",
+              "right": "3"
+            }
+          }
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
+  {
     "model": "game.mission",
     "pk": 7,
     "fields": {
@@ -958,6 +1464,106 @@
     }
   },
 
+  {
+    "model": "game.missiontask",
+    "pk": 73,
+    "fields": {
+      "mission": 7,
+      "order": 4,
+      "task_type": "quiz",
+      "title_en": "Explain your solution",
+      "title_ru": "Объясни своё решение",
+      "body_en": "<p>How many values does <code>for gold in heroes.values()</code> go through if <code>heroes = {{heroes}}</code>?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
+      "body_ru": "<p>Сколько значений обойдёт цикл <code>for gold in heroes.values()</code>, если <code>heroes = {{heroes}}</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "data": {
+        "kind": "explain",
+        "about": 72,
+        "correct_answer": "{{right}}",
+        "options": [
+          {
+            "value": "{{o1}}",
+            "label": "{{o1}}"
+          },
+          {
+            "value": "{{o2}}",
+            "label": "{{o2}}"
+          },
+          {
+            "value": "{{o3}}",
+            "label": "{{o3}}"
+          },
+          {
+            "value": "{{o4}}",
+            "label": "{{o4}}"
+          }
+        ],
+        "variants": [
+          {
+            "vars": {
+              "heroes": "{\"Айдан\": 50, \"Мира\": 30, \"Бо\": 20}",
+              "o1": "3",
+              "o2": "4",
+              "o3": "2",
+              "o4": "5",
+              "right": "3"
+            }
+          },
+          {
+            "vars": {
+              "heroes": "{\"Ласка\": 15, \"Рысь\": 40}",
+              "o1": "4",
+              "o2": "2",
+              "o3": "3",
+              "o4": "1",
+              "right": "2"
+            }
+          },
+          {
+            "vars": {
+              "heroes": "{\"Тор\": 70, \"Эльф\": 25, \"Гном\": 60, \"Орк\": 5}",
+              "o1": "3",
+              "o2": "6",
+              "o3": "4",
+              "o4": "5",
+              "right": "4"
+            }
+          },
+          {
+            "vars": {
+              "heroes": "{\"Мила\": 12, \"Борис\": 88, \"Рысь\": 7}",
+              "o1": "4",
+              "o2": "2",
+              "o3": "5",
+              "o4": "3",
+              "right": "3"
+            }
+          },
+          {
+            "vars": {
+              "heroes": "{\"Мила\": 33, \"Борис\": 44, \"Рысь\": 22, \"Тор\": 1, \"Орк\": 2}",
+              "o1": "5",
+              "o2": "6",
+              "o3": "4",
+              "o4": "7",
+              "right": "5"
+            }
+          },
+          {
+            "vars": {
+              "heroes": "{\"Тор\": 101, \"Ласка\": 9}",
+              "o1": "4",
+              "o2": "2",
+              "o3": "3",
+              "o4": "1",
+              "right": "2"
+            }
+          }
+        ]
+      },
+      "xp_reward": 10,
+      "is_required": true
+    }
+  },
   {
     "model": "game.mission",
     "pk": 8,

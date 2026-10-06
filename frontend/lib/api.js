@@ -311,6 +311,14 @@ export const Teacher = {
   studentLearning: (id) => api.get(`/teacher/students/${id}/learning/`).then((r) => r.data),
   // С кого начать разговор о решениях: ученики с признаками внешней помощи (подсказка, не вывод).
   authorshipOverview: () => api.get("/teacher/authorship/").then((r) => r.data),
+  // Живая панель: кто работает сейчас. `since` = generated_at предыдущего ответа: по нему сервер
+  // замеряет, насколько устарели данные (задержка между действием ученика и показом).
+  live: (since) =>
+    api.get("/teacher/live/", { params: since ? { since } : {} }).then((r) => r.data),
+  // Оценка удобства кабинета по шкале SUS (десять ответов 1-5).
+  usabilityStatus: () => api.get("/teacher/usability/").then((r) => r.data),
+  submitUsability: (answers, comment) =>
+    api.post("/teacher/usability/", { answers, comment }).then((r) => r.data),
   // Как решены его кодовые шаги: помощь платформы и признаки по данным редактора.
   studentAuthorship: (id) => api.get(`/teacher/students/${id}/authorship/`).then((r) => r.data),
 };

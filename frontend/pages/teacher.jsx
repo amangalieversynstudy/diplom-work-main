@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import Button from "../components/Button";
+import LivePanel from "../components/LivePanel";
+import UsabilityPanel from "../components/UsabilityPanel";
 import {
   Analytics as AnalyticsAPI,
   Teacher as TeacherAPI,
@@ -221,6 +223,25 @@ export default function TeacherPage() {
   const [warning, setWarning] = useState(null);
   const [authorship, setAuthorship] = useState(null);
   const [loading, setLoading] = useState(true);
+  const refreshedAt = useRef(0);
+
+  // Новая активность учеников: обновляем списки сами, но не чаще раза в 30 секунд.
+  const refreshLists = useCallback(async () => {
+    if (Date.now() - refreshedAt.current < 30000) return;
+    refreshedAt.current = Date.now();
+    try {
+      const [res, warned, overview] = await Promise.all([
+        TeacherAPI.students(),
+        AnalyticsAPI.earlyWarning(),
+        TeacherAPI.authorshipOverview(),
+      ]);
+      setData(res);
+      setWarning(warned);
+      setAuthorship(overview);
+    } catch (error) {
+      logger.error("Teacher lists refresh failed:", error);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -243,6 +264,7 @@ export default function TeacherPage() {
         if (!cancelled) {
           setData(res);
           setWarning(warned);
+          refreshedAt.current = Date.now();
         }
         TeacherAPI.authorshipOverview()
           .then((overview) => {
@@ -358,6 +380,7 @@ export default function TeacherPage() {
           />
         </div>
 
+        <LivePanel t={t} onActivity={refreshLists} />
         <EarlyWarningPanel warning={warning} t={t} />
         <AuthorshipWatchPanel overview={authorship} t={t} />
 
@@ -460,6 +483,8 @@ export default function TeacherPage() {
             </>
           )}
         </div>
+
+        <UsabilityPanel />
       </div>
     </Layout>
   );

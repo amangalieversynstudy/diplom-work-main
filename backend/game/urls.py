@@ -9,6 +9,8 @@ from .analytics_views import (
     LearningMetricsView,
     MyLearningView,
     TeacherAuthorshipOverviewView,
+    TeacherLiveView,
+    TeacherUsabilityView,
     TeacherStudentAuthorshipView,
     TeacherStudentLearningView,
 )
@@ -70,6 +72,8 @@ urlpatterns = [
         name="teacher_student_learning",
     ),
     path("teacher/authorship/", TeacherAuthorshipOverviewView.as_view(), name="teacher_authorship"),
+    path("teacher/live/", TeacherLiveView.as_view(), name="teacher_live"),
+    path("teacher/usability/", TeacherUsabilityView.as_view(), name="teacher_usability"),
     path(
         "teacher/students/<int:pk>/authorship/",
         TeacherStudentAuthorshipView.as_view(),

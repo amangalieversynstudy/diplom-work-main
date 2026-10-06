@@ -15,9 +15,11 @@ from django.utils import timezone
 
 from users.models import Profile
 
+from .live import freshness_summary
 from .metrics import DEFAULT_INACTIVE_DAYS, _last_activity, compute_metrics
 from .models import CodeRun, LearningEvent, MissionTask, Progress, TaskProgress
 from .services import ARM_OFFER, HELP_AFTER_FAILURES, help_arm
+from .usability import usability_summary
 from .warning import assess_students
 
 MIN_ARM_SIZE = 30  # below this the arm comparison is anecdote, not evidence
@@ -204,6 +206,7 @@ def build_report(now=None):
         },
         "help_experiment": help_experiment(now),
         "sandbox": sandbox_health(),
+        "dashboard": {"freshness": freshness_summary(), "usability": usability_summary()},
         "metrics_meta": metrics["meta"],
     }
 
@@ -284,4 +287,25 @@ def render_markdown(report):
         )
         if sb["runner_error_rate"] > 2:
             lines.append("- **Сбоев больше 2%: разберитесь до того, как читать метрики** — они портят выборку.")
+    lines += ["", "## Кабинет преподавателя: актуальность данных и удобство", ""]
+    fresh, use = report["dashboard"]["freshness"], report["dashboard"]["usability"]
+    if not fresh["samples"]:
+        lines.append("- Актуальность данных: замеров нет (живой кабинет ещё не открывали при работающих учениках).")
+    else:
+        lines.append(
+            f"- Актуальность данных: действие ученика доходит до панели в среднем за **{fresh['mean_s']} с** "
+            f"(худшее {fresh['worst_s']} с, замеров {fresh['samples']}, действий {fresh['events']}); "
+            f"в **{fresh['within_target_pct']}%** замеров самое медленное действие уложилось в {fresh['target_s']} с."
+        )
+    if not use["respondents"]:
+        lines.append("- Удобство для преподавателя (SUS): ответов нет.")
+    else:
+        names = {"good": "хорошо", "average": "не хуже среднего", "below_average": "ниже среднего"}
+        lines.append(
+            f"- Удобство для преподавателя (SUS, 0–100): **{use['mean']}** "
+            f"({names[use['verdict']]}; ориентир среднего {use['average_benchmark']}), "
+            f"ответили {use['respondents']}, от {use['lowest']} до {use['highest']}."
+        )
+        if use["respondents"] < 5:
+            lines.append("  Ответивших мало: это впечатление, а не оценка.")
     return "\n".join(lines) + "\n"

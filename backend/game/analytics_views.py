@@ -3,6 +3,7 @@
 import csv
 
 from django.http import HttpResponse
+from django.utils.dateparse import parse_datetime
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions
@@ -10,9 +11,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .authorship import authorship_overview, authorship_report
+from .live import live_panel
 from .me import my_learning
 from .metrics import CSV_COLUMNS, clamp_inactive_days, compute_metrics
+from .models import UsabilityResponse
 from .serializers import _resolve_language
+from .usability import ITEMS, sus_score
 from .warning import early_warning, scoped_learners
 
 _FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
@@ -126,6 +130,63 @@ class TeacherAuthorshipOverviewView(APIView):
     )
     def get(self, request):
         return Response({"students": authorship_overview(request.user)})
+
+
+class TeacherLiveView(APIView):
+    """What the viewer's learners are doing right now, and how stale the previous answer was.
+
+    GET /api/teacher/live/?since=<generated_at of the previous answer>
+
+    The panel calls it every few seconds. ``since`` lets the server measure the data freshness: the
+    learner actions that appeared after it are timed (see game/live.py). Without ``since`` nothing is measured.
+    """
+
+    permission_classes = [permissions.IsAdminUser]
+
+    @swagger_auto_schema(
+        operation_summary="Live activity of the teacher's learners",
+        operation_description=(
+            "Сколько учеников работают сейчас, лента последних действий и задержка данных. "
+            "Только ученики и курсы преподавателя; в ленте нет кода учеников."
+        ),
+    )
+    def get(self, request):
+        since = parse_datetime(request.query_params.get("since", "") or "")
+        if since is not None and since.tzinfo is None:
+            since = None
+        return Response(live_panel(request.user, lang=_resolve_language(request), since=since))
+
+
+class TeacherUsabilityView(APIView):
+    """The teacher's own System Usability Scale answers about the dashboard.
+
+    GET  /api/teacher/usability/ -> {"answered_at": iso | null}
+    POST /api/teacher/usability/ {"answers": [ten ratings 1-5], "comment": "..."} -> {"saved": true}
+
+    A teacher never sees anyone else's answers or the score; the pilot report aggregates them.
+    """
+
+    permission_classes = [permissions.IsAdminUser]
+
+    @swagger_auto_schema(operation_summary="Did I already rate the dashboard (teacher)")
+    def get(self, request):
+        last = UsabilityResponse.objects.filter(user=request.user).first()
+        return Response({"answered_at": last.created_at.isoformat() if last else None})
+
+    @swagger_auto_schema(
+        operation_summary="Rate the dashboard's usability (teacher)",
+        operation_description=f"Десять оценок 1-5 по шкале SUS (system usability scale) и необязательный комментарий. Нужно ровно {ITEMS} оценок.",
+    )
+    def post(self, request):
+        try:
+            score = sus_score(request.data.get("answers"))
+        except ValueError as error:
+            return Response({"detail": str(error)}, status=400)
+        comment = str(request.data.get("comment") or "").strip()[:1000]
+        UsabilityResponse.objects.create(
+            user=request.user, answers=list(request.data["answers"]), score=score, comment=comment
+        )
+        return Response({"saved": True}, status=201)
 
 
 class LearningMetricsView(APIView):

@@ -588,3 +588,44 @@ class LearningEvent(models.Model):
 
     def __str__(self):
         return f"{self.user_id}:{self.event_type}"
+
+
+class FreshnessSample(models.Model):
+    """One measurement of how stale the teacher's live panel was ("data freshness").
+
+    Written when a teacher's open panel asks for fresh data and there are learner actions it has not shown
+    yet: ``lag`` of an action = the moment the panel received it minus the moment the learner did it. Only
+    numbers are kept; the actions themselves stay in :class:`LearningEvent` / :class:`CodeRun`.
+    """
+
+    viewer = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name="freshness_samples")
+    polled_at = models.DateTimeField(db_index=True)
+    new_events = models.PositiveIntegerField()
+    lag_mean_s = models.FloatField()
+    lag_max_s = models.FloatField()
+
+    class Meta:
+        ordering = ["-polled_at"]
+
+    def __str__(self):
+        return f"{self.viewer_id}@{self.polled_at:%H:%M:%S}: {self.new_events} events, mean {self.lag_mean_s:.1f}s"
+
+
+class UsabilityResponse(models.Model):
+    """A teacher's answers to the System Usability Scale about the dashboard ("convenience for the teacher").
+
+    ``answers`` are the ten ratings 1-5 in the questionnaire's order; ``score`` is the SUS score 0-100
+    (Brooke, 1996; about 68 is the average). A teacher may answer again: the latest answer counts.
+    """
+
+    user = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name="usability_responses")
+    answers = models.JSONField()
+    score = models.FloatField()
+    comment = models.CharField(max_length=1000, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user_id}: SUS {self.score:.1f}"

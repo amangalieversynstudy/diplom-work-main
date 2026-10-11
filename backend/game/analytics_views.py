@@ -3,7 +3,6 @@
 import csv
 
 from django.http import HttpResponse
-from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
@@ -193,13 +192,11 @@ class TeacherUsabilityView(APIView):
         except ValueError as error:
             return Response({"detail": str(error)}, status=400)
         comment = str(request.data.get("comment") or "").strip()[:1000]
-        # one questionnaire per teacher: a repeat answer replaces the previous one
-        answers = list(request.data["answers"])
-        updated = UsabilityResponse.objects.filter(user=request.user).update(
-            answers=answers, score=score, comment=comment, created_at=timezone.now()
+        # Every answer is kept: the pilot asks for one in the first week and one in the
+        # last (docs/PILOT.md); the summary reads the latest. The throttle caps spam.
+        UsabilityResponse.objects.create(
+            user=request.user, answers=list(request.data["answers"]), score=score, comment=comment
         )
-        if not updated:
-            UsabilityResponse.objects.create(user=request.user, answers=answers, score=score, comment=comment)
         return Response({"saved": True}, status=201)
 
 

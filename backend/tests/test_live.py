@@ -201,7 +201,7 @@ def test_a_teacher_rates_the_dashboard_and_only_the_latest_answer_counts(teacher
     assert first.status_code == 201 and first.json() == {"saved": True}
     assert client.get("/api/teacher/usability/").json()["answered_at"]
     client.post("/api/teacher/usability/", {"answers": [5, 1] * 5}, format="json")
-    assert UsabilityResponse.objects.filter(user=teacher).count() == 1
+    assert UsabilityResponse.objects.filter(user=teacher).count() == 2
     summary = usability_summary()
     assert summary["respondents"] == 1 and summary["mean"] == 100 and summary["verdict"] == "good"
 
@@ -265,14 +265,14 @@ def test_a_teacher_without_own_activity_sees_no_last_seen(teacher, world):
     assert my_learning(world["learner"], owner=teacher)["summary"]["days_away"] is None
 
 
-# ── security: the questionnaire is limited and kept to one row per teacher ─
+# ── security: the questionnaire is rate-limited; both pilot answers are kept ─
 
 
-def test_a_repeat_answer_replaces_the_row_and_the_summary_reads_latest_in_the_db(teacher, django_assert_num_queries):
+def test_first_and_last_week_answers_are_kept_and_the_summary_reads_latest_in_the_db(teacher, django_assert_num_queries):
     client = _api(teacher)
     client.post("/api/teacher/usability/", {"answers": [3] * 10}, format="json")
     client.post("/api/teacher/usability/", {"answers": [5, 1] * 5}, format="json")
-    assert UsabilityResponse.objects.filter(user=teacher).count() == 1
+    assert UsabilityResponse.objects.filter(user=teacher).count() == 2
     with django_assert_num_queries(1):
         latest = __import__("game.usability", fromlist=["x"]).latest_by_user()
     assert latest[teacher.pk].score == 100

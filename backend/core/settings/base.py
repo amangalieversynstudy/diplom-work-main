@@ -142,9 +142,14 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 # WhiteNoise storage:
 if DEBUG:
     # в dev избегаем manifest-сториджа, чтобы не падать на collectstatic до наличия манифеста
-    STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+    _STATIC_BACKEND = "whitenoise.storage.CompressedStaticFilesStorage"
 else:
-    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    _STATIC_BACKEND = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": _STATIC_BACKEND},
+}
 
 REST_FRAMEWORK = {
     # JWT auth for API

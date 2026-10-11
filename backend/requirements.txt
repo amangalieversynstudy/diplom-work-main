@@ -1,4 +1,4 @@
-Django>=4.2,<5.0
+Django>=5.2,<5.3
 dj-database-url>=2.0
 djangorestframework
 djangorestframework-simplejwt
@@ -26,8 +26,7 @@ pytest-django
 pytest-asyncio>=0.21,<1.0
 
 docker==7.1.0
-requests==2.31.0
-urllib3<2
+requests>=2.33,<3
 
 # AI assistant
 google-genai>=0.3

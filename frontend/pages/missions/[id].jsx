@@ -574,7 +574,8 @@ export default function MissionDetail() {
           </div>
         )}
         {!canHint && !canMentor ? (
-          <p className="mt-2 text-xs leading-snug">{t("missionPage.helpOffer.noItems")}</p>
+          // когда есть бесплатная подсказка, её пояснение уже говорит, что предметы закончились
+          !canRescue && <p className="mt-2 text-xs leading-snug">{t("missionPage.helpOffer.noItems")}</p>
         ) : !activeTask?.data?.has_hint ? (
           <p className="mt-2 text-xs leading-snug">{t("missionPage.helpOffer.noHint")}</p>
         ) : null}

@@ -304,7 +304,7 @@ export default function CodemancerStage({
               : phase === "casting"
               ? " cm-cast"
               : phase === "victory" || phase === "finale"
-              ? " cm-win"
+              ? " cm-strike"
               : phase === "defeat"
               ? " cm-hurt"
               : ""
@@ -384,7 +384,6 @@ export default function CodemancerStage({
         {/* обломки на месте поверженного врага: проступают, пока голем оседает */}
         {defeated && (
           <g className={`cm-rubble${phase === "finale" ? " cm-rubble-in" : ""}`} stroke="#6a4a1c" strokeWidth="2">
-            <circle cx="42" cy="104" r="62" fill="url(#cm-golemGlow)" stroke="none" opacity=".8" />
             <rect x="-14" y="106" width="34" height="22" fill="#9c7a3a" />
             <rect x="-14" y="106" width="34" height="6" fill="#caa44a" stroke="none" />
             <rect x="18" y="88" width="32" height="40" fill="#caa44a" />
@@ -413,9 +412,12 @@ export default function CodemancerStage({
           <g key={`hit-${tick}`}>
             <g transform={`translate(${x + BOLT_FROM_DX} 340)`}>
               <g className="cm-bolt" style={{ "--bolt-dx": `${boltDx}px` }}>
-                <circle r="7" fill="url(#cm-golemGlow)" />
-                <circle r="3" fill="#ffe9a8" />
-                <circle r="1.3" fill="#fffaf0" />
+                <circle r="28" fill="url(#cm-golemGlow)" />
+                <circle r="10" fill="#ffe9a8" />
+                <circle r="4.5" fill="#fffaf0" />
+              </g>
+              <g className="cm-impact" style={{ animationDuration: "0.35s" }}>
+                <circle r="14" fill="none" stroke="#ffe9a8" strokeWidth="3" />
               </g>
             </g>
             <g
@@ -423,7 +425,7 @@ export default function CodemancerStage({
               style={{ animationDelay: "0.4s" }}
               transform={`translate(${IMPACT_X} 334)`}
             >
-              <circle r="20" fill="none" stroke="#ffe9a8" strokeWidth="3" />
+              <circle r="20" fill="#ffe9a8" fillOpacity=".3" stroke="#ffe9a8" strokeWidth="4" />
             </g>
           </g>
         )}
@@ -538,12 +540,16 @@ export default function CodemancerStage({
           0%, 100% { transform: translate(0, -2px); }
           50% { transform: translate(5px, -5px); }
         }
-        .cm-hero.cm-win { animation: cm-win 1.1s ease; }
-        @keyframes cm-win {
+        /* удар: замах назад, выпад вперёд (снаряд уходит), потом победный подскок */
+        .cm-hero.cm-strike { animation: cm-strike 1.1s ease; }
+        @keyframes cm-strike {
           0% { transform: translate(0, 0); }
-          25% { transform: translate(0, -17px); }
-          45% { transform: translate(0, -6px); }
-          68% { transform: translate(0, -12px); }
+          10% { transform: translate(-9px, 1px); }
+          22% { transform: translate(18px, -3px); }
+          40% { transform: translate(18px, -3px); }
+          52% { transform: translate(0, 0); }
+          68% { transform: translate(0, -16px); }
+          84% { transform: translate(0, -5px); }
           100% { transform: translate(0, 0); }
         }
         /* отскок за щитом: удар врага отбрасывает героя на несколько пикселей назад */
@@ -575,10 +581,10 @@ export default function CodemancerStage({
           animation: cm-bolt 0.5s ease-in both;
         }
         @keyframes cm-bolt {
-          0% { transform: translate(0, 0) scale(0.7); opacity: 0; }
-          20% { opacity: 1; }
-          85% { opacity: 1; }
-          100% { transform: translate(var(--bolt-dx, 172px), -2px) scale(0.6); opacity: 0; }
+          0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+          12% { transform: translate(0, 0) scale(1.2); opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translate(var(--bolt-dx, 172px), -2px) scale(0.9); opacity: 0; }
         }
         .cm-impact {
           transform-box: fill-box;
@@ -586,17 +592,18 @@ export default function CodemancerStage({
           animation: cm-impact 0.5s ease-out both;
         }
         @keyframes cm-impact {
-          0% { transform: scale(0.2); opacity: 0.9; }
-          100% { transform: scale(2); opacity: 0; }
+          0% { transform: scale(0.2); opacity: 1; }
+          100% { transform: scale(2.6); opacity: 0; }
         }
         .cm-golem { transform-box: fill-box; transform-origin: 50% 100%; }
         .cm-golem.cm-golem-hit { animation: cm-golem-hit 0.85s ease; }
         @keyframes cm-golem-hit {
           0%, 45%, 100% { transform: translate(0, 0); }
-          55% { transform: translate(9px, 2px); }
-          67% { transform: translate(-7px, 0); }
-          79% { transform: translate(6px, 1px); }
-          90% { transform: translate(-3px, 0); }
+          52% { transform: translate(13px, 2px); }
+          62% { transform: translate(-11px, 0); }
+          72% { transform: translate(9px, 1px); }
+          82% { transform: translate(-6px, 0); }
+          92% { transform: translate(3px, 0); }
         }
         .cm-golem.cm-golem-roar { animation: cm-golem-roar 0.8s ease; }
         @keyframes cm-golem-roar {
@@ -605,22 +612,25 @@ export default function CodemancerStage({
           55% { transform: translate(-12px, -3px); }
         }
         /* финал: последний удар, голем вздрагивает, оседает и рассыпается; в конце остаются обломки */
-        .cm-golem.cm-golem-fall { animation: cm-golem-fall 1.1s ease-in 0.45s both; }
+        .cm-golem.cm-golem-fall { animation: cm-golem-fall 1.5s ease-in both; }
         .cm-golem.cm-golem-down { transform: translate(0, 4px) scale(1, 0.12); opacity: 0; }
         @keyframes cm-golem-fall {
-          0% { transform: translate(0, 0) scale(1, 1); opacity: 1; }
-          15% { transform: translate(6px, 0) scale(1, 1); opacity: 1; }
-          30% { transform: translate(-5px, 0) scale(1, 0.98); opacity: 1; }
+          0%, 26% { transform: translate(0, 0) scale(1, 1); opacity: 1; }
+          31% { transform: translate(12px, 0) scale(1, 1); opacity: 1; }
+          37% { transform: translate(-11px, 0) scale(1, 1); opacity: 1; }
+          43% { transform: translate(9px, 0) scale(1, 0.99); opacity: 1; }
+          49% { transform: translate(-6px, 0) scale(1, 0.98); opacity: 1; }
+          54% { transform: translate(0, 0) scale(1, 0.95); opacity: 1; }
           100% { transform: translate(0, 4px) scale(1, 0.12); opacity: 0; }
         }
-        .cm-rubble.cm-rubble-in { animation: cm-rubble-in 0.7s ease-out 0.9s both; }
+        .cm-rubble.cm-rubble-in { animation: cm-rubble-in 0.5s ease-out 1s both; }
         @keyframes cm-rubble-in { from { opacity: 0; } to { opacity: 1; } }
         .cm-enemy-hp {
           transform-box: fill-box;
           transform-origin: left center;
           transition: transform 0.4s ease 0.4s;
         }
-        .cm-enemy-bar-out { animation: cm-bar-out 0.5s ease 0.9s both; }
+        .cm-enemy-bar-out { animation: cm-bar-out 0.5s ease 0.8s both; }
         @keyframes cm-bar-out { from { opacity: 1; } to { opacity: 0; } }
         .cm-golem-glow {
           animation: cm-glow 4s ease-in-out infinite;
@@ -669,7 +679,7 @@ export default function CodemancerStage({
           .cm-hero,
           .cm-hero.cm-walking,
           .cm-hero.cm-cast,
-          .cm-hero.cm-win,
+          .cm-hero.cm-strike,
           .cm-hero.cm-hurt,
           .cm-shield.cm-shield-up,
           .cm-charge,

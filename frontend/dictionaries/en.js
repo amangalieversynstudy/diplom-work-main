@@ -850,7 +850,7 @@ export const en = {
         noItems: "You are out of potions and Sage calls. They refill with every new level.",
         noHint: "This step has no hint of its own: call the Sage.",
         rescue: "Free hint",
-        rescueNote: "You are out of items, so one hint for this step is free. Once per step.",
+        rescueNote: "You are out of potions and Sage calls (they refill with every new level), so one hint for this step is free. Once per step.",
         rescueUsed: "The free hint is already taken. Reread it and try again, or ask your teacher.",
       },
       mobile: {

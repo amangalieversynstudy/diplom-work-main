@@ -467,7 +467,7 @@ export default function Worlds() {
               {/* Маркер героя: стоит у текущего узла; после новой победы идёт к нему от прежнего вдоль тропы */}
               <div
                 ref={heroRef}
-                className="absolute inset-0 z-20 pointer-events-none"
+                className="absolute inset-0 z-[5] pointer-events-none"
                 style={{ transform: `translate(${heroCoords.x}%, ${heroCoords.y}%)` }}
                 aria-hidden="true"
               >

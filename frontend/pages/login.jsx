@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import Layout from "../components/Layout";
 import Card from "../components/Card";
+import AuthGate from "../components/AuthGate";
 import Button from "../components/Button";
 import PasswordInput from "../components/PasswordInput";
 import { toast } from "sonner";
@@ -112,6 +113,7 @@ export default function Login() {
   return (
     <Layout>
       <div className="max-w-md mx-auto mt-24 mb-10">
+        <AuthGate />
         <Card variant="scroll" title={copy.title} subtitle={copy.subtitle}>
           {(pendingEmail || showResend) && (
             <div className="mb-4 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-text">

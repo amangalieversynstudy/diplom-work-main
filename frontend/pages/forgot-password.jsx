@@ -2,6 +2,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Layout from "../components/Layout";
 import Card from "../components/Card";
+import AuthGate from "../components/AuthGate";
 import Button from "../components/Button";
 import { toast } from "sonner";
 import { Mail, CheckCircle2 } from "lucide-react";
@@ -41,6 +42,7 @@ export default function ForgotPassword() {
   return (
     <Layout>
       <div className="max-w-md mx-auto mt-24 mb-10">
+        <AuthGate />
         <Card variant="scroll"
           title={copy.title || "Восстановление доступа"}
           subtitle={copy.subtitle || "Пришлём ссылку для сброса пароля"}

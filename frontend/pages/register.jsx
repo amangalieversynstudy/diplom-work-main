@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import Card from "../components/Card";
+import AuthGate from "../components/AuthGate";
 import Button from "../components/Button";
 import PasswordInput from "../components/PasswordInput";
 import { toast } from "sonner";
@@ -116,6 +117,7 @@ export default function Register() {
   return (
     <Layout>
       <div className="max-w-md mx-auto mt-24 mb-10">
+        <AuthGate />
         <Card variant="scroll" title={copy.title} subtitle={copy.subtitle}>
           <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
             <label className="text-sm text-muted">

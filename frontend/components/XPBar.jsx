@@ -3,7 +3,6 @@ import { useI18n } from "../lib/i18n";
 export default function XPBar({ current = 0, max = 100 }) {
   const { t } = useI18n();
   const pct = Math.max(0, Math.min(100, Math.round((current / max) * 100)));
-  const anim = pct > 0 && pct < 100 ? "animate-pulse" : "";
 
   return (
     <div className="w-full">
@@ -21,8 +20,8 @@ export default function XPBar({ current = 0, max = 100 }) {
            style={{ backgroundColor: 'var(--xpbar-track-color)', borderColor: 'var(--border)' }}>
         {/* Заполняющаяся часть */}
         <div
-          className={`h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000 ease-out relative ${anim}`}
-          style={{ width: `${pct}%` }}
+          className={`h-full bg-gradient-to-r from-primary to-accent transition-transform duration-1000 ease-out relative w-full origin-left`}
+          style={{ transform: `scaleX(${pct / 100})` }}
         >
           {/* Блик внутри полоски для объема */}
           <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/20" />

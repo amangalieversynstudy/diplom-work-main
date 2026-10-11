@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Heart, Droplet } from "lucide-react";
 
 /**
@@ -26,9 +27,40 @@ export default function CodemancerStage({
   const hp = clamp(hpPct);
   const mp = clamp(mpPct);
 
+  // idle-циклы (звёзды, топор, свечение, глаза) засыпают через ~4 с после
+  // последнего события сцены и пока вкладка скрыта; дыхание героя и окно остаются
+  const [calm, setCalm] = useState(false);
+  useEffect(() => {
+    let timer;
+    const arm = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => setCalm(true), 4000);
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        clearTimeout(timer);
+        setCalm(true);
+      } else {
+        setCalm(false);
+        arm();
+      }
+    };
+    if (document.hidden) {
+      setCalm(true);
+    } else {
+      setCalm(false);
+      arm();
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [tick, phase]);
+
   return (
     <div
-      className={`codemancer-stage relative w-full shrink-0 h-32 sm:h-40 md:h-44 xl:h-[clamp(112px,18vh,224px)] overflow-hidden border-b border-border bg-[#0a1322] select-none ${phase !== "idle" ? "cm-" + phase : ""}`}
+      className={`codemancer-stage relative w-full shrink-0 h-32 sm:h-40 md:h-44 xl:h-[clamp(112px,18vh,224px)] overflow-hidden border-b border-border bg-[#0a1322] select-none ${phase !== "idle" ? "cm-" + phase : ""} ${calm ? "cm-calm" : ""}`}
       role="img"
       aria-label={`${heroName}, level ${level}`}
     >
@@ -329,8 +361,8 @@ export default function CodemancerStage({
             <Heart size={12} className="text-[#ff5c5c] shrink-0" fill="#ff5c5c" />
             <div className="w-24 sm:w-32 h-2.5 rounded-md bg-[#1d2336] border border-black/40 overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
               <div
-                className="h-full rounded-md bg-gradient-to-b from-[#ff8585] to-[#c9252a] transition-[width] duration-500"
-                style={{ width: `${hp}%` }}
+                className="h-full w-full origin-left bg-gradient-to-b from-[#ff8585] to-[#c9252a] transition-transform duration-500"
+                style={{ transform: `scaleX(${hp / 100})` }}
               />
             </div>
           </div>
@@ -338,8 +370,8 @@ export default function CodemancerStage({
             <Droplet size={12} className="text-[#5cb6ff] shrink-0" fill="#5cb6ff" />
             <div className="w-24 sm:w-32 h-2.5 rounded-md bg-[#1d2336] border border-black/40 overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
               <div
-                className="h-full rounded-md bg-gradient-to-b from-[#8ccaff] to-[#2a72c9] transition-[width] duration-500"
-                style={{ width: `${mp}%` }}
+                className="h-full w-full origin-left bg-gradient-to-b from-[#8ccaff] to-[#2a72c9] transition-transform duration-500"
+                style={{ transform: `scaleX(${mp / 100})` }}
               />
             </div>
           </div>
@@ -355,6 +387,12 @@ export default function CodemancerStage({
       <style jsx>{`
         .cm-stars circle {
           animation: cm-twinkle 3.4s ease-in-out infinite;
+        }
+        .cm-calm .cm-stars circle,
+        .cm-calm .cm-axe,
+        .cm-calm .cm-golem-glow,
+        .cm-calm .cm-golem-eye {
+          animation-play-state: paused;
         }
         .cm-stars circle:nth-child(2n) { animation-delay: 1.1s; }
         .cm-stars circle:nth-child(3n) { animation-delay: 2.2s; }

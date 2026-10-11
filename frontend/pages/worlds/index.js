@@ -7,6 +7,7 @@ import { useDictionary } from "../../lib/i18n";
 import { lockReason, missionTitle, missionXp } from "../../lib/missions";
 import { Lock, CheckCircle, X as XIcon, Compass } from "lucide-react";
 import gsap from "gsap";
+import { prefersReducedMotion } from "../../lib/motion";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Missions, missionStatus } from "../../lib/api";
@@ -91,7 +92,7 @@ export default function Worlds() {
     if (loading) return; // ИСПРАВЛЕНО: убрана блокировка пустого списка миссий
 
     const container = pinContainerRef.current;
-    if (!container) return;
+    if (!container || prefersReducedMotion()) return;
 
     const handleWheel = (e) => {
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
@@ -115,13 +116,14 @@ export default function Worlds() {
 
     if (missions.length > 0) {
       tl.fromTo(".map-path", { strokeDashoffset: 100 }, { strokeDashoffset: 0, duration: 2.5, ease: "power2.inOut" });
-      tl.fromTo(".mission-node", { scale: 0, opacity: 0, y: 20 }, { scale: 1, opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "back.out(1.5)" }, "-=2");
+      tl.fromTo(".mission-node", { scale: 0.85, opacity: 0, y: 12 }, { scale: 1, opacity: 1, y: 0, duration: 0.4, stagger: 0.06, ease: "back.out(1.5)" }, "-=2");
     }
 
     const mapEl = mapScrollRef.current;
     const moveDist = mapEl.scrollWidth - window.innerWidth + 48;
 
-    if (moveDist > 0) {
+    // при reduced-motion без пина: обычная горизонтальная прокрутка (см. onWheel выше)
+    if (moveDist > 0 && !prefersReducedMotion()) {
       gsap.to(mapEl, {
         x: -moveDist,
         ease: "none",
@@ -136,6 +138,8 @@ export default function Worlds() {
       });
 
       ScrollTrigger.refresh();
+    } else if (moveDist > 0) {
+      pinContainerRef.current.style.overflowX = "auto"; // без пина: карта прокручивается по горизонтали
     }
   }, { scope: pinContainerRef, dependencies: [loading, missions] });
 
@@ -365,21 +369,21 @@ export default function Worlds() {
 
               {/* Маркер героя: стоит у текущего узла и «доезжает» к нему при входе */}
               <div
-                className="absolute z-20 -translate-x-1/2 -translate-y-[150%] pointer-events-none"
+                className="absolute inset-0 z-20 pointer-events-none"
                 style={{
-                  left: `${heroCoords.x}%`,
-                  top: `${heroCoords.y}%`,
-                  transition:
-                    "left 1.2s cubic-bezier(0.4,0,0.2,1), top 1.2s cubic-bezier(0.4,0,0.2,1)",
+                  transform: `translate(${heroCoords.x}%, ${heroCoords.y}%)`,
+                  transition: "transform 0.7s cubic-bezier(0.4,0,0.2,1)",
                 }}
                 aria-hidden="true"
               >
-                <span className="relative grid place-items-center">
-                  <span className="absolute -inset-2 rounded-full bg-[#8e1d1d]/30 animate-ping motion-reduce:animate-none" />
-                  <span className="grid h-8 w-8 place-items-center rounded-full border-2 border-[#8e1d1d] bg-[#f4e4bc] text-[#8e1d1d] shadow-[0_4px_10px_rgba(62,39,35,0.5)]">
-                    <Compass size={17} strokeWidth={2.5} />
+                <div className="absolute left-0 top-0 -translate-x-1/2 -translate-y-[150%]">
+                  <span className="relative grid place-items-center">
+                    <span className="absolute -inset-2 rounded-full bg-[#8e1d1d]/30 animate-ping motion-reduce:animate-none" />
+                    <span className="grid h-8 w-8 place-items-center rounded-full border-2 border-[#8e1d1d] bg-[#f4e4bc] text-[#8e1d1d] shadow-[0_4px_10px_rgba(62,39,35,0.5)]">
+                      <Compass size={17} strokeWidth={2.5} />
+                    </span>
                   </span>
-                </span>
+                </div>
               </div>
             </>
           )}

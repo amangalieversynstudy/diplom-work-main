@@ -28,12 +28,10 @@ export default function TransitionLink({ href, children, className, onClick }) {
     }
     gsap.to(".page-transition-overlay", {
       yPercent: 0,
-      duration: 0.4,
+      duration: 0.2,
       ease: "power3.inOut",
-      onComplete: () => {
-        router.push(href);
-      },
     });
+    router.push(href); // не ждём шторку: страница грузится параллельно
   };
 
   return (

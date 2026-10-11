@@ -343,7 +343,7 @@ function CodeRunnerPanel(
 
   const hintAvailable = Boolean(task?.data?.has_hint);
   const skeletonAvailable = Boolean(task?.data?.has_skeleton);
-  const pulse = "ring-2 ring-[#e5c07b] motion-safe:animate-pulse";
+  const pulse = "ring-2 ring-[#e5c07b] motion-safe:animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_4]";
 
   const lines = code ? code.split("\n").length : 1;
   const lineArray = Array.from({ length: Math.max(25, lines) }, (_, i) => i + 1);

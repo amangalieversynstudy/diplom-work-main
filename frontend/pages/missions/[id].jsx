@@ -725,17 +725,6 @@ export default function MissionDetail() {
                   activeTask?.title ||
                   t("missionPage.scrollTitleFallback")}
               </h2>
-              {/* Свеча — пара со столом квест-лога; единый «огонёк мага» */}
-              <svg width="14" height="24" viewBox="0 0 14 24" className="ml-auto shrink-0" aria-hidden="true">
-                <ellipse cx="7" cy="22" rx="4.5" ry="1.4" fill="#1c120a" opacity="0.5" />
-                <rect x="4.5" y="9" width="5" height="13" rx="1.2" fill="#f3e2c0" />
-                <rect x="4.6" y="9" width="1.7" height="13" rx="0.8" fill="#ffffff" opacity="0.35" />
-                <rect x="6.6" y="6" width="0.8" height="3" fill="#3e2723" />
-                <g className="animate-flicker" style={{ transformOrigin: "7px 7px" }}>
-                  <path d="M7 0c1.7 1.8 2.5 3.2 2.5 4.6A2.5 2.5 0 0 1 7 7.1 2.5 2.5 0 0 1 4.5 4.6C4.5 3.2 5.3 1.8 7 0Z" fill="#ffb338" />
-                  <path d="M7 2c.9 1 1.3 2 1.3 2.8A1.3 1.3 0 0 1 7 6.1 1.3 1.3 0 0 1 5.7 4.8C5.7 4 6.1 3 7 2Z" fill="#fff3c4" />
-                </g>
-              </svg>
             </div>
 
             {/* Триггер помощи: несколько неудач подряд — предлагаем свитки и наставника */}

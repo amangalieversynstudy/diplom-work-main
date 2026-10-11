@@ -85,8 +85,8 @@ export default function AchievementsPanel({ items = [] }) {
                     <div className="mt-2">
                       <div className="h-1.5 bg-surface rounded-full overflow-hidden border border-border">
                         <div
-                          className="h-full bg-primary rounded-full transition-all"
-                          style={{ width: `${pct}%` }}
+                          className="h-full w-full origin-left bg-primary transition-transform"
+                          style={{ transform: `scaleX(${pct / 100})` }}
                         />
                       </div>
                       <p className="text-xs text-muted mt-1 tabular-nums">

@@ -258,7 +258,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
     gsap.fromTo(
       ".page-transition-overlay",
       { yPercent: 0 },
-      { yPercent: -100, duration: 0.5, ease: "power3.inOut" }
+      { yPercent: -100, duration: 0.25, ease: "power3.inOut" }
     );
   }, []);
 

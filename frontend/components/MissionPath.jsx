@@ -167,7 +167,7 @@ export default function MissionPath({ missions, loading }) {
           aria-valuenow={done}
           className="mt-3 h-2 overflow-hidden rounded-full bg-border"
         >
-          <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${barReady ? pct : 0}%` }} />
+          <div className="h-full w-full origin-left bg-primary transition-transform duration-700" style={{ transform: `scaleX(${(barReady ? pct : 0) / 100})` }} />
         </div>
       </div>
 

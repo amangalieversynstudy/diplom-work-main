@@ -9,8 +9,8 @@
 - Регистрация / логин / JWT (access + refresh), смена пароля
 - Email-верификация: письмо при регистрации, `user.is_active=False` до подтверждения
 - Email через **Resend HTTP API** (`django-anymail[resend]`) — Railway блокирует SMTP egress
-- Профиль: XP, уровень, класс героя (Mage / Knight), инвентарь
-- Выбор класса **заблокирован** до прохождения вводного курса (`Track.is_intro=True`)
+- Профиль: XP, уровень, класс героя (три ветви: python / django / devops), инвентарь
+- Выбор класса не блокируется: все три ветви доступны сразу и меняются в любой момент (`frontend/pages/class.jsx`); после вводного курса (`Track.is_intro=True`) платформа лишь предлагает выбрать класс (`IntroStatusView`)
 - Лидерборд: фильтры по периодам (all_time / weekly / monthly), топ-200
 
 ### Геймплей
@@ -38,15 +38,15 @@ BI-системы для этого не подходят: им нужны по�
 - **Визуализация:** страница `/analytics` (показатели и графики), кабинет `/teacher` (сводка, **живая панель «Сейчас на платформе»**,
   список группы риска, таблица учеников), страница ученика с его путём и признаками самостоятельности решений.
 - **Список риска:** правила (неудачи подряд, молчание при незаконченной миссии) с объяснением причины по каждому ученику; обученная
-  модель подключается переменной `RISK_MODEL_PATH`, пока её нет, список работает по правилам. После трёх неудач ученику предлагается помощь.
+  модель подключается переменной `RISK_MODEL_PATH`, пока её нет (модель не обучена: данные OULAD не загружены, данных пилота нет), список работает по правилам. После трёх неудач ученику предлагается помощь.
 - **Параметры качества самого модуля:** *актуальность данных* (задержка между действием ученика и показом на панели; панель обновляется
-  каждые 10 с, задержка замеряется на каждом обновлении) и *удобство для преподавателя* (шкала SUS прямо в кабинете). Оба идут в `pilot_report`.
+  каждые 10 с, задержка замеряется на каждом обновлении) и *удобство для преподавателя* (шкала SUS прямо в кабинете; SUS заполняет только преподаватель, опрос студентов проводится вне платформы). «Группа» = ученики курсов одного преподавателя (владелец курса, `set_course_owner`); отдельной сущности группы в коде нет. Пилот пока не проведён, эффективность не заявляется. Оба идут в `pilot_report`.
 - **Пилот:** `pilot_check`, `pilot_report`, `check_runner`, демо-класс `seed_demo_cohort` (сценарий показа: [docs/DEMO.md](docs/DEMO.md),
   протокол: [docs/PILOT.md](docs/PILOT.md)).
 
 ### Стриминговый терминал (Phase 4)
 - xterm.js + WebSocket (`ws://host/ws/runner/?token=<JWT>`)
-- Код выполняется в **Docker-песочнице** `python:3.11-alpine` (128MB RAM, 64 PID, no-network, 15s timeout)
+- Код выполняется в песочнице: на Railway основной путь — внешний **Judge0** (`RUNNER_JUDGE0_URL`), где Docker недоступен; Docker-контейнер `python:3.11-alpine` — вторичный путь (128MB RAM, 64 PID, no-network, 15s timeout)
 - Лимит вывода 50 KB — после `[ВЫВОД ОБРЕЗАН]`
 - Каждая строка stdout/stderr транслируется в реальном времени
 - Кнопка Stop убивает контейнер через cooperative stop-event
@@ -76,14 +76,14 @@ BI-системы для этого не подходят: им нужны по�
 
 ### Инфраструктура
 - **Daphne (ASGI)** обслуживает HTTP и WebSocket в одном процессе (был gunicorn — переехали из-за WS)
-- Django Channels 4 + InMemoryChannelLayer для WS-роутинга
+- Django Channels 4 + InMemoryChannelLayer для WS-роутинга (так настроено в `backend/core/settings/base.py`)
 - Docker Compose локально: PostgreSQL + Daphne + Next.js
 - **Production деплой**:
   - Backend → **Railway** (`Dockerfile.backend` + `railway.toml`, миграции + collectstatic + `seed_course` (загружает курс, только если его нет) в startCommand)
   - Frontend → **Vercel** (Next.js, `NEXT_PUBLIC_API_BASE` указывает на Railway-домен)
   - Email → **Resend** (HTTP API, SMTP закрыт на Railway)
-- Celery + Redis: фоновые задачи (опционально)
-- 26 pytest-тестов включая async WebSocket-тесты через `WebsocketCommunicator`
+- Фоновые задачи (напоминания о серии и т. п.) выполняет `backend/game/scheduler.py` — поток внутри процесса бэкенда; Celery в проекте нет. Redis используется в CI и prod-compose
+- Около 545 pytest-тестов (по подсчёту `def test_` в `backend/tests` и `backend/game/tests`) и 39 тестов фронтенда (`npm test`), включая async WebSocket-тесты через `WebsocketCommunicator`
 
 ### Django Admin (CMS для методологов)
 - Редактирование курсов без кода: fieldsets RU/EN, stacked inline задач
@@ -93,8 +93,8 @@ BI-системы для этого не подходят: им нужны по�
 
 ## Почему Docker обязателен
 
-- Один `docker compose up --build` поднимает Postgres, Daphne (ASGI), Next.js и опционально Redis+Celery.
-- Код-раннер **требует Docker** на хосте: `stream_python_code()` создаёт контейнер `python:3.11-alpine` для каждого запуска.
+- Один `docker compose up --build` поднимает Postgres, Daphne (ASGI), Next.js и опционально Redis.
+- Локально код-раннер использует Docker на хосте (в production без Docker запуск уходит в Judge0): `stream_python_code()` создаёт контейнер `python:3.11-alpine` для каждого запуска.
 - Локальная разработка и CI получают идентичные артефакты; баги «работает у меня» исчезают.
 - Seed-скрипты и миграции гоняются внутри контейнера: `docker compose exec backend python manage.py migrate` и т.д.
 - Конфигурация легко переносится на staging/production: те же образы и `docker-compose.yml`.
@@ -104,11 +104,11 @@ BI-системы для этого не подходят: им нужны по�
 | Папка/файл | Назначение |
 |---|---|
 | `backend/` | Django/DRF + Channels + Daphne (`core`, `users`, `game`) |
-| `backend/game/fixtures/intro_course.json` | Вводный курс «Основы Python» (Track+Location+8 Missions+23 Tasks) |
-| `backend/game/fixtures/python_continued.json` | Курс «Python: Путь Мастера» (Track+Location+8 Missions+24 Tasks) |
+| `backend/game/fixtures/intro_course.json` | Вводный курс «Основы Python» (Track+Location+8 миссий, 30 шагов) |
+| `backend/game/fixtures/python_continued.json` | Курс «Python: Путь Мастера» (Track+Location+8 миссий, 32 шага) |
 | `backend/game/runner.py` | Docker-песочница — `stream_python_code()` генератор событий |
 | `backend/game/consumers.py` | WebSocket consumer — стриминг через asyncio + threading |
-| `frontend/` | Next.js 14 + Tailwind; страницы `/worlds`, `/missions`, `/profile` |
+| `frontend/` | Next.js 15 + Tailwind; страницы `/worlds`, `/missions`, `/profile` |
 | `frontend/components/Terminal.jsx` | xterm.js обёртка (SSR-safe, динамический import) |
 | `frontend/components/CodeRunnerPanel.jsx` | Редактор + терминал + инвентарь + AI Summon |
 | `frontend/dictionaries/` | i18n словари `en.js` и `ru.js` |
@@ -153,7 +153,7 @@ cd frontend && npm ci --no-audit --no-fund && npm run dev
 
 ```bash
 [ -f .env ] || cp .env.example .env   # создать .env, если его нет
-make deploy-local                      # поднять Redis+Postgres+Backend+Celery и засеять демо
+make deploy-local                      # поднять Redis+Postgres+Backend и засеять демо
 make logs                              # смотреть логи бэкенда; Ctrl+C чтобы выйти
 # make stop-local                       # остановить локальный стек (по необходимости)
 ```

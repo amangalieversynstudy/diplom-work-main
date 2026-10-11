@@ -87,7 +87,7 @@
 | `RUNNER_JUDGE0_URL` (и ключ) | песочница для кода; `RUNNER_ALLOW_UNSAFE_FALLBACK` не задавать |
 | `ANALYTICS_EXPORT_SALT` | стабильные псевдонимы в экспорте |
 | `RESEND_API_KEY` или SMTP | письма подтверждения и сброса пароля |
-| `HELP_OFFER_SHARE=50` | включает эксперимент |
+| `HELP_OFFER_SHARE=50` | включает эксперимент; по умолчанию в коде 100 (контрольной группы нет), 50 надо задать явно |
 | `ALLOWED_HOSTS` | **обязательно**, без `*` (напр. `api.example.com,app.up.railway.app`); без неё прод не стартует |
 | `CSRF_TRUSTED_ORIGINS` | **обязательно**, напр. `https://app.vercel.app,https://api.example.com` |
 | `SECURE_SSL_REDIRECT` | по умолчанию `True`; не отключать |

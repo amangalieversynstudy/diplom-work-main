@@ -171,7 +171,7 @@
       "task_type": "code",
       "title_en": "Run the Code and See the Magic",
       "title_ru": "Запусти код и увидь магию",
-      "body_en": "<p>Your very first spell. The starter is ready in the Codex — press <strong>Run Code</strong> and watch the terminal greet the world.</p><p>Once you see the output, the trial is cleared.</p>",
+      "body_en": "<p>Your very first spell. The starter is ready in the Codex — press <strong>Run</strong> and watch the terminal greet the world.</p><p>Once you see the output, the trial is cleared.</p>",
       "body_ru": "<p>Твоё самое первое заклинание. В Кодексе уже готов шаблон — нажми <strong>Запустить</strong> и посмотри, как терминал приветствует мир.</p><p>Как только увидишь вывод — испытание пройдено.</p>",
       "data": {
         "language": "python",
@@ -181,7 +181,7 @@
         "hints": [
           {
             "ru": "Код уже написан: нажми зелёную кнопку «Запустить» над терминалом.",
-            "en": "The code is already written: press the green Run Code button above the terminal."
+            "en": "The code is already written: press the green Run button above the terminal."
           }
         ]
       },
@@ -199,8 +199,8 @@
       "task_type": "story",
       "title_en": "Branching Paths",
       "title_ru": "Развилки Пути",
-      "body_en": "<h2>Conditions — The Crossroads of Code</h2><p>Use <code>if</code>, <code>elif</code>, and <code>else</code> to make decisions:</p><pre><code>energy = 80\n\nif energy > 75:\n    print(\"Full power!\")\nelif energy > 25:\n    print(\"Half power.\")\nelse:\n    print(\"Out of mana!\")</code></pre><p>Comparison operators you can use:</p><ul><li><code>==</code> equal to</li><li><code>!=</code> not equal</li><li><code>&gt;</code> greater than</li><li><code>&lt;</code> less than</li><li><code>&gt;=</code> greater or equal</li><li><code>&lt;=</code> less or equal</li></ul>",
-      "body_ru": "<h2>Условия — Развилки Кода</h2><p>Используй <code>if</code>, <code>elif</code> и <code>else</code> для принятия решений:</p><pre><code>energy = 80\n\nif energy > 75:\n    print(\"Полная мощность!\")\nelif energy > 25:\n    print(\"Половина мощности.\")\nelse:\n    print(\"Мана иссякла!\")</code></pre><p>Операторы сравнения:</p><ul><li><code>==</code> равно</li><li><code>!=</code> не равно</li><li><code>&gt;</code> больше</li><li><code>&lt;</code> меньше</li><li><code>&gt;=</code> больше или равно</li><li><code>&lt;=</code> меньше или равно</li></ul>",
+      "body_en": "<h2>Conditions — The Crossroads of Code</h2><p>Use <code>if</code>, <code>elif</code>, and <code>else</code> to make decisions:</p><pre><code>energy = 80\n\nif energy > 75:\n    print(\"Full power!\")\nelif energy > 25:\n    print(\"Half power.\")\nelse:\n    print(\"Out of mana!\")</code></pre><p>Comparison operators you can use:</p><ul><li><code>==</code> equal to</li><li><code>!=</code> not equal</li><li><code>&gt;</code> greater than</li><li><code>&lt;</code> less than</li><li><code>&gt;=</code> greater or equal</li><li><code>&lt;=</code> less or equal</li></ul><h3>A function with return</h3><p>A function is a named piece of code. The word <code>return</code> sends a result out:</p><pre><code>def double(x):\n    return x * 2\n\nprint(double(4))   # 8</code></pre><p>In the next trial the function header is already written. You need to fill in the conditions and the <code>return</code> with the right word.</p>",
+      "body_ru": "<h2>Условия — Развилки Кода</h2><p>Используй <code>if</code>, <code>elif</code> и <code>else</code> для принятия решений:</p><pre><code>energy = 80\n\nif energy > 75:\n    print(\"Полная мощность!\")\nelif energy > 25:\n    print(\"Половина мощности.\")\nelse:\n    print(\"Мана иссякла!\")</code></pre><p>Операторы сравнения:</p><ul><li><code>==</code> равно</li><li><code>!=</code> не равно</li><li><code>&gt;</code> больше</li><li><code>&lt;</code> меньше</li><li><code>&gt;=</code> больше или равно</li><li><code>&lt;=</code> меньше или равно</li></ul><h3>Функция с return</h3><p>Функция — это именованный кусочек кода. Слово <code>return</code> отдаёт результат наружу:</p><pre><code>def double(x):\n    return x * 2\n\nprint(double(4))   # 8</code></pre><p>В следующем испытании шапка функции уже написана. Тебе нужно вписать условия и <code>return</code> с нужным словом.</p>",
       "data": {},
       "xp_reward": 10,
       "is_required": true
@@ -215,8 +215,8 @@
       "task_type": "quiz",
       "title_en": "Quiz: Conditions",
       "title_ru": "Испытание: Условия",
-      "body_en": "<p>What keyword introduces an alternative condition in Python?</p>",
-      "body_ru": "<p>Какое ключевое слово вводит альтернативное условие в Python?</p>",
+      "body_en": "<p>Which keyword checks one more condition if the previous one turned out false?</p>",
+      "body_ru": "<p>Какое ключевое слово проверяет ещё одно условие, если предыдущее оказалось ложным?</p>",
       "data": {
         "correct_answer": "elif",
         "options": [
@@ -288,8 +288,8 @@
         "hidden_check": "assert mana_status(30) == \"Low\"\nassert mana_status(50) == \"Charged\"\nassert mana_status(100) == \"Charged\"\nassert mana_status(101) == \"Overcharged\"",
         "hints": [
           {
-            "ru": "Проверяй условия сверху вниз: сначала самый «широкий» случай, потом остальные.",
-            "en": "Check conditions from top to bottom: the widest case first, then the rest."
+            "ru": "Проверяй условия сверху вниз. Начни с самого строгого: mana больше 100. Если его поставить после «от 50», число 120 попадёт не в ту ветку.",
+            "en": "Check the conditions from top to bottom. Start with the strictest one: mana above 100. If you put it after the \"from 50\" check, 120 lands in the wrong branch."
           },
           {
             "ru": "Случаев три: mana больше 100, mana от 50 (включительно) и всё остальное. Для «всё остальное» подойдёт else или просто return в конце.",
@@ -315,8 +315,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>What will your function return for <code>mana_status({{probe}})</code>?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>Что вернёт твоя функция при вызове <code>mana_status({{probe}})</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>What will your function return for <code>mana_status({{probe}})</code>?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>Что вернёт твоя функция при вызове <code>mana_status({{probe}})</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 22,
@@ -415,8 +415,8 @@
       "task_type": "story",
       "title_en": "Loops: The Eternal Spell",
       "title_ru": "Циклы: Вечное Заклинание",
-      "body_en": "<h2>Loops — Power Through Repetition</h2><p>Python has two loop types:</p><h3>for loop</h3><pre><code>for i in range(5):\n    print(f\"Attack {i+1}\")</code></pre><p>This repeats 5 times, with <code>i</code> going 0 → 4.</p><h3>while loop</h3><pre><code>hp = 100\nwhile hp > 0:\n    hp -= 25\n    print(f\"HP: {hp}\")</code></pre><p>Repeats <em>while</em> the condition is True.</p><h3>Control keywords</h3><ul><li><code>break</code> — exit the loop immediately</li><li><code>continue</code> — skip to the next iteration</li></ul>",
-      "body_ru": "<h2>Циклы — Сила Повтора</h2><p>В Python два типа циклов:</p><h3>Цикл for</h3><pre><code>for i in range(5):\n    print(f\"Атака {i+1}\")</code></pre><p>Повторяется 5 раз, <code>i</code> идёт от 0 до 4.</p><h3>Цикл while</h3><pre><code>hp = 100\nwhile hp > 0:\n    hp -= 25\n    print(f\"HP: {hp}\")</code></pre><p>Повторяется <em>пока</em> условие истинно.</p><h3>Управляющие слова</h3><ul><li><code>break</code> — выйти из цикла</li><li><code>continue</code> — перейти к следующей итерации</li></ul>",
+      "body_en": "<h2>Loops — Power Through Repetition</h2><p>Python has two loop types:</p><h3>for loop</h3><pre><code>for i in range(5):\n    print(f\"Attack {i+1}\")</code></pre><p>A string with the letter <code>f</code> before the quotes (an f-string) puts values from the curly braces right into the text: <code>f\"Attack {i+1}\"</code>. More on this in Scroll V.</p><p>This repeats 5 times, with <code>i</code> going 0 → 4.</p><h3>while loop</h3><pre><code>hp = 100\nwhile hp > 0:\n    hp -= 25\n    print(f\"HP: {hp}\")</code></pre><p>Repeats <em>while</em> the condition is True.</p><h3>Control keywords</h3><ul><li><code>break</code> — exit the loop immediately</li><li><code>continue</code> — skip to the next iteration</li></ul>",
+      "body_ru": "<h2>Циклы — Сила Повтора</h2><p>В Python два типа циклов:</p><h3>Цикл for</h3><pre><code>for i in range(5):\n    print(f\"Атака {i+1}\")</code></pre><p>Строка с буквой <code>f</code> перед кавычками (f-строка) подставляет значения из фигурных скобок прямо в текст: <code>f\"Атака {i+1}\"</code>. Подробнее об этом будет в Свитке V.</p><p>Повторяется 5 раз, <code>i</code> идёт от 0 до 4.</p><h3>Цикл while</h3><pre><code>hp = 100\nwhile hp > 0:\n    hp -= 25\n    print(f\"HP: {hp}\")</code></pre><p>Повторяется <em>пока</em> условие истинно.</p><h3>Управляющие слова</h3><ul><li><code>break</code> — выйти из цикла</li><li><code>continue</code> — перейти к следующей итерации</li></ul>",
       "data": {},
       "xp_reward": 10,
       "is_required": true
@@ -431,8 +431,8 @@
       "task_type": "quiz",
       "title_en": "Quiz: Loops",
       "title_ru": "Испытание: Циклы",
-      "body_en": "<p>Which keyword immediately exits a loop?</p>",
-      "body_ru": "<p>Какое ключевое слово немедленно завершает цикл?</p>",
+      "body_en": "<p>Which keyword exits a loop, leaving the rest of the program running?</p>",
+      "body_ru": "<p>Какое ключевое слово выходит из цикла, оставляя остальной код программы работать дальше?</p>",
       "data": {
         "correct_answer": "break",
         "options": [
@@ -531,8 +531,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>How many times does the body of <code>for i in range(1, {{n}} + 1)</code> run?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>Сколько раз выполнится тело цикла <code>for i in range(1, {{n}} + 1)</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>How many times does the body of <code>for i in range(1, {{n}} + 1)</code> run?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>Сколько раз выполнится тело цикла <code>for i in range(1, {{n}} + 1)</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 32,
@@ -671,8 +671,8 @@
       "task_type": "code",
       "title_en": "The Final Spell",
       "title_ru": "Финальное Заклинание",
-      "body_en": "<p>Write a function <code>power(base, exp)</code> that returns <code>base</code> raised to the power <code>exp</code> <strong>without</strong> using the <code>**</code> operator — use a loop instead.</p><p>Then print: <code>print(power({{base}}, {{exp}}))</code> — expected output: <code>{{result}}</code></p>",
-      "body_ru": "<p>Напиши функцию <code>power(base, exp)</code>, которая возвращает <code>base</code> в степени <code>exp</code> <strong>без</strong> оператора <code>**</code> — используй цикл.</p><p>Затем выведи: <code>print(power({{base}}, {{exp}}))</code> — ожидаемый вывод: <code>{{result}}</code></p>",
+      "body_en": "<p>Write a function <code>power(base, exp)</code> that returns <code>base</code> raised to the power <code>exp</code>, using a loop instead.</p><p>Then print: <code>print(power({{base}}, {{exp}}))</code> — expected output: <code>{{result}}</code></p>",
+      "body_ru": "<p>Напиши функцию <code>power(base, exp)</code>, которая возвращает <code>base</code> в степени <code>exp</code>, используя цикл.</p><p>Затем выведи: <code>print(power({{base}}, {{exp}}))</code> — ожидаемый вывод: <code>{{result}}</code></p>",
       "data": {
         "language": "python",
         "not_yet": ["lambda", "comprehension", "try", "import", "class"],
@@ -730,8 +730,8 @@
             "en": "A power is repeated multiplication: base × base × ... exactly exp times. So you need a loop of exp turns."
           },
           {
-            "ru": "Начни с result = 1 и на каждом обороте умножай result на base. Оператор ** использовать нельзя.",
-            "en": "Start with result = 1 and multiply result by base on every turn. The ** operator is not allowed."
+            "ru": "Начни с result = 1 и на каждом обороте умножай result на base.",
+            "en": "Start with result = 1 and multiply result by base on every turn."
           }
         ],
         "skeleton": {
@@ -753,8 +753,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>What is <code>result</code> in your function after two turns of the loop for <code>power({{base}}, 5)</code>?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>Чему равно <code>result</code> в твоей функции после двух оборотов цикла при вызове <code>power({{base}}, 5)</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>What is <code>result</code> in your function after two turns of the loop for <code>power({{base}}, 5)</code>?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>Чему равно <code>result</code> в твоей функции после двух оборотов цикла при вызове <code>power({{base}}, 5)</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 42,
@@ -991,8 +991,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>How many characters are in the string <code>battle_cry(\"{{name}}\")</code> returns?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>Сколько символов в строке, которую вернёт <code>battle_cry(\"{{name}}\")</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>How many characters are in the string <code>battle_cry(\"{{name}}\")</code> returns?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>Сколько символов в строке, которую вернёт <code>battle_cry(\"{{name}}\")</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 52,
@@ -1229,8 +1229,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>What would <code>count_big({{numbers}})</code> return if the condition became <code>n &gt; {{t}}</code>?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>Что вернёт <code>count_big({{numbers}})</code>, если заменить условие на <code>n &gt; {{t}}</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>What would <code>count_big({{numbers}})</code> return if the condition became <code>n &gt; {{t}}</code>?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>Что вернёт <code>count_big({{numbers}})</code>, если заменить условие на <code>n &gt; {{t}}</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 62,
@@ -1473,8 +1473,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>How many values does <code>for gold in heroes.values()</code> go through if <code>heroes = {{heroes}}</code>?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>Сколько значений обойдёт цикл <code>for gold in heroes.values()</code>, если <code>heroes = {{heroes}}</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>How many values does <code>for gold in heroes.values()</code> go through if <code>heroes = {{heroes}}</code>?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>Сколько значений обойдёт цикл <code>for gold in heroes.values()</code>, если <code>heroes = {{heroes}}</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 72,
@@ -1664,8 +1664,8 @@
             "en": "You need the hero with the highest hp: go through the heroes and remember the best one."
           },
           {
-            "ru": "Сравнивай hp героев: лучшего можно запоминать в цикле или найти функцией max с параметром key. Потом собери строку f-строкой по образцу.",
-            "en": "Compare the heroes' hp: remember the best one in a loop or find it with max and its key parameter. Then build the string with an f-string following the pattern."
+            "ru": "Заведи переменную best = героя из первого элемента списка (heroes[0]). В цикле, если hp текущего героя больше, чем hp у best, замени best. В конце собери строку: f\"Champion: {best['name']} ({best['hp']})\".",
+            "en": "Create a variable best = the first hero of the list (heroes[0]). In the loop, if the current hero's hp is greater than best's hp, replace best. At the end build the string: f\"Champion: {best['name']} ({best['hp']})\"."
           }
         ],
         "skeleton": {
@@ -1686,8 +1686,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>What does <code>champion({{party}})</code> return?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>Что вернёт <code>champion({{party}})</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>What does <code>champion({{party}})</code> return?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>Что вернёт <code>champion({{party}})</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 81,

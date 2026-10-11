@@ -156,7 +156,7 @@ def _answer(about, vars_):
     if about == 142:
         return max(0, vars_["hp"] - vars_["d"] * vars_["times"])
     if about == 152:
-        return f"{vars_['name']} ({vars_['hp']} hp)"
+        return f"{vars_['name']} ({vars_['hp']} hp), mana {vars_['mana']}"
     if about == 162:
         return len(set(ast.literal_eval(vars_["classes"])))
     raise AssertionError(about)

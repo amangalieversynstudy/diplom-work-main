@@ -194,8 +194,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>How many dots are in the string <code>initials(\"{{name}}\")</code> returns?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>Сколько точек будет в строке, которую вернёт <code>initials(\"{{name}}\")</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>How many dots are in the string <code>initials(\"{{name}}\")</code> returns?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>Сколько точек будет в строке, которую вернёт <code>initials(\"{{name}}\")</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 92,
@@ -445,8 +445,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>What does <code>unique_count({{items}} + {{items}})</code> return: the list joined to itself?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>Что вернёт <code>unique_count({{items}} + {{items}})</code>: список приписан сам к себе?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>What does <code>unique_count({{items}} + {{items}})</code> return: the list joined to itself?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>Что вернёт <code>unique_count({{items}} + {{items}})</code>: список приписан сам к себе?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 102,
@@ -569,8 +569,8 @@
       "task_type": "story",
       "title_en": "Exceptions",
       "title_ru": "Исключения",
-      "body_en": "<h2>Errors are events</h2><p>When something goes wrong Python “raises” an exception: <code>ZeroDivisionError</code>, <code>ValueError</code>, <code>KeyError</code>. If nobody catches it, the program crashes. You catch it like this:</p><pre><code>try:\n    number = int(\"abc\")\nexcept ValueError:\n    number = 0\nelse:\n    print(\"It worked\")\nfinally:\n    print(\"This always runs\")</code></pre><p>Catch a <strong>specific</strong> error, not everything: otherwise you hide real bugs. Raise your own with <code>raise ValueError(\"message\")</code>.</p>",
-      "body_ru": "<h2>Ошибки — это события</h2><p>Когда что-то идёт не так, Python «бросает» исключение: <code>ZeroDivisionError</code>, <code>ValueError</code>, <code>KeyError</code>. Если его не поймать, программа падает. Поймать можно так:</p><pre><code>try:\n    number = int(\"abc\")\nexcept ValueError:\n    number = 0\nelse:\n    print(\"Получилось\")\nfinally:\n    print(\"Это выполнится всегда\")</code></pre><p>Лови <strong>конкретную</strong> ошибку, а не все подряд: иначе спрячешь настоящий баг. Свою ошибку бросают через <code>raise ValueError(\"сообщение\")</code>.</p>",
+      "body_en": "<h2>Errors are events</h2><p>When something goes wrong Python “raises” an exception: <code>ZeroDivisionError</code>, <code>ValueError</code>, <code>KeyError</code>. If nobody catches it, the program crashes. You catch it like this:</p><pre><code>try:\n    number = int(\"abc\")\nexcept ValueError:\n    number = 0\nelse:\n    print(\"It worked\")\nfinally:\n    print(\"This always runs\")</code></pre><p>Catch a <strong>specific</strong> error, not everything: otherwise you hide real bugs. Raise your own with <code>raise ValueError(\"message\")</code>.</p><p>Regular division <code>/</code> always gives a float: <code>6 / 3</code> is <code>2.0</code>, not <code>2</code>.</p>",
+      "body_ru": "<h2>Ошибки — это события</h2><p>Когда что-то идёт не так, Python «бросает» исключение: <code>ZeroDivisionError</code>, <code>ValueError</code>, <code>KeyError</code>. Если его не поймать, программа падает. Поймать можно так:</p><pre><code>try:\n    number = int(\"abc\")\nexcept ValueError:\n    number = 0\nelse:\n    print(\"Получилось\")\nfinally:\n    print(\"Это выполнится всегда\")</code></pre><p>Лови <strong>конкретную</strong> ошибку, а не все подряд: иначе спрячешь настоящий баг. Свою ошибку бросают через <code>raise ValueError(\"сообщение\")</code>.</p><p>Обычное деление <code>/</code> всегда даёт дробное число: <code>6 / 3</code> равно <code>2.0</code>, а не <code>2</code>.</p>",
       "xp_reward": 10,
       "is_required": true,
       "data": {}
@@ -708,8 +708,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>What will your function return for <code>safe_divide({{a}}, {{b}})</code>?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>Что вернёт твоя функция при вызове <code>safe_divide({{a}}, {{b}})</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>What will your function return for <code>safe_divide({{a}}, {{b}})</code>?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>Что вернёт твоя функция при вызове <code>safe_divide({{a}}, {{b}})</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 112,
@@ -838,8 +838,8 @@
       "task_type": "story",
       "title_en": "List Comprehensions",
       "title_ru": "Списочные выражения",
-      "body_en": "<h2>A loop in one line</h2><p>You can build a list without an explicit loop:</p><pre><code>squares = [n * n for n in range(5)]        # [0, 1, 4, 9, 16]\nevens = [n for n in range(10) if n % 2 == 0]   # [0, 2, 4, 6, 8]\nnames = {name: len(name) for name in [\"ice\", \"fire\"]}   # {'ice': 3, 'fire': 4}</code></pre><p>Read it as “take <code>n * n</code> for every <code>n</code> if the condition holds”. When an expression gets long, go back to a plain loop: readability beats brevity.</p>",
-      "body_ru": "<h2>Цикл в одну строку</h2><p>Список можно собрать без явного цикла:</p><pre><code>squares = [n * n for n in range(5)]        # [0, 1, 4, 9, 16]\nevens = [n for n in range(10) if n % 2 == 0]   # [0, 2, 4, 6, 8]\nnames = {name: len(name) for name in [\"ice\", \"fire\"]}   # {'ice': 3, 'fire': 4}</code></pre><p>Читается так: «возьми <code>n * n</code> для каждого <code>n</code>, если условие верно». Если выражение становится длинным, лучше вернуться к обычному циклу: читаемость важнее краткости.</p>",
+      "body_en": "<h2>A loop in one line</h2><p>You can build a list without an explicit loop:</p><pre><code>squares = [n * n for n in range(5)]        # [0, 1, 4, 9, 16]\nevens = [n for n in range(10) if n % 2 == 0]   # [0, 2, 4, 6, 8]\nnames = {name: len(name) for name in [\"ice\", \"fire\"]}   # {'ice': 3, 'fire': 4}</code></pre><p>The <code>%</code> operator gives the remainder of division: <code>7 % 2</code> is 1, and <code>8 % 2</code> is 0. A number is even if its remainder after dividing by 2 is zero.</p><p>Read it as “take <code>n * n</code> for every <code>n</code> if the condition holds”. When an expression gets long, go back to a plain loop: readability beats brevity.</p>",
+      "body_ru": "<h2>Цикл в одну строку</h2><p>Список можно собрать без явного цикла:</p><pre><code>squares = [n * n for n in range(5)]        # [0, 1, 4, 9, 16]\nevens = [n for n in range(10) if n % 2 == 0]   # [0, 2, 4, 6, 8]\nnames = {name: len(name) for name in [\"ice\", \"fire\"]}   # {'ice': 3, 'fire': 4}</code></pre><p>Оператор <code>%</code> даёт остаток от деления: <code>7 % 2</code> равно 1, а <code>8 % 2</code> равно 0. Число чётное, если остаток от деления на 2 равен нулю.</p><p>Читается так: «возьми <code>n * n</code> для каждого <code>n</code>, если условие верно». Если выражение становится длинным, лучше вернуться к обычному циклу: читаемость важнее краткости.</p>",
       "xp_reward": 10,
       "is_required": true,
       "data": {}
@@ -941,8 +941,8 @@
         "hidden_check": "assert squares_of_evens([]) == []\nassert squares_of_evens([1, 3]) == []\nassert squares_of_evens([2, 10]) == [4, 100]\nassert squares_of_evens([4, 2]) == [16, 4]\nassert squares_of_evens([-2]) == [4]",
         "hints": [
           {
-            "ru": "Список можно собрать одной строкой: [выражение for n in numbers if условие].",
-            "en": "A list can be built in one line: [expression for n in numbers if condition]."
+            "ru": "Список можно собрать в одну строку: «что положить в результат», потом for, потом if. Сначала реши словами, какие числа нужны.",
+            "en": "A list can be built in one line: \"what to put into the result\", then for, then if. First work out in words which numbers you need."
           },
           {
             "ru": "Чётность проверяют остатком от деления на 2. В скобках сначала пишут, что положить в результат, потом for, а условие идёт после if.",
@@ -965,8 +965,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>How many elements are in the list <code>squares_of_evens({{numbers}})</code> returns?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>Сколько элементов будет в списке, который вернёт <code>squares_of_evens({{numbers}})</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>How many elements are in the list <code>squares_of_evens({{numbers}})</code> returns?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>Сколько элементов будет в списке, который вернёт <code>squares_of_evens({{numbers}})</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 122,
@@ -1089,8 +1089,8 @@
       "task_type": "story",
       "title_en": "Modules and the Standard Library",
       "title_ru": "Модули и стандартная библиотека",
-      "body_en": "<h2>Do not rewrite what exists</h2><p>Python ships with a large library. You bring it in with <code>import</code>:</p><pre><code>import math\nprint(math.sqrt(81))          # 9.0\n\nfrom collections import Counter\nprint(Counter(\"banana\"))     # Counter({'a': 3, 'n': 2, 'b': 1})\n\nimport random\nrandom.seed(7)               # the same “random” every time\nprint(random.randint(1, 6))</code></pre><p>Two kinds of import: <code>import math</code> (then you write <code>math.sqrt</code>) and <code>from math import sqrt</code> (then just <code>sqrt</code>). Your own <code>utils.py</code> can be imported too.</p>",
-      "body_ru": "<h2>Не пиши то, что уже написано</h2><p>Python поставляется с большой библиотекой. Подключают её через <code>import</code>:</p><pre><code>import math\nprint(math.sqrt(81))          # 9.0\n\nfrom collections import Counter\nprint(Counter(\"banana\"))     # Counter({'a': 3, 'n': 2, 'b': 1})\n\nimport random\nrandom.seed(7)               # одно и то же «случайное» каждый раз\nprint(random.randint(1, 6))</code></pre><p>Два вида импорта: <code>import math</code> (потом пишут <code>math.sqrt</code>) и <code>from math import sqrt</code> (потом просто <code>sqrt</code>). Свой файл <code>utils.py</code> тоже можно импортировать.</p>",
+      "body_en": "<h2>Do not rewrite what exists</h2><p>Python ships with a large library. You bring it in with <code>import</code>:</p><pre><code>import math\nprint(math.sqrt(81))          # 9.0\n\nfrom collections import Counter\nprint(Counter(\"banana\"))     # Counter({'a': 3, 'n': 2, 'b': 1})\n\nimport random\nrandom.seed(7)               # the same “random” every time\nprint(random.randint(1, 6))</code></pre><p>Two kinds of import: <code>import math</code> (then you write <code>math.sqrt</code>) and <code>from math import sqrt</code> (then just <code>sqrt</code>).</p><p>The dict method <code>get</code> fetches the value for a key, and if the key is missing it returns a fallback value:</p><pre><code>stock = {\"gold\": 5}\nprint(stock.get(\"gold\", 0))    # 5\nprint(stock.get(\"sword\", 0))   # 0 - no such key\nstock[\"gold\"] = stock.get(\"gold\", 0) + 1</code></pre>",
+      "body_ru": "<h2>Не пиши то, что уже написано</h2><p>Python поставляется с большой библиотекой. Подключают её через <code>import</code>:</p><pre><code>import math\nprint(math.sqrt(81))          # 9.0\n\nfrom collections import Counter\nprint(Counter(\"banana\"))     # Counter({'a': 3, 'n': 2, 'b': 1})\n\nimport random\nrandom.seed(7)               # одно и то же «случайное» каждый раз\nprint(random.randint(1, 6))</code></pre><p>Два вида импорта: <code>import math</code> (потом пишут <code>math.sqrt</code>) и <code>from math import sqrt</code> (потом просто <code>sqrt</code>).</p><p>Метод словаря <code>get</code> достаёт значение по ключу, а если ключа нет — возвращает запасное значение:</p><pre><code>stock = {\"gold\": 5}\nprint(stock.get(\"gold\", 0))    # 5\nprint(stock.get(\"sword\", 0))   # 0 — ключа нет\nstock[\"gold\"] = stock.get(\"gold\", 0) + 1</code></pre>",
       "xp_reward": 10,
       "is_required": true,
       "data": {}
@@ -1216,8 +1216,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>How many keys are in the dict <code>word_count(\"{{text}}\")</code> returns?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>Сколько ключей будет в словаре, который вернёт <code>word_count(\"{{text}}\")</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>How many keys are in the dict <code>word_count(\"{{text}}\")</code> returns?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>Сколько ключей будет в словаре, который вернёт <code>word_count(\"{{text}}\")</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 132,
@@ -1464,8 +1464,8 @@
             "en": "Health is stored in self.hp: the method must change exactly that."
           },
           {
-            "ru": "Вычти damage, но здоровье не должно стать отрицательным: сравни результат с нулём (можно функцией max).",
-            "en": "Subtract damage, but health must not become negative: compare the result with zero (max can do it)."
+            "ru": "Вычти damage, но здоровье не должно стать отрицательным. Посчитай новое значение; если оно меньше нуля, запиши ноль (через if или через функцию max(0, ...)).",
+            "en": "Subtract damage, but health must not become negative. Compute the new value; if it is below zero, store zero (with if or with the function max(0, ...))."
           }
         ],
         "skeleton": {
@@ -1484,8 +1484,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>A hero has <code>hp = {{hp}}</code>. Each hit takes {{d}}, hits in a row: {{times}}. What is <code>hero.hp</code> in your implementation?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>У героя <code>hp = {{hp}}</code>. Каждый удар отнимает {{d}}, ударов подряд: {{times}}. Чему будет равно <code>hero.hp</code> в твоей реализации?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>A hero has <code>hp = {{hp}}</code>. Each hit takes {{d}}, hits in a row: {{times}}. What is <code>hero.hp</code> in your implementation?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>У героя <code>hp = {{hp}}</code>. Каждый удар отнимает {{d}}, ударов подряд: {{times}}. Чему будет равно <code>hero.hp</code> в твоей реализации?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 142,
@@ -1758,8 +1758,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>What string does <code>describe()</code> return for a plain <code>Hero(\"{{name}}\", {{hp}})</code>, not a mage? (The mage's mana is {{mana}}.)</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>Какую строку вернёт <code>describe()</code> у обычного <code>Hero(\"{{name}}\", {{hp}})</code>, не у мага? (Мана мага: {{mana}}.)</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>What string does <code>describe()</code> return for the mage <code>Mage(\"{{name}}\", {{hp}}, {{mana}})</code>?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>Какую строку вернёт <code>describe()</code> у мага <code>Mage(\"{{name}}\", {{hp}}, {{mana}})</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 152,
@@ -1792,7 +1792,7 @@
               "o2": "Mira (70 hp), mana 120",
               "o3": "Mira (120 hp)",
               "o4": "70 (Mira hp)",
-              "right": "Mira (70 hp)"
+              "right": "Mira (70 hp), mana 120"
             }
           },
           {
@@ -1804,7 +1804,7 @@
               "o2": "Aidan (55 hp)",
               "o3": "Aidan (55 hp), mana 80",
               "o4": "Aidan (80 hp)",
-              "right": "Aidan (55 hp)"
+              "right": "Aidan (55 hp), mana 80"
             }
           },
           {
@@ -1816,7 +1816,7 @@
               "o2": "90 (Bo hp)",
               "o3": "Bo (90 hp)",
               "o4": "Bo (90 hp), mana 30",
-              "right": "Bo (90 hp)"
+              "right": "Bo (90 hp), mana 30"
             }
           },
           {
@@ -1828,7 +1828,7 @@
               "o2": "Lia (200 hp)",
               "o3": "40 (Lia hp)",
               "o4": "Lia (40 hp)",
-              "right": "Lia (40 hp)"
+              "right": "Lia (40 hp), mana 200"
             }
           },
           {
@@ -1840,7 +1840,7 @@
               "o2": "Kai (120 hp), mana 15",
               "o3": "Kai (15 hp)",
               "o4": "120 (Kai hp)",
-              "right": "Kai (120 hp)"
+              "right": "Kai (120 hp), mana 15"
             }
           },
           {
@@ -1852,7 +1852,7 @@
               "o2": "Tor (65 hp)",
               "o3": "Tor (65 hp), mana 10",
               "o4": "Tor (10 hp)",
-              "right": "Tor (65 hp)"
+              "right": "Tor (65 hp), mana 10"
             }
           }
         ]
@@ -1894,8 +1894,8 @@
       "task_type": "story",
       "title_en": "The Grand Quest",
       "title_ru": "Итоговый квест",
-      "body_en": "<h2>The guild awaits a report</h2><p>The final trial of the course. Recall everything you learned: lists and dicts, loops, functions, the dict methods <code>get</code> and <code>items</code>.</p><p>The task: the guild has heroes with classes and health. You must summarise them: how much health each class has in total. Think about which structure stores “class → total”.</p><p>Hint: <code>counts.get(key, 0) + value</code> saves you the “is the key already there” check.</p>",
-      "body_ru": "<h2>Гильдия ждёт отчёта</h2><p>Последнее испытание курса. Вспомни всё, что прошёл: списки и словари, циклы, функции, методы словаря <code>get</code> и <code>items</code>.</p><p>Задача: у гильдии есть герои с классами и здоровьем. Нужно свести их в отчёт: сколько здоровья суммарно у каждого класса. Подумай, какая структура хранит «класс → сумма».</p><p>Подсказка: <code>counts.get(key, 0) + value</code> избавляет от проверки «есть ли уже такой ключ».</p>",
+      "body_en": "<h2>The guild awaits a report</h2><p>The final trial of the course. Recall everything you learned: lists and dicts, loops, functions, the dict methods <code>get</code> and <code>items</code>.</p><p>The task: the guild has heroes with classes and health. You must summarise them: how much health each class has in total. Think about which structure stores “class → total”.</p><p>The hint will come in the task itself; for now, recall the dict methods <code>get</code> and <code>items</code>.</p>",
+      "body_ru": "<h2>Гильдия ждёт отчёта</h2><p>Последнее испытание курса. Вспомни всё, что прошёл: списки и словари, циклы, функции, методы словаря <code>get</code> и <code>items</code>.</p><p>Задача: у гильдии есть герои с классами и здоровьем. Нужно свести их в отчёт: сколько здоровья суммарно у каждого класса. Подумай, какая структура хранит «класс → сумма».</p><p>Подсказка придёт в самом задании, а пока вспомни методы словаря <code>get</code> и <code>items</code>.</p>",
       "xp_reward": 10,
       "is_required": true,
       "data": {}
@@ -2026,8 +2026,8 @@
       "task_type": "quiz",
       "title_en": "Explain your solution",
       "title_ru": "Объясни своё решение",
-      "body_en": "<p>How many keys are in the dict your function returns if the heroes' classes are <code>{{classes}}</code>?</p><p>Think about your own program: you can run it, but the answer is about what it does.</p>",
-      "body_ru": "<p>Сколько ключей будет в словаре, который вернёт твоя функция, если у героев такие классы: <code>{{classes}}</code>?</p><p>Подумай о своей программе: запустить её можно, но вопрос о том, как она работает.</p>",
+      "body_en": "<p>How many keys are in the dict your function returns if the heroes' classes are <code>{{classes}}</code>?</p><p>This is a question about your solution: answer it without running the code.</p>",
+      "body_ru": "<p>Сколько ключей будет в словаре, который вернёт твоя функция, если у героев такие классы: <code>{{classes}}</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
         "kind": "explain",
         "about": 162,

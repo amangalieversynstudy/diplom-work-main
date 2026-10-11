@@ -30,6 +30,8 @@ export const en = {
   },
   stage: {
     level: "Level {n}",
+    hp: "Hero health",
+    mp: "Attempt energy",
   },
   nav: {
     worlds: "Course",

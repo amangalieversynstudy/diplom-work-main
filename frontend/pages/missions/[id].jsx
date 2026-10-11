@@ -5,6 +5,14 @@ import CodeRunnerPanel from "../../components/CodeRunnerPanel";
 import CodemancerStage from "../../components/CodemancerStage";
 import LevelUpBurst from "../../components/LevelUpBurst";
 import MissionComplete from "../../components/MissionComplete";
+import {
+  enemyHpFromProgress,
+  enemyHueForMission,
+  heroHpAfter,
+  heroXForStep,
+  mpAfter,
+  solvedCount,
+} from "../../lib/stage";
 import { useRouter } from "next/router";
 import { toast } from "sonner";
 import {
@@ -58,9 +66,17 @@ export default function MissionDetail() {
   const [playerLevel, setPlayerLevel] = useState(1);
 
   // Боевая фаза сцены, завязанная на действия игрока в задаче:
-  // idle | casting (код выполняется) | victory (тест пройден) | defeat (ошибка).
+  // idle | casting (код выполняется) | victory (тест пройден) | defeat (ошибка) |
+  // finale (миссия пройдена: последний удар, враг падает).
   // tick перезапускает one-shot анимации (снаряд, вспышка) при каждом событии.
   const [stage, setStage] = useState({ phase: "idle", tick: 0 });
+  // HP героя и энергия попыток на текущем шаге. Только картинка: ничего не блокируют.
+  const [vitals, setVitals] = useState({ hp: 100, mp: 100 });
+  // Враг повержен: после финала не возвращается, пока страница открыта.
+  const [defeated, setDefeated] = useState(false);
+  const defeatedRef = useRef(false);
+  const lastSolveRef = useRef(0);
+  const [heroStep, setHeroStep] = useState(-1);
   const [levelUp, setLevelUp] = useState(null);
   // всплывающее «+XP» над сценой и окно итога миссии
   const [xpPop, setXpPop] = useState(null);
@@ -75,6 +91,25 @@ export default function MissionDetail() {
   const activeTask = useMemo(() => {
     return tasks.find((t) => t.id === activeTaskId) || tasks[0] || null;
   }, [tasks, activeTaskId]);
+
+  // Номер текущего шага: от него зависят место героя на сцене и сброс HP/MP.
+  const stepIndex = tasks.findIndex((task) => task.id === activeTask?.id);
+
+  // Новый шаг: здоровье и энергия снова полные.
+  useEffect(() => {
+    setVitals((v) => ({ hp: heroHpAfter(v.hp, "step"), mp: mpAfter(v.mp, "step") }));
+  }, [activeTaskId]);
+
+  // Герой идёт к новому шагу. Если шаг только что решён, сперва отыгрывает удар (~1 с), потом идёт.
+  useEffect(() => {
+    if (stepIndex < 0) return undefined;
+    if (Date.now() - lastSolveRef.current > 1500) {
+      setHeroStep(stepIndex);
+      return undefined;
+    }
+    const timer = setTimeout(() => setHeroStep(stepIndex), 950);
+    return () => clearTimeout(timer);
+  }, [stepIndex]);
 
   // Новый шаг всегда открывается с условия, а не с редактора прошлого шага.
   // На телефоне прокручиваем к полосе шагов: иначе после победы новое условие остаётся за экраном.
@@ -93,6 +128,16 @@ export default function MissionDetail() {
       tabsRef.current?.scrollIntoView({ block: "start", behavior: "smooth" })
     );
   };
+
+  // Другая миссия на том же экране: у неё свой враг, сцена начинается заново.
+  useEffect(() => {
+    defeatedRef.current = false;
+    lastSolveRef.current = 0;
+    setDefeated(false);
+    setHeroStep(-1);
+    setVitals({ hp: 100, mp: 100 });
+    setStage({ phase: "idle", tick: 0 });
+  }, [id]);
 
   // Загрузка данных миссии и инвентаря пользователя
   useEffect(() => {
@@ -117,6 +162,11 @@ export default function MissionDetail() {
         setMission(data);
         setTasks(list);
         setTaskProgress(mapping);
+        // миссия уже пройдена раньше: враг повержен без анимации
+        if (list.length > 0 && list.every((task) => mapping[task.id]?.status === "completed")) {
+          defeatedRef.current = true;
+          setDefeated(true);
+        }
         // то, что ученик уже набрал в этой сессии, важнее сохранённого на сервере
         setCodeDrafts((prev) => ({ ...drafts, ...prev }));
         // Смена языка перезагружает миссию — текущий шаг не сбрасываем. При
@@ -174,7 +224,13 @@ export default function MissionDetail() {
   useEffect(() => {
     if (stage.phase === "idle") return;
     const ms =
-      stage.phase === "casting" ? 20000 : stage.phase === "victory" ? 1100 : 800;
+      stage.phase === "casting"
+        ? 20000
+        : stage.phase === "finale"
+        ? 1600
+        : stage.phase === "victory"
+        ? 1100
+        : 800;
     const timer = setTimeout(() => setStage((s) => ({ ...s, phase: "idle" })), ms);
     return () => clearTimeout(timer);
   }, [stage.phase, stage.tick]);
@@ -182,6 +238,12 @@ export default function MissionDetail() {
   // CodeRunnerPanel сообщает фазу запуска кода → герой колдует / бьёт голема /
   // отшатывается. Это и есть интерактивность, завязанная на выполнение задания.
   const handleRunState = (state) => {
+    // попытка тратит энергию, неудача ранит героя, успех лечит (только картинка)
+    if (state === "running") setVitals((v) => ({ ...v, mp: mpAfter(v.mp, "attempt") }));
+    else if (state === "success") setVitals((v) => ({ ...v, hp: heroHpAfter(v.hp, "success") }));
+    else setVitals((v) => ({ ...v, hp: heroHpAfter(v.hp, "failure") }));
+    // враг уже повержен: ударов по нему больше нет
+    if (defeatedRef.current && state !== "running") return;
     const phase =
       state === "running" ? "casting" : state === "success" ? "victory" : "defeat";
     setStage((s) => ({ phase, tick: s.tick + 1 }));
@@ -223,6 +285,12 @@ export default function MissionDetail() {
   const finishMission = async () => {
     try {
       const result = await Missions.complete(id);
+      // последний удар: враг падает и больше не возвращается
+      if (!defeatedRef.current) {
+        defeatedRef.current = true;
+        setDefeated(true);
+        setStage((st) => ({ phase: "finale", tick: st.tick + 1 }));
+      }
       // backend честно шлёт leveled_up/xp_added/new_level
       if (result?.xp_added > 0) {
         toast.success(
@@ -293,6 +361,7 @@ export default function MissionDetail() {
 
   // Сервер засчитал шаг: обновляем прогресс, идём дальше или завершаем миссию.
   const onTaskSolved = async (taskId, progress) => {
+    lastSolveRef.current = Date.now();
     setTaskProgress((prev) => ({ ...prev, [taskId]: progress }));
     // ровно столько XP сервер выдал за этот шаг (повторное решение не платит)
     const paid = progress?.xp_added || 0;
@@ -358,14 +427,17 @@ export default function MissionDetail() {
     const userAnswer = quizAnswers[taskId];
     if (!userAnswer || savingTaskId === taskId) return;
     setSavingTaskId(taskId);
+    setVitals((v) => ({ ...v, mp: mpAfter(v.mp, "attempt") }));
     try {
       const res = await TaskAPI.submit(taskId, userAnswer);
       setTaskProgress((prev) => ({ ...prev, [taskId]: res.progress }));
       if (res.correct) {
-        setStage((st) => ({ phase: "victory", tick: st.tick + 1 }));
+        setVitals((v) => ({ ...v, hp: heroHpAfter(v.hp, "success") }));
+        if (!defeatedRef.current) setStage((st) => ({ phase: "victory", tick: st.tick + 1 }));
         await onTaskSolved(taskId, res.progress);
       } else {
-        setStage((st) => ({ phase: "defeat", tick: st.tick + 1 }));
+        setVitals((v) => ({ ...v, hp: heroHpAfter(v.hp, "failure") }));
+        if (!defeatedRef.current) setStage((st) => ({ phase: "defeat", tick: st.tick + 1 }));
         toast.error(t("missionPage.quizWrong"));
       }
     } catch (e) {
@@ -534,13 +606,17 @@ export default function MissionDetail() {
           </Button>
         </header>
 
-        {/* Игровая сцена Codemancer: пиксель-арт + HUD (HP/MP/Level).
-            MP завязана на ai_summons (мана для AI-призывов), HP — флейвор. */}
+        {/* Игровая сцена Codemancer: пиксель-арт + HUD (HP/MP/Level). Герой идёт вперёд по шагам,
+            у врага полоска HP = прогресс миссии; HP героя — здоровье, MP — энергия попыток. */}
         <div className="relative">
           <CodemancerStage
             level={playerLevel}
-            hpPct={100}
-            mpPct={Math.min(100, (inventory.ai_summons || 0) * 20)}
+            hpPct={vitals.hp}
+            mpPct={vitals.mp}
+            heroX={heroXForStep(heroStep < 0 ? stepIndex : heroStep, tasks.length)}
+            enemyHpPct={enemyHpFromProgress(solvedCount(tasks, taskProgress), tasks.length)}
+            enemyHue={enemyHueForMission(mission.order ?? mission.id)}
+            defeated={defeated}
             phase={stage.phase}
             tick={stage.tick}
           />

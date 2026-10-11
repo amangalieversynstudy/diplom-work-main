@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Layout from "../../components/Layout";
 import MissionPath from "../../components/MissionPath";
@@ -8,6 +8,7 @@ import { lockReason, missionTitle, missionXp } from "../../lib/missions";
 import { Lock, CheckCircle, X as XIcon, Compass } from "lucide-react";
 import gsap from "gsap";
 import { prefersReducedMotion } from "../../lib/motion";
+import { mapWalk } from "../../lib/stage";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Missions, missionStatus } from "../../lib/api";
@@ -18,6 +19,46 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
+// На сервере useLayoutEffect не нужен (и предупреждает), в браузере он не даёт маркеру мигнуть в конечной точке.
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+// Где в прошлый раз стоял герой на карте: идти он должен только после новой победы.
+const HERO_SEEN_KEY = "rpg-map-hero-node";
+
+function readSeenNode() {
+  try {
+    const raw = window.localStorage.getItem(HERO_SEEN_KEY);
+    return raw === null ? null : Number(raw);
+  } catch {
+    return null;
+  }
+}
+
+function saveSeenNode(node) {
+  try {
+    window.localStorage.setItem(HERO_SEEN_KEY, String(node));
+  } catch {
+    /* без памяти маркер просто не анимируется */
+  }
+}
+
+// Длина пути до точки, ближайшей к узлу (сканируем вперёд от fromLen): так находим узел на тропе.
+function lengthNear(path, point, fromLen = 0) {
+  const total = path.getTotalLength();
+  const stepLen = total / 800;
+  let best = fromLen;
+  let bestDist = Infinity;
+  for (let len = fromLen; len <= total + 1e-6; len += stepLen) {
+    const p = path.getPointAtLength(len);
+    const dist = (p.x - point.x) ** 2 + (p.y - point.y) ** 2;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = len;
+    }
+  }
+  return best;
+}
+
 export default function Worlds() {
   const dict = useDictionary();
   const { t, language } = useI18n();
@@ -25,10 +66,14 @@ export default function Worlds() {
   
   const [missions, setMissions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [heroArrived, setHeroArrived] = useState(false);
-  
+
   const pinContainerRef = useRef(null);
   const mapScrollRef = useRef(null);
+  const trailRef = useRef(null);
+  const heroRef = useRef(null);
+  const swayRef = useRef(null);
+  // узел, который ученик уже видел; обновляется, когда герой дошёл
+  const seenNodeRef = useRef(undefined);
 
   useEffect(() => {
     setLoading(true);
@@ -41,14 +86,6 @@ export default function Worlds() {
       .finally(() => setLoading(false));
     // refetch при смене языка
   }, [language]);
-
-  // Маркер героя «доезжает» к текущему узлу при открытии карты.
-  useEffect(() => {
-    if (loading || missions.length === 0) return undefined;
-    setHeroArrived(false);
-    const id = setTimeout(() => setHeroArrived(true), 500);
-    return () => clearTimeout(id);
-  }, [loading, missions]);
 
   // Вычисляем хаотичные координаты
   const getCoords = (index, total) => {
@@ -157,10 +194,69 @@ export default function Worlds() {
     });
     return lastDone;
   })();
-  const heroCoords = getCoords(
-    heroArrived ? heroTarget : Math.max(0, heroTarget - 1),
-    missions.length
-  );
+  const heroCoords = getCoords(heroTarget, missions.length);
+
+  // Герой идёт к узлу только после новой победы: сравниваем с узлом, который ученик видел в прошлый раз
+  // (localStorage; без него маркер просто стоит на месте). Идёт вдоль тропы, если её путь доступен.
+  useIsoLayoutEffect(() => {
+    if (loading || missions.length === 0) return undefined;
+    if (seenNodeRef.current === undefined) seenNodeRef.current = readSeenNode();
+    const walk = mapWalk(seenNodeRef.current, heroTarget);
+    saveSeenNode(heroTarget);
+    const marker = heroRef.current;
+    if (!walk || !marker || prefersReducedMotion()) {
+      seenNodeRef.current = heroTarget;
+      return undefined;
+    }
+
+    const count = missions.length;
+    const from = getCoords(walk.from, count);
+    const to = getCoords(walk.to, count);
+    const trail = trailRef.current;
+    let along = null;
+    try {
+      if (trail && typeof trail.getPointAtLength === "function") {
+        const startLen = lengthNear(trail, from);
+        const endLen = lengthNear(trail, to, startLen);
+        if (endLen > startLen) along = { startLen, endLen };
+      }
+    } catch {
+      along = null;
+    }
+    const place = (p) => {
+      const point = along
+        ? trail.getPointAtLength(along.startLen + (along.endLen - along.startLen) * p)
+        : { x: from.x + (to.x - from.x) * p, y: from.y + (to.y - from.y) * p };
+      marker.style.transform = `translate(${point.x}%, ${point.y}%)`;
+      if (swayRef.current) {
+        // покачивание на ходу: наклон и лёгкий подскок
+        const wave = Math.sin(p * Math.PI * 6);
+        swayRef.current.style.transform = `translateY(${-Math.abs(wave) * 4}px) rotate(${wave * 7}deg)`;
+      }
+    };
+
+    place(0);
+    const progress = { p: 0 };
+    const tween = gsap.to(progress, {
+      p: 1,
+      duration: 1.1,
+      delay: 0.5,
+      ease: "power1.inOut",
+      onUpdate: () => place(progress.p),
+      onComplete: () => {
+        seenNodeRef.current = heroTarget;
+        marker.style.transform = `translate(${to.x}%, ${to.y}%)`;
+        if (swayRef.current) swayRef.current.style.transform = "";
+      },
+    });
+    return () => {
+      tween.kill();
+      marker.style.transform = `translate(${to.x}%, ${to.y}%)`;
+      if (swayRef.current) swayRef.current.style.transform = "";
+    };
+    // heroTarget и getCoords выводятся из missions
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, missions]);
 
   return (
     <Layout hideFooter noBottomPadding>
@@ -269,6 +365,7 @@ export default function Worlds() {
                 </defs>
                 
                 <path
+                  ref={trailRef}
                   d={generatePath(missions)}
                   fill="none"
                   stroke="#8b5a2b"
@@ -367,17 +464,15 @@ export default function Worlds() {
                 );
               })}
 
-              {/* Маркер героя: стоит у текущего узла и «доезжает» к нему при входе */}
+              {/* Маркер героя: стоит у текущего узла; после новой победы идёт к нему от прежнего вдоль тропы */}
               <div
+                ref={heroRef}
                 className="absolute inset-0 z-20 pointer-events-none"
-                style={{
-                  transform: `translate(${heroCoords.x}%, ${heroCoords.y}%)`,
-                  transition: "transform 0.7s cubic-bezier(0.4,0,0.2,1)",
-                }}
+                style={{ transform: `translate(${heroCoords.x}%, ${heroCoords.y}%)` }}
                 aria-hidden="true"
               >
                 <div className="absolute left-0 top-0 -translate-x-1/2 -translate-y-[150%]">
-                  <span className="relative grid place-items-center">
+                  <span ref={swayRef} className="relative grid place-items-center">
                     <span className="absolute -inset-2 rounded-full bg-wax/30 animate-ping motion-reduce:animate-none" />
                     <span className="grid h-8 w-8 place-items-center rounded-full border-2 border-wax bg-parchment-light text-wax shadow-[0_4px_10px_rgba(62,39,35,0.5)]">
                       <Compass size={17} strokeWidth={2.5} />

@@ -296,7 +296,7 @@ export default function Worlds() {
                   <span
                     key={`course-${mission.id}`}
                     aria-hidden="true"
-                    className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[210%] whitespace-nowrap rounded-full border border-[#5c3a21]/50 bg-[#f4e4bc]/90 px-3 py-1 text-xs font-bold uppercase tracking-widest text-[#5c3a21]"
+                    className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[330%] whitespace-nowrap rounded-full border border-[#5c3a21]/50 bg-[#f4e4bc]/90 px-3 py-1 text-xs font-bold uppercase tracking-widest text-[#5c3a21]"
                     style={{ left: `${coords.x}%`, top: `${coords.y}%` }}
                   >
                     {mission.track_title}

@@ -2,6 +2,7 @@
 // Через ref наружу торчат write/writeln/clear/reset/fit/focus.
 // CSS для xterm подгружается глобально в pages/_app.js.
 
+import { useI18n } from "../lib/i18n";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
 const RPG_THEME = {
@@ -29,6 +30,8 @@ const RPG_THEME = {
 };
 
 const Terminal = forwardRef(function Terminal({ className = "" }, ref) {
+  const { t } = useI18n();
+  const readyRef = useRef(t("codeRunner.terminalReady"));
   const containerRef = useRef(null);
   const termRef = useRef(null);
   const fitRef = useRef(null);
@@ -99,7 +102,7 @@ const Terminal = forwardRef(function Terminal({ className = "" }, ref) {
       termRef.current = term;
       fitRef.current = fit;
 
-      term.writeln("\x1b[90m# Terminal ready. Press \x1b[33mRun\x1b[90m to execute.\x1b[0m");
+      term.writeln(`\x1b[90m# ${readyRef.current}\x1b[0m`);
     })();
 
     return () => {

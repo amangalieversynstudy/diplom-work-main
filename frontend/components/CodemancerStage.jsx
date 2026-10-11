@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Heart, Droplet } from "lucide-react";
+import { useI18n } from "../lib/i18n";
 
 /**
  * CodemancerStage — пиксель-арт игровая сцена в стиле мокапа codemancer.html.
@@ -23,6 +24,7 @@ export default function CodemancerStage({
   phase = "idle", // idle | casting | victory | defeat — реакция на запуск кода
   tick = 0, // меняется на каждое событие, перезапускает one-shot анимации
 }) {
+  const { t } = useI18n();
   const clamp = (n) => Math.max(0, Math.min(100, Number(n) || 0));
   const hp = clamp(hpPct);
   const mp = clamp(mpPct);
@@ -379,8 +381,8 @@ export default function CodemancerStage({
       </div>
 
       {/* ── Level-пилюля ────────────────────────────────────────── */}
-      <div className="absolute top-3 sm:top-4 left-1/2 -translate-x-1/2 px-4 sm:px-5 py-1.5 rounded-lg bg-gradient-to-b from-[#1a2238] to-[#0c1224] border border-[#2c3a5d] text-[#e6e8f0] text-xs sm:text-xs font-bold tracking-[0.2em] uppercase shadow-[0_6px_14px_rgba(0,0,0,0.4)]">
-        Level {level}
+      <div className="absolute top-3 sm:top-4 right-3 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 px-2.5 sm:px-5 py-1 sm:py-1.5 rounded-lg bg-gradient-to-b from-[#1a2238] to-[#0c1224] border border-[#2c3a5d] text-[#e6e8f0] text-xs sm:text-xs font-bold tracking-[0.12em] sm:tracking-[0.2em] uppercase shadow-[0_6px_14px_rgba(0,0,0,0.4)]">
+        {t("stage.level").replace("{n}", level)}
       </div>
 
       {/* idle-анимации сцены — чистый CSS, без библиотек */}

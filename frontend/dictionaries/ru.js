@@ -28,6 +28,9 @@ export const ru = {
     course_few: "курса",
     course_many: "курсов",
   },
+  stage: {
+    level: "Уровень {n}",
+  },
   nav: {
     worlds: "Курс",
     legends: "Рейтинг",
@@ -1075,6 +1078,7 @@ export const ru = {
         noSkeleton: "У этого шага нет каркаса решения.",
       },
       skeletonDivider: "# ── Каркас решения ──",
+      terminalReady: "Терминал готов. Нажми «Запустить», чтобы выполнить код.",
       resetTitle: "Вернуть код задачи к исходному",
       reset: "Сбросить",
       run: "Запустить",

@@ -400,14 +400,14 @@ function CodeRunnerPanel(
       }`}
     >
       {/* Editor Tabs & Toolbar */}
-      <div className="flex items-center bg-[#252526] overflow-x-auto select-none border-l border-[#333]">
-        <div className="hidden sm:flex items-center gap-2 bg-[#1e1e1e] px-4 py-2 border-t border-[#3794ff] min-w-max cursor-pointer">
+      <div className="flex items-center bg-[#252526] overflow-hidden min-w-0 select-none border-l border-[#333]">
+        <div className="hidden sm:flex items-center gap-2 bg-[#1e1e1e] px-3 py-2 border-t border-[#3794ff] min-w-0 shrink cursor-pointer">
           <FileCode2 size={14} className="text-[#519aba]" />
           <span className="text-xs text-white">main.py</span>
         </div>
 
         {/* Inventory toolbar */}
-        <div className="flex items-center gap-1 sm:gap-3 px-2 sm:px-4 py-1 sm:border-l border-[#333] sm:ml-2">
+        <div className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-2 py-1 sm:border-l border-[#333] sm:ml-1 shrink-0">
           <button
             onClick={handleSkeletonScroll}
             disabled={usingItem || !inventoryCounts?.skeleton_scrolls || !skeletonAvailable}
@@ -438,8 +438,8 @@ function CodeRunnerPanel(
           </button>
         </div>
 
-        <div className="flex-1" />
-        <div className="pl-1 pr-2 sm:px-3 flex items-center gap-1.5 sm:gap-2 bg-[#252526]">
+        <div className="flex-1 min-w-0" />
+        <div className="pl-1 pr-2 sm:px-2 flex items-center gap-1.5 sm:gap-2 bg-[#252526] shrink-0">
           {/* Развернуть редактор на весь экран / свернуть обратно. */}
           <button
             onClick={() => setFullscreen((v) => !v)}
@@ -458,7 +458,7 @@ function CodeRunnerPanel(
             onClick={handleResetCode}
             title={t("codeRunner.resetTitle")}
             aria-label={t("codeRunner.resetTitle")}
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 sm:py-1 rounded border border-[#a0432a] bg-gradient-to-b from-[#7a2b1a] to-[#3a0d06] hover:from-[#8e3420] hover:to-[#4a1208] text-[#f3e6c2] text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,220,140,0.2)]"
+            className="flex items-center gap-1.5 px-2.5 py-2 sm:py-1 rounded border border-[#a0432a] bg-gradient-to-b from-[#7a2b1a] to-[#3a0d06] hover:from-[#8e3420] hover:to-[#4a1208] text-[#f3e6c2] text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,220,140,0.2)]"
           >
             <RotateCcw size={11} />
             <span className="hidden sm:inline">{t("codeRunner.reset")}</span>

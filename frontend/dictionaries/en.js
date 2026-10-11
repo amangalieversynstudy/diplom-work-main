@@ -28,6 +28,9 @@ export const en = {
     course_few: "courses",
     course_many: "courses",
   },
+  stage: {
+    level: "Level {n}",
+  },
   nav: {
     worlds: "Course",
     legends: "Leaderboard",
@@ -1075,6 +1078,7 @@ export const en = {
         noSkeleton: "This step has no solution outline.",
       },
       skeletonDivider: "# ── Solution outline ──",
+      terminalReady: "Terminal ready. Press Run to execute.",
       resetTitle: "Revert task code to original",
       reset: "Reset",
       run: "Run Code",

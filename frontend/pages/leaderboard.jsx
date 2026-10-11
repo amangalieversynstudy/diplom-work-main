@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Layout from "../components/Layout";
+import EmptyScroll from "../components/EmptyScroll";
 import { LeaderboardAPI, Profile, Tracks } from "../lib/api";
 import { getTokens } from "../lib/auth";
 import { useDictionary } from "../lib/i18n";
@@ -171,10 +172,7 @@ export default function Leaderboard() {
           </div>
         ) : data.length === 0 ? (
           // Пустое состояние
-          <div className="text-center py-20 px-6 bg-panel rounded-3xl border border-border transition-colors duration-300">
-            <Trophy size={48} className="mx-auto text-faint mb-4 opacity-50" aria-hidden="true" />
-            <p className="text-muted">{copy.empty}</p>
-          </div>
+          <EmptyScroll icon={Trophy}>{copy.empty}</EmptyScroll>
         ) : (
           // Строки игроков
           <ol className="space-y-3">

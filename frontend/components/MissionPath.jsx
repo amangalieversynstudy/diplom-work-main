@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Lock, CheckCircle, Compass, ChevronRight } from "lucide-react";
+import { Lock, CheckCircle, Compass, ChevronRight, Map } from "lucide-react";
 import { missionStatus } from "../lib/api";
 import { lockReason, missionTitle, missionXp } from "../lib/missions";
 import { useI18n } from "../lib/i18n";
 import Reveal from "./Reveal";
+import EmptyScroll, { SkeletonScroll } from "./EmptyScroll";
 
 // Курсы идут подряд: у каждого своя тропа под своим названием.
 function byCourse(missions) {
@@ -45,18 +46,14 @@ export default function MissionPath({ missions, loading }) {
 
   if (loading) {
     return (
-      <div className="lg:hidden space-y-3 px-4 pt-2 pb-16">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-[68px] rounded-2xl bg-panel border border-border animate-pulse" />
-        ))}
-      </div>
+      <SkeletonScroll label={t("worldsPage.mapLoading")} rows={5} className="lg:hidden px-4 pt-2 pb-16" />
     );
   }
 
   if (!total) {
     return (
-      <div className="lg:hidden px-4 py-12 text-center font-display font-bold text-muted">
-        {t("worldsPage.mapEmpty")}
+      <div className="lg:hidden px-4 py-8">
+        <EmptyScroll icon={Map}>{t("worldsPage.mapEmpty")}</EmptyScroll>
       </div>
     );
   }

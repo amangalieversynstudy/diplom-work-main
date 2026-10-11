@@ -34,7 +34,7 @@ export default function MissionComplete({ data, onClose, onMap }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="complete-card w-full max-w-md rounded-3xl border-2 border-card-border bg-modal-bg p-8 text-center text-modal-text shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)]"
+        className="complete-card scroll-frame w-full max-w-md p-8 text-center text-card-text"
       >
         <div
           className="mb-4 flex justify-center gap-2"
@@ -55,7 +55,7 @@ export default function MissionComplete({ data, onClose, onMap }) {
           {t("missionPage.complete.title")}
         </h2>
         {data.title ? <p className="mt-1 text-muted">{data.title}</p> : null}
-        <p className="mt-4 font-display text-2xl font-bold text-primary">
+        <p className="mx-auto mt-4 w-fit rounded-xl border-2 border-[color:var(--gold-frame)] bg-panel px-5 py-2 font-display text-2xl font-bold text-primary">
           {data.xp > 0
             ? t("missionPage.complete.xp").replace("{xp}", data.xp)
             : t("missionPage.complete.noXp")}

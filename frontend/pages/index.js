@@ -42,15 +42,15 @@ function useCountUp(target, duration = 1400, delay = 0) {
 function StatCard({ value, label, icon: Icon, delay }) {
   const counted = useCountUp(value, 1200, delay);
   return (
-    <div className="stat-item flex flex-col items-center gap-2 p-4 sm:p-6 rounded-3xl border border-border bg-panel shadow-sm hover:shadow-md transition-shadow text-center">
-      <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-2 text-primary">
+    <div className="stat-item scroll-frame flex flex-col items-center gap-2 p-4 sm:p-6 text-center">
+      <div className="w-12 h-12 rounded-full bg-panel border-2 border-[var(--gold-frame)] flex items-center justify-center mb-2 text-primary">
         <Icon size={20} />
       </div>
-      <p className="font-display text-3xl sm:text-4xl font-bold text-text leading-none">
+      <p className="font-title text-3xl sm:text-4xl text-text leading-none">
         {isNaN(parseInt(value, 10)) ? value : counted}
         {!isNaN(parseInt(value, 10)) && value.includes("+") && "+"}
       </p>
-      <p className="text-xs sm:text-xs font-semibold uppercase tracking-widest text-muted">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-muted">{label}</p>
     </div>
   );
 }
@@ -257,16 +257,16 @@ export default function Home() {
           {/* Left sticky label */}
           <div className="md:sticky md:top-28">
             <p className="text-xs font-bold uppercase tracking-widest text-accent mb-3">{homeDict.howitworks_eyebrow || "Процесс"}</p>
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-text leading-tight">
+            <h2 className="font-title text-3xl sm:text-4xl lg:text-5xl text-text leading-tight">
               {homeDict.howitworks_headline_1 || "Как разворачивается"}{" "}<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-amber-700">{homeDict.howitworks_headline_2 || "приключение."}</span>
+              <span className="text-accent">{homeDict.howitworks_headline_2 || "приключение."}</span>
             </h2>
             <p className="text-muted text-sm sm:text-base leading-relaxed mt-5 max-w-sm">
               {homeDict.howitworks_desc || "Цикл прост, но само путешествие захватывает дух. Каждая механика создана для того, чтобы ты продолжал писать код."}
             </p>
             <TransitionLink 
               href="/worlds"
-              className="mt-8 inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 bg-accent text-white dark:text-bg shadow-lg shadow-amber-600/25 rounded-2xl font-semibold overflow-hidden transition-all hover:scale-105 active:scale-95"
+              className="scroll-btn mt-8 inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:px-6 sm:py-3 font-medium tracking-wide transition-transform hover:-translate-y-0.5 active:translate-y-0"
             >
               <Compass size={18} /> {homeDict.howitworks_cta || "Начать исследование"}
             </TransitionLink>
@@ -277,13 +277,13 @@ export default function Home() {
             {HOW_IT_WORKS.map((step) => (
               <div
                 key={step.num}
-                className="hiw-item group flex gap-4 sm:gap-5 p-4 sm:p-6 rounded-3xl border border-border bg-panel shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1"
+                className="hiw-item scroll-frame group flex gap-4 sm:gap-5 p-4 sm:p-6"
               >
-                <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl border border-sky-100 dark:border-sky-500/20 bg-sky-50 dark:bg-sky-500/10 flex items-center justify-center">
-                  <span className="font-mono text-lg font-bold text-sky-700 dark:text-sky-400">{step.num}</span>
+                <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-[var(--gold-frame)] bg-[var(--wax)] flex items-center justify-center">
+                  <span className="font-title text-xl text-[var(--parchment-light)]">{step.num}</span>
                 </div>
                 <div>
-                  <h3 className="font-display text-lg sm:text-xl font-bold text-text mb-2 group-hover:text-sky-700 dark:group-hover:text-sky-400 transition-colors">
+                  <h3 className="font-title text-xl sm:text-2xl text-text mb-2">
                     {step.title}
                   </h3>
                   <p className="text-muted text-sm leading-relaxed">{step.body}</p>
@@ -298,32 +298,25 @@ export default function Home() {
           CTA SECTION
       ══════════════════════════════════════════ */}
       <section className="cta-section py-20 px-4 sm:px-6 max-w-6xl 2xl:max-w-[80rem] 3xl:max-w-[92rem] 4xl:max-w-[110rem] mx-auto">
-        <div className="cta-inner relative rounded-[2.5rem] border border-border bg-panel shadow-xl shadow-slate-200/50 dark:shadow-black/20 overflow-hidden text-center px-6 py-16 sm:px-8 sm:py-20 transition-colors duration-300">
-          {/* Decorative orbs inside CTA */}
-          <div className="absolute -top-20 -left-20 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(closest-side, color-mix(in srgb, var(--primary) 12%, transparent), transparent)" }} />
-          <div className="absolute -bottom-20 -right-20 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(closest-side, color-mix(in srgb, var(--accent) 12%, transparent), transparent)" }} />
-          {/* Top shimmer line */}
-          <div className="absolute top-0 left-16 right-16 h-px"
-            style={{ background: "linear-gradient(90deg, transparent, var(--primary-selection), transparent)" }} />
-
+        <div className="cta-inner scroll-frame relative overflow-hidden text-center px-6 py-14 sm:px-8 sm:py-16">
           <div className="relative z-10 max-w-2xl mx-auto">
             <p className="text-xs font-bold uppercase tracking-widest text-primary mb-4">{homeDict.cta_eyebrow || "Готов начать?"}</p>
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-text mb-6 leading-tight">
+            <h2 className="font-title text-3xl sm:text-4xl lg:text-5xl text-text mb-6 leading-tight">
               {homeDict.cta_headline_1 || "Твой путь героя"}{" "}<br />
-              {homeDict.cta_headline_mid || "начинается "}<span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">{homeDict.cta_headline_2 || "прямо сейчас."}</span>
+              {homeDict.cta_headline_mid || "начинается "}<span className="text-[var(--wax)]">{homeDict.cta_headline_2 || "прямо сейчас."}</span>
             </h2>
             <p className="text-muted text-base sm:text-lg leading-relaxed mb-10 max-w-lg mx-auto">
               {homeDict.cta_desc || "Начни с вводного курса и пройди Python шаг за шагом: история, квиз, код."}
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
               <TransitionLink href="/register"
-                className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 md:px-8 md:py-4 bg-primary text-on-primary shadow-glow rounded-2xl font-semibold overflow-hidden transition-all hover:scale-105 hover:shadow-glow-lg active:scale-95 border border-primary-dk"
+                className="scroll-btn group inline-flex items-center justify-center gap-2 px-6 py-3 md:px-8 md:py-4 font-medium tracking-wide transition-transform hover:-translate-y-0.5 active:translate-y-0"
               >
                 <Sparkles size={18} /> {homeDict.cta_button1 || "Создать аккаунт"}
                 <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </TransitionLink>
               <TransitionLink href="/worlds"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 md:px-8 md:py-4 bg-surface border border-border hover:bg-panel text-text shadow-sm rounded-2xl font-semibold transition-all active:scale-95"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 md:px-8 md:py-4 rounded-[10px] border-2 border-[var(--ink)] bg-[var(--parchment)] text-[var(--ink-deep)] font-medium tracking-wide transition-transform hover:-translate-y-0.5 active:translate-y-0"
               >
                 <Map size={18} /> {homeDict.cta_button2 || "Карта миров"}
               </TransitionLink>

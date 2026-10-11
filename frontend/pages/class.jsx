@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import Layout from "../components/Layout";
+import ClassPortrait from "../components/ClassPortrait";
 import { setPlayerClass, getPlayerClass } from "../lib/class";
 import { Profile } from "../lib/api";
 import { toast } from "sonner";
@@ -13,6 +14,13 @@ import logger from "../lib/logger";
 const CLASS_ROLE_IDS = { python: 1, django: 2, devops: 3 };
 
 const ICONS = { python: Code, django: ServerCog, devops: Share2 };
+
+// Цвет рамки карточки задаёт класс: золото, бирюза, воск (токены пергамента, без новых литералов).
+const CLASS_FRAME = {
+  python: "var(--gold-frame)",
+  django: "var(--primary)",
+  devops: "var(--wax)",
+};
 
 // Древо классов. Класс — звание героя: оно видно в профиле и в рейтинге и ни на что
 // в заданиях не влияет, поэтому все ветви доступны сразу и меняются в любой момент.
@@ -256,6 +264,7 @@ function SkillNode({ node, onSelect, choosing, cta, labels = {} }) {
       tabIndex={isLocked ? -1 : 0}
       onKeyDown={handleKey}
       aria-disabled={isLocked}
+      style={isLocked ? undefined : { borderColor: CLASS_FRAME[node.id] }}
       aria-label={
         isLocked
           ? `${node.name} — ${lblLocked}`
@@ -287,18 +296,11 @@ function SkillNode({ node, onSelect, choosing, cta, labels = {} }) {
 
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-5">
-          <div
-            className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl border shadow-inner
-            ${
-              isLocked
-                ? "bg-panel border-border"
-                : isCurrent
-                ? "bg-accent/10 border-accent/40 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500"
-                : "bg-primary/10 border-primary/40 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500"
-            }`}
-          >
-            <span className="drop-shadow-md">{node.crest}</span>
-          </div>
+          <ClassPortrait
+            role={node.id}
+            size={72}
+            className={isLocked ? "opacity-50" : "transition-transform duration-300 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"}
+          />
           <div
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300
             ${

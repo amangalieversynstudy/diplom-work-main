@@ -1,7 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Heart, Droplet } from "lucide-react";
 import { useI18n } from "../lib/i18n";
-import { HERO_X_MIN } from "../lib/stage";
+import { HERO_X_MIN, SCENE_HEIGHT, SCENE_WIDTH, stageView } from "../lib/stage";
+
+// на сервере useLayoutEffect не нужен, в браузере он ставит рамку сцены до первой отрисовки
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 // Где снаряд героя встречает врага и куда он летит от руки героя (координаты сцены)
 const BOLT_FROM_DX = 38;
@@ -45,6 +48,26 @@ export default function CodemancerStage({
   const enemyHp = clamp(enemyHpPct);
   const x = Number.isFinite(Number(heroX)) ? Number(heroX) : HERO_X_MIN;
   const boltDx = IMPACT_X - (x + BOLT_FROM_DX);
+
+  // Рамка сцены (viewBox) считается по размеру блока: на широком и низком экране голем целиком
+  // и полоска его HP остаются в кадре, а HUD и плашка уровня не закрывают героя и врага.
+  const rootRef = useRef(null);
+  const hudRef = useRef(null);
+  const [view, setView] = useState(null);
+  useIsoLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+    const measure = () => {
+      const hud = hudRef.current;
+      const hudRight = hud ? hud.offsetLeft + hud.offsetWidth : 0;
+      setView(stageView(root.clientWidth, root.clientHeight, hudRight));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(measure);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
 
   // Герой идёт при смене шага: короткое покачивание «шагами», потом покой.
   // Сам сдвиг делает CSS-переход, здесь только метка на время ходьбы.
@@ -91,14 +114,15 @@ export default function CodemancerStage({
 
   return (
     <div
+      ref={rootRef}
       className={`codemancer-stage relative w-full shrink-0 h-32 sm:h-40 md:h-44 xl:h-[clamp(112px,18vh,224px)] overflow-hidden border-b border-border bg-[#0a1322] select-none ${phase !== "idle" ? "cm-" + phase : ""} ${calm ? "cm-calm" : ""}`}
       role="img"
       aria-label={`${heroName}, level ${level}`}
     >
       {/* ── Пиксель-арт сцена (SVG) ─────────────────────────────── */}
       <svg
-        viewBox="0 0 1408 470"
-        preserveAspectRatio="xMidYMax slice"
+        viewBox={view ? `${view.x} ${view.y} ${view.w} ${view.h}` : `0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}`}
+        preserveAspectRatio={view ? "xMinYMin slice" : "xMidYMax slice"}
         className="absolute inset-0 w-full h-full"
         aria-hidden="true"
       >
@@ -135,9 +159,9 @@ export default function CodemancerStage({
         </defs>
 
         {/* sky */}
-        <rect width="1408" height="470" fill="url(#cm-sky)" />
+        <rect x="-2600" y="-500" width="6600" height="970" fill="url(#cm-sky)" />
         {/* тинт всей сцены — реакция окружения на исход задания */}
-        <rect className="cm-tint" width="1408" height="470" fill="#000" opacity="0" />
+        <rect className="cm-tint" x="-2600" y="-500" width="6600" height="970" fill="#000" opacity="0" />
 
         {/* stars */}
         <g fill="#cfd6f0" className="cm-stars">
@@ -163,6 +187,9 @@ export default function CodemancerStage({
           fill="url(#cm-mountains)"
           opacity=".75"
         />
+        {/* продолжение гор и земли за краями сцены: на широком экране кадр шире 1408 */}
+        <rect x="-2600" y="232" width="2600" height="88" fill="url(#cm-mountains)" opacity=".75" />
+        <rect x="1408" y="210" width="2600" height="110" fill="url(#cm-mountains)" opacity=".75" />
 
         {/* castle */}
         <g transform="translate(900 110)" fill="url(#cm-castle)" stroke="#1a2034" strokeWidth="1.2">
@@ -224,6 +251,11 @@ export default function CodemancerStage({
           <ellipse cx="120" cy="400" rx="40" ry="14" fill="#1f2a1e" />
           <ellipse cx="320" cy="410" rx="50" ry="14" fill="#1f2a1e" />
         </g>
+
+        <rect x="-2600" y="362" width="2600" height="108" fill="url(#cm-ground)" />
+        <rect x="-2600" y="356" width="2600" height="8" fill="#5a8a3a" opacity=".75" />
+        <rect x="1407" y="380" width="2600" height="90" fill="url(#cm-ground)" />
+        <rect x="1407" y="376" width="2600" height="8" fill="#5a8a3a" opacity=".75" />
 
         {/* spikes pit */}
         <g transform="translate(620 320)" className="cm-spikes">
@@ -351,12 +383,17 @@ export default function CodemancerStage({
         </g>
         {/* обломки на месте поверженного врага: проступают, пока голем оседает */}
         {defeated && (
-          <g className={`cm-rubble${phase === "finale" ? " cm-rubble-in" : ""}`} fill="#7a5a1c">
-            <rect x="8" y="118" width="22" height="10" />
-            <rect x="34" y="112" width="18" height="16" fill="#9c7a3a" />
-            <rect x="56" y="120" width="24" height="8" />
-            <rect x="-6" y="124" width="12" height="6" fill="#6a4a1c" />
-            <rect x="78" y="122" width="14" height="8" fill="#6a4a1c" />
+          <g className={`cm-rubble${phase === "finale" ? " cm-rubble-in" : ""}`} stroke="#6a4a1c" strokeWidth="2">
+            <circle cx="42" cy="104" r="62" fill="url(#cm-golemGlow)" stroke="none" opacity=".8" />
+            <rect x="-14" y="106" width="34" height="22" fill="#9c7a3a" />
+            <rect x="-14" y="106" width="34" height="6" fill="#caa44a" stroke="none" />
+            <rect x="18" y="88" width="32" height="40" fill="#caa44a" />
+            <rect x="18" y="88" width="32" height="8" fill="#e0c06a" stroke="none" />
+            <rect x="48" y="100" width="36" height="28" fill="#9c7a3a" />
+            <rect x="48" y="100" width="36" height="6" fill="#caa44a" stroke="none" />
+            <rect x="80" y="110" width="26" height="18" fill="#caa44a" />
+            <rect x="34" y="120" width="24" height="8" fill="#7a5a1c" />
+            <rect x="26" y="74" width="12" height="12" fill="#ffe066" stroke="none" />
           </g>
         )}
         </g>
@@ -408,8 +445,8 @@ export default function CodemancerStage({
       <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0a1322] to-transparent pointer-events-none" />
 
       {/* ── HUD: портрет + полоски HP/MP ────────────────────────── */}
-      <div className="absolute top-3 left-3 sm:top-4 sm:left-4 flex items-center gap-3 bg-black/45 backdrop-blur-sm px-2.5 py-2 rounded-xl border border-white/10">
-        <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-lg border-2 border-[#d9a441] overflow-hidden shadow-[0_0_14px_rgba(217,164,65,0.35)] shrink-0">
+      <div ref={hudRef} className="absolute top-3 left-3 sm:top-4 sm:left-4 flex items-center gap-3 bg-black/45 backdrop-blur-sm px-2.5 py-2 rounded-xl border border-white/10">
+        <div className="hidden sm:block w-11 h-11 sm:w-14 sm:h-14 rounded-lg border-2 border-[#d9a441] overflow-hidden shadow-[0_0_14px_rgba(217,164,65,0.35)] shrink-0">
           <svg viewBox="0 0 60 60" className="w-full h-full">
             <rect width="60" height="60" fill="#241510" />
             <rect x="14" y="10" width="32" height="14" fill="#a93b1a" />
@@ -464,8 +501,8 @@ export default function CodemancerStage({
           50% { opacity: 0.25; }
         }
         .cm-axe {
-          transform-box: view-box;
-          transform-origin: 980px 60px;
+          transform-box: fill-box;
+          transform-origin: 50% 0%;
           animation: cm-swing 3.6s ease-in-out infinite;
         }
         @keyframes cm-swing {

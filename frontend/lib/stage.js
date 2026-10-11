@@ -75,3 +75,33 @@ export function mapWalk(prevTarget, target) {
   if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0) return null;
   return to > from ? { from, to } : null;
 }
+
+// Размеры сцены и рамка кадра. Нарисованная сцена 1408x470, но блок на странице низкий и широкий
+// (на 1280 около 160 px высотой): при обычной обрезке голова голема и его полоска HP уходили за верхний
+// край, а на телефоне полоска пряталась под HUD. Поэтому масштаб берём от высоты блока так, чтобы
+// полоска HP врага (y = ENEMY_BAR_TOP) оказалась сразу под верхней кромкой (или под HUD на телефоне),
+// а по горизонтали сдвигаем кадр: герой правее HUD, враг правее плашки уровня.
+export const SCENE_WIDTH = 1408;
+export const SCENE_HEIGHT = 470;
+export const ENEMY_BAR_TOP = 244;
+export const ENEMY_BAR_X = 452;
+
+export function stageView(width, height, hudRight = 0) {
+  const w = num(width, 0);
+  const h = num(height, 0);
+  if (w <= 0 || h <= 0) return { x: 0, y: 0, w: SCENE_WIDTH, h: SCENE_HEIGHT };
+  const compact = w < 640;
+  // на телефоне HUD только полоски (~54 px высоты), над полоской врага оставляем место под ним
+  const reserve = compact ? 60 : 18;
+  const scale = Math.max(0.2, (h - reserve) / (SCENE_HEIGHT - ENEMY_BAR_TOP));
+  const viewW = w / scale;
+  const viewH = h / scale;
+  let x = 0;
+  if (!compact) {
+    const pillRight = w / 2 + 100;
+    const enemyRightOfPill = ENEMY_BAR_X - pillRight / scale;
+    const heroRightOfHud = HERO_X_MIN - 12 - (num(hudRight, 0) + 12) / scale;
+    x = Math.min(enemyRightOfPill, heroRightOfHud);
+  }
+  return { x, y: SCENE_HEIGHT - viewH, w: viewW, h: viewH };
+}

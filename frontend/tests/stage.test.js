@@ -8,7 +8,7 @@ const source = fs
   .readFileSync(path.join(__dirname, "..", "lib", "stage.js"), "utf8")
   .replace(/^export /gm, "");
 const api = new Function(
-  `${source}; return { HERO_X_MIN, HERO_X_MAX, ENEMY_HUES, heroXForStep, enemyHpFromProgress, solvedCount, heroHpAfter, mpAfter, enemyHueForMission, mapWalk };`
+  `${source}; return { HERO_X_MIN, HERO_X_MAX, ENEMY_HUES, heroXForStep, enemyHpFromProgress, solvedCount, heroHpAfter, mpAfter, enemyHueForMission, mapWalk, stageView, SCENE_WIDTH, SCENE_HEIGHT, ENEMY_BAR_TOP, ENEMY_BAR_X };`
 )();
 const {
   HERO_X_MIN,
@@ -21,6 +21,10 @@ const {
   mpAfter,
   enemyHueForMission,
   mapWalk,
+  stageView,
+  SCENE_HEIGHT,
+  ENEMY_BAR_TOP,
+  ENEMY_BAR_X,
 } = api;
 
 test("heroXForStep: first step at the left edge, last step in front of the enemy", () => {
@@ -134,4 +138,37 @@ test("mapWalk: no memory, no change or a step back means no walk", () => {
   assert.equal(mapWalk("abc", 2), null);
   assert.equal(mapWalk(1, NaN), null);
   assert.equal(mapWalk(-1, 2), null);
+});
+
+// css-координаты точки сцены при данной рамке кадра
+const css = (view, width, sceneX, sceneY) => ({
+  x: ((sceneX - view.x) * width) / view.w,
+  y: ((sceneY - view.y) * width) / view.w,
+});
+
+test("stageView: the enemy bar stays inside the frame on desktop and phone", () => {
+  for (const [w, h, hud] of [[1280, 162, 250], [1280, 224, 250], [1920, 194, 250], [768, 176, 250], [375, 128, 140], [360, 128, 140]]) {
+    const view = stageView(w, h, hud);
+    const left = css(view, w, ENEMY_BAR_X, ENEMY_BAR_TOP);
+    const right = css(view, w, ENEMY_BAR_X + 120, ENEMY_BAR_TOP + 14);
+    assert.ok(left.y >= 0 && right.y <= h, `${w}x${h} bar y ${left.y}..${right.y}`);
+    assert.ok(left.x >= 0 && right.x <= w, `${w}x${h} bar x ${left.x}..${right.x}`);
+    assert.ok(Math.abs(view.h * (w / view.w) - h) < 0.01, "frame keeps the block aspect");
+    assert.equal(view.y + view.h, SCENE_HEIGHT, "the ground stays at the bottom");
+  }
+});
+
+test("stageView: the bar clears the phone HUD and the hero clears the desktop HUD and level pill", () => {
+  const phone = stageView(375, 128, 140);
+  assert.ok(css(phone, 375, ENEMY_BAR_X, ENEMY_BAR_TOP).y >= 56, "below the phone HUD");
+
+  const desk = stageView(1280, 162, 250);
+  const hero = css(desk, 1280, 60 - 12, 298);
+  assert.ok(hero.x >= 250 + 8, `hero right of the HUD: ${hero.x}`);
+  const bar = css(desk, 1280, ENEMY_BAR_X, ENEMY_BAR_TOP);
+  assert.ok(bar.x >= 1280 / 2 + 100, `enemy bar right of the level pill: ${bar.x}`);
+});
+
+test("stageView: unmeasured block falls back to the whole scene", () => {
+  assert.deepEqual(stageView(0, 0), { x: 0, y: 0, w: 1408, h: 470 });
 });

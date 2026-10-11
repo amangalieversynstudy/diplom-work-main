@@ -261,8 +261,8 @@ function CodeRunnerPanel(
     ws.onclose = (ev) => {
       wsRef.current = null;
       setRunning(false);
-      // 4403 = refused (locked task), 4429 = too many runs
-      if (!exited && (ev.code === 4401 || ev.code === 4403 || ev.code === 4429)) {
+      // 4403 = refused (locked task), 4409 = a run is already going, 4429 = too many runs
+      if (!exited && (ev.code === 4401 || ev.code === 4403 || ev.code === 4409 || ev.code === 4429)) {
         // refused before the code ran: no "exit" event will come
         onRunStateChange?.("error");
       }

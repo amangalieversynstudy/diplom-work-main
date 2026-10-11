@@ -124,3 +124,29 @@ def test_rest_run_refuses_second_run_and_releases_on_exception():
         with pytest.raises(RuntimeError):
             client.post(url, {"code": "print(1)"}, format="json")
     assert cache.get(f"runner:inflight:{user.pk}") is None
+
+
+@pytest.mark.django_db(transaction=True)
+def test_refused_second_run_closes_its_socket_with_4409():
+    # The client opens one socket per run; without a close it would stay "running".
+    user = get_user_model().objects.create_user("inf_close", password="x" * 12)
+    cache.clear()
+    assert throttles.acquire_run(user.pk)  # a run is already going elsewhere
+
+    async def scenario():
+        com = WebsocketCommunicator(consumers.RunnerConsumer.as_asgi(), "/ws/run/")
+        com.scope["user"] = user
+        ok, _ = await com.connect()
+        assert ok
+        await com.send_json_to({"type": "run", "code": "print(1)"})
+        refused = await com.receive_json_from(timeout=5)
+        closed = await com.receive_output(timeout=5)
+        await com.disconnect()
+        return refused, closed
+
+    try:
+        refused, closed = asyncio.run(scenario())
+    finally:
+        throttles.release_run(user.pk)
+    assert refused["reason"] == "already_running"
+    assert closed == {"type": "websocket.close", "code": 4409}

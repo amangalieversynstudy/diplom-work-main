@@ -16,7 +16,8 @@ exit шлёт {"type": "result", "passed": bool, "progress": {...}}. Брауз�
 без самого текста; см. authorship.py.
 
 Частые запуски отсекаются (см. throttles.allow_code_run): сервер шлёт error и
-закрывает сокет кодом 4429.
+закрывает сокет кодом 4429. Второй одновременный запуск того же ученика
+(throttles.acquire_run) — error и код 4409.
 """
 
 import asyncio
@@ -116,7 +117,9 @@ class RunnerConsumer(AsyncWebsocketConsumer):
                 return
 
         # Один запуск на ученика сразу (общий ключ с REST): иначе один человек
-        # займёт все слоты Judge0. Сокет не закрываем: идущий запуск продолжается.
+        # займёт все слоты Judge0. Идущий запуск живёт на другом сокете (повтор на
+        # этом же отбит проверкой _running выше), поэтому этот сокет закрываем
+        # кодом 4409: exit не придёт, а клиент должен выйти из состояния «запуск».
         user_id = self.scope["user"].id
         if not await sync_to_async(acquire_run)(user_id):
             await self._emit(
@@ -126,6 +129,7 @@ class RunnerConsumer(AsyncWebsocketConsumer):
                     "reason": "already_running",
                 }
             )
+            await self.close(code=4409)
             return
 
         # ставим _running перед стартом задачи, чтобы параллельный receive

@@ -7,7 +7,21 @@ from django.core.exceptions import ImproperlyConfigured
 from .base import *  # noqa: F401,F403
 
 DEBUG = False
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
+
+# ─── ALLOWED_HOSTS: no wildcard default ────────────────────────────────────
+# The same list is used by Channels' AllowedHostsOriginValidator (core/asgi.py),
+# so a WebSocket from a foreign Origin is refused too. Railway exposes the
+# service domain as RAILWAY_PUBLIC_DOMAIN; it is added automatically.
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()]
+_railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "").strip()
+if _railway_domain and _railway_domain not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_railway_domain)
+if not ALLOWED_HOSTS or "*" in ALLOWED_HOSTS:
+    raise ImproperlyConfigured(
+        "ALLOWED_HOSTS must list the real hosts in production (no empty value, no '*'). "
+        "Set the ALLOWED_HOSTS variable, e.g. ALLOWED_HOSTS=api.example.com,"
+        "myapp.up.railway.app (Railway also provides RAILWAY_PUBLIC_DOMAIN)."
+    )
 
 # ─── CRIT: SECRET_KEY must be set explicitly in production ─────────────────
 # base.py falls back to the insecure literal "dev-secret"; refuse to boot prod
@@ -66,12 +80,16 @@ RUNNER_ALLOW_UNSAFE_FALLBACK = os.getenv(
 # Это говорит Django доверять заголовку X-Forwarded-Proto от прокси.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# Список доменов, с которых разрешён POST/PUT/DELETE (нужно для cloudflared/ngrok/nginx).
-# Пример .env: CSRF_TRUSTED_ORIGINS="https://*.trycloudflare.com,https://*.duckdns.org,https://my-domain.ru"
-CSRF_TRUSTED_ORIGINS = os.getenv(
-    "CSRF_TRUSTED_ORIGINS",
-    "https://*.trycloudflare.com,https://*.duckdns.org,https://*.loca.lt",
-).split(",")
+# Домены, с которых разрешены POST/PUT/DELETE. Только из переменной окружения,
+# без умолчаний для публичных туннелей.
+# Пример: CSRF_TRUSTED_ORIGINS="https://my-app.vercel.app,https://api.example.com"
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
+]
+
+# Редирект http -> https (за прокси Railway). Отключается только переменной.
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() in {"1", "true", "yes", "on"}
+SECURE_REDIRECT_EXEMPT = [r"^healthz$"]
 
 # ─── Security headers ─────────────────────────────────────────────
 SECURE_BROWSER_XSS_FILTER = True

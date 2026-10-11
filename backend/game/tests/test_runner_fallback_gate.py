@@ -65,6 +65,7 @@ def test_gate_is_closed_when_the_setting_is_missing(settings):
 
 def _load_settings_module(name, monkeypatch, **env):
     monkeypatch.setenv("DJANGO_SECRET_KEY", "x" * 50)
+    monkeypatch.setenv("ALLOWED_HOSTS", "testserver")
     monkeypatch.delenv("RUNNER_ALLOW_UNSAFE_FALLBACK", raising=False)
     for key, value in env.items():
         monkeypatch.setenv(key, value)

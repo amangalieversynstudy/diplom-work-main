@@ -50,7 +50,9 @@ migrate → collectstatic → seed_course → sync_course_protection → daphne 
 | `DJANGO_SECRET_KEY` | длинная случайная строка | **обязательно** — прод не стартует с дефолтом |
 | `DATABASE_URL` | из плагина Postgres | БД |
 | `REDIS_URL` | из плагина Redis | кэш/throttling/Channels |
-| `ALLOWED_HOSTS` | `*.up.railway.app,твой-домен` | хосты Django |
+| `ALLOWED_HOSTS` | `api.твойдомен,<сервис>.up.railway.app` | **обязательно** — без неё прод не стартует (`*` запрещён); домен `RAILWAY_PUBLIC_DOMAIN` добавляется сам. Тот же список проверяет Origin у WebSocket |
+| `CSRF_TRUSTED_ORIGINS` | `https://<проект>.vercel.app,https://api.твойдомен` | **обязательно** для запросов с фронта по HTTPS; умолчаний нет |
+| `SECURE_SSL_REDIRECT` | `True` (по умолчанию) | редирект http→https; `/healthz` исключён. Отключай только для отладки |
 | `FRONTEND_URL` | `https://<проект>.vercel.app` | ссылки в письмах + CORS-fallback |
 | `RESEND_API_KEY` | ключ Resend | реальная отправка писем (Railway блокирует SMTP) |
 | `DEFAULT_FROM_EMAIL` | `noreply@твойдомен` | отправитель писем |
@@ -62,6 +64,9 @@ migrate → collectstatic → seed_course → sync_course_protection → daphne 
 > `DJANGO_SETTINGS_MODULE=core.settings.production` выставляется самой start-командой — отдельно задавать не нужно.
 
 > **CORS:** прод автоматически разрешает домены вида `diplom-work-main*.vercel.app` (regex в `production.py`). Если имя Vercel-проекта другое — добавь `CORS_ALLOWED_ORIGINS=https://твой-фронт.vercel.app`. Для своего домена задай ещё `CSRF_TRUSTED_ORIGINS=https://твой-домен`.
+
+### 1.3.1. Резервные копии Postgres
+Включи бэкапы плагина (Postgres → Backups → ежедневное расписание) либо запускай ежедневный `pg_dump "$DATABASE_URL" -Fc -f backup.dump` (отдельный cron-сервис) с хранением вне Railway. До старта пилота: сделай копию вручную и проверь, что она восстанавливается (`pg_restore` в пустую базу).
 
 ### 1.4. Первый запуск
 После успешного деплоя:
@@ -79,7 +84,8 @@ migrate → collectstatic → seed_course → sync_course_protection → daphne 
 
 - **Согласие.** Ученик отмечает его при регистрации или в профиле (по умолчанию выключено). В экспорт попадают только согласившиеся ученики.
 - **Экспорт для анализа:** `python manage.py export_learning_data --out analytics_export` — CSV без имён, почт и кода; пользователи заменены хешем. Задай секрет `ANALYTICS_EXPORT_SALT` (иначе используется `SECRET_KEY`) и не публикуй его вместе с данными.
-- **Срок хранения:** `LEARNING_DATA_RETENTION_DAYS` (по умолчанию 730). Очистка: `python manage.py prune_learning_data` (`--dry-run` — только посчитать); запускай по расписанию, например раз в неделю cron-задачей Railway.
+- **Срок хранения:** `LEARNING_DATA_RETENTION_DAYS` (по умолчанию 730). Очистка: `python manage.py prune_learning_data` (`--dry-run` — только посчитать); запускай ежедневно (см. ниже).
+- **Регулярная очистка (Railway Cron).** Создай отдельный сервис из того же репозитория и образа, в Settings → Cron Schedule укажи `0 3 * * *` (раз в сутки), Start Command: `python manage.py prune_learning_data`, переменные — те же, что у backend (`DATABASE_URL`, `DJANGO_SECRET_KEY`, `DJANGO_SETTINGS_MODULE=core.settings.production`, `ALLOWED_HOSTS`). Зачем: срок хранения данных пилота ограничен `LEARNING_DATA_RETENTION_DAYS`, без очистки обязательство перед участниками не выполняется.
 - Лимит запусков кода: 5 за 10 секунд и 20 в минуту на пользователя (нужен общий кэш Redis, `REDIS_URL`).
 
 ---

@@ -138,6 +138,7 @@ def test_production_settings_ship_no_builtin_invite_code(monkeypatch):
     from core.settings import base
 
     monkeypatch.setenv("DJANGO_SECRET_KEY", "x" * 50)
+    monkeypatch.setenv("ALLOWED_HOSTS", "testserver")
     sys.modules.pop("core.settings.production", None)
     try:
         prod = importlib.import_module("core.settings.production")

@@ -88,7 +88,10 @@
 | `ANALYTICS_EXPORT_SALT` | стабильные псевдонимы в экспорте |
 | `RESEND_API_KEY` или SMTP | письма подтверждения и сброса пароля |
 | `HELP_OFFER_SHARE=50` | включает эксперимент |
-| `FRONTEND_URL`, `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS` | адреса |
+| `ALLOWED_HOSTS` | **обязательно**, без `*` (напр. `api.example.com,app.up.railway.app`); без неё прод не стартует |
+| `CSRF_TRUSTED_ORIGINS` | **обязательно**, напр. `https://app.vercel.app,https://api.example.com` |
+| `SECURE_SSL_REDIRECT` | по умолчанию `True`; не отключать |
+| `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` | адреса |
 
 Команды на сервере (в таком порядке):
 
@@ -104,7 +107,11 @@ python manage.py pilot_check                       # не должно быть 
 
 Дальше:
 
-- Настроить ежедневный запуск `python manage.py prune_learning_data` (cron) и резервные копии БД.
+- Настроить ежедневный `python manage.py prune_learning_data` отдельным сервисом Railway Cron (тот же образ, расписание `0 3 * * *`): срок хранения данных пилота ограничен, без очистки он не соблюдается.
+- Резервные копии Postgres: включить бэкапы плагина или ежедневный `pg_dump`; до старта сделать копию и проверить восстановление.
+- Удалить демо-класс: `python manage.py seed_demo_cohort --remove`.
+- Проверить, что `TEACHER_INVITE_CODE` задан (длинный случайный), а `RUNNER_ALLOW_UNSAFE_FALLBACK` в Railway отсутствует.
+- `python manage.py check --deploy` с production-настройками не должен выдавать предупреждений о HTTPS.
 - Прогнать репетицию: 2–3 знакомых регистрируются, проходят миссию, намеренно ошибаются 3 раза в квизе и в
   коде. Проверить, что у половины появляется баннер, что запуск кода не падает, что в кабинете преподавателя
   видны эти ученики, а `pilot_report` считает их.

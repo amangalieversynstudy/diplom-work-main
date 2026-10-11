@@ -268,7 +268,7 @@ if (loading) {
                 <Button onClick={handleResetClass} variant="outline" className="w-full text-sm">
                   <Shield size={16} className="mr-2" /> {profile?.class_role ? t("profile.changeClass") : t("profile.chooseClass")}
                 </Button>
-                <Button onClick={handleLogout} variant="ghost" className="w-full text-sm text-red-700 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-500/10">
+                <Button onClick={handleLogout} variant="ghost" className="w-full text-sm text-wax hover:text-ink-deep hover:bg-wax/10">
                   <LogOut size={16} className="mr-2" /> {t("profile.logout")}
                 </Button>
               </div>

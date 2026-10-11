@@ -85,7 +85,7 @@ function LoadingState({ t }) {
     <>
       <motion.div
         animate={{ rotate: 360 }}
-        transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+        transition={{ duration: 1.2, ease: "easeInOut" }}
         className="w-20 h-20 mx-auto rounded-full bg-panel border border-border flex items-center justify-center mb-6 shadow-inner"
       >
         <Sparkles size={36} className="text-primary opacity-80" />

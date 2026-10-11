@@ -280,7 +280,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
            Slides UP to reveal page (Layout on mount)
            Does NOT trigger on errors/toasts — only during real navigation */}
       <div className="page-transition-overlay fixed inset-0 z-[999] -translate-y-full bg-[var(--primary)] origin-top flex items-center justify-center pointer-events-none">
-        <Sparkles className="w-12 h-12 text-white animate-spin-slow" />
+        <Sparkles className="w-12 h-12 text-white animate-spinSlow" />
       </div>
 
       <CustomCursor />

@@ -66,6 +66,7 @@ module.exports = {
       },
       animation: {
         float:     "float 8s ease-in-out infinite",
+        spinSlow:  "spin 3s linear infinite",
         pulseSlow: "pulse 5s ease-in-out infinite",
         drift:     "drift 30s linear infinite",
         shimmer:   "shimmer 2.5s linear infinite",

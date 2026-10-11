@@ -139,7 +139,7 @@ export default function ChooseClassPage() {
           <motion.div
             initial={{ opacity: 0, y: -20, scale: 0.94 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
             className="relative z-20"
           >
             <SkillNode
@@ -173,7 +173,7 @@ export default function ChooseClassPage() {
                 strokeDasharray="6 6"
                 initial={{ pathLength: 0, opacity: 0 }}
                 animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 1.1, delay: 0.5, ease: "easeOut" }}
+                transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
               />
               <motion.path
                 d="M 400 0 Q 400 50 620 100"
@@ -183,7 +183,7 @@ export default function ChooseClassPage() {
                 strokeDasharray="6 6"
                 initial={{ pathLength: 0, opacity: 0 }}
                 animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 1.1, delay: 0.7, ease: "easeOut" }}
+                transition={{ duration: 0.4, delay: 0.15, ease: "easeOut" }}
               />
             </svg>
           </div>
@@ -193,9 +193,9 @@ export default function ChooseClassPage() {
             {branches.map((node, i) => (
               <motion.div
                 key={node.id}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.95 + i * 0.15, ease: "easeOut" }}
+                transition={{ duration: 0.3, delay: 0.1 + i * 0.05, ease: "easeOut" }}
                 className="flex justify-center"
               >
                 <SkillNode
@@ -213,7 +213,7 @@ export default function ChooseClassPage() {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.4, duration: 0.5 }}
+            transition={{ delay: 0.4, duration: 0.3 }}
             className="text-xs text-muted text-center mt-10 italic max-w-md"
           >
             {hasClass

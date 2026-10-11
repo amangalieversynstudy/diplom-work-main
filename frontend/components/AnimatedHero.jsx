@@ -23,31 +23,31 @@ export default function AnimatedHero() {
       tl.fromTo(
         ".hero-badge",
         { y: 20, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }
+        { y: 0, opacity: 1, duration: 0.3, ease: "power3.out" }
       );
 
       // Анимация строк заголовка (появляются по очереди)
       tl.fromTo(
         ".hero-title-line",
         { y: 40, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.7, stagger: 0.1, ease: "expo.out" },
-        "-=0.3"
+        { y: 0, opacity: 1, duration: 0.45, stagger: 0.07, ease: "expo.out" },
+        "-=0.15"
       );
 
       // Анимация описания
       tl.fromTo(
         ".hero-desc",
         { y: 20, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.6, ease: "power3.out" },
-        "-=0.5"
+        { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" },
+        "<0.1"
       );
 
       // Анимация кнопок
       tl.fromTo(
         ".hero-btn",
         { y: 20, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.5, stagger: 0.1, ease: "power3.out" },
-        "-=0.4"
+        { y: 0, opacity: 1, duration: 0.4, stagger: 0.05, ease: "power3.out" },
+        "<"
       );
     },
     { scope: container }

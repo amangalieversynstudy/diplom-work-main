@@ -300,8 +300,8 @@ export default function Home() {
       <section className="cta-section py-20 px-4 sm:px-6 max-w-6xl 2xl:max-w-[80rem] 3xl:max-w-[92rem] 4xl:max-w-[110rem] mx-auto">
         <div className="cta-inner relative rounded-[2.5rem] border border-border bg-panel shadow-xl shadow-slate-200/50 dark:shadow-black/20 overflow-hidden text-center px-6 py-16 sm:px-8 sm:py-20 transition-colors duration-300">
           {/* Decorative orbs inside CTA */}
-          <div className="absolute -top-20 -left-20 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none animate-float" />
-          <div className="absolute -bottom-20 -right-20 w-64 h-64 rounded-full bg-accent/10 blur-3xl pointer-events-none animate-float" style={{ animationDelay: "3s" }} />
+          <div className="absolute -top-20 -left-20 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(closest-side, color-mix(in srgb, var(--primary) 12%, transparent), transparent)" }} />
+          <div className="absolute -bottom-20 -right-20 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(closest-side, color-mix(in srgb, var(--accent) 12%, transparent), transparent)" }} />
           {/* Top shimmer line */}
           <div className="absolute top-0 left-16 right-16 h-px"
             style={{ background: "linear-gradient(90deg, transparent, var(--primary-selection), transparent)" }} />

@@ -6,6 +6,8 @@ worded positively, even ones negatively. The score runs 0-100; about 68 is the a
 The statements themselves live in the frontend dictionaries (Russian and English).
 """
 
+from django.db.models import Max
+
 from .models import UsabilityResponse
 
 ITEMS = 10
@@ -37,10 +39,8 @@ def verdict(score):
 
 def latest_by_user():
     """{user_id: UsabilityResponse}: a teacher who answered twice counts once, with the later answer."""
-    latest = {}
-    for response in UsabilityResponse.objects.order_by("-created_at"):
-        latest.setdefault(response.user_id, response)
-    return latest
+    newest = UsabilityResponse.objects.values("user_id").annotate(last=Max("id")).values("last")
+    return {r.user_id: r for r in UsabilityResponse.objects.filter(id__in=newest)}
 
 
 def usability_summary():

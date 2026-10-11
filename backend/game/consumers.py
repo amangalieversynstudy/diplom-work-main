@@ -22,6 +22,7 @@ exit шлёт {"type": "result", "passed": bool, "progress": {...}}. Брауз�
 
 import asyncio
 import json
+import logging
 import threading
 
 from asgiref.sync import sync_to_async
@@ -32,6 +33,8 @@ from .footprint import finish_code_run
 from .runner import INFRASTRUCTURE_REASONS, REASON_RUNNER_ERROR, stream_python_code
 from .services import NOT_CHECKED, RuleViolation, precheck_hidden, prepare_code_task
 from .throttles import acquire_run, allow_code_run, release_run
+
+logger = logging.getLogger(__name__)
 
 MAX_CODE_BYTES = 100_000
 
@@ -154,11 +157,12 @@ class RunnerConsumer(AsyncWebsocketConsumer):
                         break
                     loop.call_soon_threadsafe(queue.put_nowait, event)
             except Exception as exc:
+                logger.exception("Code runner crashed: %s", exc)
                 loop.call_soon_threadsafe(
                     queue.put_nowait,
                     {
                         "type": "error",
-                        "message": f"Runner crashed: {exc}",
+                        "message": "Runner crashed",
                         "reason": REASON_RUNNER_ERROR,
                     },
                 )

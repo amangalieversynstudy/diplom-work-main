@@ -145,6 +145,13 @@ def test_the_ai_outage_message_does_not_expose_the_configuration(api, settings, 
     assert "Мудрец" in text
 
 
+@pytest.mark.parametrize("path", ["/api/ai-assist/", "/api/ai-mentor/"])
+@pytest.mark.parametrize("bad", [{"language": "x" * 33}, {"language": ["python"]}, {"code": 5}, {"task_description": ["t"]}])
+def test_ai_requests_with_oversized_or_non_string_fields_are_refused_not_500(api, path, bad):
+    payload = {"task_description": "t", "messages": [{"role": "user", "content": "help"}], **bad}
+    assert api.post(path, payload, format="json").status_code == 400
+
+
 # ── Studio: authors write the hints and the outline ─────────────────────────
 
 

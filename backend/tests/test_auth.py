@@ -114,10 +114,16 @@ def test_email_change_requires_confirmation():
 
     # Открываем ссылку-подтверждение → адрес применяется.
     token = signing.dumps(
-        {"uid": user.pk, "email": "new@example.com"}, salt="email-change"
+        {"uid": user.pk, "email": "new@example.com", "cur": "old@example.com"}, salt="email-change"
     )
     resp = client.get("/api/auth/confirm-email/", {"token": token})
     assert resp.status_code == 200
+    user.refresh_from_db()
+    assert user.email == "new@example.com"
+
+    # The link is one-time: the account's email is no longer the one it was issued for.
+    resp = client.get("/api/auth/confirm-email/", {"token": token})
+    assert resp.status_code == 400
     user.refresh_from_db()
     assert user.email == "new@example.com"
 

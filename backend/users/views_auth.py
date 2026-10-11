@@ -72,7 +72,10 @@ def _send_email_change_email(user, new_email):
     from django.core import signing
     from django.core.mail import send_mail
 
-    token = signing.dumps({"uid": user.pk, "email": new_email}, salt="email-change")
+    token = signing.dumps(
+        {"uid": user.pk, "email": new_email, "cur": (user.email or "").strip().lower()},
+        salt="email-change",
+    )
     frontend_url = (
         getattr(settings, "FRONTEND_URL", None)
         or os.environ.get("FRONTEND_URL")
@@ -371,6 +374,12 @@ class ConfirmEmailChangeView(APIView):
         except User.DoesNotExist:
             return Response(
                 {"detail": "Пользователь не найден."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        # Одноразовость: ссылка выпущена для конкретного текущего адреса; после смены он другой.
+        if (user.email or "").strip().lower() != (payload.get("cur") or None):
+            return Response(
+                {"detail": "Ссылка недействительна."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         # Кто-то мог занять адрес, пока письмо лежало в почте.

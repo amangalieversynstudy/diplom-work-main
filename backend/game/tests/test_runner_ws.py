@@ -220,3 +220,24 @@ async def test_concurrent_run_rejected():
         assert exit_msg["type"] == "exit"
 
         await comm.disconnect()
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_runner_crash_hides_exception_text_from_client(caplog):
+    """An unexpected exception goes to the log; the client gets a neutral message."""
+    _, token = await _make_user_and_token("wstest_crash")
+
+    def boom(code, timeout=15, stop_event=None):
+        raise RuntimeError("secret-internal-detail")
+        yield  # pragma: no cover
+
+    with patch("game.consumers.stream_python_code", boom):
+        comm = WebsocketCommunicator(_get_application(), f"/ws/runner/?token={token}")
+        connected, _ = await comm.connect()
+        assert connected
+        await comm.send_json_to({"type": "run", "code": "print(1)"})
+        msg = await comm.receive_json_from()
+        assert msg["type"] == "error"
+        assert "secret-internal-detail" not in str(msg)
+        assert "secret-internal-detail" in caplog.text
+        await comm.disconnect()

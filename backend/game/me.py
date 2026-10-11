@@ -10,10 +10,11 @@ like "72% chance you will quit" would do harm).
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.db.models import Max, Q
 from django.utils import timezone
 
 from .metrics import MIN_SAMPLE, _last_activity, _mean
-from .models import CodeRun, Mission, MissionTask, Progress, TaskProgress
+from .models import CodeRun, LearningEvent, Mission, MissionTask, Progress, TaskProgress
 from .services import HELP_AFTER_FAILURES, only_published
 from .warning import INACTIVE_SOON_DAYS
 
@@ -176,7 +177,16 @@ def my_learning(user, *, lang="ru", now=None, owner=None):
     )
     cohort_mean, cohort_size = _cohort_mean_attempts(user.pk)
 
-    last_seen = _last_activity([user.pk]).get(user.pk)
+    if owner is None:
+        last_seen = _last_activity([user.pk]).get(user.pk)
+    else:
+        own_run = CodeRun.objects.filter(
+            user=user, task__mission__location__track__owner=owner
+        ).aggregate(last=Max("created_at"))["last"]
+        own_event = LearningEvent.objects.filter(user=user).filter(
+            Q(task__mission__location__track__owner=owner) | Q(mission__location__track__owner=owner)
+        ).aggregate(last=Max("created_at"))["last"]
+        last_seen = max((s for s in (own_run, own_event) if s), default=None)
     days_away = (now - last_seen).days if last_seen else None
     has_activity = bool(progress) or last_seen is not None
 
@@ -185,15 +195,21 @@ def my_learning(user, *, lang="ru", now=None, owner=None):
     days = [today - timedelta(days=offset) for offset in range(ACTIVITY_DAYS - 1, -1, -1)]
     since = now - timedelta(days=ACTIVITY_DAYS)
     runs = {day: 0 for day in days}
-    for created in CodeRun.objects.filter(user=user, created_at__gte=since).values_list(
+    run_rows = CodeRun.objects.filter(user=user, created_at__gte=since)
+    solved_rows = TaskProgress.objects.filter(
+        user=user, status="completed", last_submitted_at__gte=since
+    )
+    if owner is not None:
+        # a teacher sees activity in their own courses only; free-practice runs (no task) belong to none
+        run_rows = run_rows.filter(task__mission__location__track__owner=owner)
+        solved_rows = solved_rows.filter(task__mission__location__track__owner=owner)
+    for created in run_rows.values_list(
         "created_at", flat=True
     ):
         if created.date() in runs:
             runs[created.date()] += 1
     solved_per_day = {day: 0 for day in days}
-    for submitted in TaskProgress.objects.filter(
-        user=user, status="completed", last_submitted_at__gte=since
-    ).values_list("last_submitted_at", flat=True):
+    for submitted in solved_rows.values_list("last_submitted_at", flat=True):
         if submitted.date() in solved_per_day:
             solved_per_day[submitted.date()] += 1
 

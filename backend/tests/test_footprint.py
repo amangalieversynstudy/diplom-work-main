@@ -496,6 +496,17 @@ def test_export_leaks_no_identity_code_or_answers(tmp_path, two_learners):
         assert secret not in text, secret
 
 
+def test_export_keeps_the_error_type_but_not_the_error_message(tmp_path, two_learners):
+    from game.models import CodeRun
+
+    CodeRun.objects.filter(user=two_learners[0]).update(
+        error_type="ValueError", error_message="ValueError: invalid literal for int(): 'Ivan Petrov'"
+    )
+    files = export(tmp_path)
+    assert "error_message" not in files["runs"][0] and "error_type" in files["runs"][0]
+    assert "Ivan Petrov" not in "".join(p.read_text(encoding="utf-8") for p in tmp_path.glob("*.csv"))
+
+
 def test_pseudonyms_are_stable_keyed_and_not_the_id():
     assert pseudonym(7, "k") == pseudonym(7, "k")
     assert pseudonym(7, "k") != pseudonym(7, "other")

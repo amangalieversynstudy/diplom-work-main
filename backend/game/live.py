@@ -116,9 +116,12 @@ def live_feed(viewer, *, lang="ru", now=None):
     return items
 
 
-def _activity_stamps(learners, *, after=None, until=None):
+def _activity_stamps(learners, *, viewer=None, after=None, until=None):
     events = LearningEvent.objects.filter(user__in=learners)
     runs = CodeRun.objects.filter(user__in=learners)
+    if viewer is not None:
+        # only what happened in the viewer's own courses (runs without a step belong to none)
+        events, runs = events.filter(_own_events(viewer)), runs.filter(_own_runs(viewer))
     if after is not None:
         events, runs = events.filter(created_at__gt=after), runs.filter(created_at__gt=after)
     if until is not None:
@@ -130,7 +133,7 @@ def _record_freshness(viewer, learners, since, now):
     """One sample for the actions that happened since the panel's previous answer (see the module doc)."""
     if since is None or not (timedelta(0) < now - since <= MAX_GAP):
         return
-    events, runs = _activity_stamps(learners, after=since, until=now)
+    events, runs = _activity_stamps(learners, viewer=viewer, after=since, until=now)
     stamps = list(events.values_list("created_at", flat=True)[:SAMPLE_CAP])
     stamps += list(runs.values_list("created_at", flat=True)[:SAMPLE_CAP])
     if not stamps:
@@ -178,7 +181,7 @@ def live_panel(viewer, *, lang="ru", since=None, now=None):
     _record_freshness(viewer, learners, since, now)
 
     window = now - ACTIVE_WINDOW
-    events, runs = _activity_stamps(learners)
+    events, runs = _activity_stamps(learners, viewer=viewer)
     active = set(events.filter(created_at__gte=window).values_list("user_id", flat=True))
     active |= set(runs.filter(created_at__gte=window).values_list("user_id", flat=True))
     latest = [

@@ -3,6 +3,7 @@
 import csv
 
 from django.http import HttpResponse
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
@@ -16,6 +17,7 @@ from .me import my_learning
 from .metrics import CSV_COLUMNS, clamp_inactive_days, compute_metrics
 from .models import UsabilityResponse
 from .serializers import _resolve_language
+from .throttles import UsabilitySubmitThrottle
 from .usability import ITEMS, sus_score
 from .warning import early_warning, scoped_learners
 
@@ -168,6 +170,12 @@ class TeacherUsabilityView(APIView):
 
     permission_classes = [permissions.IsAdminUser]
 
+    def get_throttles(self):
+        # only the submission is limited, reading "did I answer" is not
+        if self.request.method == "POST":
+            return [UsabilitySubmitThrottle()]
+        return super().get_throttles()
+
     @swagger_auto_schema(operation_summary="Did I already rate the dashboard (teacher)")
     def get(self, request):
         last = UsabilityResponse.objects.filter(user=request.user).first()
@@ -178,14 +186,20 @@ class TeacherUsabilityView(APIView):
         operation_description=f"Десять оценок 1-5 по шкале SUS (system usability scale) и необязательный комментарий. Нужно ровно {ITEMS} оценок.",
     )
     def post(self, request):
+        if not isinstance(request.data, dict):
+            return Response({"detail": "Ожидается объект."}, status=400)
         try:
             score = sus_score(request.data.get("answers"))
         except ValueError as error:
             return Response({"detail": str(error)}, status=400)
         comment = str(request.data.get("comment") or "").strip()[:1000]
-        UsabilityResponse.objects.create(
-            user=request.user, answers=list(request.data["answers"]), score=score, comment=comment
+        # one questionnaire per teacher: a repeat answer replaces the previous one
+        answers = list(request.data["answers"])
+        updated = UsabilityResponse.objects.filter(user=request.user).update(
+            answers=answers, score=score, comment=comment, created_at=timezone.now()
         )
+        if not updated:
+            UsabilityResponse.objects.create(user=request.user, answers=answers, score=score, comment=comment)
         return Response({"saved": True}, status=201)
 
 

@@ -51,6 +51,12 @@ class TaskSubmitThrottle(UserRateThrottle):
     scope = "task_submit"
 
 
+class UsabilitySubmitThrottle(UserRateThrottle):
+    """SUS questionnaire: a handful of submissions a day is plenty."""
+
+    scope = "usability_submit"
+
+
 class LearningEventThrottle(UserRateThrottle):
     """Client-reported timeline events (e.g. a step was opened)."""
 

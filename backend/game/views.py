@@ -38,6 +38,13 @@ from .throttles import (
 
 logger = logging.getLogger(__name__)
 
+MAX_LANGUAGE_LENGTH = 32
+
+
+def _valid_language(value):
+    """The programming language name sent to Gemini: a short string, nothing else."""
+    return isinstance(value, str) and len(value) <= MAX_LANGUAGE_LENGTH
+
 # Что видит ученик, когда AI недоступен. Причину (нет ключа, сбой сети) не показываем:
 # она нужна администратору, а не первокурснику, и попадает в журнал сервера.
 AI_UNAVAILABLE = (
@@ -602,9 +609,12 @@ class AIAssistView(APIView):
         ),
     )
     def post(self, request):
-        code = (request.data.get("code") or "").strip()
-        task_description = (request.data.get("task_description") or "").strip()
+        code = request.data.get("code") or ""
+        task_description = request.data.get("task_description") or ""
         language = request.data.get("language", "python")
+        if not isinstance(code, str) or not isinstance(task_description, str) or not _valid_language(language):
+            return Response({"detail": "Invalid code, task_description or language"}, status=status.HTTP_400_BAD_REQUEST)
+        code, task_description = code.strip(), task_description.strip()
 
         if not task_description:
             return Response(
@@ -919,9 +929,12 @@ class AIMentorView(APIView):
     )
     def post(self, request):
         raw_messages = request.data.get("messages")
-        code = (request.data.get("code") or "").strip()
-        task_description = (request.data.get("task_description") or "").strip()
+        code = request.data.get("code") or ""
+        task_description = request.data.get("task_description") or ""
         language = request.data.get("language", "python")
+        if not isinstance(code, str) or not isinstance(task_description, str) or not _valid_language(language):
+            return Response({"detail": "Invalid code, task_description or language"}, status=status.HTTP_400_BAD_REQUEST)
+        code, task_description = code.strip(), task_description.strip()
 
         if not isinstance(raw_messages, list) or not raw_messages:
             return Response(
@@ -936,7 +949,8 @@ class AIMentorView(APIView):
             if not isinstance(item, dict):
                 continue
             role = item.get("role")
-            content = (item.get("content") or "").strip()
+            content = item.get("content") or ""
+            content = content.strip() if isinstance(content, str) else ""
             if not content or role not in ("user", "assistant", "model"):
                 continue
             history.append(

@@ -73,7 +73,7 @@ class Command(BaseCommand):
         self._write(
             out / "runs.csv",
             [
-                "user", "task", "outcome", "error_type", "error_message", "exit_code",
+                "user", "task", "outcome", "error_type", "exit_code",
                 "duration_ms", "code_length", "stdout_size", "stderr_size", "passed",
                 "attempt_no", "after_solved", "created_at",
                 # how the code got into the editor (counts only), see game/authorship.py
@@ -81,7 +81,7 @@ class Command(BaseCommand):
             ],
             (
                 [
-                    who(r.user_id), r.task_id, r.outcome, r.error_type, r.error_message,
+                    who(r.user_id), r.task_id, r.outcome, r.error_type,
                     r.exit_code, r.duration_ms, r.code_length, r.stdout_size,
                     r.stderr_size, r.passed, r.attempt_no, r.after_solved, r.created_at,
                     *(r.provenance.get(k, "") for k in (

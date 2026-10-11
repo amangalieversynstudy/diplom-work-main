@@ -201,7 +201,7 @@ def test_a_teacher_rates_the_dashboard_and_only_the_latest_answer_counts(teacher
     assert first.status_code == 201 and first.json() == {"saved": True}
     assert client.get("/api/teacher/usability/").json()["answered_at"]
     client.post("/api/teacher/usability/", {"answers": [5, 1] * 5}, format="json")
-    assert UsabilityResponse.objects.filter(user=teacher).count() == 2
+    assert UsabilityResponse.objects.filter(user=teacher).count() == 1
     summary = usability_summary()
     assert summary["respondents"] == 1 and summary["mean"] == 100 and summary["verdict"] == "good"
 
@@ -229,3 +229,61 @@ def test_the_pilot_report_says_how_fresh_the_data_was_and_how_convenient(teacher
     text = render_markdown(build_report())
     assert "в среднем за **4.0 с**" in text and "100%" in text
     assert "SUS" in text and "72.5" in text and "Ответивших мало" in text
+
+
+# ── security: a teacher sees activity in their own courses only ────────────
+
+
+def test_the_live_panel_ignores_activity_in_other_teachers_courses(teacher, world):
+    _run(world["learner"], world["theirs"][1], ago=5)  # a run in the other teacher's course
+    _run(world["learner"], None, ago=5)  # free practice, no step
+    _event(world["learner"], LearningEvent.TASK_OPENED, task=world["theirs"][1], mission=world["theirs"][0], ago=5)
+    panel = live_panel(teacher)
+    assert panel["active_now"] == 0 and panel["last_activity_at"] is None
+    _run(world["learner"], world["mine"][1], ago=5)
+    assert live_panel(teacher)["active_now"] == 1
+
+
+def test_the_student_card_counts_runs_in_the_teachers_courses_only(teacher, world):
+    from game.me import my_learning
+
+    for _ in range(2):
+        _run(world["learner"], world["mine"][1], ago=60)
+    for _ in range(3):
+        _run(world["learner"], world["theirs"][1], ago=60)
+    _run(world["learner"], None, ago=60)
+    own = my_learning(world["learner"], owner=teacher)
+    assert sum(day["runs"] for day in own["activity"]) == 2
+    assert own["summary"]["days_away"] is not None
+    assert sum(day["runs"] for day in my_learning(world["learner"])["activity"]) == 6
+
+
+def test_a_teacher_without_own_activity_sees_no_last_seen(teacher, world):
+    from game.me import my_learning
+
+    _run(world["learner"], world["theirs"][1], ago=60)
+    assert my_learning(world["learner"], owner=teacher)["summary"]["days_away"] is None
+
+
+# ── security: the questionnaire is limited and kept to one row per teacher ─
+
+
+def test_a_repeat_answer_replaces_the_row_and_the_summary_reads_latest_in_the_db(teacher, django_assert_num_queries):
+    client = _api(teacher)
+    client.post("/api/teacher/usability/", {"answers": [3] * 10}, format="json")
+    client.post("/api/teacher/usability/", {"answers": [5, 1] * 5}, format="json")
+    assert UsabilityResponse.objects.filter(user=teacher).count() == 1
+    with django_assert_num_queries(1):
+        latest = __import__("game.usability", fromlist=["x"]).latest_by_user()
+    assert latest[teacher.pk].score == 100
+
+
+def test_the_questionnaire_is_rate_limited(teacher):
+    from django.core.cache import cache
+
+    cache.clear()
+    client = _api(teacher)
+    codes = [client.post("/api/teacher/usability/", {"answers": [3] * 10}, format="json").status_code for _ in range(6)]
+    assert codes[:5] == [201] * 5 and codes[5] == 429
+    assert client.get("/api/teacher/usability/").status_code == 200
+    cache.clear()

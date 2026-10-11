@@ -354,8 +354,27 @@ def progress_payload(task_progress):
     }
 
 
-def grade_code_run(user, task, code, stdout, exit_code):
+NOT_CHECKED = object()  # the hidden check has not been run by the caller
+
+
+def precheck_hidden(user, task, code, stdout, exit_code):
+    """Run the slow hidden check ahead of grade_code_run, without touching the DB.
+
+    Meant for a worker thread: the sandbox call takes seconds and must not hold
+    the shared database thread. Returns True/False/None like run_hidden_check,
+    or NOT_CHECKED when the run does not reach the hidden check at all.
+    """
+    task = personalize(task, user.pk)
+    if not code_run_passed(task, exit_code, stdout):
+        return NOT_CHECKED
+    return run_hidden_check(task, code)
+
+
+def grade_code_run(user, task, code, stdout, exit_code, hidden_passed=NOT_CHECKED):
     """Grade a finished run of a code task and record the attempt.
+
+    ``hidden_passed`` is the result of a hidden check the caller already ran
+    (see precheck_hidden); when absent the check is run here.
 
     Returns None when the hidden check could not be run (broken sandbox): the
     attempt is then neither recorded nor counted.
@@ -364,7 +383,7 @@ def grade_code_run(user, task, code, stdout, exit_code):
     passed = code_run_passed(task, exit_code, stdout)
     hidden_failed = False
     if passed:
-        checked = run_hidden_check(task, code)
+        checked = run_hidden_check(task, code) if hidden_passed is NOT_CHECKED else hidden_passed
         if checked is None:
             return None
         hidden_failed = not checked

@@ -28,9 +28,9 @@ from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 from .footprint import finish_code_run
-from .runner import REASON_RUNNER_ERROR, stream_python_code
-from .services import RuleViolation, prepare_code_task
-from .throttles import allow_code_run
+from .runner import INFRASTRUCTURE_REASONS, REASON_RUNNER_ERROR, stream_python_code
+from .services import NOT_CHECKED, RuleViolation, precheck_hidden, prepare_code_task
+from .throttles import acquire_run, allow_code_run, release_run
 
 MAX_CODE_BYTES = 100_000
 
@@ -115,12 +115,27 @@ class RunnerConsumer(AsyncWebsocketConsumer):
                 await self.close(code=4403)
                 return
 
+        # Один запуск на ученика сразу (общий ключ с REST): иначе один человек
+        # займёт все слоты Judge0. Сокет не закрываем: идущий запуск продолжается.
+        user_id = self.scope["user"].id
+        if not await sync_to_async(acquire_run)(user_id):
+            await self._emit(
+                {
+                    "type": "error",
+                    "message": "Код уже запускается — дождись результата.",
+                    "reason": "already_running",
+                }
+            )
+            return
+
         # ставим _running перед стартом задачи, чтобы параллельный receive
         # увидел busy и отбил повторный run
         self._running = True
         self._run_task = asyncio.create_task(
             self._stream_run(code, task, msg.get("provenance"))
         )
+        # колбэк срабатывает и при отмене до первого шага корутины
+        self._run_task.add_done_callback(lambda _t: release_run(user_id))
 
     async def _stream_run(self, code: str, task=None, provenance=None) -> None:
         """Гоняет синхронный генератор в треде, асинхронно форвардит события."""
@@ -165,16 +180,25 @@ class RunnerConsumer(AsyncWebsocketConsumer):
                 elif kind == "exit":
                     # Запуск дошёл до конца: оценить (если это задача) и записать.
                     # Вердикт идёт раньше exit: клиент закрывает сокет на exit.
+                    stdout = "".join(stdout_parts)
+                    # Скрытая проверка идёт секунды в сети: делаем её в отдельном
+                    # потоке (без БД), а не в общем потоке всех соединений.
+                    hidden = NOT_CHECKED
+                    if task is not None and not (reasons & INFRASTRUCTURE_REASONS):
+                        hidden = await sync_to_async(precheck_hidden, thread_sensitive=False)(
+                            self.scope["user"], task, code, stdout, event.get("code")
+                        )
                     verdict = await database_sync_to_async(finish_code_run)(
                         self.scope["user"],
                         task,
                         code=code,
-                        stdout="".join(stdout_parts),
+                        stdout=stdout,
                         stderr="".join(stderr_parts),
                         exit_code=event.get("code"),
                         duration=event.get("duration"),
                         reasons=reasons,
                         provenance=provenance,
+                        hidden_passed=hidden,
                     )
                     if verdict is not None:
                         await self._emit({"type": "result", **verdict})

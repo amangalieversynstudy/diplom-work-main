@@ -97,3 +97,23 @@ def allow_code_run(user_id):
         _within_limit(f"runner:{user_id}:{name}", limit, window)
         for name, limit, window in RUNNER_LIMITS
     )
+
+
+INFLIGHT_TIMEOUT = 60  # seconds; frees the slot even if a worker died mid-run
+
+
+def _inflight_key(user_id):
+    return f"runner:inflight:{user_id}"
+
+
+def acquire_run(user_id):
+    """Claim the learner's single run slot (shared by WebSocket and REST).
+
+    False if they already have a run going: one learner must not hold every
+    Judge0 slot of the process.
+    """
+    return bool(cache.add(_inflight_key(user_id), 1, timeout=INFLIGHT_TIMEOUT))
+
+
+def release_run(user_id):
+    cache.delete(_inflight_key(user_id))

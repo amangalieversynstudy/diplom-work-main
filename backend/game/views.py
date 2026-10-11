@@ -541,7 +541,18 @@ class CodeRunnerView(APIView):
             )
 
         from .runner import execute_python_code
-        result = execute_python_code(code)
+        from .throttles import acquire_run, release_run
+
+        # один запуск на ученика сразу (общий ключ с WebSocket)
+        if not acquire_run(request.user.pk):
+            return Response(
+                {"status": "error", "output": "Код уже запускается — дождись результата."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+        try:
+            result = execute_python_code(code)
+        finally:
+            release_run(request.user.pk)
 
         if result["status"] == "error":
             return Response(result, status=400)

@@ -22,6 +22,7 @@ from .runner import (
 from .services import (
     ARM_OFFER,
     HELP_AFTER_FAILURES,
+    NOT_CHECKED,
     grade_code_run,
     help_arm,
     only_published,
@@ -166,7 +167,8 @@ def record_code_run(
 
 
 def finish_code_run(
-    user, task, *, code, stdout, stderr, exit_code, duration, reasons, provenance=None
+    user, task, *, code, stdout, stderr, exit_code, duration, reasons, provenance=None,
+    hidden_passed=NOT_CHECKED,
 ):
     """Handle a run that reached its end: grade it (if it belongs to a task),
     record it, and return the task verdict (None for free practice).
@@ -178,7 +180,7 @@ def finish_code_run(
     verdict = None
     counted = False
     if task is not None and not (set(reasons) & INFRASTRUCTURE_REASONS):
-        verdict = grade_code_run(user, task, code, stdout, exit_code)
+        verdict = grade_code_run(user, task, code, stdout, exit_code, hidden_passed)
         if verdict is None:
             # the hidden check could not run: a broken sandbox is not a failed attempt
             reasons = set(reasons) | {REASON_RUNNER_ERROR}

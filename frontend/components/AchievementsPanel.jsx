@@ -9,6 +9,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { useI18n } from "../lib/i18n";
+import Card from "./Card";
 
 // Каталог достижений живёт на бэкенде (game/achievements.py) и присылает имя
 // иконки строкой. Карта переводит это имя в компонент lucide-react. Любой
@@ -25,9 +26,9 @@ export default function AchievementsPanel({ items = [] }) {
   const earnedCount = items.filter((a) => a.earned).length;
 
   return (
-    <div className="mt-8 bg-surface border border-border rounded-3xl p-6 sm:p-8 shadow-sm">
+    <Card variant="scroll" className="mt-8">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-text flex items-center">
+        <h3 className="font-title text-2xl text-text flex items-center">
           <Trophy size={20} className="mr-2 text-accent" />
           {t("achievements.title")}
         </h3>
@@ -58,7 +59,7 @@ export default function AchievementsPanel({ items = [] }) {
                 }`}
               >
                 <div
-                  className={`shrink-0 w-12 h-12 rounded-xl flex items-center justify-center border ${
+                  className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center border-2 ${
                     a.earned
                       ? "bg-accent/20 border-accent/50 text-accent"
                       : "bg-surface border-border text-muted"
@@ -100,6 +101,6 @@ export default function AchievementsPanel({ items = [] }) {
           })}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

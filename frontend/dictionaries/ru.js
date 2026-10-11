@@ -696,6 +696,8 @@ export const ru = {
     profile: {
       title: "Лист персонажа",
       heroProfile: "Профиль Героя",
+      inventoryTitle: "Сумка героя",
+      summons: "Призывы Мудреца",
       unknownPlayer: "Неизвестный",
       unknownClass: "Класс неизвестен",
       level: "Уровень",

@@ -3,6 +3,8 @@ import { useRouter } from "next/router";
 import Layout from "../components/Layout";
 import XPBar from "../components/XPBar";
 import Button from "../components/Button";
+import Card from "../components/Card";
+import ClassPortrait from "../components/ClassPortrait";
 import AchievementsPanel from "../components/AchievementsPanel";
 import { clearPlayerClass } from "../lib/class";
 import {
@@ -12,7 +14,7 @@ import {
 } from "../lib/api";
 import logger from "../lib/logger";
 import { toast } from "sonner";
-import { LogOut, Settings, Mail, User, Shield, Flame } from "lucide-react";
+import { LogOut, Settings, Mail, User, Shield, Flame, ChevronDown, Sparkles, FlaskConical, ScrollText } from "lucide-react";
 import { useI18n } from "../lib/i18n";
 
 export default function ProfilePage() {
@@ -182,11 +184,15 @@ if (loading) {
         <div className="grid md:grid-cols-3 gap-8">
           {/* Hero column - avatar & stats */}
           <div className="md:col-span-1 space-y-6">
-            <div className="bg-surface border border-border rounded-3xl p-6 text-center shadow-sm">
-              <div className="w-24 h-24 mx-auto bg-panel border border-border rounded-full flex items-center justify-center mb-4">
-                <User size={40} className="text-muted" />
+            <Card variant="scroll" className="text-center">
+              <div className="mx-auto mb-4 flex justify-center">
+                <ClassPortrait
+                  role={profile?.class_role}
+                  size={104}
+                  label={profile?.class_role ? t(`profile.classes.${profile.class_role}`) : undefined}
+                />
               </div>
-              <h2 className="text-2xl font-bold text-text mb-1">
+              <h2 className="font-title text-2xl text-text mb-1">
                 {profile?.username || t("profile.unknownPlayer")}
               </h2>
               {profile?.class_role && (
@@ -233,6 +239,31 @@ if (loading) {
                 </div>
               </div>
 
+              {/* Инвентарь: расходуемые предметы героя */}
+              <div className="mt-5 text-left">
+                <p className="mb-2 text-xs font-bold uppercase tracking-widest text-muted">
+                  {t("profile.inventoryTitle")}
+                </p>
+                <ul className="grid grid-cols-3 gap-2">
+                  {[
+                    { key: "ai_summons", Icon: Sparkles, label: t("profile.summons") },
+                    { key: "hint_scrolls", Icon: FlaskConical, label: t("codeRunner.items.clarity") },
+                    { key: "skeleton_scrolls", Icon: ScrollText, label: t("codeRunner.items.architect") },
+                  ].map(({ key, Icon, label }) => (
+                    <li
+                      key={key}
+                      className="flex flex-col items-center rounded-xl border border-border bg-panel px-1 py-2 text-center"
+                    >
+                      <Icon size={20} className="text-primary" aria-hidden="true" />
+                      <span className="mt-1 text-lg font-bold leading-none tabular-nums text-text">
+                        {profile?.[key] ?? 0}
+                      </span>
+                      <span className="mt-1 text-[11px] leading-tight text-muted">{label}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               <div className="mt-6 pt-6 border-t border-border space-y-3">
                 <Button onClick={handleResetClass} variant="outline" className="w-full text-sm">
                   <Shield size={16} className="mr-2" /> {profile?.class_role ? t("profile.changeClass") : t("profile.chooseClass")}
@@ -241,16 +272,21 @@ if (loading) {
                   <LogOut size={16} className="mr-2" /> {t("profile.logout")}
                 </Button>
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Правая колонка - Настройки */}
           <div className="md:col-span-2">
-            <div className="bg-surface border border-border rounded-3xl p-8 shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-text flex items-center">
-                  <Settings size={20} className="mr-2 text-primary" /> {t("profile.accountSettings")}
-                </h3>
+            <Card variant="scroll">
+              <details className="group">
+                <summary className="flex cursor-pointer list-none items-center justify-between [&::-webkit-details-marker]:hidden">
+                  <span className="font-title text-xl text-text flex items-center">
+                    <Settings size={20} className="mr-2 text-primary" /> {t("profile.accountSettings")}
+                  </span>
+                  <ChevronDown size={20} className="text-muted transition-transform group-open:rotate-180" aria-hidden="true" />
+                </summary>
+              <div className="mt-6">
+              <div className="flex justify-end mb-4">
                 {!isEditing && (
                   <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">
                     {t("profile.editBtn")}
@@ -305,6 +341,8 @@ if (loading) {
                   </div>
                 </div>
               )}
+              </div>
+              </details>
 
               <div className="mt-6 pt-6 border-t border-border">
                 <label className="flex items-start gap-3 cursor-pointer py-1">
@@ -322,7 +360,7 @@ if (loading) {
                   </span>
                 </label>
               </div>
-            </div>
+            </Card>
           </div>
         </div>
 

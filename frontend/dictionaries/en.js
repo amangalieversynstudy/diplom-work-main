@@ -695,6 +695,8 @@ export const en = {
     },
     profile: {
       heroProfile: "Hero Profile",
+      inventoryTitle: "Hero's pack",
+      summons: "Sage summons",
       unknownPlayer: "Unknown",
       unknownClass: "Unknown class",
       level: "Level",

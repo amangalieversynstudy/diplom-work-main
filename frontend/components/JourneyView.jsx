@@ -285,15 +285,36 @@ export default function JourneyView({ data, mode = "student", backHref }) {
       </Reveal>
 
       <Reveal>
-        <section className="rounded-3xl border border-border bg-panel p-5">
-          <h2 className="font-display text-lg font-bold text-text">{t("journey.missionsTitle")}</h2>
-          <ul className="mt-3 space-y-3">
+        <section className={teacher ? "rounded-3xl border border-border bg-panel p-5" : "scroll-frame p-5 md:p-6"}>
+          <h2 className={teacher ? "font-display text-lg font-bold text-text" : "font-title text-2xl text-text"}>{t("journey.missionsTitle")}</h2>
+          <ul className={`mt-3 ${teacher ? "space-y-3" : "space-y-4"}`}>
             {data.missions.map((mission, index) => {
               const pct = mission.steps_total ? Math.round((mission.steps_done / mission.steps_total) * 100) : 0;
               // заголовок курса перед его первой миссией: два курса не сливаются в один список
               const newCourse = index === 0 || data.missions[index - 1].track_title !== mission.track_title;
               return (
-                <li key={mission.id}>
+                <li key={mission.id} className={teacher ? undefined : "relative pl-11"}>
+                  {/* дорога ученика: пунктирная тропа и путевая точка у каждой миссии */}
+                  {!teacher && (
+                    <>
+                      {index < data.missions.length - 1 && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute left-[15px] top-8 -bottom-5 border-l-2 border-dashed border-[var(--gold-frame)]"
+                        />
+                      )}
+                      <span
+                        aria-hidden="true"
+                        className={`absolute left-0 top-1 grid h-8 w-8 place-items-center rounded-full border-2 border-[var(--gold-frame)] font-title text-sm ${
+                          mission.completed
+                            ? "bg-[var(--wax)] text-[var(--parchment-light)]"
+                            : "bg-[var(--parchment)] text-[var(--ink-deep)]"
+                        }`}
+                      >
+                        {mission.completed ? "✓" : index + 1}
+                      </span>
+                    </>
+                  )}
                   {newCourse && mission.track_title ? (
                     <h3 className={`${index === 0 ? "" : "mt-5 "}mb-2 text-xs font-bold uppercase tracking-widest text-muted`}>
                       {mission.track_title}
@@ -301,7 +322,7 @@ export default function JourneyView({ data, mode = "student", backHref }) {
                   ) : null}
                   <Row
                     href={teacher ? null : `/missions/${mission.id}`}
-                    className={`block rounded-2xl border border-border bg-surface px-4 py-3 ${
+                    className={`block rounded-2xl border border-border ${teacher ? "bg-surface" : "bg-panel"} px-4 py-3 ${
                       teacher ? "" : "transition-colors hover:border-primary/50"
                     }`}
                   >

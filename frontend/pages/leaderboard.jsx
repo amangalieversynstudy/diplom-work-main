@@ -80,12 +80,17 @@ export default function Leaderboard() {
 
   // Подсветка призёров. Оттенки 700–800 в светлой теме: жёлтый и серебристый 400–500 на светлом
   // фоне давали 1,6–2,1:1.
-  const getRankStyle = (index) => {
-    if (index === 0) return "text-yellow-800 dark:text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
-    if (index === 1) return "text-slate-700 dark:text-slate-300 bg-slate-400/10 border-slate-400/30";
-    if (index === 2) return "text-amber-800 dark:text-amber-500 bg-amber-600/10 border-amber-600/30";
-    return "text-muted bg-panel border-border";
-  };
+  // Подиум нужен, когда первая тройка набрала опыт: медаль за нулевой счёт была бы насмешкой.
+  const hasPodium = data.length >= 3 && data.slice(0, 3).every((e) => (e.xp || 0) > 0);
+  const podium = hasPodium ? data.slice(0, 3) : [];
+  const rest = hasPodium ? data.slice(3) : data;
+  const offset = hasPodium ? 3 : 0;
+  // порядок на сцене: второе, первое, третье место; в разметке остаётся порядок по местам
+  const PODIUM_VIEW = [
+    { order: "order-2", plinth: "h-16" },
+    { order: "order-1", plinth: "h-24" },
+    { order: "order-3", plinth: "h-10" },
+  ];
 
   // с одним курсом отдельный зачёт курса совпал бы с общим, переключать нечего
   const scopes = courses.length > 1
@@ -174,12 +179,51 @@ export default function Leaderboard() {
           // Пустое состояние
           <EmptyScroll icon={Trophy}>{copy.empty}</EmptyScroll>
         ) : (
-          // Строки игроков
-          <ol className="space-y-3">
-            {data.map((entry, index) => {
+          <>
+          {hasPodium && (
+            <ol className="mb-6 grid grid-cols-3 items-end gap-2 sm:gap-4">
+              {podium.map((entry, index) => {
+                const view = PODIUM_VIEW[index];
+                const isMe = meId != null && entry.user === meId;
+                return (
+                  <li
+                    key={entry.id || index}
+                    aria-current={isMe ? "true" : undefined}
+                    className={`${view.order} flex min-w-0 flex-col`}
+                  >
+                    <div
+                      className={`scroll-frame px-2 py-3 text-center sm:px-4 ${isMe ? "outline outline-2 outline-offset-2 outline-primary" : ""}`}
+                    >
+                      <Medal size={22} className="mx-auto text-[var(--wax)]" aria-hidden="true" />
+                      <p className="mt-1 truncate font-title text-base text-text sm:text-lg">
+                        {entry.username || entry.player || worldsCopy.heroFallback || "Неизвестный герой"}
+                      </p>
+                      {isMe && (
+                        <span className="mt-1 inline-block rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-on-primary">
+                          {copy.you}
+                        </span>
+                      )}
+                      <p className="mt-1 text-xs text-muted">
+                        {copy.columns.level} {entry.level || 1}
+                      </p>
+                      <p className="font-title text-xl text-primary">{entry.xp || 0} {copy.columns.xp}</p>
+                    </div>
+                    <div
+                      className={`${view.plinth} flex items-start justify-center rounded-b-md border-x-2 border-b-2 border-[var(--ink)] bg-[var(--gold-frame)] pt-2 font-title text-2xl text-[var(--ink-deep)]`}
+                    >
+                      {`#${index + 1}`}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+          {/* Строки игроков */}
+          <ol className="space-y-3" start={offset + 1}>
+            {rest.map((entry, restIndex) => {
+              const index = restIndex + offset;
               // медаль за нулевой счёт была бы насмешкой: призовые места только у тех, кто набрал XP
               const isTop3 = index < 3 && (entry.xp || 0) > 0;
-              const rankStyle = getRankStyle(isTop3 ? index : 3);
               const isMe = meId != null && entry.user === meId;
               const classLabel = classNames[entry.class_role_id] || entry.class_role;
 
@@ -187,25 +231,21 @@ export default function Leaderboard() {
                 <li
                   key={entry.id || index}
                   aria-current={isMe ? "true" : undefined}
-                  className={`group flex items-center gap-4 p-4 md:p-5 rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-primary/30 ${
-                    isMe
-                      ? "bg-surface border-primary ring-1 ring-primary/40"
-                      : isTop3
-                        ? "bg-surface shadow-sm border-transparent"
-                        : "bg-surface border-border"
+                  className={`scroll-frame group flex items-center gap-4 p-4 md:p-5 ${
+                    isMe ? "outline outline-2 outline-offset-2 outline-primary" : ""
                   }`}
                 >
                   {/* Плашка с местом: у призёров рядом с цифрой медаль, место не держится на одном цвете */}
-                  <div className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl border font-display font-bold transition-colors duration-300 ${
+                  <div className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl border font-title text-text bg-panel border-border ${
                     isTop3 ? "flex-col gap-0.5 text-sm leading-none" : "text-xl"
-                  } ${rankStyle}`}>
-                    {isTop3 && <Medal size={16} aria-hidden="true" />}
+                  }`}>
+                    {isTop3 && <Medal size={16} className="text-[var(--wax)]" aria-hidden="true" />}
                     {`#${index + 1}`}
                   </div>
 
                   {/* Информация об игроке */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="flex items-center gap-2 text-lg font-bold text-text group-hover:text-primary transition-colors">
+                    <h3 className="flex items-center gap-2 font-title text-xl text-text">
                       <span className="truncate">
                         {entry.username || entry.player || worldsCopy.heroFallback || "Неизвестный герой"}
                       </span>
@@ -227,7 +267,7 @@ export default function Leaderboard() {
                         </>
                       )}
                       {/* На узком экране колонки серии нет, а от неё зависит место при равном XP */}
-                      <span className="flex items-center gap-1 text-accent sm:hidden">
+                      <span className="flex items-center gap-1 text-[var(--wax)] sm:hidden">
                         <Flame size={14} aria-hidden="true" />
                         <span className="sr-only">{copy.columns.streak}: </span>
                         {entry.streak || 0}
@@ -239,13 +279,13 @@ export default function Leaderboard() {
                   <div className="flex items-center gap-6 text-right">
                     <div className="hidden sm:block">
                       <p className="text-xs uppercase tracking-widest text-faint mb-1">{copy.columns.streak}</p>
-                      <p className="flex items-center justify-end gap-1 font-bold text-accent">
+                      <p className="flex items-center justify-end gap-1 font-bold text-[var(--wax)]">
                         {entry.streak || 0} <Flame size={14} aria-hidden="true" />
                       </p>
                     </div>
                     <div>
                       <p className="text-xs uppercase tracking-widest text-faint mb-1">{copy.columns.xp}</p>
-                      <p className="font-display text-xl font-bold text-primary">
+                      <p className="font-title text-xl text-primary">
                         {entry.xp || 0}
                       </p>
                     </div>
@@ -254,6 +294,7 @@ export default function Leaderboard() {
               );
             })}
           </ol>
+          </>
         )}
       </div>
     </Layout>

@@ -198,6 +198,29 @@ class UseItemView(APIView):
             
         profile = request.user.profile
 
+        # Спасательная подсказка: бесплатно, один раз на шаг, только когда баннер помощи показан,
+        # а предметов не осталось. Предмет не списывается; событие отдельное (help_rescue).
+        if item_type == "rescue_hint":
+            from game.footprint import find_task, log_event
+            from game.help import rescue_allowed, rescue_text
+            from game.serializers import _resolve_language
+            from game.variants import personalize
+
+            task = find_task(request.data.get("task_id"), request.user)
+            if task is None or not rescue_allowed(request.user, task, profile):
+                return Response(
+                    {"detail": "Спасательная подсказка сейчас недоступна.", "code": "no_rescue"},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            text = rescue_text(personalize(task, request.user.pk), _resolve_language(request))
+            if not text:
+                return Response(
+                    {"detail": "У этого шага нет подсказки.", "code": "no_hint"},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            log_event(request.user, "help_rescue", task=task)
+            return Response({"detail": "ok", "item_type": item_type, "hint": {"text": text, "level": 1, "levels": 1}})
+
         # Зелье и свиток помогают с конкретным шагом. Текст живёт на сервере и
         # выдаётся только здесь; если автор шага его не написал, предмет не тратим.
         extra = {}

@@ -64,3 +64,29 @@ def next_hint(task, user, lang="ru"):
     ).count()
     index = min(used, len(levels) - 1)
     return {"text": levels[index], "level": index + 1, "levels": len(levels)}
+
+
+def rescue_text(task, lang="ru"):
+    """The free fallback for a learner who is stuck and has no items: the first hint, else the outline."""
+    levels = hint_levels(task, lang)
+    return levels[0] if levels else skeleton_text(task, lang)
+
+
+def rescue_allowed(user, task, profile):
+    """May this learner take the free rescue hint for this step?
+
+    Only when the help prompt is shown (3+ failures in a row, offer arm), nothing is left in
+    the inventory to ask with, and the rescue was not taken for this step yet. The rescue is
+    logged as its own event type, so the counts of spent items (H2) stay clean.
+    """
+    from .models import TaskProgress
+    from .services import help_offer
+
+    if profile.hint_scrolls > 0 or profile.ai_summons > 0:
+        return False
+    progress = TaskProgress.objects.filter(user=user, task=task).select_related("task").first()
+    if progress is None or help_offer(progress) is None:
+        return False
+    return not LearningEvent.objects.filter(
+        user=user, task=task, event_type=LearningEvent.HELP_RESCUE
+    ).exists()

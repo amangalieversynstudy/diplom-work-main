@@ -46,6 +46,7 @@ export default function MissionDetail() {
   const [tasks, setTasks] = useState([]);
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [taskProgress, setTaskProgress] = useState({});
+  const [rescueTried, setRescueTried] = useState({});
   const [codeDrafts, setCodeDrafts] = useState({});
   const [quizAnswers, setQuizAnswers] = useState({});
   const [savingTaskId, setSavingTaskId] = useState(null);
@@ -530,11 +531,18 @@ export default function MissionDetail() {
     openMobileTab("code");
     setTimeout(() => {
       if (kind === "hint") panelRef.current?.spendHint?.();
-      else panelRef.current?.callMentor?.();
+      else if (kind === "rescue") {
+        Promise.resolve(panelRef.current?.rescueHint?.()).then(() => {
+          setRescueTried((prev) => ({ ...prev, [activeTaskId]: true }));
+        });
+      } else panelRef.current?.callMentor?.();
     }, 60);
   };
   const canHint = (inventory.hint_scrolls || 0) > 0 && Boolean(activeTask?.data?.has_hint);
   const canMentor = (inventory.ai_summons || 0) > 0;
+  // нет ни зелий, ни вызовов: единственная бесплатная подсказка к шагу (один раз, сервер это проверяет)
+  const canRescue = !canHint && !canMentor && (inventory.hint_scrolls || 0) <= 0 && (inventory.ai_summons || 0) <= 0;
+  const rescueTaken = Boolean(rescueTried[activeTaskId]);
   const helpButton =
     "inline-flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-ink/70 bg-ink px-3 py-2 text-sm font-semibold text-[#fde68a] transition-colors hover:bg-[#3a2818] disabled:cursor-not-allowed disabled:opacity-50";
   const helpBanner = (cls) =>
@@ -555,6 +563,16 @@ export default function MissionDetail() {
             {t("missionPage.helpOffer.mentor")} · {inventory.ai_summons || 0}
           </button>
         </div>
+        {canRescue && (
+          <div className="mt-2">
+            <button type="button" className={helpButton} disabled={rescueTaken} onClick={() => askForHelp("rescue")}>
+              {t("missionPage.helpOffer.rescue")}
+            </button>
+            <p className="mt-2 text-xs leading-snug">
+              {t(rescueTaken ? "missionPage.helpOffer.rescueUsed" : "missionPage.helpOffer.rescueNote")}
+            </p>
+          </div>
+        )}
         {!canHint && !canMentor ? (
           <p className="mt-2 text-xs leading-snug">{t("missionPage.helpOffer.noItems")}</p>
         ) : !activeTask?.data?.has_hint ? (

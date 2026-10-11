@@ -211,3 +211,42 @@ def test_a_hint_written_by_a_teacher_reaches_the_learner(teacher_api, student, a
     response = _use(api, "hint_scrolls", task)
     assert response.status_code == 200
     assert response.json()["hint"]["text"] == HINTS[0]["ru"]
+
+
+# ---- free rescue hint: a stuck learner with an empty inventory still gets a way forward ----
+
+def _stuck(student, task, failures=3):
+    from game.models import TaskProgress
+
+    TaskProgress.objects.create(user=student, task=task, status="in_progress", attempts=failures)
+
+
+def _empty(student):
+    student.profile.hint_scrolls = 0
+    student.profile.ai_summons = 0
+    student.profile.save()
+
+
+def test_rescue_hint_is_free_once_and_logged_separately(api, student, steps):
+    _empty(student)
+    _stuck(student, steps["helped"])
+    first = _use(api, "rescue_hint", steps["helped"])
+    assert first.status_code == 200
+    assert first.json()["hint"]["text"] == HINTS[0]["ru"]
+    student.profile.refresh_from_db()
+    assert student.profile.hint_scrolls == 0  # nothing was charged or granted
+    assert LearningEvent.objects.filter(user=student, event_type=LearningEvent.HELP_RESCUE).count() == 1
+    assert not LearningEvent.objects.filter(user=student, event_type=LearningEvent.HINT_USED).exists()
+    assert _use(api, "rescue_hint", steps["helped"]).status_code == 409  # once per step
+
+
+def test_rescue_hint_needs_the_offer_and_an_empty_inventory(api, student, steps):
+    _empty(student)
+    _stuck(student, steps["helped"], failures=2)
+    assert _use(api, "rescue_hint", steps["helped"]).status_code == 409  # not stuck yet
+    from game.models import TaskProgress
+
+    TaskProgress.objects.filter(user=student).update(attempts=3)
+    student.profile.hint_scrolls = 1
+    student.profile.save()
+    assert _use(api, "rescue_hint", steps["helped"]).status_code == 409  # has a scroll: use it

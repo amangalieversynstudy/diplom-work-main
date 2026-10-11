@@ -313,31 +313,54 @@ function CodeRunnerPanel(
     );
   };
 
-  const handleHintScroll = async () => {
-    const res = await handleUseItem("hint_scrolls", t("codeRunner.items.clarity"));
-    if (!res?.hint) return;
-
-    const hint = res.hint.text;
-    const level = res.hint.levels > 1 ? ` ${res.hint.level}/${res.hint.levels}` : "";
+  const showHint = (hint, header) => {
+    const level = hint.levels > 1 ? ` ${hint.level}/${hint.levels}` : "";
 
     // Подсказку выводим прямо в терминал редактора — он всегда
     // привязан к панели и виден на любой ширине экрана (на 32:9
     // top-right toast визуально «уходит за экран»). Если терминал
     // ещё не смонтирован — фоллбэк на тост.
     if (termRef.current?.writeln) {
-      termRef.current.writeln(`\r\n${ANSI_YELLOW}${t("codeRunner.clarityHeader")}${level}${ANSI_RESET}`);
-      wrapWords(hint, 70).forEach((line) => {
+      termRef.current.writeln(`
+${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
+      wrapWords(hint.text, 70).forEach((line) => {
         termRef.current.writeln(`${ANSI_YELLOW}│${ANSI_RESET} ${line}`);
       });
-      termRef.current.writeln(`${ANSI_YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━${ANSI_RESET}\r\n`);
+      termRef.current.writeln(`${ANSI_YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━${ANSI_RESET}
+`);
     } else {
-      toast(`💡 ${hint}`, { duration: 6000 });
+      toast(`💡 ${hint.text}`, { duration: 6000 });
+    }
+  };
+
+  const handleHintScroll = async () => {
+    const res = await handleUseItem("hint_scrolls", t("codeRunner.items.clarity"));
+    if (!res?.hint) return;
+    showHint(res.hint, t("codeRunner.clarityHeader"));
+  };
+
+  // Бесплатная подсказка для ученика без предметов: ничего не списывается, один раз на шаг.
+  // Возвращает true, если подсказка выдана.
+  const handleRescueHint = async () => {
+    if (usingItem) return false;
+    setUsingItem(true);
+    try {
+      const res = await Profile.consumeItem("rescue_hint", task?.id);
+      if (!res?.hint) return false;
+      showHint(res.hint, t("missionPage.helpOffer.rescue"));
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.detail || t("codeRunner.itemFail"));
+      return false;
+    } finally {
+      setUsingItem(false);
     }
   };
 
   // Баннер помощи на странице миссии вызывает те же действия, что и кнопки панели.
   useImperativeHandle(ref, () => ({
     spendHint: handleHintScroll,
+    rescueHint: handleRescueHint,
     callMentor: () => setMentorOpen(true),
   }));
 

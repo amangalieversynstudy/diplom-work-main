@@ -123,7 +123,7 @@ export default function ChooseClassPage() {
           <p className="text-xs uppercase tracking-widest text-primary mb-4 font-bold">
             {hasClass ? (dict.classPage?.changePath || "Смена пути") : (dict.classPage?.alignment || "Выравнивание")}
           </p>
-          <h1 className="text-4xl md:text-6xl font-display font-bold text-text mb-6">
+          <h1 className="text-4xl md:text-6xl font-title text-text mb-6">
             {hasClass ? (dict.classPage?.changeClass || "Сменить класс") : (dict.classPage?.tree || "Древо Классов")}
           </h1>
           <p className="text-lg text-muted leading-relaxed">

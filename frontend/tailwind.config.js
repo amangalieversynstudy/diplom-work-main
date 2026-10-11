@@ -27,6 +27,8 @@ module.exports = {
       },
       fontFamily: {
         display: ["'Melodrama'", "Georgia", "serif"],
+        // Kurale — только крупные заголовки экранов ученика (одно начертание, см. .font-title)
+        title: ["'Kurale'", "Georgia", "serif"],
         body: ["'General Sans'", "sans-serif"],
         mono: ["'JetBrains Mono'", "monospace"],
       },
@@ -37,6 +39,13 @@ module.exports = {
         accent:       themed('accent'),
         'accent-dk':  themed('accent-dk'),
         gold:         themed('gold'),
+        parchment:         themed('parchment'),
+        'parchment-light': themed('parchment-light'),
+        'parchment-pale':  themed('parchment-pale'),
+        ink:               themed('ink'),
+        'ink-deep':        themed('ink-deep'),
+        wax:               themed('wax'),
+        'gold-frame':      themed('gold-frame'),
         bg:           themed('bg'),
         surface:      themed('surface'),
         panel:        themed('panel'),

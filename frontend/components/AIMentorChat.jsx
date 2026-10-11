@@ -164,7 +164,7 @@ export default function AIMentorChat({
       <div className="flex items-center gap-3 px-4 py-3 border-b border-[#d9a441]/20">
         <SageAvatar className="w-10 h-10 shrink-0 rounded-[9px] shadow-[0_0_14px_rgba(217,164,65,0.35)]" />
         <div className="min-w-0">
-          <div className="font-display text-[15px] leading-tight text-[#f3e7c8]">
+          <div className="font-display text-[15px] leading-tight text-parchment-pale">
             {t("codeRunner.mentor.title")}
           </div>
           <div className="text-xs uppercase tracking-[0.18em] text-[#d9a441]/80">

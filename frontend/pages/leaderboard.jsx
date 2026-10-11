@@ -103,7 +103,7 @@ export default function Leaderboard() {
           <p className="text-xs uppercase tracking-widest text-primary mb-3">
             {copy.eyebrow}
           </p>
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-text mb-4">
+          <h1 className="text-4xl md:text-5xl font-title text-text mb-4">
             {copy.title}
           </h1>
           <p className="text-muted max-w-lg mx-auto">

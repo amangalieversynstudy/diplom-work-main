@@ -177,7 +177,7 @@ if (loading) {
   return (
     <Layout>
       <div className="max-w-4xl mx-auto pt-24 pb-16 px-4">
-        <h1 className="text-4xl font-display font-bold mb-8 text-text">{t("profile.heroProfile")}</h1>
+        <h1 className="text-4xl font-title mb-8 text-text">{t("profile.heroProfile")}</h1>
 
         <div className="grid md:grid-cols-3 gap-8">
           {/* Hero column - avatar & stats */}

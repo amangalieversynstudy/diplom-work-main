@@ -51,7 +51,7 @@ export default function MissionComplete({ data, onClose, onMap }) {
             />
           ))}
         </div>
-        <h2 id={titleId} className="font-display text-3xl font-bold">
+        <h2 id={titleId} className="font-title text-3xl">
           {t("missionPage.complete.title")}
         </h2>
         {data.title ? <p className="mt-1 text-muted">{data.title}</p> : null}
@@ -76,7 +76,7 @@ export default function MissionComplete({ data, onClose, onMap }) {
               {t("missionPage.complete.pickClass")}
             </Link>
           ) : null}
-          <Button data-autofocus={data.suggestClass ? undefined : true} variant={data.suggestClass ? "secondary" : "primary"} onClick={onMap} className="justify-center">
+          <Button data-autofocus={data.suggestClass ? undefined : true} variant={data.suggestClass ? "secondary" : "rune"} onClick={onMap} className="justify-center">
             {t("missionPage.complete.toMap")}
           </Button>
           <Link

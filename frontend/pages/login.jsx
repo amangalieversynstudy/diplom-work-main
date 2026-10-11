@@ -112,7 +112,7 @@ export default function Login() {
   return (
     <Layout>
       <div className="max-w-md mx-auto mt-24 mb-10">
-        <Card title={copy.title} subtitle={copy.subtitle}>
+        <Card variant="scroll" title={copy.title} subtitle={copy.subtitle}>
           {(pendingEmail || showResend) && (
             <div className="mb-4 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-text">
               <p className="font-semibold mb-1">
@@ -201,7 +201,7 @@ export default function Login() {
                 </span>
               )}
             </label>
-            <Button type="submit" disabled={loading}>
+            <Button variant="rune" type="submit" disabled={loading}>
               {loading ? copy.submitting : copy.submit}
             </Button>
           </form>

@@ -23,12 +23,12 @@ import { fetchIntroStatus } from "../../lib/class";
 
 // Стили текста свитка: тёмно-коричневый на пергаменте (светлый фон, поэтому без prose-invert).
 const SCROLL_PROSE =
-  "prose max-w-none text-sm text-[#3e2723] leading-relaxed space-y-4 " +
-  "prose-headings:font-display prose-headings:text-[#3e2723] " +
-  "prose-strong:text-[#3e2723] " +
-  "prose-code:bg-[#5c3a21]/15 prose-code:text-[#5c3a21] prose-code:px-1 prose-code:rounded " +
+  "prose max-w-none text-sm text-ink-deep leading-relaxed space-y-4 " +
+  "prose-headings:font-display prose-headings:text-ink-deep " +
+  "prose-strong:text-ink-deep " +
+  "prose-code:bg-ink/15 prose-code:text-ink prose-code:px-1 prose-code:rounded " +
   "prose-pre:bg-[#3a2818] prose-pre:text-[#fde68a] prose-pre:overflow-x-auto " +
-  "prose-a:text-[#8e1d1d] prose-li:marker:text-[#5c3a21]";
+  "prose-a:text-wax prose-li:marker:text-ink";
 
 export default function MissionDetail() {
   const router = useRouter();
@@ -464,12 +464,12 @@ export default function MissionDetail() {
   const canHint = (inventory.hint_scrolls || 0) > 0 && Boolean(activeTask?.data?.has_hint);
   const canMentor = (inventory.ai_summons || 0) > 0;
   const helpButton =
-    "inline-flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-[#5c3a21]/70 bg-[#5c3a21] px-3 py-2 text-sm font-semibold text-[#fde68a] transition-colors hover:bg-[#3a2818] disabled:cursor-not-allowed disabled:opacity-50";
+    "inline-flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-ink/70 bg-ink px-3 py-2 text-sm font-semibold text-[#fde68a] transition-colors hover:bg-[#3a2818] disabled:cursor-not-allowed disabled:opacity-50";
   const helpBanner = (cls) =>
     helpOffer && (
       <div
         role="status"
-        className={`rounded-lg border-2 border-[#5c3a21]/50 bg-[#f3e2c0]/80 px-4 py-3 text-sm text-[#3e2723] ${cls}`}
+        className={`rounded-lg border-2 border-ink/50 bg-[#f3e2c0]/80 px-4 py-3 text-sm text-ink-deep ${cls}`}
       >
         <p className="font-bold">
           {t("missionPage.helpOffer.title").replace("{n}", helpOffer.failures)}
@@ -504,7 +504,7 @@ export default function MissionDetail() {
       <div className="min-h-screen xl:h-screen pt-24 bg-bg dark:bg-[#0f0f11] text-text dark:text-gray-200 font-sans flex flex-col">
         {/* Квест-шапка в RPG-стиле: deep-wood band + scroll icon + Melodrama.
             Светлая тема — чистая surface-полоса; тёмная — глубокое дерево. */}
-        <header className="border-b border-border dark:border-[#5c3a21]/40 px-4 sm:px-8 py-3 xl:py-2.5 flex items-center justify-between gap-3 select-none shadow-md bg-surface dark:bg-gradient-to-r dark:from-[#2b1d11] dark:via-[#3a2818] dark:to-[#2b1d11]">
+        <header className="border-b border-border dark:border-ink/40 px-4 sm:px-8 py-3 xl:py-2.5 flex items-center justify-between gap-3 select-none shadow-md bg-surface dark:bg-gradient-to-r dark:from-[#2b1d11] dark:via-[#3a2818] dark:to-[#2b1d11]">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <div className="shrink-0 p-2.5 bg-primary/10 dark:bg-[#8b5a2b]/25 border border-primary/20 dark:border-[#d4a24c]/60 rounded-xl text-primary dark:text-[#fde68a] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
               <ScrollText size={22} />
@@ -561,7 +561,7 @@ export default function MissionDetail() {
           {/* Телефон: шаги полоской и сводка по текущему шагу вместо панели свитков */}
           <div
             ref={stripRef}
-            className="xl:hidden scroll-mt-24 border-b-2 border-[#5c3a21]/60 bg-gradient-to-r from-[#2b1d11] via-[#3a2818] to-[#2b1d11] px-3 pt-3 pb-2"
+            className="xl:hidden scroll-mt-24 border-b-2 border-ink/60 bg-gradient-to-r from-[#2b1d11] via-[#3a2818] to-[#2b1d11] px-3 pt-3 pb-2"
           >
             <div className="flex items-center justify-between gap-3 pb-2 font-mono text-xs text-[#d4a24c]">
               <span className="font-bold uppercase tracking-wider text-[#fde68a]">
@@ -602,7 +602,7 @@ export default function MissionDetail() {
                   className={`flex min-h-[44px] items-center justify-center gap-2 rounded-lg font-display text-sm font-bold tracking-wide transition-colors ${
                     mobileTab === key
                       ? "bg-[#d4ad75] text-[#2a1810]"
-                      : "text-[#fde68a] hover:bg-[#5c3a21]/50"
+                      : "text-[#fde68a] hover:bg-ink/50"
                   }`}
                 >
                   <TabIcon size={16} aria-hidden="true" />
@@ -617,14 +617,14 @@ export default function MissionDetail() {
               пятна и потёртости) + лёгкое sepia-tint поверх. Никаких
               файлов-текстур — чистый CSS, переживёт любую сборку. */}
           <div
-            className="w-full xl:w-[320px] xl:flex-shrink-0 border-r-4 border-[#5c3a21]/60 hidden xl:flex flex-col select-none shadow-2xl z-10 relative"
+            className="w-full xl:w-[320px] xl:flex-shrink-0 border-r-4 border-ink/60 hidden xl:flex flex-col select-none shadow-2xl z-10 relative"
             style={{
               backgroundColor: "#d4ad75",
               backgroundImage:
                 "radial-gradient(circle at 15% 20%, rgba(60,30,10,0.18), transparent 35%)," +
                 "radial-gradient(circle at 85% 70%, rgba(40,20,10,0.16), transparent 40%)," +
                 "radial-gradient(circle at 50% 95%, rgba(80,40,15,0.10), transparent 50%)," +
-                "linear-gradient(180deg, #dcb98a 0%, #d4ad75 50%, #c39858 100%)",
+                "linear-gradient(180deg, var(--parchment) 0%, #d4ad75 50%, #c39858 100%)",
             }}
           >
             {/* Череп-тотем со стола мага — выцветший водяной знак (из мокапа
@@ -635,15 +635,15 @@ export default function MissionDetail() {
             >
               <svg viewBox="0 0 200 200" className="w-44 h-44 text-[#2a1810]">
                 <path d="M100 30c-38 0-66 28-66 64 0 22 12 36 22 46v22c0 6 4 10 10 10h12v-14h14v14h16v-14h14v14h12c6 0 10-4 10-10v-22c10-10 22-24 22-46 0-36-28-64-66-64z" fill="currentColor" />
-                <ellipse cx="74" cy="110" rx="18" ry="22" fill="#dcb98a" />
-                <ellipse cx="126" cy="110" rx="18" ry="22" fill="#dcb98a" />
-                <path d="M100 130l-10 18h20z" fill="#dcb98a" />
-                <path d="M86 160h6v10h-6zM100 160h6v10h-6zM114 160h6v10h-6z" fill="#dcb98a" />
+                <ellipse cx="74" cy="110" rx="18" ry="22" fill="var(--parchment)" />
+                <ellipse cx="126" cy="110" rx="18" ry="22" fill="var(--parchment)" />
+                <path d="M100 130l-10 18h20z" fill="var(--parchment)" />
+                <path d="M86 160h6v10h-6zM100 160h6v10h-6zM114 160h6v10h-6z" fill="var(--parchment)" />
               </svg>
             </div>
 
             {/* Заголовок-баннер */}
-            <div className="relative z-10 px-6 py-4 border-b-2 border-[#5c3a21]/40 bg-gradient-to-r from-[#3a2818]/95 via-[#5c3a21]/90 to-[#3a2818]/95 flex items-center gap-2">
+            <div className="relative z-10 px-6 py-4 border-b-2 border-ink/40 bg-gradient-to-r from-[#3a2818]/95 via-ink/90 to-[#3a2818]/95 flex items-center gap-2">
               <ScrollText size={16} className="text-[#fde68a]" />
               <p className="font-display text-sm font-bold tracking-widest text-[#fde68a] uppercase">
                 {t("missionPage.questLog")}
@@ -653,7 +653,7 @@ export default function MissionDetail() {
                 <ellipse cx="7" cy="22" rx="4.5" ry="1.4" fill="#1c120a" opacity="0.5" />
                 <rect x="4.5" y="9" width="5" height="13" rx="1.2" fill="#f3e2c0" />
                 <rect x="4.6" y="9" width="1.7" height="13" rx="0.8" fill="#ffffff" opacity="0.35" />
-                <rect x="6.6" y="6" width="0.8" height="3" fill="#3e2723" />
+                <rect x="6.6" y="6" width="0.8" height="3" fill="var(--ink-deep)" />
                 <g className="animate-flicker" style={{ transformOrigin: "7px 7px" }}>
                   <path d="M7 0c1.7 1.8 2.5 3.2 2.5 4.6A2.5 2.5 0 0 1 7 7.1 2.5 2.5 0 0 1 4.5 4.6C4.5 3.2 5.3 1.8 7 0Z" fill="#ffb338" />
                   <path d="M7 2c.9 1 1.3 2 1.3 2.8A1.3 1.3 0 0 1 7 6.1 1.3 1.3 0 0 1 5.7 4.8C5.7 4 6.1 3 7 2Z" fill="#fff3c4" />
@@ -674,7 +674,7 @@ export default function MissionDetail() {
             </div>
 
             {/* Статистика текущей ноды — на тёмной полосе под пергаментом */}
-            <div className="relative z-10 p-4 border-t-2 border-[#5c3a21]/40 bg-gradient-to-r from-[#3a2818]/95 via-[#5c3a21]/90 to-[#3a2818]/95 font-mono text-xs text-[#d4a24c]">
+            <div className="relative z-10 p-4 border-t-2 border-ink/40 bg-gradient-to-r from-[#3a2818]/95 via-ink/90 to-[#3a2818]/95 font-mono text-xs text-[#d4a24c]">
               {activeTask && (
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -686,7 +686,7 @@ export default function MissionDetail() {
                     <span className="text-[#fde68a]">{activeTask.estimated_minutes} {t("missionPage.stats.minutesShort")}</span>
                   </div>
                   {taskProgress[activeTask.id] && (
-                    <div className="mt-2 pt-2 border-t border-[#5c3a21]/40 space-y-1">
+                    <div className="mt-2 pt-2 border-t border-ink/40 space-y-1">
                       {taskProgress[activeTask.id].status === "completed" && (
                         <p>{t("missionPage.stats.status")} <span className="text-[#a3e635] font-bold">{t("missionPage.stats.done")}</span></p>
                       )}
@@ -701,20 +701,20 @@ export default function MissionDetail() {
 
           {/* Центральная панель (Свиток инструкций) — parchment под стать левой панели */}
           <div
-            className={`w-full ${isCodeTask ? "xl:w-[420px] xl:flex-shrink-0" : "xl:flex-1"} ${showEditor ? "hidden" : "flex"} xl:flex flex-col border-r-4 border-[#5c3a21]/60 min-w-0 relative`}
+            className={`w-full ${isCodeTask ? "xl:w-[420px] xl:flex-shrink-0" : "xl:flex-1"} ${showEditor ? "hidden" : "flex"} xl:flex flex-col border-r-4 border-ink/60 min-w-0 relative`}
             style={{
-              backgroundColor: "#dcb98a",
+              backgroundColor: "var(--parchment)",
               backgroundImage:
                 "radial-gradient(circle at 80% 15%, rgba(60,30,10,0.16), transparent 35%)," +
                 "radial-gradient(circle at 20% 60%, rgba(40,20,10,0.14), transparent 40%)," +
                 "radial-gradient(circle at 50% 95%, rgba(80,40,15,0.10), transparent 50%)," +
-                "linear-gradient(180deg, #dcb98a 0%, #d4ad75 60%, #c39858 100%)",
+                "linear-gradient(180deg, var(--parchment) 0%, #d4ad75 60%, #c39858 100%)",
               // Тень-сгиб «разворота книги» по левому краю страницы инструкций
               boxShadow: "inset 16px 0 30px -16px rgba(40,20,8,0.6)",
             }}
           >
             {/* Header-баннер: тёмное дерево, иконка типа, fantasy title */}
-            <div className="px-6 py-4 border-b-2 border-[#5c3a21]/40 bg-gradient-to-r from-[#3a2818]/95 via-[#5c3a21]/90 to-[#3a2818]/95 flex items-center gap-2">
+            <div className="px-6 py-4 border-b-2 border-ink/40 bg-gradient-to-r from-[#3a2818]/95 via-ink/90 to-[#3a2818]/95 flex items-center gap-2">
               {activeTask?.task_type === "code"
                 ? <Code2 size={16} className="text-[#d4a24c]" />
                 : <BookOpen size={16} className="text-[#a3e635]" />}
@@ -732,13 +732,13 @@ export default function MissionDetail() {
 
             {/* Орнаментальный разделитель главы — перо + росчерк (чистый SVG) */}
             <div className="flex items-center gap-3 px-6 pt-4 pb-1 select-none" aria-hidden="true">
-              <span className="h-px flex-1 bg-gradient-to-r from-transparent via-[#5c3a21]/40 to-[#5c3a21]/60" />
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="shrink-0 text-[#5c3a21]">
+              <span className="h-px flex-1 bg-gradient-to-r from-transparent via-ink/40 to-ink/60" />
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="shrink-0 text-ink">
                 <path d="M4 20c4.5-1 7-3.2 10-7.3 2.2-3 3.8-6.4 6-11.7-5.6 1.8-9 4-12 7.3C5 11 4.6 15 4 20Z" fill="currentColor" opacity="0.5" />
-                <path d="M4.2 19.8 9 15" stroke="#3e2723" strokeWidth="1" strokeLinecap="round" opacity="0.7" />
-                <circle cx="12.6" cy="10.8" r="0.9" fill="#8e1d1d" />
+                <path d="M4.2 19.8 9 15" stroke="var(--ink-deep)" strokeWidth="1" strokeLinecap="round" opacity="0.7" />
+                <circle cx="12.6" cy="10.8" r="0.9" fill="var(--wax)" />
               </svg>
-              <span className="h-px flex-1 bg-gradient-to-l from-transparent via-[#5c3a21]/40 to-[#5c3a21]/60" />
+              <span className="h-px flex-1 bg-gradient-to-l from-transparent via-ink/40 to-ink/60" />
             </div>
 
             {/* Тело свитка: тёмно-коричневый текст на пергаменте.
@@ -749,30 +749,30 @@ export default function MissionDetail() {
               <div dangerouslySetInnerHTML={{ __html: taskBodyHtml }} />
 
               {tasks.length === 0 && (
-                <p role="status" className="rounded-lg border-2 border-[#5c3a21]/40 bg-[#f3e2c0]/70 px-4 py-3 font-semibold">
+                <p role="status" className="rounded-lg border-2 border-ink/40 bg-[#f3e2c0]/70 px-4 py-3 font-semibold">
                   {t("missionPage.noSteps")}
                 </p>
               )}
 
               {/* Квиз — карточка в тон пергамента, тёмное дерево по рамке */}
               {activeTask?.task_type === "quiz" && (
-                <div className="mt-8 p-4 bg-[#c5a572]/50 border-2 border-[#5c3a21]/40 rounded-xl space-y-4 shadow-inner">
+                <div className="mt-8 p-4 bg-[#c5a572]/50 border-2 border-ink/40 rounded-xl space-y-4 shadow-inner">
                   <fieldset className="min-w-0 space-y-4 border-0 p-0 m-0">
-                  <legend className="font-display text-xs font-bold uppercase text-[#5c3a21] tracking-wider">
+                  <legend className="font-display text-xs font-bold uppercase text-ink tracking-wider">
                     {t("missionPage.pickAnswer")}
                   </legend>
                   <div className="space-y-2">
                     {activeTask.data?.options?.map((opt, i) => (
-                      <label key={i} className="flex items-start gap-3 p-3 bg-[#dcb98a]/70 hover:bg-[#dcb98a] border-2 border-[#5c3a21]/30 hover:border-[#5c3a21]/60 rounded-lg cursor-pointer transition-colors group">
+                      <label key={i} className="flex items-start gap-3 p-3 bg-parchment/70 hover:bg-parchment border-2 border-ink/30 hover:border-ink/60 rounded-lg cursor-pointer transition-colors group">
                         <input
                           type="radio"
                           name={`quiz-${activeTask.id}`}
                           value={opt.value ?? opt}
                           checked={quizAnswers[activeTask.id] === (opt.value ?? opt)}
                           onChange={(e) => setQuizAnswers((prev) => ({ ...prev, [activeTask.id]: e.target.value }))}
-                          className="mt-1 accent-[#8e1d1d]"
+                          className="mt-1 accent-wax"
                         />
-                        <span className="text-[#3e2723] group-hover:text-[#2a1810] font-medium transition-colors">{opt.label ?? opt}</span>
+                        <span className="text-ink-deep group-hover:text-[#2a1810] font-medium transition-colors">{opt.label ?? opt}</span>
                       </label>
                     ))}
                   </div>
@@ -807,7 +807,7 @@ export default function MissionDetail() {
             {isCodeTask ? (
               <>
                 {/* Телефон: условие под рукой, пока пишешь код */}
-                <details className="xl:hidden shrink-0 border-b-2 border-[#5c3a21]/60 bg-[#dcb98a] text-[#3e2723]">
+                <details className="xl:hidden shrink-0 border-b-2 border-ink/60 bg-parchment text-ink-deep">
                   <summary className="flex min-h-[44px] cursor-pointer items-center gap-2 px-4 font-display text-sm font-bold">
                     <BookOpen size={16} aria-hidden="true" />
                     {t("missionPage.mobile.showBody")}
@@ -838,11 +838,11 @@ export default function MissionDetail() {
                     без motion-библиотек — анимации через @keyframes ниже. */}
                 <div className="relative max-w-md w-full">
                   {/* Капы свитка слева/справа — закрученные края */}
-                  <div className="absolute left-0 top-0 bottom-0 w-3 -translate-x-2 rounded-l-full bg-gradient-to-r from-[#3a2818] via-[#5c3a21] to-[#3a2818] shadow-[inset_-1px_0_2px_rgba(0,0,0,0.5)]" />
-                  <div className="absolute right-0 top-0 bottom-0 w-3 translate-x-2 rounded-r-full bg-gradient-to-l from-[#3a2818] via-[#5c3a21] to-[#3a2818] shadow-[inset_1px_0_2px_rgba(0,0,0,0.5)]" />
+                  <div className="absolute left-0 top-0 bottom-0 w-3 -translate-x-2 rounded-l-full bg-gradient-to-r from-[#3a2818] via-ink to-[#3a2818] shadow-[inset_-1px_0_2px_rgba(0,0,0,0.5)]" />
+                  <div className="absolute right-0 top-0 bottom-0 w-3 translate-x-2 rounded-r-full bg-gradient-to-l from-[#3a2818] via-ink to-[#3a2818] shadow-[inset_1px_0_2px_rgba(0,0,0,0.5)]" />
 
                   {/* Полотно пергамента */}
-                  <div className="relative px-10 py-12 bg-gradient-to-br from-[#dcb98a] via-[#d4ad75] to-[#c39858] border-y-2 border-[#8b5a2b]/60 shadow-2xl text-center">
+                  <div className="relative px-10 py-12 bg-gradient-to-br from-parchment via-[#d4ad75] to-[#c39858] border-y-2 border-[#8b5a2b]/60 shadow-2xl text-center">
                     {/* Шум/потёртости */}
                     <div
                       className="absolute inset-0 opacity-20 pointer-events-none"
@@ -856,33 +856,33 @@ export default function MissionDetail() {
                     <div className="relative mx-auto w-24 h-24 mb-6">
                       {/* Внешнее кольцо — медленное вращение */}
                       <svg className="absolute inset-0 w-full h-full animate-[rune-spin_12s_linear_infinite]" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="46" fill="none" stroke="#5c3a21" strokeWidth="1.5" strokeDasharray="3 5" opacity="0.7"/>
-                        <circle cx="50" cy="50" r="46" fill="none" stroke="#8e1d1d" strokeWidth="0.5" opacity="0.5"/>
+                        <circle cx="50" cy="50" r="46" fill="none" stroke="var(--ink)" strokeWidth="1.5" strokeDasharray="3 5" opacity="0.7"/>
+                        <circle cx="50" cy="50" r="46" fill="none" stroke="var(--wax)" strokeWidth="0.5" opacity="0.5"/>
                       </svg>
                       {/* Внутреннее кольцо — обратное вращение */}
                       <svg className="absolute inset-0 w-full h-full animate-[rune-spin-reverse_8s_linear_infinite]" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="34" fill="none" stroke="#3e2723" strokeWidth="1" strokeDasharray="2 8"/>
+                        <circle cx="50" cy="50" r="34" fill="none" stroke="var(--ink-deep)" strokeWidth="1" strokeDasharray="2 8"/>
                         {/* Четыре опорные точки руны */}
-                        <circle cx="50" cy="16" r="2" fill="#8e1d1d"/>
-                        <circle cx="84" cy="50" r="2" fill="#8e1d1d"/>
-                        <circle cx="50" cy="84" r="2" fill="#8e1d1d"/>
-                        <circle cx="16" cy="50" r="2" fill="#8e1d1d"/>
+                        <circle cx="50" cy="16" r="2" fill="var(--wax)"/>
+                        <circle cx="84" cy="50" r="2" fill="var(--wax)"/>
+                        <circle cx="50" cy="84" r="2" fill="var(--wax)"/>
+                        <circle cx="16" cy="50" r="2" fill="var(--wax)"/>
                       </svg>
                       {/* Центральный пульс */}
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="relative inline-flex">
-                          <span className="absolute inline-flex h-8 w-8 rounded-full bg-[#8e1d1d]/40 animate-ping" />
-                          <span className="relative inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#5c3a21] text-[#fde68a] text-lg font-display font-bold shadow-[0_0_12px_rgba(142,29,29,0.6)]">
+                          <span className="absolute inline-flex h-8 w-8 rounded-full bg-wax/40 animate-ping" />
+                          <span className="relative inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink text-[#fde68a] text-lg font-display font-bold shadow-[0_0_12px_rgba(142,29,29,0.6)]">
                             ✦
                           </span>
                         </span>
                       </div>
                     </div>
 
-                    <p className="font-display text-2xl font-bold text-[#3e2723] mb-3 tracking-wide">
+                    <p className="font-display text-2xl font-bold text-ink-deep mb-3 tracking-wide">
                       {t("missionPage.standby.title")}
                     </p>
-                    <p className="text-sm text-[#5c3a21] leading-relaxed">
+                    <p className="text-sm text-ink leading-relaxed">
                       {t("missionPage.standby.body")}
                     </p>
                   </div>

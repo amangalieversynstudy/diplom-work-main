@@ -78,7 +78,7 @@ export default function ResetPasswordConfirm() {
   return (
     <Layout>
       <div className="max-w-md mx-auto mt-24 mb-10">
-        <Card
+        <Card variant="scroll"
           title={copy.title || "Новый пароль"}
           subtitle={copy.subtitle || "Придумай новый пароль для входа"}
         >
@@ -137,7 +137,7 @@ export default function ResetPasswordConfirm() {
                   </span>
                 )}
               </label>
-              <Button type="submit" disabled={loading}>
+              <Button variant="rune" type="submit" disabled={loading}>
                 {loading
                   ? copy.submitting || "Сохраняем…"
                   : copy.submit || "Сохранить пароль"}

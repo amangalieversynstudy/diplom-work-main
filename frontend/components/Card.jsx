@@ -14,18 +14,21 @@ export default function Card({
   children,
   footer,
   tone = "default",
+  variant = "default",
   className = "",
 }) {
   const gradient = toneMap[tone] || toneMap.default;
+  // variant="scroll" — рамка-свиток для экранов ученика; по умолчанию вид прежний (экраны преподавателя).
+  const scroll = variant === "scroll";
   return (
     <div
-      className={`relative rounded-3xl border border-card-border bg-card-bg text-card-text shadow-card overflow-hidden transition hover:border-primary/40 ${className}`}
+      className={`relative ${scroll ? "scroll-frame text-card-text overflow-hidden" : "rounded-3xl border border-card-border bg-card-bg text-card-text shadow-card overflow-hidden transition hover:border-primary/40"} ${className}`}
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} pointer-events-none`} aria-hidden />
+      {!scroll && <div className={`absolute inset-0 bg-gradient-to-br ${gradient} pointer-events-none`} aria-hidden />}
       <div className="relative p-6">
         {(title || subtitle) && (
           <div className="mb-4">
-            {title && <h3 className="text-xl font-semibold tracking-wide text-card-text">{title}</h3>}
+            {title && <h3 className={scroll ? "font-title text-2xl tracking-wide text-card-text" : "text-xl font-semibold tracking-wide text-card-text"}>{title}</h3>}
             {subtitle && <p className="text-sm text-card-muted">{subtitle}</p>}
           </div>
         )}

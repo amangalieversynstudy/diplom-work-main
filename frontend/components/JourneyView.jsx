@@ -181,7 +181,7 @@ export default function JourneyView({ data, mode = "student", backHref }) {
             {teacher ? t("teacherStudent.badge") : t("journey.badge")}
           </div>
         </div>
-        <h1 className="font-display text-4xl font-bold text-text md:text-5xl">
+        <h1 className={`${teacher ? "font-display font-bold" : "font-title"} text-4xl text-text md:text-5xl`}>
           {teacher ? data.student?.username : t("journey.title")}
         </h1>
         <p className="mt-3 max-w-2xl text-lg leading-relaxed text-muted">

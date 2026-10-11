@@ -21,10 +21,10 @@ const variantStyles = {
     locked: "text-[#858585]",
   },
   parchment: {
-    color: { story: "text-[#8b5a2b]", quiz: "text-[#a16207]", code: "text-[#6b8e23]", default: "text-[#3e2723]" },
-    item: "text-[#3e2723]",
-    itemHover: "hover:bg-[#5c3a21]/15",
-    itemActive: "bg-[#5c3a21]/25 text-[#3e2723] font-semibold",
+    color: { story: "text-[#8b5a2b]", quiz: "text-[#a16207]", code: "text-[#6b8e23]", default: "text-ink-deep" },
+    item: "text-ink-deep",
+    itemHover: "hover:bg-ink/15",
+    itemActive: "bg-ink/25 text-ink-deep font-semibold",
     completed: "text-[#6b8e23]",
     locked: "text-[#8b5a2b]/60",
   },
@@ -117,7 +117,7 @@ export function StepStrip({ tasks = [], activeId, progress: progressMap = {}, on
               className={cx(
                 "relative grid h-11 w-11 place-items-center rounded-xl border-2 transition-colors",
                 current
-                  ? "border-[#fde68a] bg-[#5c3a21] text-[#fde68a]"
+                  ? "border-[#fde68a] bg-ink text-[#fde68a]"
                   : completed
                   ? "border-[#6b8e23]/70 bg-[#2b1d11] text-[#a3e635]"
                   : "border-[#8b5a2b]/60 bg-[#2b1d11] text-[#d4a24c]",

@@ -19,6 +19,8 @@ export default function Button({
     secondary: "bg-primary/10 border border-primary/20 text-primary hover:border-primary/40",
     outline: "border border-border text-muted hover:bg-panel hover:text-text",
     ghost: "text-muted hover:text-text hover:bg-panel",
+    // «печать»: кнопка-руна для экранов ученика
+    rune: "scroll-btn",
     danger: "bg-error text-white dark:text-bg hover:brightness-110",
   };
   const styles = variants[variant] || variants.primary;

@@ -116,7 +116,7 @@ export default function Register() {
   return (
     <Layout>
       <div className="max-w-md mx-auto mt-24 mb-10">
-        <Card title={copy.title} subtitle={copy.subtitle}>
+        <Card variant="scroll" title={copy.title} subtitle={copy.subtitle}>
           <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
             <label className="text-sm text-muted">
               {copy.usernameLabel}
@@ -231,7 +231,7 @@ export default function Register() {
               </span>
             </label>
 
-            <Button type="submit" disabled={loading}>
+            <Button variant="rune" type="submit" disabled={loading}>
               {loading ? copy.submitting : copy.submit}
             </Button>
           </form>

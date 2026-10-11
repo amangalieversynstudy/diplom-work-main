@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Melodrama:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kurale&display=swap&subset=cyrillic');
 @import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap');
 
 @tailwind base;
@@ -33,6 +34,14 @@
   --modal-bg: #ffffff;
   --modal-text: #2a241b;
   --modal-overlay: rgba(20,16,10,0.45);
+  /* Пергамент: палитра игровых экранов ученика (карта миров, миссия, рамка-свиток) */
+  --parchment: #dcb98a;
+  --parchment-light: #f4e4bc;
+  --parchment-pale: #f3e7c8;
+  --ink: #5c3a21;
+  --ink-deep: #3e2723;
+  --wax: #8e1d1d;
+  --gold-frame: #b8892e;
 }
 
 html.dark {
@@ -158,3 +167,51 @@ body::before, body::after { display: none !important; }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 .complete-card { animation: complete-rise 0.4s ease-out both; }
+
+/* ── Kurale: шрифт крупных заголовков экранов ученика. У гарнитуры одно начертание (400):
+      жирный не нужен и не синтезируется. ── */
+.font-title {
+  font-weight: 400;
+  font-synthesis: none;
+}
+
+/* ── Рамка-свиток (Card variant="scroll"): двойная рамка, золотые уголки, фон-пергамент.
+      Внутри переопределены цвета темы, чтобы форма читалась и в тёмной теме. ── */
+.scroll-frame {
+  --text: var(--ink-deep);
+  --card-text: var(--ink-deep);
+  --muted: var(--ink);
+  --card-text-muted: var(--ink);
+  --faint: #6b4a2e;
+  --panel: #fbf3dc;
+  --border: rgba(92,58,33,0.4);
+  --primary: #2a6f68;
+  --primary-dk: #1e524d;
+  --on-primary: #ffffff;
+  position: relative;
+  background-color: var(--parchment-light) !important;
+  border: 2px solid var(--ink) !important;
+  box-shadow: inset 0 0 0 4px var(--parchment-light), inset 0 0 0 5px var(--gold-frame), 0 14px 40px rgba(0,0,0,0.45);
+  border-radius: 14px;
+}
+.scroll-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, var(--gold-frame) 0 3px, transparent 3.5px) left 9px top 9px / 9px 9px no-repeat,
+    radial-gradient(circle, var(--gold-frame) 0 3px, transparent 3.5px) right 9px top 9px / 9px 9px no-repeat,
+    radial-gradient(circle, var(--gold-frame) 0 3px, transparent 3.5px) left 9px bottom 9px / 9px 9px no-repeat,
+    radial-gradient(circle, var(--gold-frame) 0 3px, transparent 3.5px) right 9px bottom 9px / 9px 9px no-repeat;
+}
+
+/* ── Кнопка-руна (Button variant="rune"): печать из красного воска в золотой окантовке ── */
+.scroll-btn {
+  background-color: var(--wax);
+  color: var(--parchment-light);
+  border: 2px solid var(--gold-frame);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 2px 0 var(--ink-deep);
+}
+.scroll-btn:hover { filter: brightness(1.12); }

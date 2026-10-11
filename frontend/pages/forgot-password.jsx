@@ -41,7 +41,7 @@ export default function ForgotPassword() {
   return (
     <Layout>
       <div className="max-w-md mx-auto mt-24 mb-10">
-        <Card
+        <Card variant="scroll"
           title={copy.title || "Восстановление доступа"}
           subtitle={copy.subtitle || "Пришлём ссылку для сброса пароля"}
         >
@@ -93,7 +93,7 @@ export default function ForgotPassword() {
                     <span role="alert" className="mt-1 block text-xs text-error">{error}</span>
                   )}
                 </label>
-                <Button type="submit" disabled={loading}>
+                <Button variant="rune" type="submit" disabled={loading}>
                   {loading
                     ? copy.submitting || "Отправляем…"
                     : copy.submit || "Отправить ссылку"}

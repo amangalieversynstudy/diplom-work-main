@@ -171,7 +171,7 @@ export default function Worlds() {
             <Compass size={16} />
             <span>{worldsDict.atlasTitle || "Атлас"}</span>
           </div>
-          <h1 className="font-display text-4xl md:text-5xl font-bold text-text mb-4">
+          <h1 className="font-title text-4xl md:text-5xl text-text mb-4">
             {worldsDict.mapTitle || "Карта миров"}
           </h1>
           <p className="text-muted text-base md:text-lg max-w-2xl leading-relaxed">
@@ -226,7 +226,7 @@ export default function Worlds() {
         <div 
           ref={mapScrollRef} 
           style={{ width: `${Math.max(150, missions.length * 13)}vw` }}
-          className="relative h-[70vh] ml-6 mr-6 rounded-[2.5rem] border-8 border-[#5c3a21] bg-[#dcb98a] shadow-2xl shrink-0 overflow-hidden"
+          className="relative h-[70vh] ml-6 mr-6 rounded-[2.5rem] border-8 border-ink bg-parchment shadow-2xl shrink-0 overflow-hidden"
         >
           {/* Бумажная текстура */}
           <div className="absolute inset-0 pointer-events-none opacity-30 mix-blend-multiply rounded-[inherit]">
@@ -242,7 +242,7 @@ export default function Worlds() {
           <div 
             className="absolute inset-0 opacity-15 pointer-events-none rounded-[inherit]" 
             style={{ 
-              backgroundImage: 'linear-gradient(#5c3a21 1.5px, transparent 1.5px), linear-gradient(90deg, #5c3a21 1.5px, transparent 1.5px)', 
+              backgroundImage: 'linear-gradient(var(--ink) 1.5px, transparent 1.5px), linear-gradient(90deg, var(--ink) 1.5px, transparent 1.5px)', 
               backgroundSize: '80px 80px' 
             }} 
           />
@@ -279,7 +279,7 @@ export default function Worlds() {
                 <path
                   d={generatePath(missions)}
                   fill="none"
-                  stroke="#8e1d1d"
+                  stroke="var(--wax)"
                   strokeWidth="4.5"
                   strokeDasharray="6,6"
                   vectorEffect="non-scaling-stroke"
@@ -296,7 +296,7 @@ export default function Worlds() {
                   <span
                     key={`course-${mission.id}`}
                     aria-hidden="true"
-                    className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[330%] whitespace-nowrap rounded-full border border-[#5c3a21]/50 bg-[#f4e4bc]/90 px-3 py-1 text-xs font-bold uppercase tracking-widest text-[#5c3a21]"
+                    className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[330%] whitespace-nowrap rounded-full border border-ink/50 bg-parchment-light/90 px-3 py-1 text-xs font-bold uppercase tracking-widest text-ink"
                     style={{ left: `${coords.x}%`, top: `${coords.y}%` }}
                   >
                     {mission.track_title}
@@ -338,27 +338,27 @@ export default function Worlds() {
                       // закрытая миссия объясняет, чего не хватает, а не молчит
                       if (reason) toast(reason);
                     }}
-                    className={`mission-node absolute transform -translate-x-1/2 -translate-y-1/2 group z-10 rounded-full outline-none focus-visible:ring-4 focus-visible:ring-[#8e1d1d]/60 ${isLocked ? 'cursor-default' : 'cursor-pointer'}`}
+                    className={`mission-node absolute transform -translate-x-1/2 -translate-y-1/2 group z-10 rounded-full outline-none focus-visible:ring-4 focus-visible:ring-wax/60 ${isLocked ? 'cursor-default' : 'cursor-pointer'}`}
                     style={{ left: `${coords.x}%`, top: `${coords.y}%` }}
                   >
                     {isActive && (
-                      <span className="absolute inset-0 rounded-full bg-[#8e1d1d]/40 animate-ping motion-reduce:animate-none group-hover:bg-[#8e1d1d]/60 transition-colors duration-300" style={{ zIndex: -1 }}></span>
+                      <span className="absolute inset-0 rounded-full bg-wax/40 animate-ping motion-reduce:animate-none group-hover:bg-wax/60 transition-colors duration-300" style={{ zIndex: -1 }}></span>
                     )}
 
                     <div className={`flex items-center p-1 md:p-1.5 rounded-full border-2 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_4px_10px_rgba(62,39,35,0.4)] group-hover:scale-110
-                      ${isLocked ? 'bg-[#c4a173] border-[#8b5a2b]' : 'bg-[#f4e4bc] border-[#8e1d1d] group-hover:bg-[#fff0d4] group-hover:shadow-[0_0_25px_rgba(142,29,29,0.5)]'}
+                      ${isLocked ? 'bg-[#c4a173] border-[#8b5a2b]' : 'bg-parchment-light border-wax group-hover:bg-[#fff0d4] group-hover:shadow-[0_0_25px_rgba(142,29,29,0.5)]'}
                     `}>
                       <div className={`flex-shrink-0 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-full transition-all duration-500 shadow-inner group-hover:shadow-[inset_0_0_15px_rgba(0,0,0,0.4)]
-                        ${isLocked ? 'text-[#8b5a2b] bg-transparent' : (isCompleted ? 'bg-[#2e633a] text-[#f4e4bc]' : 'bg-[#8e1d1d] text-[#f4e4bc]')}
+                        ${isLocked ? 'text-[#8b5a2b] bg-transparent' : (isCompleted ? 'bg-[#2e633a] text-parchment-light' : 'bg-wax text-parchment-light')}
                       `}>
                         <Icon size={isLocked ? 18 : 22} strokeWidth={isLocked ? 2 : 2.5} className="transition-transform duration-500 group-hover:scale-125 group-hover:rotate-12" />
                       </div>
 
                       <div className={`overflow-hidden whitespace-nowrap transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${labelClass}`}>
-                        <p className={`text-sm font-display font-bold tracking-wide ${isLocked ? 'text-[#5c3a21]' : 'text-[#3e2723]'}`}>
+                        <p className={`text-sm font-display font-bold tracking-wide ${isLocked ? 'text-ink' : 'text-ink-deep'}`}>
                           {title}
                         </p>
-                        <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${isLocked ? 'text-[#8b5a2b]' : 'text-[#8e1d1d]'}`}>
+                        <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${isLocked ? 'text-[#8b5a2b]' : 'text-wax'}`}>
                           {statusLabel}
                         </p>
                       </div>
@@ -378,8 +378,8 @@ export default function Worlds() {
               >
                 <div className="absolute left-0 top-0 -translate-x-1/2 -translate-y-[150%]">
                   <span className="relative grid place-items-center">
-                    <span className="absolute -inset-2 rounded-full bg-[#8e1d1d]/30 animate-ping motion-reduce:animate-none" />
-                    <span className="grid h-8 w-8 place-items-center rounded-full border-2 border-[#8e1d1d] bg-[#f4e4bc] text-[#8e1d1d] shadow-[0_4px_10px_rgba(62,39,35,0.5)]">
+                    <span className="absolute -inset-2 rounded-full bg-wax/30 animate-ping motion-reduce:animate-none" />
+                    <span className="grid h-8 w-8 place-items-center rounded-full border-2 border-wax bg-parchment-light text-wax shadow-[0_4px_10px_rgba(62,39,35,0.5)]">
                       <Compass size={17} strokeWidth={2.5} />
                     </span>
                   </span>

@@ -147,7 +147,7 @@ const css = (view, width, sceneX, sceneY) => ({
 });
 
 test("stageView: the enemy bar stays inside the frame on desktop and phone", () => {
-  for (const [w, h, hud] of [[1280, 162, 250], [1280, 224, 250], [1920, 194, 250], [768, 176, 250], [375, 128, 140], [360, 128, 140]]) {
+  for (const [w, h, hud] of [[1280, 162, 250], [1280, 224, 250], [1920, 194, 250], [768, 176, 250], [375, 160, 190], [360, 160, 190], [390, 160, 190], [639, 160, 190]]) {
     const view = stageView(w, h, hud);
     const left = css(view, w, ENEMY_BAR_X, ENEMY_BAR_TOP);
     const right = css(view, w, ENEMY_BAR_X + 120, ENEMY_BAR_TOP + 14);
@@ -159,8 +159,8 @@ test("stageView: the enemy bar stays inside the frame on desktop and phone", () 
 });
 
 test("stageView: the bar clears the phone HUD and the hero clears the desktop HUD and level pill", () => {
-  const phone = stageView(375, 128, 140);
-  assert.ok(css(phone, 375, ENEMY_BAR_X, ENEMY_BAR_TOP).y >= 56, "below the phone HUD");
+  const phone = stageView(375, 160, 190);
+  assert.ok(css(phone, 375, ENEMY_BAR_X, ENEMY_BAR_TOP).y >= 43.9, "below the phone HUD");
 
   const desk = stageView(1280, 162, 250);
   const hero = css(desk, 1280, 60 - 12, 298);
@@ -171,4 +171,17 @@ test("stageView: the bar clears the phone HUD and the hero clears the desktop HU
 
 test("stageView: unmeasured block falls back to the whole scene", () => {
   assert.deepEqual(stageView(0, 0), { x: 0, y: 0, w: 1408, h: 470 });
+});
+
+test("stageView: on a phone the characters are large and the hero keeps off the left edge", () => {
+  for (const w of [360, 375, 390]) {
+    const view = stageView(w, 160, 190);
+    const scale = w / view.w;
+    assert.ok(scale >= 0.45, `${w}: scene scale ${scale}`);
+    const hero = css(view, w, 60 - 12, 298);
+    assert.ok(hero.x >= 12, `${w}: hero left at ${hero.x}`);
+    // враг со всем телом и обломки целиком в кадре по ширине
+    const golemRight = css(view, w, 470 + 106, 400);
+    assert.ok(golemRight.x <= w - 8, `${w}: golem right at ${golemRight.x}`);
+  }
 });

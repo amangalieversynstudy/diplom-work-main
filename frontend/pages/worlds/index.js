@@ -393,7 +393,7 @@ export default function Worlds() {
                   <span
                     key={`course-${mission.id}`}
                     aria-hidden="true"
-                    className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[330%] whitespace-nowrap rounded-full border border-ink/50 bg-parchment-light/90 px-3 py-1 text-xs font-bold uppercase tracking-widest text-ink"
+                    className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[420%] whitespace-nowrap rounded-full border border-ink/50 bg-parchment-light/90 px-3 py-1 text-xs font-bold uppercase tracking-widest text-ink"
                     style={{ left: `${coords.x}%`, top: `${coords.y}%` }}
                   >
                     {mission.track_title}
@@ -419,8 +419,8 @@ export default function Worlds() {
                 const reason = isLocked ? lockReason(mission, missions, t) : "";
                 // подпись всегда видна у текущей миссии, у остальных раскрывается по наведению и фокусу
                 const labelClass = isCurrent
-                  ? "max-w-[220px] opacity-100 ml-3 pr-4"
-                  : "max-w-0 opacity-0 group-hover:max-w-[220px] group-hover:opacity-100 group-hover:ml-3 group-hover:pr-4 group-focus-visible:max-w-[220px] group-focus-visible:opacity-100 group-focus-visible:ml-3 group-focus-visible:pr-4";
+                  ? "max-w-[320px] opacity-100 ml-3 pr-4"
+                  : "max-w-0 opacity-0 group-hover:max-w-[320px] group-hover:opacity-100 group-hover:ml-3 group-hover:pr-4 group-focus-visible:max-w-[320px] group-focus-visible:opacity-100 group-focus-visible:ml-3 group-focus-visible:pr-4";
 
                 return (
                   <Link
@@ -452,7 +452,7 @@ export default function Worlds() {
                       </div>
 
                       <div className={`overflow-hidden whitespace-nowrap transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${labelClass}`}>
-                        <p className={`text-sm font-display font-bold tracking-wide ${isLocked ? 'text-ink' : 'text-ink-deep'}`}>
+                        <p className={`truncate text-sm font-display font-bold tracking-wide ${isLocked ? 'text-ink' : 'text-ink-deep'}`}>
                           {title}
                         </p>
                         <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${isLocked ? 'text-[#8b5a2b]' : 'text-wax'}`}>

@@ -115,7 +115,7 @@ export default function CodemancerStage({
   return (
     <div
       ref={rootRef}
-      className={`codemancer-stage relative w-full shrink-0 h-32 sm:h-40 md:h-44 xl:h-[clamp(112px,18vh,224px)] overflow-hidden border-b border-border bg-[#0a1322] select-none ${phase !== "idle" ? "cm-" + phase : ""} ${calm ? "cm-calm" : ""}`}
+      className={`codemancer-stage relative w-full shrink-0 h-40 md:h-44 xl:h-[clamp(112px,18vh,224px)] overflow-hidden border-b border-border bg-[#0a1322] select-none ${phase !== "idle" ? "cm-" + phase : ""} ${calm ? "cm-calm" : ""}`}
       role="img"
       aria-label={`${heroName}, level ${level}`}
     >
@@ -445,7 +445,7 @@ export default function CodemancerStage({
       <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0a1322] to-transparent pointer-events-none" />
 
       {/* ── HUD: портрет + полоски HP/MP ────────────────────────── */}
-      <div ref={hudRef} className="absolute top-3 left-3 sm:top-4 sm:left-4 flex items-center gap-3 bg-black/45 backdrop-blur-sm px-2.5 py-2 rounded-xl border border-white/10">
+      <div ref={hudRef} className="absolute top-3 left-3 sm:top-4 sm:left-4 flex items-center gap-3 bg-black/45 backdrop-blur-sm px-2.5 py-1.5 sm:py-2 rounded-xl border border-white/10">
         <div className="hidden sm:block w-11 h-11 sm:w-14 sm:h-14 rounded-lg border-2 border-[#d9a441] overflow-hidden shadow-[0_0_14px_rgba(217,164,65,0.35)] shrink-0">
           <svg viewBox="0 0 60 60" className="w-full h-full">
             <rect width="60" height="60" fill="#241510" />
@@ -456,10 +456,10 @@ export default function CodemancerStage({
             <rect x="10" y="42" width="40" height="4" fill="#dfe4f0" />
           </svg>
         </div>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-row sm:flex-col gap-3 sm:gap-1.5">
           <div className="flex items-center gap-1.5" title={t("stage.hp")}>
             <Heart size={12} className="text-[#ff5c5c] shrink-0" fill="#ff5c5c" />
-            <div className="w-24 sm:w-32 h-2.5 rounded-md bg-[#1d2336] border border-black/40 overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+            <div className="w-14 sm:w-32 h-2.5 rounded-md bg-[#1d2336] border border-black/40 overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
               <div
                 className="h-full w-full origin-left bg-gradient-to-b from-[#ff8585] to-[#c9252a] transition-transform duration-500"
                 style={{ transform: `scaleX(${hp / 100})` }}
@@ -468,7 +468,7 @@ export default function CodemancerStage({
           </div>
           <div className="flex items-center gap-1.5" title={t("stage.mp")}>
             <Droplet size={12} className="text-[#5cb6ff] shrink-0" fill="#5cb6ff" />
-            <div className="w-24 sm:w-32 h-2.5 rounded-md bg-[#1d2336] border border-black/40 overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
+            <div className="w-14 sm:w-32 h-2.5 rounded-md bg-[#1d2336] border border-black/40 overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.6)]">
               <div
                 className="h-full w-full origin-left bg-gradient-to-b from-[#8ccaff] to-[#2a72c9] transition-transform duration-500"
                 style={{ transform: `scaleX(${mp / 100})` }}

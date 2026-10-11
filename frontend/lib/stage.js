@@ -91,12 +91,13 @@ export function stageView(width, height, hudRight = 0) {
   const h = num(height, 0);
   if (w <= 0 || h <= 0) return { x: 0, y: 0, w: SCENE_WIDTH, h: SCENE_HEIGHT };
   const compact = w < 640;
-  // на телефоне HUD только полоски (~54 px высоты), над полоской врага оставляем место под ним
-  const reserve = compact ? 60 : 18;
+  // на телефоне HUD это одна строка из двух полосок (~38 px высоты): над полоской врага место под ним
+  const reserve = compact ? 44 : 18;
   const scale = Math.max(0.2, (h - reserve) / (SCENE_HEIGHT - ENEMY_BAR_TOP));
   const viewW = w / scale;
   const viewH = h / scale;
-  let x = 0;
+  // на телефоне кадр начинается чуть левее героя, чтобы тот не касался края
+  let x = HERO_X_MIN - 12 - 16 / scale;
   if (!compact) {
     const pillRight = w / 2 + 100;
     const enemyRightOfPill = ENEMY_BAR_X - pillRight / scale;

@@ -3,10 +3,11 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
 import MissionPath from "../../components/MissionPath";
+import QuestJournal from "../../components/QuestJournal";
 import { MapBackdrop, MapTrail } from "../../components/WorldMapParts";
 import { toast } from "sonner";
 import { useDictionary } from "../../lib/i18n";
-import { lockReason, missionTitle, missionXp } from "../../lib/missions";
+import { lockReason, missionTitle } from "../../lib/missions";
 import { Lock, CheckCircle, X as XIcon, Compass } from "lucide-react";
 import gsap from "gsap";
 import { prefersReducedMotion } from "../../lib/motion";
@@ -273,30 +274,7 @@ export default function Worlds() {
           </p>
         </div>
 
-        {current ? (
-          <div className="hidden lg:flex items-center justify-between gap-4 rounded-2xl border border-primary/30 bg-primary/10 px-6 py-4">
-            <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-widest text-primary">
-                {t(current.user_progress?.status === "in_progress" ? "worldsPage.mobile.continue" : "worldsPage.mobile.start")}
-              </p>
-              <p className="mt-1 truncate font-display text-xl font-bold text-text">
-                {missionTitle(current, language, worldsDict.missionFallback || "Миссия")}
-              </p>
-              <p className="mt-0.5 text-sm text-muted">
-                {t("worldsPage.mobile.reward").replace("{xp}", missionXp(current))}
-                {(current.tasks || []).length
-                  ? ` · ${t("worldsPage.mobile.steps").replace("{n}", (current.tasks || []).length)}`
-                  : ""}
-              </p>
-            </div>
-            <Link
-              href={`/missions/${current.id}`}
-              className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 font-semibold text-on-primary shadow-glow transition hover:-translate-y-0.5 hover:bg-primary-dk"
-            >
-              {t(current.user_progress?.status === "in_progress" ? "worldsPage.mobile.continue" : "worldsPage.mobile.start")}
-            </Link>
-          </div>
-        ) : null}
+        <QuestJournal missions={missions} current={current} />
       </div>
 
       {/* ── Контейнер карты ── */}

@@ -3,6 +3,7 @@ import Layout from "../components/Layout";
 import EmptyScroll from "../components/EmptyScroll";
 import { LeaderboardAPI, Profile, Tracks } from "../lib/api";
 import { getTokens } from "../lib/auth";
+import { titleFor } from "../lib/titles";
 import { useDictionary } from "../lib/i18n";
 import { Trophy, Medal, Flame, RefreshCw, User, Crosshair } from "lucide-react";
 import { toast } from "sonner";
@@ -236,7 +237,7 @@ export default function Leaderboard() {
                         </span>
                       )}
                       <p className="mt-1 text-xs text-muted">
-                        {copy.columns.level} {entry.level || 1}
+                        {copy.columns.level} {entry.level || 1} · {dict.titles?.[titleFor(entry.level, []).rank]}
                       </p>
                       <p className="font-title text-xl text-primary">{entry.xp || 0} {copy.columns.xp}</p>
                     </div>
@@ -290,7 +291,7 @@ export default function Leaderboard() {
                     </h3>
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs md:text-sm text-muted">
                       <span className="flex items-center gap-1">
-                        <User size={14} className="opacity-70" aria-hidden="true" /> {copy.columns.level} {entry.level || 1}
+                        <User size={14} className="opacity-70" aria-hidden="true" /> {copy.columns.level} {entry.level || 1} · {dict.titles?.[titleFor(entry.level, []).rank]}
                       </span>
                       {/* Класс показываем, только если он выбран: выдуманное звание всем подряд вводило бы в заблуждение */}
                       {classLabel && (

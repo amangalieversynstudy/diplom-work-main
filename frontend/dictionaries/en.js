@@ -1068,6 +1068,22 @@ export const en = {
         lockedAfter: "Guardian: \"Only the scroll “{title}” will open this door\"",
         lockedLevel: "Guardian: \"Come back at level {n}, hero\"",
       },
+      journal: {
+        title: "Quest log",
+        now: "Now",
+        later: "Next",
+        goal: "Goal of the day",
+        nothing: "Every open mission is cleared",
+        laterNone: "Nothing further yet",
+        goalText: "Solve at least one step today to keep your streak going.",
+      },
+    },
+    titles: {
+      novice: "Novice",
+      apprentice: "Apprentice",
+      mage: "Code Mage",
+      archmage: "Archmage",
+      grandWizard: "Grand Wizard",
     },
     landing: {
       badge: "New era of learning",

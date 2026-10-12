@@ -7,6 +7,7 @@ import Card from "../components/Card";
 import ClassPortrait from "../components/ClassPortrait";
 import AchievementsPanel from "../components/AchievementsPanel";
 import { clearPlayerClass } from "../lib/class";
+import { titleFor } from "../lib/titles";
 import {
   Profile as ProfileAPI,
   Achievements as AchievementsAPI,
@@ -204,11 +205,14 @@ if (loading) {
                 <p className="text-sm text-primary uppercase tracking-widest font-bold">
                   {t("profile.level")} {profile?.level || 1}
                 </p>
-                {profile?.rank && (
-                  <span className="px-2 py-0.5 text-xs uppercase tracking-widest font-bold rounded-full bg-accent/15 border border-accent/40 text-accent-dk">
-                    {profile.rank.title_ru || profile.rank.title_en || profile.rank.slug}
-                  </span>
-                )}
+                <span className="px-2 py-0.5 text-xs uppercase tracking-widest font-bold rounded-full bg-accent/15 border border-accent/40 text-accent-dk">
+                  {(() => {
+                    const title = titleFor(profile?.level, achievements);
+                    return title.badge
+                      ? `${t(`titles.${title.rank}`)} · ${t(`achievements.items.${title.badge}.title`)}`
+                      : t(`titles.${title.rank}`);
+                  })()}
+                </span>
               </div>
 
               {/* Полоса опыта (100 XP = 1 level) */}

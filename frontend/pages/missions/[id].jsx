@@ -27,6 +27,7 @@ import { Sparkles, Code2, BookOpen, Lock, ChevronRight, ScrollText, ArrowLeft } 
 import logger from "../../lib/logger";
 import { useI18n } from "../../lib/i18n";
 import { sanitizeHtml } from "../../lib/sanitize";
+import { storyToHtml } from "../../lib/story";
 import { fetchIntroStatus } from "../../lib/class";
 
 // Стили текста свитка: тёмно-коричневый на пергаменте (светлый фон, поэтому без prose-invert).
@@ -522,11 +523,13 @@ export default function MissionDetail() {
   const showEditor = isCodeTask && mobileTab === "code";
   const activeIndex = tasks.findIndex((task) => task.id === activeTask?.id);
   const taskBodyHtml = sanitizeHtml(
-    (language === "en"
-      ? activeTask?.body_en || activeTask?.body_ru
-      : activeTask?.body_ru || activeTask?.body_en) ||
-      activeTask?.body ||
-      ""
+    storyToHtml(
+      (language === "en"
+        ? activeTask?.body_en || activeTask?.body_ru
+        : activeTask?.body_ru || activeTask?.body_en) ||
+        activeTask?.body ||
+        ""
+    )
   );
   const helpOffer = taskProgress[activeTaskId]?.help_offer;
   // Кнопки баннера делают то же, что значки над редактором. На телефоне сначала
@@ -845,7 +848,7 @@ export default function MissionDetail() {
                 чтобы prose не пытался применить ни тёмную, ни системную палитру. */}
             <div className={`flex-1 overflow-y-auto p-4 sm:p-6 ${SCROLL_PROSE} ${isCodeTask ? "" : "xl:px-12 xl:py-8"}`}>
               <div className={isCodeTask ? "space-y-4" : "mx-auto w-full max-w-3xl space-y-4 xl:text-base"}>
-              <div dangerouslySetInnerHTML={{ __html: taskBodyHtml }} />
+              <div className="story-body" dangerouslySetInnerHTML={{ __html: taskBodyHtml }} />
 
               {tasks.length === 0 && (
                 <p role="status" className="rounded-lg border-2 border-ink/40 bg-[#f3e2c0]/70 px-4 py-3 font-semibold">
@@ -912,7 +915,7 @@ export default function MissionDetail() {
                     {t("missionPage.mobile.showBody")}
                   </summary>
                   <div
-                    className={`max-h-[45vh] overflow-y-auto px-4 pb-4 ${SCROLL_PROSE}`}
+                    className={`story-body max-h-[45vh] overflow-y-auto px-4 pb-4 ${SCROLL_PROSE}`}
                     dangerouslySetInnerHTML={{ __html: taskBodyHtml }}
                   />
                 </details>

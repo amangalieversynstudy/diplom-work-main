@@ -224,3 +224,55 @@ html.dark .scroll-frame {
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 2px 0 var(--ink-deep);
 }
 .scroll-btn:hover { filter: brightness(1.12); }
+
+/* ── Текст сюжета миссии на пергаменте: абзацы, заголовки, списки и блоки кода.
+   Плагина typography нет, поэтому разметку из тела шага оформляем здесь. Цвета только из токенов. ── */
+.story-body > * + * { margin-top: 1rem; }
+.story-body h2,
+.story-body h3,
+.story-body h4 {
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink-deep);
+}
+.story-body h2 { font-size: 1.35rem; }
+.story-body h3 { font-size: 1.15rem; }
+.story-body p { line-height: 1.7; }
+.story-body ul,
+.story-body ol { padding-left: 1.5rem; }
+.story-body ul { list-style: disc; }
+.story-body ol { list-style: decimal; }
+.story-body li + li { margin-top: 0.35rem; }
+.story-body li::marker { color: var(--ink); }
+.story-body strong { color: var(--ink-deep); }
+.story-body a { color: var(--wax); text-decoration: underline; }
+.story-body code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background-color: color-mix(in srgb, var(--ink) 15%, transparent);
+  color: var(--ink-deep);
+}
+.story-body pre {
+  overflow-x: auto;
+  padding: 0.85rem 1rem;
+  border: 2px solid var(--gold-frame);
+  border-radius: 10px;
+  background-color: var(--ink-deep);
+  color: var(--parchment-light);
+  line-height: 1.55;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.35);
+}
+.story-body pre code {
+  padding: 0;
+  background: none;
+  color: inherit;
+  font-size: 0.875rem;
+  white-space: pre;
+}
+.story-body blockquote {
+  padding-left: 1rem;
+  border-left: 4px solid var(--gold-frame);
+  font-style: italic;
+}

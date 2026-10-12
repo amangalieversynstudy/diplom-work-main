@@ -11,6 +11,7 @@ import {
   Profile as ProfileAPI,
 } from "../lib/api";
 import logger from "../lib/logger";
+import { filterAndSortStudents } from "../lib/students";
 import { useI18n } from "../lib/i18n";
 import {
   AlertTriangle,
@@ -224,6 +225,9 @@ export default function TeacherPage() {
   const [authorship, setAuthorship] = useState(null);
   const [loading, setLoading] = useState(true);
   const refreshedAt = useRef(0);
+  const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState(null);
+  const [direction, setDirection] = useState("desc");
 
   // Новая активность учеников: обновляем списки сами, но не чаще раза в 30 секунд.
   const refreshLists = useCallback(async () => {
@@ -342,9 +346,32 @@ export default function TeacherPage() {
   const summary = data?.summary || {};
   // Сортируем застрявших наверх, чтобы преподаватель видел их первыми;
   // внутри групп сохраняем порядок бэкенда (по XP убыванию).
-  const students = [...(data?.students || [])].sort(
-    (a, b) => Number(b.stuck) - Number(a.stuck)
+  const allStudents = data?.students || [];
+  const students = filterAndSortStudents(allStudents, { query, sortKey, direction });
+  // Клик по заголовку: сначала по убыванию (имя: по алфавиту), второй клик меняет направление,
+  // третий возвращает прежний порядок.
+  const toggleSort = (key) => {
+    if (sortKey !== key) {
+      setSortKey(key);
+      setDirection(key === "name" ? "asc" : "desc");
+    } else if (direction === (key === "name" ? "asc" : "desc")) {
+      setDirection(key === "name" ? "desc" : "asc");
+    } else {
+      setSortKey(null);
+    }
+  };
+  const sortHead = (key, label, extra = "") => (
+    <button
+      type="button"
+      onClick={() => toggleSort(key)}
+      aria-label={`${t("teacher.search.sortBy")}: ${label}`}
+      className={`inline-flex min-h-[32px] items-center gap-1 uppercase tracking-wider font-bold hover:text-text ${extra}`}
+    >
+      {label}
+      <span aria-hidden="true">{sortKey === key ? (direction === "asc" ? "▲" : "▼") : ""}</span>
+    </button>
   );
+  const ariaSort = (key) => (sortKey === key ? (direction === "asc" ? "ascending" : "descending") : undefined);
 
   return (
     <Layout>
@@ -386,20 +413,52 @@ export default function TeacherPage() {
 
         {/* ── Таблица учеников ── */}
         <div className="bg-surface border border-border rounded-3xl p-4 sm:p-6 shadow-sm">
-          {students.length === 0 ? (
+          {allStudents.length === 0 ? (
             <p className="text-sm text-muted py-10 text-center">
               {t("teacher.empty")}
             </p>
           ) : (
             <>
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={t("teacher.search.placeholder")}
+                  aria-label={t("teacher.search.label")}
+                  className="min-h-[44px] w-full flex-1 rounded-xl border border-border bg-panel px-4 text-sm text-text placeholder:text-muted focus:border-primary focus:outline-none sm:max-w-sm"
+                />
+                <p className="text-xs text-muted" role="status" aria-live="polite">
+                  {t("teacher.search.shown").replace("{n}", students.length).replace("{total}", allStudents.length)}
+                </p>
+                {/* Сортировка на узком экране: заголовков таблицы там нет */}
+                <div className="flex gap-1 md:hidden" role="group" aria-label={t("teacher.search.sortBy")}>
+                  {[["name", t("teacher.table.student")], ["xp", t("teacher.table.xp")], ["completed", t("teacher.table.completed")], ["lastActive", t("teacher.table.lastActive")]].map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      aria-pressed={sortKey === key}
+                      onClick={() => toggleSort(key)}
+                      className={`min-h-[44px] rounded-xl border px-3 text-xs font-semibold ${sortKey === key ? "border-primary bg-primary text-on-primary" : "border-border text-muted"}`}
+                    >
+                      {label}
+                      {sortKey === key ? (direction === "asc" ? " ▲" : " ▼") : ""}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {students.length === 0 ? (
+                <p className="text-sm text-muted py-10 text-center">{t("teacher.search.none")}</p>
+              ) : (
+              <>
               {/* Заголовок таблицы — только на md+ */}
               <div className="hidden md:grid grid-cols-[1.6fr_0.5fr_0.7fr_0.9fr_0.9fr_1fr_auto] gap-3 px-3 pb-3 text-xs uppercase tracking-wider text-muted font-bold border-b border-border">
-                <span>{t("teacher.table.student")}</span>
+                <span aria-sort={ariaSort("name")}>{sortHead("name", t("teacher.table.student"))}</span>
                 <span className="text-right">{t("teacher.table.level")}</span>
-                <span className="text-right">{t("teacher.table.xp")}</span>
-                <span className="text-right">{t("teacher.table.completed")}</span>
+                <span className="text-right" aria-sort={ariaSort("xp")}>{sortHead("xp", t("teacher.table.xp"))}</span>
+                <span className="text-right" aria-sort={ariaSort("completed")}>{sortHead("completed", t("teacher.table.completed"))}</span>
                 <span className="text-right">{t("teacher.table.inProgress")}</span>
-                <span className="text-right">{t("teacher.table.lastActive")}</span>
+                <span className="text-right" aria-sort={ariaSort("lastActive")}>{sortHead("lastActive", t("teacher.table.lastActive"))}</span>
                 <span className="text-right whitespace-nowrap">
                   {t("teacher.table.status")}
                 </span>
@@ -480,6 +539,8 @@ export default function TeacherPage() {
                   </div>
                 ))}
               </div>
+              </>
+              )}
             </>
           )}
         </div>

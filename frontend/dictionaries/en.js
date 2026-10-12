@@ -224,6 +224,13 @@ export const en = {
       stuck: "Stuck",
       activeWeek: "Active in 7 days",
     },
+    search: {
+      label: "Search learners",
+      placeholder: "Find by name or login",
+      shown: "Showing {n} of {total}",
+      none: "No one found. Check the spelling or clear the search.",
+      sortBy: "Sort by",
+    },
     table: {
       student: "Learner",
       level: "Lvl",

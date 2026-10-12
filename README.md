@@ -289,7 +289,7 @@ If you want a robust coverage badge, integrate Codecov. The CI now uploads `back
 
 After enabling Codecov and adding the token (if needed), add the Codecov badge URL to the README (placeholder added above).
 
-Проект: обучающая RPG-платформа (вдохновлена CodeCombat) — дипломная работа.
+Проект: обучающая RPG-платформа (вдохновлена CodeCombat) — среда сбора данных для диссертации: модуля BI-дашбординга (раннее предупреждение: CR, MAS, drop-out).
 Цель — снизить порог входа в Python через игровую механику (миссии-свитки, XP, инвентарь).
 
 **Актуальный стек** (полное описание выше в README):

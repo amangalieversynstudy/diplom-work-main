@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
 import MissionPath from "../../components/MissionPath";
 import { toast } from "sonner";
@@ -11,7 +12,13 @@ import { prefersReducedMotion } from "../../lib/motion";
 import { mapWalk } from "../../lib/stage";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Missions, missionStatus } from "../../lib/api";
+import { Missions, Profile, missionStatus } from "../../lib/api";
+import {
+  isOnboardingPending,
+  clearOnboardingPending,
+  readProfileFlags,
+  shouldRedirectToClass,
+} from "../../lib/onboarding";
 import logger from "../../lib/logger";
 import { useI18n } from "../../lib/i18n";
 
@@ -63,6 +70,27 @@ export default function Worlds() {
   const dict = useDictionary();
   const { t, language } = useI18n();
   const worldsDict = dict.worldsPage || {};
+  const router = useRouter();
+
+  // Пролог: сразу после регистрации ведём выбрать класс. Флаг снимаем при любом исходе,
+  // так что возврат на карту больше не перенаправляет.
+  useEffect(() => {
+    if (!isOnboardingPending()) return;
+    let cancelled = false;
+    Profile.me()
+      .then((me) => {
+        if (cancelled) return;
+        clearOnboardingPending();
+        const { isStaff, hasClass } = readProfileFlags(me);
+        if (shouldRedirectToClass({ pending: true, isStaff, hasClass })) {
+          router.replace("/class?welcome=1");
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
   
   const [missions, setMissions] = useState([]);
   const [loading, setLoading] = useState(true);

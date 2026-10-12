@@ -8,7 +8,8 @@ import PasswordInput from "../components/PasswordInput";
 import { toast } from "sonner";
 import { registerUser, login as loginUser } from "../lib/api";
 import { useDictionary } from "../lib/i18n";
-import { clearPlayerClass } from "../lib/class"; // <--- Импортируем нашу новую функцию
+import { clearPlayerClass } from "../lib/class";
+import { markOnboardingPending } from "../lib/onboarding";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -61,6 +62,7 @@ export default function Register() {
       });
 
       clearPlayerClass();
+      if (!(teacherMode && teacherCode.trim())) markOnboardingPending();
 
       if (trimmedEmail) {
         // Email указан → аккаунт is_active=False до подтверждения по ссылке.

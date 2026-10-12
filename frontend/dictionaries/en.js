@@ -661,6 +661,13 @@ export const en = {
       },
     },
     classPage: {
+      prologue: {
+        title: "Prologue: who you are in this story",
+        who: "You are a newcomer to the Code Academy. You have no title yet, only curiosity and an empty bag.",
+        world: "The world is made of missions: each has a story, tasks and a Sage who helps if you get stuck.",
+        why: "A class is your hero's title. It shows on the hero sheet and in the Hall of Fame and does not affect the tasks. Pick what feels closest, or skip and come back later: you can choose and change it at any time.",
+        skip: "Continue without a class",
+      },
       ctaChange: "Switch to this class",
       toastChanged: "Class changed! New powers awaken...",
       toastError: "Failed to save class. Try again.",

@@ -6,6 +6,7 @@ import ClassPortrait from "../components/ClassPortrait";
 import { setPlayerClass, getPlayerClass } from "../lib/class";
 import { Profile } from "../lib/api";
 import { toast } from "sonner";
+import Link from "next/link";
 import { Code, ServerCog, Share2, Lock, Check } from "lucide-react";
 import { useDictionary } from "../lib/i18n";
 import logger from "../lib/logger";
@@ -55,6 +56,8 @@ export default function ChooseClassPage() {
 
   // Если класс уже выбран — игрок прошёл порог входа, разрешаем все ветви.
   const hasClass = Boolean(currentClass);
+  const welcome = router.query.welcome === "1" && !hasClass;
+  const prologue = dict.classPage?.prologue || {};
 
   async function choose(id) {
     const node = TREE.find((n) => n.id === id);
@@ -140,6 +143,26 @@ export default function ChooseClassPage() {
               : (dict.classPage?.treeFresh || "Начни с базовой магии Python. Ветви Django и DevOps откроются после освоения корня.")}
           </p>
         </header>
+
+        {welcome && (
+          <section
+            aria-labelledby="class-prologue-title"
+            className="max-w-3xl mx-auto mb-10 rounded-2xl border border-border bg-surface p-6"
+          >
+            <h2 id="class-prologue-title" className="text-2xl font-title text-text mb-3">
+              {prologue.title}
+            </h2>
+            <p className="text-muted leading-relaxed mb-2">{prologue.who}</p>
+            <p className="text-muted leading-relaxed mb-2">{prologue.world}</p>
+            <p className="text-muted leading-relaxed mb-4">{prologue.why}</p>
+            <Link
+              href="/worlds"
+              className="inline-block rounded-xl border border-border px-4 py-2 text-sm font-semibold text-text hover:border-primary"
+            >
+              {prologue.skip}
+            </Link>
+          </section>
+        )}
 
         {/* Skill Tree Container */}
         <div className="relative flex flex-col items-center max-w-5xl mx-auto">

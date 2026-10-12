@@ -312,7 +312,7 @@ def _execute_subprocess_fallback(code: str, timeout: int = 5) -> dict:
     try:
         with tempfile.TemporaryDirectory(prefix="runner_") as cwd:
             proc = subprocess.run(
-                [sys.executable, "-I", "-c", code],
+                [sys.executable, "-I", "-X", "utf8", "-c", code],
                 capture_output=True,
                 timeout=timeout,
                 encoding="utf-8",
@@ -340,7 +340,7 @@ def _stream_subprocess_fallback(code: str, timeout: int, stop_event, started_at:
     tmp = tempfile.TemporaryDirectory(prefix="runner_")
     try:
         proc = subprocess.Popen(
-            [sys.executable, "-I", "-u", "-c", code],
+            [sys.executable, "-I", "-X", "utf8", "-u", "-c", code],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             encoding="utf-8",

@@ -51,6 +51,13 @@ export default function MissionComplete({ data, onClose, onMap }) {
   const ref = useRef(null);
   const titleId = useId();
   useDialog(Boolean(data), ref, onClose);
+  // пока открыто окно, всплывающие уведомления прячем: всё, что они говорят, уже в окне
+  const open = Boolean(data);
+  useEffect(() => {
+    if (!open) return undefined;
+    document.documentElement.classList.add("loot-open");
+    return () => document.documentElement.classList.remove("loot-open");
+  }, [open]);
   const xpShown = useCountUp(data?.xp > 0 ? data.xp : 0, Boolean(data));
   if (!data) return null;
 
@@ -70,7 +77,7 @@ export default function MissionComplete({ data, onClose, onMap }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="complete-card scroll-frame w-full max-w-md p-8 text-center text-card-text"
+        className="complete-card scroll-frame max-h-[calc(100dvh-2rem)] w-full max-w-xl overflow-y-auto p-6 text-center text-card-text sm:p-8"
       >
         <div
           className="mb-4 flex justify-center gap-2"
@@ -100,6 +107,10 @@ export default function MissionComplete({ data, onClose, onMap }) {
             <LootRow icon={TrendingUp}>
               {t("missionPage.complete.levelUp").replace("{level}", data.newLevel)}
             </LootRow>
+          ) : data.level ? (
+            <LootRow icon={TrendingUp}>
+              {t("missionPage.complete.level").replace("{level}", data.level)}
+            </LootRow>
           ) : null}
           {(data.achievements || []).map((slug) => (
             <LootRow key={slug} icon={Award}>
@@ -118,12 +129,12 @@ export default function MissionComplete({ data, onClose, onMap }) {
             {t("missionPage.complete.introDone")}
           </p>
         ) : null}
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-nowrap sm:justify-center">
           {data.suggestClass ? (
             <Link
               href="/class"
               data-autofocus
-              className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 font-medium tracking-wide text-on-primary shadow-glow transition hover:bg-primary-dk"
+              className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2.5 font-medium tracking-wide whitespace-nowrap text-on-primary shadow-glow transition hover:bg-primary-dk"
             >
               {t("missionPage.complete.pickClass")}
             </Link>
@@ -132,21 +143,21 @@ export default function MissionComplete({ data, onClose, onMap }) {
             <Link
               href={`/missions/${data.next.id}`}
               data-autofocus
-              className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 font-medium tracking-wide text-on-primary shadow-glow transition hover:bg-primary-dk"
+              className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2.5 font-medium tracking-wide whitespace-nowrap text-on-primary shadow-glow transition hover:bg-primary-dk"
             >
               {t("missionPage.complete.next")}
             </Link>
           ) : null}
-          <Button data-autofocus={data.suggestClass || data.next ? undefined : true} variant={data.suggestClass || data.next ? "secondary" : "rune"} onClick={onMap} className="justify-center">
+          <Button data-autofocus={data.suggestClass || data.next ? undefined : true} variant={data.suggestClass || data.next ? "secondary" : "rune"} onClick={onMap} className="justify-center !px-4 whitespace-nowrap">
             {t("missionPage.complete.toMap")}
           </Button>
           <Link
             href="/journey"
-            className="inline-flex items-center justify-center rounded-full border border-primary/20 bg-primary/10 px-5 py-2.5 font-medium tracking-wide text-primary transition hover:border-primary/40"
+            className="inline-flex items-center justify-center rounded-full border border-primary/20 bg-primary/10 px-4 py-2.5 font-medium tracking-wide whitespace-nowrap text-primary transition hover:border-primary/40"
           >
             {t("missionPage.complete.toJourney")}
           </Link>
-          <Button variant="ghost" onClick={onClose} className="justify-center">
+          <Button variant="ghost" onClick={onClose} className="justify-center !px-4 whitespace-nowrap">
             {t("missionPage.complete.stay")}
           </Button>
         </div>

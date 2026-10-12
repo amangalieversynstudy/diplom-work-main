@@ -25,6 +25,10 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, Code2, BookOpen, Lock, ChevronRight, ScrollText, ArrowLeft } from "lucide-react";
 import logger from "../../lib/logger";
+import { prefersReducedMotion } from "../../lib/motion";
+
+// через сколько после последнего удара открывается окно «Добыча»: замах, снаряд и распад голема успевают отыграть
+const LOOT_AFTER_FINALE_MS = 2400;
 import { useI18n } from "../../lib/i18n";
 import { sanitizeHtml } from "../../lib/sanitize";
 import { storyToHtml } from "../../lib/story";
@@ -288,6 +292,7 @@ export default function MissionDetail() {
   const finishMission = async () => {
     try {
       const result = await Missions.complete(id);
+      const finaleAt = Date.now();
       // последний удар: враг падает и больше не возвращается
       if (!defeatedRef.current) {
         defeatedRef.current = true;
@@ -320,6 +325,7 @@ export default function MissionDetail() {
       // Вводный курс закончился, а класса ещё нет: предложим выбрать (это и есть награда за курс).
       let suggestClass = false;
       let streak = 0;
+      let level = null;
       // refetch profile to show updated rank on level-up
       // and update inventory with any rewards granted
       try {
@@ -332,6 +338,7 @@ export default function MissionDetail() {
             skeleton_scrolls: p.skeleton_scrolls ?? 0,
           });
           setPlayerLevel(p.level ?? 1);
+          level = p.level ?? null;
           streak = p.streak_active ? p.current_streak ?? 0 : 0;
           const intro = await fetchIntroStatus();
           suggestClass = Boolean(intro?.class_unlocked) && !p.class_role && !profileData.class_role;
@@ -355,6 +362,9 @@ export default function MissionDetail() {
           : mission?.title_ru || mission?.title_en) ||
         mission?.title ||
         "";
+      // окно «Добыча» открываем, когда отыграли замах, снаряд и распад голема (≈2,4 с от последнего
+      // удара); при «уменьшить движение» анимаций нет, окно сразу
+      const lootDelay = prefersReducedMotion() ? 0 : Math.max(0, LOOT_AFTER_FINALE_MS - (Date.now() - finaleAt));
       setTimeout(
         () =>
           setCompletion({
@@ -365,11 +375,12 @@ export default function MissionDetail() {
             suggestClass,
             leveledUp: Boolean(result?.leveled_up),
             newLevel: result?.new_level,
+            level: level ?? result?.new_level ?? null,
             achievements: Array.isArray(result?.new_achievements) ? result.new_achievements : [],
             streak,
             next: next ? { id: next.id } : null,
           }),
-        result?.leveled_up ? 2000 : 300
+        lootDelay
       );
     } catch (err) {
       logger.error("Mission.complete failed:", err);

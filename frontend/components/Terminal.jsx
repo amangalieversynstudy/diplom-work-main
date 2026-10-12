@@ -45,6 +45,9 @@ const Terminal = forwardRef(function Terminal({ className = "" }, ref) {
       reset: () => termRef.current?.reset(),
       fit: () => fitRef.current?.fit(),
       focus: () => termRef.current?.focus(),
+      get cols() {
+        return termRef.current?.cols || 80;
+      },
     }),
     []
   );

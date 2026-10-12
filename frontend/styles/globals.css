@@ -336,3 +336,8 @@ input[type="checkbox"]:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* пока открыто окно «Добыча», тосты не налегают на него */
+html.loot-open [data-sonner-toaster] {
+  visibility: hidden;
+}

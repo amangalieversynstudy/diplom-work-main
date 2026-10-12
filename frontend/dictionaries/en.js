@@ -895,6 +895,7 @@ export const en = {
         starsHint: "Stars: 3 for solving every step on the first try, 2 for up to 3 extra tries across the steps, 1 for more. You can replay any mission.",
         loot: "Loot",
         levelUp: "New level: {level}",
+        level: "Level: {level}",
         achievement: "Achievement: {title}",
         streak: "Streak: {n} d",
         next: "Next mission",

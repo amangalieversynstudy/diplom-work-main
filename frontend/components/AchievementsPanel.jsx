@@ -66,7 +66,7 @@ export default function AchievementsPanel({ items = [] }) {
                   className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center border-2 ${
                     a.earned
                       ? "bg-accent/20 border-accent/50 text-accent"
-                      : "bg-surface border-border text-muted"
+                      : "bg-[var(--parchment-wash)] border-[color:var(--ink)]/50 text-muted"
                   }`}
                 >
                   {a.earned ? <Icon size={24} /> : <Lock size={20} />}
@@ -88,7 +88,7 @@ export default function AchievementsPanel({ items = [] }) {
                     </p>
                   ) : (
                     <div className="mt-2">
-                      <div className="h-1.5 bg-surface rounded-full overflow-hidden border border-border">
+                      <div className="h-2 bg-[var(--parchment-wash)] rounded-full overflow-hidden border border-[color:var(--ink)]/60">
                         <div
                           className="h-full w-full origin-left bg-primary transition-transform"
                           style={{ transform: `scaleX(${pct / 100})` }}

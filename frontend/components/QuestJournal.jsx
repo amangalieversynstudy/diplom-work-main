@@ -49,7 +49,7 @@ export default function QuestJournal({ missions, current }) {
             <p className="text-xs font-bold uppercase tracking-widest text-primary">{t("worldsPage.journal.now")}</p>
             {current ? (
               <>
-                <p className="mt-1 truncate font-display text-lg font-bold text-text">
+                <p className="mt-1 line-clamp-2 font-display text-lg font-bold leading-snug text-text">
                   {missionTitle(current, language, fallback)}
                 </p>
                 <p className="mt-0.5 text-sm text-muted">
@@ -74,11 +74,11 @@ export default function QuestJournal({ missions, current }) {
           <p className="text-xs font-bold uppercase tracking-widest text-primary">{t("worldsPage.journal.later")}</p>
           {next ? (
             <>
-              <p className="mt-1 truncate font-display text-base font-bold text-text">
+              <p className="mt-1 line-clamp-2 font-display text-base font-bold leading-snug text-text">
                 {missionTitle(next, language, fallback)}
               </p>
               {missionStatus(next) === "locked" ? (
-                <p className="mt-0.5 truncate text-xs italic text-muted">{lockReason(next, missions, t)}</p>
+                <p className="mt-0.5 text-xs italic leading-snug text-muted">{lockReason(next, missions, t)}</p>
               ) : null}
             </>
           ) : (

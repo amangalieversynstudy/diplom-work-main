@@ -255,12 +255,11 @@ function CodeRunnerPanel(
           if (msg.code !== 0) {
             const errType = detectErrorType(stderrText);
             if (errType) {
-              term?.write(`
-${ANSI_CYAN}${t("codeRunner.errorHelp.title")}${ANSI_RESET}
-`);
-              wrapWords(t(`codeRunner.errorHelp.${errType}`), 70).forEach((line) => {
-                term?.write(`${ANSI_CYAN}│${ANSI_RESET} ${line}
-`);
+              // обычный абзац с отступом; перенос по ширине терминала, перевод строки с \r (иначе «лесенка»)
+              const width = Math.max(28, (term?.cols || 80) - 4);
+              term?.write(`\r\n${ANSI_CYAN}${t("codeRunner.errorHelp.title")}${ANSI_RESET}\r\n`);
+              wrapWords(t(`codeRunner.errorHelp.${errType}`), width).forEach((line) => {
+                term?.write(`  ${line}\r\n`);
               });
             }
           }

@@ -167,7 +167,8 @@ export default function Worlds() {
           pin: true,
           scrub: 1,
           start: "top top",
-          end: () => `+=${moveDist}`,
+          // прокрутка короче ширины карты: карта едет быстрее, а под ней не остаётся длинной пустоты
+          end: () => `+=${Math.round(moveDist * 0.6)}`,
           invalidateOnRefresh: true,
         }
       });
@@ -392,11 +393,11 @@ export default function Worlds() {
               {/* Маркер героя: стоит у текущего узла; после новой победы идёт к нему от прежнего вдоль тропы */}
               <div
                 ref={heroRef}
-                className="absolute inset-0 z-[5] pointer-events-none"
+                className="absolute inset-0 z-[15] pointer-events-none"
                 style={{ transform: `translate(${heroCoords.x}%, ${heroCoords.y}%)` }}
                 aria-hidden="true"
               >
-                <div className="absolute left-0 top-0 -translate-x-1/2 -translate-y-[150%]">
+                <div className="absolute left-0 top-0 -translate-x-1/2 -translate-y-[250%]">
                   <span ref={swayRef} className="relative grid place-items-center">
                     <span className="absolute -inset-2 rounded-full bg-wax/30 animate-ping motion-reduce:animate-none" />
                     <span className="grid h-8 w-8 place-items-center rounded-full border-2 border-wax bg-parchment-light text-wax shadow-[0_4px_10px_rgba(62,39,35,0.5)]">

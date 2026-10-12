@@ -9,7 +9,7 @@ export default function Custom404() {
   return (
     <Layout hideFooter>
       <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4 font-display">
-        <h1 className="text-6xl md:text-8xl font-bold text-text mb-4 tracking-tighter">
+        <h1 className="text-6xl md:text-8xl font-bold text-text mb-8 tracking-tighter">
           404
         </h1>
         <EmptyScroll icon={Ghost} className="w-full max-w-md mb-6">
@@ -29,4 +29,4 @@ export default function Custom404() {
       </div>
     </Layout>
   );
-}
+}

@@ -21,12 +21,12 @@ const variantStyles = {
     locked: "text-[#858585]",
   },
   parchment: {
-    color: { story: "text-[#8b5a2b]", quiz: "text-[#a16207]", code: "text-[#6b8e23]", default: "text-ink-deep" },
+    color: { story: "text-bronze", quiz: "text-[#a16207]", code: "text-[#6b8e23]", default: "text-ink-deep" },
     item: "text-ink-deep",
     itemHover: "hover:bg-ink/15",
     itemActive: "bg-ink/25 text-ink-deep font-semibold",
     completed: "text-[#6b8e23]",
-    locked: "text-[#8b5a2b]/60",
+    locked: "text-bronze/60",
   },
 };
 
@@ -117,22 +117,22 @@ export function StepStrip({ tasks = [], activeId, progress: progressMap = {}, on
               className={cx(
                 "relative grid h-11 w-11 place-items-center rounded-xl border-2 transition-colors",
                 current
-                  ? "border-[#fde68a] bg-ink text-[#fde68a]"
+                  ? "border-straw bg-ink text-straw"
                   : completed
-                  ? "border-[#6b8e23]/70 bg-[#2b1d11] text-[#a3e635]"
-                  : "border-[#8b5a2b]/60 bg-[#2b1d11] text-[#d4a24c]",
+                  ? "border-[#6b8e23]/70 bg-wood-deep text-[#a3e635]"
+                  : "border-bronze/60 bg-wood-deep text-gold",
                 locked && "opacity-40"
               )}
             >
               {locked ? <Lock size={16} /> : <Icon size={18} />}
-              <span className="absolute -left-1.5 -top-1.5 grid h-5 min-w-[1.25rem] place-items-center rounded-full bg-[#fde68a] px-1 font-mono text-xs font-bold leading-none text-[#2b1d11]">
+              <span className="absolute -left-1.5 -top-1.5 grid h-5 min-w-[1.25rem] place-items-center rounded-full bg-straw px-1 font-mono text-xs font-bold leading-none text-wood-deep">
                 {index + 1}
               </span>
               {completed && !locked && (
                 <CheckCircle2
                   size={14}
                   aria-hidden="true"
-                  className="absolute -bottom-1 -right-1 rounded-full bg-[#2b1d11] text-[#a3e635]"
+                  className="absolute -bottom-1 -right-1 rounded-full bg-wood-deep text-[#a3e635]"
                 />
               )}
             </button>

@@ -610,7 +610,7 @@ export const en = {
         teacherCancel: "I'm a student",
         researchConsent: "I allow my learning activity to be used in research (optional)",
         researchConsentHint:
-          "Code runs, error types, hints used, time spent on tasks and the number of typed and pasted characters (numbers only) go into an anonymised dataset. Your name, e-mail and the code itself are never shared. You can withdraw consent in your profile at any time.",
+          "Code runs, error types, hints used, time spent on steps and the number of typed and pasted characters (numbers only) go into an anonymised dataset. Your name, e-mail and the code itself are never shared. You can withdraw consent in your profile at any time.",
       },
       register: {
         title: "Join the Guild",
@@ -674,7 +674,7 @@ export const en = {
         title: "Prologue: who you are in this story",
         who: "You are a newcomer to the Code Academy. You have no title yet, only curiosity and an empty bag.",
         world: "The world is made of missions: each has a story, tasks and a Sage who helps if you get stuck.",
-        why: "A class is your hero's title. It shows on the hero sheet and in the Hall of Fame and does not affect the tasks. Pick what feels closest, or skip and come back later: you can choose and change it at any time.",
+        why: "A class is your hero's title. It shows on the hero sheet and in the Hall of Fame and does not affect the missions. Pick what feels closest, or skip and come back later: you can choose and change it at any time.",
         skip: "Continue without a class",
       },
       ctaChange: "Switch to this class",
@@ -684,7 +684,7 @@ export const en = {
       changeClass: "Change class",
       tree: "Class tree",
       treeChange: "Pick your hero title again. Tasks and progress do not change.",
-      treeFresh: "A class is a hero title: it shows on your hero sheet and in the Hall of Fame. It does not affect the tasks, so pick what you like and change it any time.",
+      treeFresh: "A class is a hero title: it shows on your hero sheet and in the Hall of Fame. It does not affect the missions, so pick what you like and change it any time.",
       noteChange: "You can change your class at any time. Mission progress is kept.",
       noteFresh: "Django and DevOps courses come later: the class shows what you are interested in.",
       badgeLocked: "Locked",
@@ -740,7 +740,7 @@ export const en = {
       saveBtn: "Save",
       researchConsentLabel: "Use my learning activity in research",
       researchConsentHint:
-        "Code runs, error types, hints used, time spent on tasks and the number of typed and pasted characters (numbers only) go into an anonymised dataset. Your name, e-mail and the code itself are never shared. You can withdraw at any time.",
+        "Code runs, error types, hints used, time spent on steps and the number of typed and pasted characters (numbers only) go into an anonymised dataset. Your name, e-mail and the code itself are never shared. You can withdraw at any time.",
       cancelBtn: "Cancel",
       loginField: "Login",
       emailField: "Email",
@@ -795,7 +795,7 @@ export const en = {
         {
           label: "Soon",
           title: "Algorithms & Data Structures",
-          desc: "Sorting, searching, recursion and complexity through hands-on quests.",
+          desc: "Sorting, searching, recursion and complexity through hands-on missions.",
         },
         {
           label: "Soon",
@@ -845,12 +845,12 @@ export const en = {
       levelUpTitle: "Level up!",
       levelLabel: "Level",
       toasts: {
-        loadFail: "Failed to load quest data.",
+        loadFail: "Failed to load mission data.",
         passed: "Trial cleared! The seal is set.",
         stepSaved: "Step complete!",
         stepDoneXp: "Step complete! +{xp} XP",
-        questDone: "Congratulations! Legendary quest fully completed!",
-        questDoneXp: "Congratulations! Legendary quest fully completed! +{xp} XP",
+        questDone: "Congratulations! Legendary mission fully completed!",
+        questDoneXp: "Congratulations! Legendary mission fully completed! +{xp} XP",
         levelUp: "🎉 Level up! You are now level {level}!",
         saveFail: "Failed to save step progress.",
       },
@@ -861,12 +861,12 @@ export const en = {
         title: "Codex sealed",
         body: "Sage: \"Pick a spell scroll from the stack on the left and I will open the Codex for you.\"",
       },
-      questLog: "Quest Scrolls",
+      questLog: "Mission Scrolls",
       acceptChallenge: "⚔️ Accept the Challenge",
       rewardLabel: "Reward",
       xpGained: "XP",
       pickAnswer: "Pick the correct answer:",
-      loading: "Loading Quest Chronicles...",
+      loading: "Loading Mission Chronicles...",
       noSteps: "Sage: \"The scrolls of this mission are still being written. Check back a little later.\"",
       quizWrong: "🛡️ Sage: \"Not that one, and that is fine. Think it over once more.\"",
       helpOffer: {
@@ -901,9 +901,9 @@ export const en = {
       },
       backToMap: "← To the world map",
       locked: {
-        title: "Quest locked",
-        body: "The path to «{title}» is still sealed. Complete the earlier quests to gain access.",
-        prereqs: "Required quests:",
+        title: "Mission locked",
+        body: "The path to «{title}» is still sealed. Complete the earlier missions to gain access.",
+        prereqs: "Required missions:",
         back: "← Return to the world map",
       },
       stats: {
@@ -942,7 +942,7 @@ export const en = {
       firstTry: "First try: {n}%.",
       cohort: "Map average: {n}.",
       cohortHidden: "A comparison appears once more people have done the course.",
-      attemptsNone: "Appears after your first solved task.",
+      attemptsNone: "Appears after your first solved step.",
       attemptsShort: "tries: {n}",
       stuckTitle: "Hard right now",
       stuckEmpty: "Nothing is stuck. A great sign.",
@@ -955,7 +955,7 @@ export const en = {
       activityLegend: "A bar is the code runs of that day. A check above it means at least one step was solved that day.",
       missionsTitle: "Missions",
       privacyNote:
-        "Your teacher sees what you see here, plus how the tasks were solved: alone, with a hint or with the Sage, and how much code was typed and how much pasted (numbers only, not the text). It is there to help in time, not to grade you.",
+        "Your teacher sees what you see here, plus how the steps were solved: alone, with a hint or with the Sage, and how much code was typed and how much pasted (numbers only, not the text). It is there to help in time, not to grade you.",
     },
     leaderboard: {
       eyebrow: "Hall of legends",
@@ -1006,7 +1006,7 @@ export const en = {
       },
       none: "None",
       runner: {
-        title: "Lesson flow",
+        title: "Mission steps",
         subtitle: "Story → Quiz → Code pipeline",
         saveError: "Could not save progress",
         quizWrong: "Try again",
@@ -1031,12 +1031,12 @@ export const en = {
       },
       paywall: {
         badge: "Premium",
-        message: "Premium-only objective. Unlock to continue.",
+        message: "Premium-only mission. Unlock to continue.",
         cta: "Unlock premium",
         success: "Premium unlocked",
         error: "Checkout failed",
         title: "Unlock premium content",
-        subtitle: "Side quests, XP boosts, and cohort perks",
+        subtitle: "Extra missions, XP boosts, and cohort perks",
       },
     },
     worldsPage: {
@@ -1098,7 +1098,7 @@ export const en = {
         },
         {
           title: "Skill leveling",
-          desc: "Earn XP for every completed task and unlock new, harder levels.",
+          desc: "Earn XP for every completed step and unlock new, harder levels.",
         },
         {
           title: "Hall of Fame",
@@ -1152,7 +1152,7 @@ export const en = {
       },
       skeletonDivider: "# ── Solution outline ──",
       terminalReady: "Terminal ready. Press Run to execute.",
-      resetTitle: "Revert task code to original",
+      resetTitle: "Revert step code to original",
       reset: "Reset",
       run: "Run Code",
       stop: "Stop",
@@ -1171,7 +1171,7 @@ export const en = {
         subtitle: "AI mentor",
         open: "Consult the Sage",
         greeting:
-          "Greetings, hero. I can see your task and the code you've written. Ask me anything — I will guide your thinking, not hand you the answer.",
+          "Greetings, hero. I can see your step and the code you've written. Ask me anything — I will guide your thinking, not hand you the answer.",
         placeholder: "Ask the Sage about your code…",
         send: "Send",
         thinking: "The Sage is pondering…",

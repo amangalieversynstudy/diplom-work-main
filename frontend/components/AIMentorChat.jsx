@@ -206,7 +206,7 @@ export default function AIMentorChat({
         )}
 
         {loading && (
-          <div className="mr-auto flex max-w-[85%] items-center gap-2 rounded-2xl rounded-tl-sm bg-[#e8d6a8] px-3.5 py-2.5 text-[#5a4a2a] shadow">
+          <div className="mr-auto flex max-w-[85%] items-center gap-2 rounded-2xl rounded-tl-sm bg-parchment-wash px-3.5 py-2.5 text-[#5a4a2a] shadow">
             <Loader2 size={14} className="animate-spin" />
             <span className="text-[13px]">{t("codeRunner.mentor.thinking")}</span>
           </div>
@@ -257,7 +257,7 @@ export default function AIMentorChat({
 // Реплика Мудреца — пергаментный «свиток».
 function MageBubble({ text }) {
   return (
-    <div className="mr-auto max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tl-sm bg-[#e8d6a8] px-3.5 py-2.5 text-[13px] leading-relaxed text-[#2c2114] shadow">
+    <div className="mr-auto max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tl-sm bg-parchment-wash px-3.5 py-2.5 text-[13px] leading-relaxed text-[#2c2114] shadow">
       {text}
     </div>
   );

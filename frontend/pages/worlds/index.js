@@ -387,10 +387,10 @@ export default function Worlds() {
                     )}
 
                     <div className={`flex items-center p-1 md:p-1.5 rounded-full border-2 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_4px_10px_rgba(62,39,35,0.4)] group-hover:scale-110
-                      ${isLocked ? 'bg-[#c4a173] border-[#8b5a2b]' : 'bg-parchment-light border-wax group-hover:bg-[#fff0d4] group-hover:shadow-[0_0_25px_rgba(142,29,29,0.5)]'}
+                      ${isLocked ? 'bg-parchment-lock border-bronze' : 'bg-parchment-light border-wax group-hover:bg-parchment-glow group-hover:shadow-[0_0_25px_rgba(142,29,29,0.5)]'}
                     `}>
                       <div className={`flex-shrink-0 w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-full transition-all duration-500 shadow-inner group-hover:shadow-[inset_0_0_15px_rgba(0,0,0,0.4)]
-                        ${isLocked ? 'text-[#8b5a2b] bg-transparent' : (isCompleted ? 'bg-[#2e633a] text-parchment-light' : 'bg-wax text-parchment-light')}
+                        ${isLocked ? 'text-bronze bg-transparent' : (isCompleted ? 'bg-[#2e633a] text-parchment-light' : 'bg-wax text-parchment-light')}
                       `}>
                         <Icon size={isLocked ? 18 : 22} strokeWidth={isLocked ? 2 : 2.5} className="transition-transform duration-500 group-hover:scale-125 group-hover:rotate-12" />
                       </div>
@@ -399,7 +399,7 @@ export default function Worlds() {
                         <p className={`truncate text-sm font-display font-bold tracking-wide ${isLocked ? 'text-ink' : 'text-ink-deep'}`}>
                           {title}
                         </p>
-                        <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${isLocked ? 'text-[#8b5a2b]' : 'text-wax'}`}>
+                        <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${isLocked ? 'text-bronze' : 'text-wax'}`}>
                           {statusLabel}
                         </p>
                         {isLocked && reason ? (

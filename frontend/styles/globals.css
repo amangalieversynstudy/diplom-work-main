@@ -42,6 +42,20 @@
   --ink-deep: #3e2723;
   --wax: #8e1d1d;
   --gold-frame: #b8892e;
+  /* оттенки пергамента и дерева свитка (экраны миссий и карты) */
+  --parchment-mid: #d4ad75;
+  --parchment-shade: #c39858;
+  --parchment-cream: #f3e2c0;
+  --parchment-tan: #c5a572;
+  --parchment-dust: #c9b48a;
+  --parchment-lock: #c4a173;
+  --parchment-glow: #fff0d4;
+  --parchment-wash: #e8d6a8;
+  --wood: #3a2818;
+  --wood-deep: #2b1d11;
+  --wood-ink: #2a1810;
+  --straw: #fde68a;
+  --bronze: #8b5a2b;
   /* палитра пиксель-портретов классов (как у героя на сцене) */
   --px-skin: #f0c79a;
   --px-leather: #5a3a18;

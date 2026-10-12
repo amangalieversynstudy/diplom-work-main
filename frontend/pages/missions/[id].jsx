@@ -36,7 +36,7 @@ const SCROLL_PROSE =
   "prose-headings:font-display prose-headings:text-ink-deep " +
   "prose-strong:text-ink-deep " +
   "prose-code:bg-ink/15 prose-code:text-ink prose-code:px-1 prose-code:rounded " +
-  "prose-pre:bg-[#3a2818] prose-pre:text-[#fde68a] prose-pre:overflow-x-auto " +
+  "prose-pre:bg-wood prose-pre:text-straw prose-pre:overflow-x-auto " +
   "prose-a:text-wax prose-li:marker:text-ink";
 
 export default function MissionDetail() {
@@ -454,8 +454,8 @@ export default function MissionDetail() {
       <Layout fullBleed hideFooter>
         <div className="h-screen pt-24 bg-bg dark:bg-[#0f0f11] flex items-center justify-center font-mono">
           <div className="text-center space-y-4">
-            <div className="w-12 h-12 border-4 border-t-[#d4a24c] border-[#c9b48a] dark:border-[#3a2818] rounded-full animate-spin mx-auto"></div>
-            <p className="text-accent dark:text-[#d4a24c] tracking-widest text-sm uppercase">{t("missionPage.loading")}</p>
+            <div className="w-12 h-12 border-4 border-t-gold border-parchment-dust dark:border-wood rounded-full animate-spin mx-auto"></div>
+            <p className="text-accent dark:text-gold tracking-widest text-sm uppercase">{t("missionPage.loading")}</p>
           </div>
         </div>
       </Layout>
@@ -551,12 +551,12 @@ export default function MissionDetail() {
   const canRescue = !canHint && !canMentor && (inventory.hint_scrolls || 0) <= 0 && (inventory.ai_summons || 0) <= 0;
   const rescueTaken = Boolean(rescueTried[activeTaskId]);
   const helpButton =
-    "inline-flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-ink/70 bg-ink px-3 py-2 text-sm font-semibold text-[#fde68a] transition-colors hover:bg-[#3a2818] disabled:cursor-not-allowed disabled:opacity-50";
+    "inline-flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-ink/70 bg-ink px-3 py-2 text-sm font-semibold text-straw transition-colors hover:bg-wood disabled:cursor-not-allowed disabled:opacity-50";
   const helpBanner = (cls) =>
     helpOffer && (
       <div
         role="status"
-        className={`rounded-lg border-2 border-ink/50 bg-[#f3e2c0]/80 px-4 py-3 text-sm text-ink-deep ${cls}`}
+        className={`rounded-lg border-2 border-ink/50 bg-parchment-cream/80 px-4 py-3 text-sm text-ink-deep ${cls}`}
       >
         <p className="font-bold">
           {t("missionPage.helpOffer.title").replace("{n}", helpOffer.failures)}
@@ -602,20 +602,20 @@ export default function MissionDetail() {
       <div className="min-h-screen xl:h-screen pt-24 bg-bg dark:bg-[#0f0f11] text-text dark:text-gray-200 font-sans flex flex-col">
         {/* Квест-шапка в RPG-стиле: deep-wood band + scroll icon + Melodrama.
             Светлая тема — чистая surface-полоса; тёмная — глубокое дерево. */}
-        <header className="border-b border-border dark:border-ink/40 px-4 sm:px-8 py-3 xl:py-2.5 flex items-center justify-between gap-3 select-none shadow-md bg-surface dark:bg-gradient-to-r dark:from-[#2b1d11] dark:via-[#3a2818] dark:to-[#2b1d11]">
+        <header className="border-b border-border dark:border-ink/40 px-4 sm:px-8 py-3 xl:py-2.5 flex items-center justify-between gap-3 select-none shadow-md bg-surface dark:bg-gradient-to-r dark:from-wood-deep dark:via-wood dark:to-wood-deep">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-            <div className="shrink-0 p-2.5 bg-primary/10 dark:bg-[#8b5a2b]/25 border border-primary/20 dark:border-[#d4a24c]/60 rounded-xl text-primary dark:text-[#fde68a] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <div className="shrink-0 p-2.5 bg-primary/10 dark:bg-bronze/25 border border-primary/20 dark:border-gold/60 rounded-xl text-primary dark:text-straw shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
               <ScrollText size={22} />
             </div>
             <div className="min-w-0">
-              <h1 className="font-display text-xl sm:text-2xl font-bold text-text dark:text-[#fde68a] tracking-wide leading-tight line-clamp-2 sm:truncate dark:drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
+              <h1 className="font-display text-xl sm:text-2xl font-bold text-text dark:text-straw tracking-wide leading-tight line-clamp-2 sm:truncate dark:drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
                 {(language === "en"
                   ? mission.title_en || mission.title_ru
                   : mission.title_ru || mission.title_en) ||
                   mission.title}
               </h1>
-              <p className="text-xs text-accent dark:text-[#d4a24c] font-mono mt-0.5 uppercase tracking-wider">
-                {t("missionPage.rewardLabel")}: <span className="text-text dark:text-[#fde68a] font-bold">{totalXp}</span> {t("missionPage.xpGained")}
+              <p className="text-xs text-accent dark:text-gold font-mono mt-0.5 uppercase tracking-wider">
+                {t("missionPage.rewardLabel")}: <span className="text-text dark:text-straw font-bold">{totalXp}</span> {t("missionPage.xpGained")}
               </p>
             </div>
           </div>
@@ -663,17 +663,17 @@ export default function MissionDetail() {
           {/* Телефон: шаги полоской и сводка по текущему шагу вместо панели свитков */}
           <div
             ref={stripRef}
-            className="xl:hidden scroll-mt-24 border-b-2 border-ink/60 bg-gradient-to-r from-[#2b1d11] via-[#3a2818] to-[#2b1d11] px-3 pt-3 pb-2"
+            className="xl:hidden scroll-mt-24 border-b-2 border-ink/60 bg-gradient-to-r from-wood-deep via-wood to-wood-deep px-3 pt-3 pb-2"
           >
             {/* компактная крошка: на телефоне крошек редактора нет, а на шаге-сюжете их не было совсем */}
             {activeTask && (
-              <p className="pb-1.5 font-mono text-[11px] text-[#d4a24c]/80 truncate">
+              <p className="pb-1.5 font-mono text-[11px] text-gold/80 truncate">
                 {t("codeRunner.crumbRoot")} &rsaquo; {t("codeRunner.crumbMission")} &rsaquo;{" "}
-                <span className="text-[#fde68a]">{taskTypeLabel(activeTask.task_type)}</span>
+                <span className="text-straw">{taskTypeLabel(activeTask.task_type)}</span>
               </p>
             )}
-            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 pb-2 font-mono text-xs text-[#d4a24c]">
-              <span className="whitespace-nowrap font-bold uppercase tracking-wider text-[#fde68a]">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 pb-2 font-mono text-xs text-gold">
+              <span className="whitespace-nowrap font-bold uppercase tracking-wider text-straw">
                 {t("missionPage.mobile.step")
                   .replace("{n}", activeIndex + 1)
                   .replace("{total}", tasks.length)}
@@ -696,7 +696,7 @@ export default function MissionDetail() {
           </div>
 
           {isCodeTask && (
-            <div ref={tabsRef} className="xl:hidden scroll-mt-24 grid grid-cols-2 gap-1 bg-[#2b1d11] p-1">
+            <div ref={tabsRef} className="xl:hidden scroll-mt-24 grid grid-cols-2 gap-1 bg-wood-deep p-1">
               {[
                 ["task", BookOpen, t("missionPage.mobile.task")],
                 ["code", Code2, t("missionPage.mobile.code")],
@@ -708,8 +708,8 @@ export default function MissionDetail() {
                   onClick={() => openMobileTab(key)}
                   className={`flex min-h-[44px] items-center justify-center gap-2 rounded-lg font-display text-sm font-bold tracking-wide transition-colors ${
                     mobileTab === key
-                      ? "bg-[#d4ad75] text-[#2a1810]"
-                      : "text-[#fde68a] hover:bg-ink/50"
+                      ? "bg-parchment-mid text-wood-ink"
+                      : "text-straw hover:bg-ink/50"
                   }`}
                 >
                   <TabIcon size={16} aria-hidden="true" />
@@ -726,12 +726,12 @@ export default function MissionDetail() {
           <div
             className="w-full xl:w-[320px] xl:flex-shrink-0 border-r-4 border-ink/60 hidden xl:flex flex-col select-none shadow-2xl z-10 relative"
             style={{
-              backgroundColor: "#d4ad75",
+              backgroundColor: "var(--parchment-mid)",
               backgroundImage:
                 "radial-gradient(circle at 15% 20%, rgba(60,30,10,0.18), transparent 35%)," +
                 "radial-gradient(circle at 85% 70%, rgba(40,20,10,0.16), transparent 40%)," +
                 "radial-gradient(circle at 50% 95%, rgba(80,40,15,0.10), transparent 50%)," +
-                "linear-gradient(180deg, var(--parchment) 0%, #d4ad75 50%, #c39858 100%)",
+                "linear-gradient(180deg, var(--parchment) 0%, var(--parchment-mid) 50%, var(--parchment-shade) 100%)",
             }}
           >
             {/* Череп-тотем со стола мага — выцветший водяной знак (из мокапа
@@ -740,7 +740,7 @@ export default function MissionDetail() {
               className="pointer-events-none absolute inset-x-0 bottom-24 z-0 flex justify-center opacity-[0.07]"
               aria-hidden="true"
             >
-              <svg viewBox="0 0 200 200" className="w-44 h-44 text-[#2a1810]">
+              <svg viewBox="0 0 200 200" className="w-44 h-44 text-wood-ink">
                 <path d="M100 30c-38 0-66 28-66 64 0 22 12 36 22 46v22c0 6 4 10 10 10h12v-14h14v14h16v-14h14v14h12c6 0 10-4 10-10v-22c10-10 22-24 22-46 0-36-28-64-66-64z" fill="currentColor" />
                 <ellipse cx="74" cy="110" rx="18" ry="22" fill="var(--parchment)" />
                 <ellipse cx="126" cy="110" rx="18" ry="22" fill="var(--parchment)" />
@@ -750,15 +750,15 @@ export default function MissionDetail() {
             </div>
 
             {/* Заголовок-баннер */}
-            <div className="relative z-10 px-6 py-4 border-b-2 border-ink/40 bg-gradient-to-r from-[#3a2818]/95 via-ink/90 to-[#3a2818]/95 flex items-center gap-2">
-              <ScrollText size={16} className="text-[#fde68a]" />
-              <p className="font-display text-sm font-bold tracking-widest text-[#fde68a] uppercase">
+            <div className="relative z-10 px-6 py-4 border-b-2 border-ink/40 bg-gradient-to-r from-wood/95 via-ink/90 to-wood/95 flex items-center gap-2">
+              <ScrollText size={16} className="text-straw" />
+              <p className="font-display text-sm font-bold tracking-widest text-straw uppercase">
                 {t("missionPage.questLog")}
               </p>
               {/* Свеча на столе мага — мягко мерцающее пламя (чистый SVG + Tailwind) */}
               <svg width="14" height="24" viewBox="0 0 14 24" className="ml-auto shrink-0" aria-hidden="true">
                 <ellipse cx="7" cy="22" rx="4.5" ry="1.4" fill="#1c120a" opacity="0.5" />
-                <rect x="4.5" y="9" width="5" height="13" rx="1.2" fill="#f3e2c0" />
+                <rect x="4.5" y="9" width="5" height="13" rx="1.2" fill="var(--parchment-cream)" />
                 <rect x="4.6" y="9" width="1.7" height="13" rx="0.8" fill="#ffffff" opacity="0.35" />
                 <rect x="6.6" y="6" width="0.8" height="3" fill="var(--ink-deep)" />
                 <g className="animate-flicker" style={{ transformOrigin: "7px 7px" }}>
@@ -781,16 +781,16 @@ export default function MissionDetail() {
             </div>
 
             {/* Статистика текущей ноды — на тёмной полосе под пергаментом */}
-            <div className="relative z-10 p-4 border-t-2 border-ink/40 bg-gradient-to-r from-[#3a2818]/95 via-ink/90 to-[#3a2818]/95 font-mono text-xs text-[#d4a24c]">
+            <div className="relative z-10 p-4 border-t-2 border-ink/40 bg-gradient-to-r from-wood/95 via-ink/90 to-wood/95 font-mono text-xs text-gold">
               {activeTask && (
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>{t("missionPage.stats.fileType")}</span>
-                    <span className="text-[#fde68a] uppercase font-semibold">{taskTypeLabel(activeTask.task_type)}</span>
+                    <span className="text-straw uppercase font-semibold">{taskTypeLabel(activeTask.task_type)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{t("missionPage.stats.timeEstimate")}</span>
-                    <span className="text-[#fde68a]">{activeTask.estimated_minutes} {t("missionPage.stats.minutesShort")}</span>
+                    <span className="text-straw">{activeTask.estimated_minutes} {t("missionPage.stats.minutesShort")}</span>
                   </div>
                   {taskProgress[activeTask.id] && (
                     <div className="mt-2 pt-2 border-t border-ink/40 space-y-1">
@@ -798,7 +798,7 @@ export default function MissionDetail() {
                         <p>{t("missionPage.stats.status")} <span className="text-[#a3e635] font-bold">{t("missionPage.stats.done")}</span></p>
                       )}
                       <p>{t("missionPage.stats.attempts")} {taskProgress[activeTask.id].attempts}</p>
-                      <p>{t("missionPage.stats.best")} <span className="text-[#fde68a] font-bold">{taskProgress[activeTask.id].best_score || 0}</span></p>
+                      <p>{t("missionPage.stats.best")} <span className="text-straw font-bold">{taskProgress[activeTask.id].best_score || 0}</span></p>
                     </div>
                   )}
                 </div>
@@ -815,17 +815,17 @@ export default function MissionDetail() {
                 "radial-gradient(circle at 80% 15%, rgba(60,30,10,0.16), transparent 35%)," +
                 "radial-gradient(circle at 20% 60%, rgba(40,20,10,0.14), transparent 40%)," +
                 "radial-gradient(circle at 50% 95%, rgba(80,40,15,0.10), transparent 50%)," +
-                "linear-gradient(180deg, var(--parchment) 0%, #d4ad75 60%, #c39858 100%)",
+                "linear-gradient(180deg, var(--parchment) 0%, var(--parchment-mid) 60%, var(--parchment-shade) 100%)",
               // Тень-сгиб «разворота книги» по левому краю страницы инструкций
               boxShadow: "inset 16px 0 30px -16px rgba(40,20,8,0.6)",
             }}
           >
             {/* Header-баннер: тёмное дерево, иконка типа, fantasy title */}
-            <div className="px-6 py-4 border-b-2 border-ink/40 bg-gradient-to-r from-[#3a2818]/95 via-ink/90 to-[#3a2818]/95 flex items-center gap-2">
+            <div className="px-6 py-4 border-b-2 border-ink/40 bg-gradient-to-r from-wood/95 via-ink/90 to-wood/95 flex items-center gap-2">
               {activeTask?.task_type === "code"
-                ? <Code2 size={16} className="text-[#d4a24c]" />
+                ? <Code2 size={16} className="text-gold" />
                 : <BookOpen size={16} className="text-[#a3e635]" />}
-              <h2 className="min-w-0 flex-1 font-display text-base font-bold text-[#fde68a] tracking-wide truncate drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
+              <h2 className="min-w-0 flex-1 font-display text-base font-bold text-straw tracking-wide truncate drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
                 {(language === "en"
                   ? activeTask?.title_en || activeTask?.title_ru
                   : activeTask?.title_ru || activeTask?.title_en) ||
@@ -856,14 +856,14 @@ export default function MissionDetail() {
               <div className="story-body" dangerouslySetInnerHTML={{ __html: taskBodyHtml }} />
 
               {tasks.length === 0 && (
-                <p role="status" className="rounded-lg border-2 border-ink/40 bg-[#f3e2c0]/70 px-4 py-3 font-semibold">
+                <p role="status" className="rounded-lg border-2 border-ink/40 bg-parchment-cream/70 px-4 py-3 font-semibold">
                   {t("missionPage.noSteps")}
                 </p>
               )}
 
               {/* Квиз — карточка в тон пергамента, тёмное дерево по рамке */}
               {activeTask?.task_type === "quiz" && (
-                <div className="mt-8 p-4 bg-[#c5a572]/50 border-2 border-ink/40 rounded-xl space-y-4 shadow-inner">
+                <div className="mt-8 p-4 bg-parchment-tan/50 border-2 border-ink/40 rounded-xl space-y-4 shadow-inner">
                   <fieldset className="min-w-0 space-y-4 border-0 p-0 m-0">
                   <legend className="font-display text-xs font-bold uppercase text-ink tracking-wider">
                     {t("missionPage.pickAnswer")}
@@ -879,7 +879,7 @@ export default function MissionDetail() {
                           onChange={(e) => setQuizAnswers((prev) => ({ ...prev, [activeTask.id]: e.target.value }))}
                           className="mt-1 accent-wax"
                         />
-                        <span className="text-ink-deep group-hover:text-[#2a1810] font-medium transition-colors">{opt.label ?? opt}</span>
+                        <span className="text-ink-deep group-hover:text-wood-ink font-medium transition-colors">{opt.label ?? opt}</span>
                       </label>
                     ))}
                   </div>
@@ -945,11 +945,11 @@ export default function MissionDetail() {
                     без motion-библиотек — анимации через @keyframes ниже. */}
                 <div className="relative max-w-md w-full">
                   {/* Капы свитка слева/справа — закрученные края */}
-                  <div className="absolute left-0 top-0 bottom-0 w-3 -translate-x-2 rounded-l-full bg-gradient-to-r from-[#3a2818] via-ink to-[#3a2818] shadow-[inset_-1px_0_2px_rgba(0,0,0,0.5)]" />
-                  <div className="absolute right-0 top-0 bottom-0 w-3 translate-x-2 rounded-r-full bg-gradient-to-l from-[#3a2818] via-ink to-[#3a2818] shadow-[inset_1px_0_2px_rgba(0,0,0,0.5)]" />
+                  <div className="absolute left-0 top-0 bottom-0 w-3 -translate-x-2 rounded-l-full bg-gradient-to-r from-wood via-ink to-wood shadow-[inset_-1px_0_2px_rgba(0,0,0,0.5)]" />
+                  <div className="absolute right-0 top-0 bottom-0 w-3 translate-x-2 rounded-r-full bg-gradient-to-l from-wood via-ink to-wood shadow-[inset_1px_0_2px_rgba(0,0,0,0.5)]" />
 
                   {/* Полотно пергамента */}
-                  <div className="relative px-10 py-12 bg-gradient-to-br from-parchment via-[#d4ad75] to-[#c39858] border-y-2 border-[#8b5a2b]/60 shadow-2xl text-center">
+                  <div className="relative px-10 py-12 bg-gradient-to-br from-parchment via-parchment-mid to-parchment-shade border-y-2 border-bronze/60 shadow-2xl text-center">
                     {/* Шум/потёртости */}
                     <div
                       className="absolute inset-0 opacity-20 pointer-events-none"
@@ -979,7 +979,7 @@ export default function MissionDetail() {
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="relative inline-flex">
                           <span className="absolute inline-flex h-8 w-8 rounded-full bg-wax/40 animate-ping" />
-                          <span className="relative inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink text-[#fde68a] text-lg font-display font-bold shadow-[0_0_12px_rgba(142,29,29,0.6)]">
+                          <span className="relative inline-flex h-8 w-8 items-center justify-center rounded-full bg-ink text-straw text-lg font-display font-bold shadow-[0_0_12px_rgba(142,29,29,0.6)]">
                             ✦
                           </span>
                         </span>

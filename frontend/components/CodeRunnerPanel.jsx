@@ -436,9 +436,11 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
             disabled={usingItem || !inventoryCounts?.skeleton_scrolls || !skeletonAvailable}
             className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors ${inventoryCounts?.skeleton_scrolls > 0 && skeletonAvailable ? "text-[#e5c07b] hover:bg-[#333] cursor-pointer" : "text-[#8a8a8a] cursor-not-allowed"}`}
             title={skeletonAvailable ? t("codeRunner.items.architect") : t("codeRunner.items.noSkeleton")}
+            aria-label={`${t("codeRunner.items.architectCount").replace("{n}", inventoryCounts?.skeleton_scrolls || 0)}${skeletonAvailable ? "" : `. ${t("codeRunner.items.noSkeleton")}`}`}
           >
-            <Scroll size={14} />
-            <span>{inventoryCounts?.skeleton_scrolls || 0}</span>
+            <Scroll size={14} aria-hidden="true" />
+            <span aria-hidden="true">{inventoryCounts?.skeleton_scrolls || 0}</span>
+            <span className="hidden lg:inline" aria-hidden="true">{t("codeRunner.items.architectShort")}</span>
           </button>
 
           <button
@@ -446,18 +448,22 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
             disabled={usingItem || !inventoryCounts?.hint_scrolls || !hintAvailable}
             className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors ${inventoryCounts?.hint_scrolls > 0 && hintAvailable ? "text-[#98c379] hover:bg-[#333] cursor-pointer" : "text-[#8a8a8a] cursor-not-allowed"} ${pulseHelp && hintAvailable && inventoryCounts?.hint_scrolls > 0 ? pulse : ""}`}
             title={hintAvailable ? t("codeRunner.items.clarity") : t("codeRunner.items.noHint")}
+            aria-label={`${t("codeRunner.items.clarityCount").replace("{n}", inventoryCounts?.hint_scrolls || 0)}${hintAvailable ? "" : `. ${t("codeRunner.items.noHint")}`}`}
           >
-            <Lightbulb size={14} />
-            <span>{inventoryCounts?.hint_scrolls || 0}</span>
+            <Lightbulb size={14} aria-hidden="true" />
+            <span aria-hidden="true">{inventoryCounts?.hint_scrolls || 0}</span>
+            <span className="hidden lg:inline" aria-hidden="true">{t("codeRunner.items.clarityShort")}</span>
           </button>
 
           <button
             onClick={() => setMentorOpen(true)}
             className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors text-[#c678dd] hover:bg-[#333] cursor-pointer ${pulseHelp && inventoryCounts?.ai_summons > 0 ? pulse : ""}`}
             title={t("codeRunner.mentor.open")}
+            aria-label={t("codeRunner.items.mentorCount").replace("{n}", inventoryCounts?.ai_summons || 0)}
           >
-            <Bot size={14} />
-            <span>{inventoryCounts?.ai_summons || 0}</span>
+            <Bot size={14} aria-hidden="true" />
+            <span aria-hidden="true">{inventoryCounts?.ai_summons || 0}</span>
+            <span className="hidden lg:inline" aria-hidden="true">{t("codeRunner.items.mentorShort")}</span>
           </button>
         </div>
 

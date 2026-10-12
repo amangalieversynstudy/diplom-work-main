@@ -4,7 +4,7 @@ import EmptyScroll from "../components/EmptyScroll";
 import { LeaderboardAPI, Profile, Tracks } from "../lib/api";
 import { getTokens } from "../lib/auth";
 import { useDictionary } from "../lib/i18n";
-import { Trophy, Medal, Flame, RefreshCw, User } from "lucide-react";
+import { Trophy, Medal, Flame, RefreshCw, User, Crosshair } from "lucide-react";
 import { toast } from "sonner";
 
 const GLOBAL = "global";
@@ -16,6 +16,10 @@ export default function Leaderboard() {
   const [scope, setScope] = useState(GLOBAL); // "global" или slug курса
   const [courses, setCourses] = useState([]);
   const [meId, setMeId] = useState(null);
+  const [meInfo, setMeInfo] = useState(null);
+  const [flashMe, setFlashMe] = useState(false);
+  const meRowRef = useRef(null);
+  const meOutsideRef = useRef(null);
   const latestRequest = useRef(0);
   const dict = useDictionary();
   const copy = dict.leaderboard;
@@ -70,7 +74,9 @@ export default function Leaderboard() {
     let cancelled = false;
     Profile.me()
       .then((me) => {
-        if (!cancelled) setMeId(me?.id ?? me?.user?.id ?? null);
+        if (cancelled) return;
+        setMeId(me?.id ?? me?.user?.id ?? null);
+        setMeInfo(me || null);
       })
       .catch(() => {});
     return () => {
@@ -87,10 +93,24 @@ export default function Leaderboard() {
   const offset = hasPodium ? 3 : 0;
   // порядок на сцене: второе, первое, третье место; в разметке остаётся порядок по местам
   const PODIUM_VIEW = [
-    { order: "order-2", plinth: "h-16" },
-    { order: "order-1", plinth: "h-24" },
+    { order: "order-2", plinth: "h-24" },
+    { order: "order-1", plinth: "h-16" },
     { order: "order-3", plinth: "h-10" },
   ];
+
+  const meInList = meId != null && data.some((entry) => entry.user === meId);
+  const meOutside = meId != null && !loading && data.length > 0 && !meInList && scope === GLOBAL;
+
+  // «Показать меня»: прокрутка к своей строке и короткая подсветка. Данные уже загружены,
+  // новых запросов нет; если ученика нет в списке, прокручиваем к отдельной строке внизу.
+  const showMe = () => {
+    const node = meRowRef.current || meOutsideRef.current;
+    if (!node) return;
+    const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    node.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+    setFlashMe(true);
+    setTimeout(() => setFlashMe(false), 1800);
+  };
 
   // с одним курсом отдельный зачёт курса совпал бы с общим, переключать нечего
   const scopes = courses.length > 1
@@ -140,6 +160,17 @@ export default function Leaderboard() {
           ) : (
             <span />
           )}
+          {meId != null && (
+            <button
+              type="button"
+              onClick={showMe}
+              disabled={loading || (!meInList && !meOutside)}
+              className="flex min-h-[44px] items-center gap-2 px-4 py-2.5 text-sm font-semibold text-primary hover:bg-surface/50 rounded-xl transition-all w-full sm:w-auto justify-center disabled:opacity-50"
+            >
+              <Crosshair size={16} aria-hidden="true" />
+              {copy.showMe}
+            </button>
+          )}
           <button
             onClick={() => loadData(true)}
             disabled={refreshing}
@@ -188,11 +219,12 @@ export default function Leaderboard() {
                 return (
                   <li
                     key={entry.id || index}
+                    ref={isMe ? meRowRef : undefined}
                     aria-current={isMe ? "true" : undefined}
                     className={`${view.order} flex min-w-0 flex-col`}
                   >
                     <div
-                      className={`scroll-frame px-2 py-3 text-center sm:px-4 ${isMe ? "outline outline-2 outline-offset-2 outline-primary" : ""}`}
+                      className={`scroll-frame px-2 py-3 text-center sm:px-4 ${isMe ? "outline outline-2 outline-offset-2 outline-primary" : ""} ${isMe && flashMe ? "bg-primary/10" : ""}`}
                     >
                       <Medal size={22} className="mx-auto text-[var(--wax)]" aria-hidden="true" />
                       <p className="mt-1 truncate font-title text-base text-text sm:text-lg">
@@ -230,10 +262,11 @@ export default function Leaderboard() {
               return (
                 <li
                   key={entry.id || index}
+                  ref={isMe ? meRowRef : undefined}
                   aria-current={isMe ? "true" : undefined}
-                  className={`scroll-frame group flex items-center gap-4 p-4 md:p-5 ${
+                  className={`scroll-frame group flex items-center gap-4 p-4 md:p-5 transition-colors motion-reduce:transition-none ${
                     isMe ? "outline outline-2 outline-offset-2 outline-primary" : ""
-                  }`}
+                  } ${isMe && flashMe ? "bg-primary/10" : ""}`}
                 >
                   {/* Плашка с местом: у призёров рядом с цифрой медаль, место не держится на одном цвете */}
                   <div className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-xl border font-title text-text bg-panel border-border ${
@@ -294,6 +327,25 @@ export default function Leaderboard() {
               );
             })}
           </ol>
+          {meOutside && (
+            <div
+              ref={meOutsideRef}
+              aria-current="true"
+              className={`scroll-frame mt-4 flex items-center gap-4 p-4 md:p-5 outline outline-2 outline-offset-2 outline-primary transition-colors motion-reduce:transition-none ${flashMe ? "bg-primary/10" : ""}`}
+            >
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-2 font-title text-xl text-text">
+                  <span className="truncate">{meInfo?.display_name || meInfo?.username || meInfo?.user?.username || copy.you}</span>
+                  <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-on-primary">{copy.you}</span>
+                </p>
+                <p className="mt-1 text-xs text-muted md:text-sm">{copy.outsideTop}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs uppercase tracking-widest text-faint mb-1">{copy.columns.xp}</p>
+                <p className="font-title text-xl text-primary">{meInfo?.xp ?? meInfo?.profile?.xp ?? 0}</p>
+              </div>
+            </div>
+          )}
           </>
         )}
       </div>

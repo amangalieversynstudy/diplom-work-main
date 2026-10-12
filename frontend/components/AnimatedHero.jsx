@@ -56,25 +56,25 @@ export default function AnimatedHero() {
   return (
     <section
       ref={container}
-      className="relative min-h-screen flex flex-col justify-center items-center overflow-hidden bg-transparent text-text px-4 transition-colors duration-300"
+      className="relative flex flex-col justify-center items-center overflow-hidden bg-transparent text-text px-4 pt-24 pb-6 sm:pt-28 transition-colors duration-300"
     >
 
-      <div className="z-10 flex flex-col items-center text-center max-w-4xl mt-16">
-        <div className="hero-badge inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface border border-border shadow-sm mb-8 backdrop-blur-md transition-colors duration-300">
+      <div className="z-10 flex flex-col items-center text-center max-w-4xl">
+        <div className="hero-badge inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface border border-border shadow-sm mb-5 backdrop-blur-md transition-colors duration-300">
           <Sparkles className="w-4 h-4 text-gold" />
           <span className="text-sm font-medium tracking-wide text-muted">
             {t("landing.badge")}
           </span>
         </div>
 
-        <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 overflow-hidden">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-4 overflow-hidden">
           <div className="hero-title-line text-text">{t("landing.titleLine1")}</div>
           <div className="hero-title-line text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent pb-2">
             {t("landing.titleLine2")}
           </div>
         </h1>
 
-        <p className="hero-desc text-lg md:text-xl text-muted mb-10 max-w-2xl transition-colors duration-300">
+        <p className="hero-desc text-base md:text-lg text-muted mb-6 max-w-2xl transition-colors duration-300">
           {t("landing.subtitle")}
         </p>
 

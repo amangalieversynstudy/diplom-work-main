@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
 import MissionPath from "../../components/MissionPath";
+import { MapBackdrop, MapTrail } from "../../components/WorldMapParts";
 import { toast } from "sonner";
 import { useDictionary } from "../../lib/i18n";
 import { lockReason, missionTitle, missionXp } from "../../lib/missions";
@@ -10,6 +11,7 @@ import { Lock, CheckCircle, X as XIcon, Compass } from "lucide-react";
 import gsap from "gsap";
 import { prefersReducedMotion } from "../../lib/motion";
 import { mapWalk } from "../../lib/stage";
+import { mapCoords, mapPath } from "../../lib/worldMap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Missions, Profile, missionStatus } from "../../lib/api";
@@ -115,42 +117,9 @@ export default function Worlds() {
     // refetch при смене языка
   }, [language]);
 
-  // Вычисляем хаотичные координаты
-  const getCoords = (index, total) => {
-    const step = total > 1 ? 72 / (total - 1) : 0;
-    const xVariations = [0, 4, -3, 5, -4, 2, -2, 3];
-    let xVar = xVariations[index % xVariations.length];
-    if (index === 0 || index === total - 1) xVar = 0;
-
-    const yOffsets = [15, -25, 5, -30, 20, -10, 35, -20];
-    return {
-      x: 8 + index * step + xVar,
-      y: 50 + yOffsets[index % yOffsets.length]
-    };
-  };
-
-  // Генерируем линию
-  const generatePath = (missionsArr) => {
-    if (!missionsArr || missionsArr.length === 0) return "";
-    const len = missionsArr.length;
-    let path = `M ${getCoords(0, len).x} ${getCoords(0, len).y}`;
-    
-    const cp1YVars = [60, -55, 65, -50, 70, -60, 55, -65];
-    const cp2YVars = [-60, 55, -65, 50, -70, 60, -55, 65];
-    const cpXVars1 = [0.2, 0.25, 0.2, 0.3, 0.25, 0.2, 0.3, 0.25];
-    const cpXVars2 = [0.8, 0.75, 0.8, 0.7, 0.75, 0.8, 0.7, 0.75];
-
-    for (let i = 1; i < len; i++) {
-      const prev = getCoords(i - 1, len);
-      const curr = getCoords(i, len);
-      const cp1X = prev.x + (curr.x - prev.x) * cpXVars1[i % cpXVars1.length];
-      const cp1Y = prev.y + cp1YVars[i % cp1YVars.length];
-      const cp2X = prev.x + (curr.x - prev.x) * cpXVars2[i % cpXVars2.length];
-      const cp2Y = curr.y + cp2YVars[i % cp2YVars.length];
-      path += ` C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${curr.x} ${curr.y}`;
-    }
-    return path;
-  };
+  // Координаты узлов и тропа считаются в lib/worldMap.js (их же использует лендинг)
+  const getCoords = mapCoords;
+  const generatePath = (missionsArr) => mapPath(missionsArr ? missionsArr.length : 0);
 
   // Перехват горизонтального жеста трекпада — РАБОТАЕТ ВСЕГДА
   useEffect(() => {
@@ -352,65 +321,12 @@ export default function Worlds() {
           style={{ width: `${Math.max(150, missions.length * 13)}vw` }}
           className="relative h-[70vh] ml-6 mr-6 rounded-[2.5rem] border-8 border-ink bg-parchment shadow-2xl shrink-0 overflow-hidden"
         >
-          {/* Бумажная текстура */}
-          <div className="absolute inset-0 pointer-events-none opacity-30 mix-blend-multiply rounded-[inherit]">
-            <svg className="w-full h-full">
-              <filter id="paper-noise">
-                <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="4" stitchTiles="stitch" />
-              </filter>
-              <rect width="100%" height="100%" filter="url(#paper-noise)" />
-            </svg>
-          </div>
-
-          {/* Штурманская сетка */}
-          <div 
-            className="absolute inset-0 opacity-15 pointer-events-none rounded-[inherit]" 
-            style={{ 
-              backgroundImage: 'linear-gradient(var(--ink) 1.5px, transparent 1.5px), linear-gradient(90deg, var(--ink) 1.5px, transparent 1.5px)', 
-              backgroundSize: '80px 80px' 
-            }} 
-          />
-          
-          <div className="absolute inset-0 shadow-[inset_0_0_150px_rgba(62,39,35,0.6)] pointer-events-none rounded-[inherit]" />
+          <MapBackdrop />
 
           {!loading && missions.length > 0 && (
             <>
               {/* SVG Путь */}
-              <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
-                <defs>
-                  <mask id="path-mask">
-                    <path
-                      className="map-path"
-                      d={generatePath(missions)}
-                      fill="none"
-                      stroke="white"
-                      strokeWidth="16"
-                      vectorEffect="non-scaling-stroke"
-                      pathLength="100"
-                      style={{ strokeDasharray: "100", strokeDashoffset: "100" }}
-                    />
-                  </mask>
-                </defs>
-                
-                <path
-                  ref={trailRef}
-                  d={generatePath(missions)}
-                  fill="none"
-                  stroke="#8b5a2b"
-                  strokeWidth="3.5"
-                  strokeDasharray="6,6"
-                  vectorEffect="non-scaling-stroke"
-                />
-                <path
-                  d={generatePath(missions)}
-                  fill="none"
-                  stroke="var(--wax)"
-                  strokeWidth="4.5"
-                  strokeDasharray="6,6"
-                  vectorEffect="non-scaling-stroke"
-                  mask="url(#path-mask)"
-                />
-              </svg>
+              <MapTrail ref={trailRef} d={generatePath(missions)} />
 
               {/* Названия курсов над первой миссией каждого */}
               {missions.map((mission, index) => {

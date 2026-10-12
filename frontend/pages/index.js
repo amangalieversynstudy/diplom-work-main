@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import Layout from "../components/Layout";
 import AnimatedHero from "../components/AnimatedHero";
+import LandingStage from "../components/LandingStage";
+import LandingMap from "../components/LandingMap";
 import TransitionLink from "../components/TransitionLink";
 import {
   Map, Swords, Compass, Crown, Sparkles,
@@ -157,6 +159,10 @@ export default function Home() {
       worlds: (track.worlds || []).length,
     };
   });
+  // Свитки на карте лендинга: миссии из того же каталога, без отдельных запросов
+  const landingMissions = (catalog || []).flatMap((track) =>
+    (track.worlds || []).flatMap((world) => world.missions || [])
+  );
   const totalMissions = catalog ? courses.reduce((sum, c) => sum + c.missions, 0) : 16;
   const totalCourses = catalog ? courses.length : 2;
 
@@ -213,6 +219,12 @@ export default function Home() {
     <Layout>
 
       <AnimatedHero />
+
+      {/* Первый экран: герой с големом и карта первых свитков */}
+      <div className="max-w-6xl 2xl:max-w-[80rem] 3xl:max-w-[92rem] 4xl:max-w-[110rem] mx-auto px-4 sm:px-6">
+        <LandingStage />
+        <LandingMap missions={landingMissions} />
+      </div>
 
       {/* ══════════════════════════════════════════
           STATS STRIP

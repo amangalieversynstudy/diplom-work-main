@@ -24,6 +24,7 @@ import { getTokens } from "../lib/auth";
 import { useI18n } from "../lib/i18n";
 import { indentAction, newlineAction } from "../lib/editorKeys";
 import { createTracker } from "../lib/provenance";
+import { detectErrorType } from "../lib/errorHelp";
 import Terminal from "./Terminal";
 import AIMentorChat from "./AIMentorChat";
 
@@ -204,6 +205,7 @@ function CodeRunnerPanel(
     // practice: only the exit code matters.
     let verdict = null;
     let exited = false;
+    let stderrText = "";
 
     ws.onopen = () => {
       ws.send(
@@ -228,6 +230,7 @@ function CodeRunnerPanel(
           onTaskResult?.(msg);
           break;
         case "stderr":
+          stderrText += msg.data || "";
           term?.write(`${ANSI_RED}${normaliseEol(msg.data)}${ANSI_RESET}`);
           break;
         case "error":
@@ -247,6 +250,19 @@ function CodeRunnerPanel(
             term?.write(
               `\r\n${ANSI_YELLOW}${t(verdict.hidden_failed ? "codeRunner.hiddenFailed" : "codeRunner.wrongOutput")}${ANSI_RESET}\r\n`
             );
+          }
+          // короткое пояснение Мудреца под выводом; сам вывод остаётся как есть
+          if (msg.code !== 0) {
+            const errType = detectErrorType(stderrText);
+            if (errType) {
+              term?.write(`
+${ANSI_CYAN}${t("codeRunner.errorHelp.title")}${ANSI_RESET}
+`);
+              wrapWords(t(`codeRunner.errorHelp.${errType}`), 70).forEach((line) => {
+                term?.write(`${ANSI_CYAN}│${ANSI_RESET} ${line}
+`);
+              });
+            }
           }
           try { ws.close(); } catch { /* noop */ }
           break;
@@ -321,12 +337,14 @@ function CodeRunnerPanel(
     // top-right toast визуально «уходит за экран»). Если терминал
     // ещё не смонтирован — фоллбэк на тост.
     if (termRef.current?.writeln) {
-      termRef.current.writeln(`
+      termRef.current.writeln(`
+
 ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
       wrapWords(hint.text, 70).forEach((line) => {
         termRef.current.writeln(`${ANSI_YELLOW}│${ANSI_RESET} ${line}`);
       });
-      termRef.current.writeln(`${ANSI_YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━${ANSI_RESET}
+      termRef.current.writeln(`${ANSI_YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━${ANSI_RESET}
+
 `);
     } else {
       toast(`💡 ${hint.text}`, { duration: 6000 });

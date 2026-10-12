@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useI18n } from "../lib/i18n";
 import Card from "./Card";
+import EmptyScroll from "./EmptyScroll";
 
 // Каталог достижений живёт на бэкенде (game/achievements.py) и присылает имя
 // иконки строкой. Карта переводит это имя в компонент lucide-react. Любой
@@ -25,6 +26,14 @@ export default function AchievementsPanel({ items = [] }) {
   const { t } = useI18n();
   const earnedCount = items.filter((a) => a.earned).length;
 
+  if (items.length === 0) {
+    return (
+      <EmptyScroll icon={Trophy} className="mt-8">
+        {t("achievements.empty")}
+      </EmptyScroll>
+    );
+  }
+
   return (
     <Card variant="scroll" className="mt-8">
       <div className="flex items-center justify-between mb-6">
@@ -32,17 +41,12 @@ export default function AchievementsPanel({ items = [] }) {
           <Trophy size={20} className="mr-2 text-accent" />
           {t("achievements.title")}
         </h3>
-        {items.length > 0 && (
-          <span className="text-sm text-muted font-medium tabular-nums">
-            {earnedCount} / {items.length}
-          </span>
-        )}
+        <span className="text-sm text-muted font-medium tabular-nums">
+          {earnedCount} / {items.length}
+        </span>
       </div>
 
-      {items.length === 0 ? (
-        <p className="text-sm text-muted">{t("achievements.empty")}</p>
-      ) : (
-        <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 gap-4">
           {items.map((a) => {
             const Icon = ICONS[a.icon] || Star;
             const pct =
@@ -99,8 +103,7 @@ export default function AchievementsPanel({ items = [] }) {
               </div>
             );
           })}
-        </div>
-      )}
+      </div>
     </Card>
   );
 }

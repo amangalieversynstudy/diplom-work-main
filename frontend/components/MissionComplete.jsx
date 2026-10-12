@@ -1,11 +1,46 @@
-import { useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
-import { Star } from "lucide-react";
+import { Award, Flame, Sparkles, Star, TrendingUp } from "lucide-react";
 import Button from "./Button";
 import { useDialog } from "../lib/useDialog";
 import { useI18n } from "../lib/i18n";
+import { prefersReducedMotion } from "../lib/motion";
 
 const MAX_STARS = 3;
+
+// Число XP «набегает» от нуля; при reduced-motion сразу показываем итог.
+function useCountUp(target, active) {
+  const [value, setValue] = useState(target);
+  useEffect(() => {
+    if (!active || !(target > 0) || prefersReducedMotion()) {
+      setValue(target);
+      return undefined;
+    }
+    let frame;
+    const start = performance.now();
+    const duration = 900;
+    setValue(0);
+    const tick = (now) => {
+      const k = Math.min(1, (now - start) / duration);
+      setValue(Math.round(target * k));
+      if (k < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target, active]);
+  return value;
+}
+
+function LootRow({ icon: Icon, children, strong = false }) {
+  return (
+    <li className="flex items-center gap-3 rounded-xl border border-[color:var(--gold-frame)]/60 bg-panel px-4 py-2 text-left">
+      <Icon size={20} aria-hidden="true" className="shrink-0 text-primary" />
+      <span className={strong ? "font-display text-xl font-bold text-primary" : "text-sm font-semibold text-text"}>
+        {children}
+      </span>
+    </li>
+  );
+}
 
 /**
  * Окно «миссия пройдена»: итог, звёзды и куда идти дальше. Закрывается Esc,
@@ -16,6 +51,7 @@ export default function MissionComplete({ data, onClose, onMap }) {
   const ref = useRef(null);
   const titleId = useId();
   useDialog(Boolean(data), ref, onClose);
+  const xpShown = useCountUp(data?.xp > 0 ? data.xp : 0, Boolean(data));
   if (!data) return null;
 
   const stars = Math.max(0, Math.min(MAX_STARS, Number(data.stars) || 0));
@@ -52,15 +88,31 @@ export default function MissionComplete({ data, onClose, onMap }) {
           ))}
         </div>
         <h2 id={titleId} className="font-title text-3xl">
-          {t("missionPage.complete.title")}
+          {t("missionPage.complete.loot")}
         </h2>
-        {data.title ? <p className="mt-1 text-muted">{data.title}</p> : null}
-        <p className="mx-auto mt-4 w-fit rounded-xl border-2 border-[color:var(--gold-frame)] bg-panel px-5 py-2 font-display text-2xl font-bold text-primary">
-          {data.xp > 0
-            ? t("missionPage.complete.xp").replace("{xp}", data.xp)
-            : t("missionPage.complete.noXp")}
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-muted">{t("missionPage.complete.starsHint")}</p>
+        <p className="mt-1 text-sm font-semibold text-muted">{t("missionPage.complete.title")}</p>
+        {data.title ? <p className="text-muted">{data.title}</p> : null}
+        <ul className="mt-4 space-y-2">
+          <LootRow icon={Sparkles} strong>
+            {data.xp > 0 ? t("missionPage.complete.xp").replace("{xp}", xpShown) : t("missionPage.complete.noXp")}
+          </LootRow>
+          {data.leveledUp && data.newLevel ? (
+            <LootRow icon={TrendingUp}>
+              {t("missionPage.complete.levelUp").replace("{level}", data.newLevel)}
+            </LootRow>
+          ) : null}
+          {(data.achievements || []).map((slug) => (
+            <LootRow key={slug} icon={Award}>
+              {t("missionPage.complete.achievement").replace("{title}", t(`achievements.items.${slug}.title`))}
+            </LootRow>
+          ))}
+          {data.streak > 0 ? (
+            <LootRow icon={Flame}>
+              {t("missionPage.complete.streak").replace("{n}", data.streak)}
+            </LootRow>
+          ) : null}
+        </ul>
+        <p className="mt-3 text-sm leading-relaxed text-muted">{t("missionPage.complete.starsHint")}</p>
         {data.suggestClass ? (
           <p className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-semibold text-text">
             {t("missionPage.complete.introDone")}
@@ -76,7 +128,16 @@ export default function MissionComplete({ data, onClose, onMap }) {
               {t("missionPage.complete.pickClass")}
             </Link>
           ) : null}
-          <Button data-autofocus={data.suggestClass ? undefined : true} variant={data.suggestClass ? "secondary" : "rune"} onClick={onMap} className="justify-center">
+          {!data.suggestClass && data.next ? (
+            <Link
+              href={`/missions/${data.next.id}`}
+              data-autofocus
+              className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 font-medium tracking-wide text-on-primary shadow-glow transition hover:bg-primary-dk"
+            >
+              {t("missionPage.complete.next")}
+            </Link>
+          ) : null}
+          <Button data-autofocus={data.suggestClass || data.next ? undefined : true} variant={data.suggestClass || data.next ? "secondary" : "rune"} onClick={onMap} className="justify-center">
             {t("missionPage.complete.toMap")}
           </Button>
           <Link

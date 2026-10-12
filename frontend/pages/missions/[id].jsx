@@ -29,6 +29,7 @@ import { useI18n } from "../../lib/i18n";
 import { sanitizeHtml } from "../../lib/sanitize";
 import { storyToHtml } from "../../lib/story";
 import { fetchIntroStatus } from "../../lib/class";
+import { nextMission } from "../../lib/missions";
 
 // Стили текста свитка: тёмно-коричневый на пергаменте (светлый фон, поэтому без prose-invert).
 const SCROLL_PROSE =
@@ -318,6 +319,7 @@ export default function MissionDetail() {
 
       // Вводный курс закончился, а класса ещё нет: предложим выбрать (это и есть награда за курс).
       let suggestClass = false;
+      let streak = 0;
       // refetch profile to show updated rank on level-up
       // and update inventory with any rewards granted
       try {
@@ -330,11 +332,20 @@ export default function MissionDetail() {
             skeleton_scrolls: p.skeleton_scrolls ?? 0,
           });
           setPlayerLevel(p.level ?? 1);
+          streak = p.streak_active ? p.current_streak ?? 0 : 0;
           const intro = await fetchIntroStatus();
           suggestClass = Boolean(intro?.class_unlocked) && !p.class_role && !profileData.class_role;
         }
       } catch (profileErr) {
         logger.error("Failed to refetch profile after mission complete:", profileErr);
+      }
+
+      // «Следующая миссия»: список уже существующим запросом, при сбое просто без кнопки
+      let next = null;
+      try {
+        next = nextMission(await Missions.list(), id);
+      } catch {
+        next = null;
       }
 
       // итог миссии показываем чуть позже, чтобы успели отыграть тосты и рассвет уровня
@@ -352,6 +363,11 @@ export default function MissionDetail() {
             xp: result?.first_completion ? result?.xp_earned || 0 : result?.xp_added || 0,
             stars: result?.stars ?? 0,
             suggestClass,
+            leveledUp: Boolean(result?.leveled_up),
+            newLevel: result?.new_level,
+            achievements: Array.isArray(result?.new_achievements) ? result.new_achievements : [],
+            streak,
+            next: next ? { id: next.id } : null,
           }),
         result?.leveled_up ? 2000 : 300
       );

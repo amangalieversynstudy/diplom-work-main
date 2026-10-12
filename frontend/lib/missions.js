@@ -28,3 +28,11 @@ export function lockReason(mission, missions, t) {
   if (mission.min_level > 1) return t("worldsPage.mobile.lockedLevel").replace("{n}", mission.min_level);
   return "";
 }
+
+/** Следующая доступная непройденная миссия после текущей (по порядку списка) или null. */
+export function nextMission(list, currentId) {
+  const items = Array.isArray(list) ? list : list?.results || [];
+  const idx = items.findIndex((m) => String(m.id) === String(currentId));
+  const after = idx === -1 ? items : items.slice(idx + 1);
+  return after.find((m) => missionStatus(m) === "available") || null;
+}

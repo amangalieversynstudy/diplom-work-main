@@ -42,6 +42,10 @@
   --ink-deep: #3e2723;
   --wax: #8e1d1d;
   --gold-frame: #b8892e;
+  /* палитра пиксель-портретов классов (как у героя на сцене) */
+  --px-skin: #f0c79a;
+  --px-leather: #5a3a18;
+  --px-steel: #b6bccd;
 }
 
 html.dark {

@@ -371,6 +371,8 @@ export const en = {
       missionNameRu: "Mission title (RU)",
       missionNameEn: "Mission title (EN)",
       xp: "XP",
+      xpMission: "XP for the mission",
+      xpMissionHint: "Bonus for completing the mission. Learners see the total: this bonus plus the XP of all steps.",
       noMissions: "No missions in this section.",
       add: "Add",
       adding: "Adding…",

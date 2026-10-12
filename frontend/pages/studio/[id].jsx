@@ -7,6 +7,7 @@ import StudioTasks, { apiError } from "../../components/StudioTasks";
 import { Studio as StudioAPI, Profile as ProfileAPI } from "../../lib/api";
 import logger from "../../lib/logger";
 import { useI18n } from "../../lib/i18n";
+import { unit } from "../../lib/plural";
 import {
   ArrowLeft,
   Check,
@@ -157,8 +158,11 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
           <p className="truncate text-xs text-muted">{mission.title_en}</p>
         ) : null}
       </div>
-      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:text-amber-400">
-        {mission.xp_reward ?? 0} {t("studio.editor.xp")}
+      <span
+        title={t("studio.editor.xpMissionHint")}
+        className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:text-amber-400"
+      >
+        {mission.xp_reward ?? 0} {t("studio.editor.xpMission")}
       </span>
       <span
         className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${
@@ -223,6 +227,7 @@ function SectionCard({
   setConfirm,
   setError,
 }) {
+  const { language } = useI18n();
   const [expanded, setExpanded] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -346,7 +351,7 @@ function SectionCard({
               {section.title_ru || section.title_en || "—"}
             </p>
             <p className="text-xs text-muted">
-              {missions.length} {t("studio.editor.missions").toLowerCase()}
+              {missions.length} {unit(t, language, "mission", missions.length)}
             </p>
           </button>
         )}

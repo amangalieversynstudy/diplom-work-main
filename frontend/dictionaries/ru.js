@@ -371,6 +371,8 @@ export const ru = {
       missionNameRu: "Название миссии (RU)",
       missionNameEn: "Название миссии (EN)",
       xp: "XP",
+      xpMission: "XP за миссию",
+      xpMissionHint: "Бонус за завершение миссии. Ученик видит сумму: бонус плюс XP за все шаги.",
       noMissions: "Нет миссий в этом разделе.",
       add: "Добавить",
       adding: "Добавляем…",

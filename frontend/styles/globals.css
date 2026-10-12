@@ -276,3 +276,8 @@ html.dark .scroll-frame {
   border-left: 4px solid var(--gold-frame);
   font-style: italic;
 }
+
+/* запас под плавающую плашку серии, чтобы она не перекрывала подвал */
+body.has-streak-banner {
+  padding-bottom: 7rem;
+}

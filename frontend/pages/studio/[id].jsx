@@ -758,7 +758,7 @@ export default function StudioEditorPage() {
               onChange={(e) =>
                 setSettings({ ...settings, is_active: e.target.checked })
               }
-              className="h-4 w-4 rounded border-border text-primary focus:ring-primary/50"
+              className="h-4 w-4 rounded border-border accent-primary focus:ring-primary/50"
             />
             {t("studio.editor.active")}
           </label>

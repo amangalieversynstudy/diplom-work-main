@@ -426,13 +426,13 @@ export default function TeacherPage() {
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={t("teacher.search.placeholder")}
                   aria-label={t("teacher.search.label")}
-                  className="min-h-[44px] w-full flex-1 rounded-xl border border-border bg-panel px-4 text-sm text-text placeholder:text-muted focus:border-primary focus:outline-none sm:max-w-sm"
+                  className="min-h-[44px] w-full min-w-[14rem] flex-1 rounded-xl border border-border bg-panel px-4 text-sm text-text placeholder:text-muted focus:border-primary focus:outline-none sm:max-w-sm"
                 />
                 <p className="text-xs text-muted" role="status" aria-live="polite">
                   {t("teacher.search.shown").replace("{n}", students.length).replace("{total}", allStudents.length)}
                 </p>
                 {/* Сортировка на узком экране: заголовков таблицы там нет */}
-                <div className="flex gap-1 md:hidden" role="group" aria-label={t("teacher.search.sortBy")}>
+                <div className="flex w-full flex-wrap gap-1 md:hidden" role="group" aria-label={t("teacher.search.sortBy")}>
                   {[["name", t("teacher.table.student")], ["xp", t("teacher.table.xp")], ["completed", t("teacher.table.completed")], ["lastActive", t("teacher.table.lastActive")]].map(([key, label]) => (
                     <button
                       key={key}
@@ -452,7 +452,7 @@ export default function TeacherPage() {
               ) : (
               <>
               {/* Заголовок таблицы — только на md+ */}
-              <div className="hidden md:grid grid-cols-[1.6fr_0.5fr_0.7fr_0.9fr_0.9fr_1fr_auto] gap-3 px-3 pb-3 text-xs uppercase tracking-wider text-muted font-bold border-b border-border">
+              <div className="hidden md:grid items-center grid-cols-[1.6fr_0.5fr_0.7fr_0.9fr_0.9fr_1fr_8.5rem] gap-3 px-3 pb-3 text-xs uppercase tracking-wider text-muted font-bold border-b border-border">
                 <span aria-sort={ariaSort("name")}>{sortHead("name", t("teacher.table.student"))}</span>
                 <span className="text-right">{t("teacher.table.level")}</span>
                 <span className="text-right" aria-sort={ariaSort("xp")}>{sortHead("xp", t("teacher.table.xp"))}</span>
@@ -468,7 +468,7 @@ export default function TeacherPage() {
                 {students.map((s) => (
                   <div
                     key={s.id}
-                    className="md:grid md:grid-cols-[1.6fr_0.5fr_0.7fr_0.9fr_0.9fr_1fr_auto] md:items-center gap-3 px-1 md:px-3 py-3 md:hover:bg-panel/40 rounded-xl transition-colors"
+                    className="md:grid md:grid-cols-[1.6fr_0.5fr_0.7fr_0.9fr_0.9fr_1fr_8.5rem] md:items-center gap-3 px-1 md:px-3 py-3 md:hover:bg-panel/40 rounded-xl transition-colors"
                   >
                     {/* Имя + статус (статус виден на мобиле рядом с именем) */}
                     <div className="flex items-center justify-between gap-2 min-w-0 mb-2 md:mb-0">

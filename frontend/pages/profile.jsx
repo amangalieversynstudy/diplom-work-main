@@ -276,7 +276,7 @@ if (loading) {
           </div>
 
           {/* Правая колонка - Настройки */}
-          <div className="md:col-span-2">
+          <div className="md:col-span-2 space-y-6">
             <Card variant="scroll">
               <details className="group">
                 <summary className="flex cursor-pointer list-none items-center justify-between [&::-webkit-details-marker]:hidden">
@@ -361,10 +361,10 @@ if (loading) {
                 </label>
               </div>
             </Card>
+            {/* достижения стоят в правой колонке под настройками: колонка не «висит в пустоте» рядом с высоким листом героя */}
+            <AchievementsPanel items={achievements} />
           </div>
         </div>
-
-        <AchievementsPanel items={achievements} />
       </div>
     </Layout>
   );

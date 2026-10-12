@@ -212,6 +212,7 @@ function TaskForm({ form, setForm, t }) {
               <input
                 type="radio"
                 name="correct-option"
+                className="accent-primary"
                 checked={form.correct === index}
                 onChange={() => set({ correct: index })}
                 aria-label={t("studio.tasks.correct")}
@@ -290,7 +291,7 @@ function TaskForm({ form, setForm, t }) {
                     >
                       <input
                         type="checkbox"
-                        className="h-4 w-4 rounded border-border text-primary"
+                        className="h-4 w-4 rounded border-border accent-primary"
                         checked={on}
                         onChange={() =>
                           set({ not_yet: on ? form.not_yet.filter((n) => n !== name) : [...form.not_yet, name] })

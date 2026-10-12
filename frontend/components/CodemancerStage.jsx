@@ -54,13 +54,16 @@ export default function CodemancerStage({
   const rootRef = useRef(null);
   const hudRef = useRef(null);
   const [view, setView] = useState(null);
+  const [pxScale, setPxScale] = useState(0.55); // экранных пикселей в одной единице сцены
   useIsoLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return undefined;
     const measure = () => {
       const hud = hudRef.current;
       const hudRight = hud ? hud.offsetLeft + hud.offsetWidth : 0;
-      setView(stageView(root.clientWidth, root.clientHeight, hudRight));
+      const next = stageView(root.clientWidth, root.clientHeight, hudRight);
+      setView(next);
+      if (next.w > 0 && root.clientWidth > 0) setPxScale(root.clientWidth / next.w);
     };
     measure();
     if (typeof ResizeObserver === "undefined") return undefined;
@@ -401,7 +404,19 @@ export default function CodemancerStage({
         {(!defeated || phase === "finale") && (
           <g transform="translate(452 244)">
             <g className={phase === "finale" ? "cm-enemy-bar-out" : undefined}>
-            <text x="60" y="-6" textAnchor="middle" fontSize="11" fontWeight="700" fill="#cfd6f0">
+            {/* имя голема держим читаемым (11 экранных px) при любом масштабе сцены */}
+            <text
+              x="60"
+              y={-3 / pxScale}
+              textAnchor="middle"
+              fontSize={11 / pxScale}
+              fontWeight="700"
+              fill="#cfd6f0"
+              stroke="#0a1322"
+              strokeWidth={3 / pxScale}
+              strokeLinejoin="round"
+              paintOrder="stroke"
+            >
               {t(`stage.bosses.${Math.abs(Math.round(enemyHue / 30)) % 4}`)}
             </text>
             <rect width="120" height="14" rx="4" fill="#1d2336" stroke="#000" strokeOpacity=".4" />

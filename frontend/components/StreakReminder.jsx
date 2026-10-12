@@ -52,7 +52,17 @@ export default function StreakReminder() {
     };
   }, []);
 
-  if (!info || !info.atRisk || hidden) return null;
+  const visible = Boolean(info && info.atRisk && !hidden);
+
+  // Плашка фиксирована внизу: пока она видна, добавляем странице запас снизу,
+  // чтобы она не закрывала подвал и последние строки.
+  useEffect(() => {
+    if (!visible) return undefined;
+    document.body.classList.add("has-streak-banner");
+    return () => document.body.classList.remove("has-streak-banner");
+  }, [visible]);
+
+  if (!visible) return null;
 
   const dismiss = () => {
     try {

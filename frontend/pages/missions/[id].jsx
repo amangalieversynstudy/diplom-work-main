@@ -665,16 +665,21 @@ export default function MissionDetail() {
             ref={stripRef}
             className="xl:hidden scroll-mt-24 border-b-2 border-ink/60 bg-gradient-to-r from-[#2b1d11] via-[#3a2818] to-[#2b1d11] px-3 pt-3 pb-2"
           >
-            <div className="flex items-center justify-between gap-3 pb-2 font-mono text-xs text-[#d4a24c]">
-              <span className="font-bold uppercase tracking-wider text-[#fde68a]">
+            {/* компактная крошка: на телефоне крошек редактора нет, а на шаге-сюжете их не было совсем */}
+            {activeTask && (
+              <p className="pb-1.5 font-mono text-[11px] text-[#d4a24c]/80 truncate">
+                {t("codeRunner.crumbRoot")} &rsaquo; {t("codeRunner.crumbMission")} &rsaquo;{" "}
+                <span className="text-[#fde68a]">{taskTypeLabel(activeTask.task_type)}</span>
+              </p>
+            )}
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 pb-2 font-mono text-xs text-[#d4a24c]">
+              <span className="whitespace-nowrap font-bold uppercase tracking-wider text-[#fde68a]">
                 {t("missionPage.mobile.step")
                   .replace("{n}", activeIndex + 1)
                   .replace("{total}", tasks.length)}
               </span>
               {activeTask && (
-                <span className="truncate text-right">
-                  <span className="uppercase text-[#fde68a]">{taskTypeLabel(activeTask.task_type)}</span>
-                  {" · "}
+                <span className="min-w-0 text-right">
                   {activeTask.estimated_minutes} {t("missionPage.stats.minutesShort")}
                   {taskProgress[activeTask.id]?.attempts > 0 &&
                     ` · ${t("missionPage.stats.attempts")} ${taskProgress[activeTask.id].attempts}`}

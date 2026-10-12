@@ -194,7 +194,9 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
     [t, isStaff]
   );
 
-  const menuLinks = isStaff
+  const menuLinks = !isAuthenticated
+    ? []
+    : isStaff
     ? translatedNavLinks.filter((item) => !["/journey", "/class"].includes(item.href))
     : translatedNavLinks;
 
@@ -295,7 +297,9 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
         <div className="max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 flex items-center justify-between relative">
           {/* Навигация видна на широких экранах, не только в выдвижном меню */}
           <nav aria-label={t("layout.nav")} className="hidden xl:flex w-[24rem] shrink-0 items-center gap-1">
-            {(isStaff
+            {(!isAuthenticated
+              ? [] // гостю ученические пункты не показываем: только вход и регистрация справа
+              : isStaff
               ? // в верхней полосе четыре ссылки: больше не помещается рядом с логотипом, остальное в меню
                 [...staffLinks, ...translatedNavLinks.filter((item) => item.href === "/worlds")]
               : translatedNavLinks
@@ -339,6 +343,14 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
               className="hidden lg:inline-flex rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-panel"
             >
               {t("layout.login")}
+            </TransitionLink>
+          )}
+          {!isAuthenticated && (
+            <TransitionLink
+              href="/register"
+              className="hidden lg:inline-flex rounded-full bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-transform hover:scale-[1.03]"
+            >
+              {t("layout.register")}
             </TransitionLink>
           )}
           <button

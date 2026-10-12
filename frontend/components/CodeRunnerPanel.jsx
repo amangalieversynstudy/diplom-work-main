@@ -423,8 +423,8 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
       }`}
     >
       {/* Editor Tabs & Toolbar */}
-      <div className="flex items-center bg-[#252526] overflow-hidden min-w-0 select-none border-l border-[#333]">
-        <div className="hidden sm:flex items-center gap-2 bg-[#1e1e1e] px-3 py-2 border-t border-[#3794ff] min-w-0 shrink cursor-pointer">
+      <div className="flex flex-wrap items-center gap-y-1 bg-[#252526] min-w-0 select-none border-l border-[#333]">
+        <div className="hidden sm:flex items-center gap-2 bg-[#1e1e1e] px-3 py-2 border-t border-[#3794ff] min-w-0 shrink-0 cursor-pointer">
           <FileCode2 size={14} className="text-[#519aba]" />
           <span className="text-xs text-white">main.py</span>
         </div>
@@ -440,7 +440,7 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
           >
             <Scroll size={14} aria-hidden="true" />
             <span aria-hidden="true">{inventoryCounts?.skeleton_scrolls || 0}</span>
-            <span className="hidden lg:inline" aria-hidden="true">{t("codeRunner.items.architectShort")}</span>
+            <span className="hidden 2xl:inline" aria-hidden="true">{t("codeRunner.items.architectShort")}</span>
           </button>
 
           <button
@@ -452,7 +452,7 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
           >
             <Lightbulb size={14} aria-hidden="true" />
             <span aria-hidden="true">{inventoryCounts?.hint_scrolls || 0}</span>
-            <span className="hidden lg:inline" aria-hidden="true">{t("codeRunner.items.clarityShort")}</span>
+            <span className="hidden 2xl:inline" aria-hidden="true">{t("codeRunner.items.clarityShort")}</span>
           </button>
 
           <button
@@ -463,12 +463,12 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
           >
             <Bot size={14} aria-hidden="true" />
             <span aria-hidden="true">{inventoryCounts?.ai_summons || 0}</span>
-            <span className="hidden lg:inline" aria-hidden="true">{t("codeRunner.items.mentorShort")}</span>
+            <span className="hidden 2xl:inline" aria-hidden="true">{t("codeRunner.items.mentorShort")}</span>
           </button>
         </div>
 
         <div className="flex-1 min-w-0" />
-        <div className="pl-1 pr-2 sm:px-2 flex items-center gap-1.5 sm:gap-2 bg-[#252526] shrink-0">
+        <div className="pl-1 pr-2 sm:px-2 py-0.5 flex items-center gap-1.5 sm:gap-2 bg-[#252526] shrink-0">
           {/* Развернуть редактор на весь экран / свернуть обратно. */}
           <button
             onClick={() => setFullscreen((v) => !v)}
@@ -490,7 +490,7 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
             className="flex items-center gap-1.5 px-2.5 py-2 sm:py-1 rounded border border-[#a0432a] bg-gradient-to-b from-[#7a2b1a] to-[#3a0d06] hover:from-[#8e3420] hover:to-[#4a1208] text-[#f3e6c2] text-xs transition-colors shadow-[inset_0_1px_0_rgba(255,220,140,0.2)]"
           >
             <RotateCcw size={11} />
-            <span className="hidden sm:inline">{t("codeRunner.reset")}</span>
+            <span className="hidden 2xl:inline">{t("codeRunner.reset")}</span>
           </button>
 
           {running ? (

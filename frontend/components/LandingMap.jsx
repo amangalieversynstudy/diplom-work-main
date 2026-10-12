@@ -52,7 +52,7 @@ export default function LandingMap({ missions = [] }) {
         aria-label={t("landing.mapAria")}
         className="overflow-x-auto rounded-[2rem]"
       >
-        <div className="relative h-[240px] sm:h-[280px] min-w-[760px] rounded-[2rem] border-8 border-ink bg-parchment shadow-2xl overflow-hidden">
+        <div className="relative h-[270px] sm:h-[310px] min-w-[760px] rounded-[2rem] border-8 border-ink bg-parchment shadow-2xl overflow-hidden">
           <MapBackdrop />
           <MapTrail d={d} revealed />
 
@@ -78,7 +78,12 @@ export default function LandingMap({ missions = [] }) {
                     <ScrollText size={22} strokeWidth={2.2} aria-hidden="true" />
                   )}
                 </span>
-                <span className="absolute left-1/2 top-full mt-1 w-28 -translate-x-1/2 truncate rounded bg-parchment-light/85 px-1 text-center text-xs font-bold text-ink-deep">
+                {/* подпись переносится на две строки; у нижних узлов уходит над свиток, чтобы не липнуть к краю карты */}
+                <span
+                  className={`absolute left-1/2 w-36 -translate-x-1/2 rounded bg-parchment-light/90 px-1.5 py-0.5 text-center text-xs font-bold leading-tight text-ink-deep line-clamp-2 ${
+                    coords.y > 65 ? "bottom-full mb-1" : "top-full mt-1"
+                  }`}
+                >
                   {item.title}
                 </span>
               </>

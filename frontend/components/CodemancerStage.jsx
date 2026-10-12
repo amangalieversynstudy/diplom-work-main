@@ -401,6 +401,9 @@ export default function CodemancerStage({
         {(!defeated || phase === "finale") && (
           <g transform="translate(452 244)">
             <g className={phase === "finale" ? "cm-enemy-bar-out" : undefined}>
+            <text x="60" y="-6" textAnchor="middle" fontSize="11" fontWeight="700" fill="#cfd6f0">
+              {t(`stage.bosses.${Math.abs(Math.round(enemyHue / 30)) % 4}`)}
+            </text>
             <rect width="120" height="14" rx="4" fill="#1d2336" stroke="#000" strokeOpacity=".4" />
             <rect x="2" y="2" width="116" height="10" rx="3" fill="#c9252a" className="cm-enemy-hp" style={{ transform: `scaleX(${enemyHp / 100})` }} />
             </g>

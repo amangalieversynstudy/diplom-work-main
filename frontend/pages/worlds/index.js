@@ -458,6 +458,9 @@ export default function Worlds() {
                         <p className={`text-xs font-bold uppercase tracking-widest mt-0.5 ${isLocked ? 'text-[#8b5a2b]' : 'text-wax'}`}>
                           {statusLabel}
                         </p>
+                        {isLocked && reason ? (
+                          <p className="mt-0.5 truncate text-xs italic text-ink">{reason}</p>
+                        ) : null}
                       </div>
                     </div>
                   </Link>

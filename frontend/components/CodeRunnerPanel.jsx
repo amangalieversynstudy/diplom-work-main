@@ -509,11 +509,11 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
 
       {/* Breadcrumbs */}
       <div className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 text-xs text-[#cccccc] bg-[#1e1e1e] border-b border-[#333] border-l select-none shadow-sm z-10">
-        <span className="hover:text-white cursor-pointer">rpg-academy</span>
+        <span className="hover:text-white cursor-pointer">{t("codeRunner.crumbRoot")}</span>
         <span className="opacity-50">&gt;</span>
-        <span className="hover:text-white cursor-pointer">mission-{task?.mission || "X"}</span>
+        <span className="hover:text-white cursor-pointer">{t("codeRunner.crumbMission")}</span>
         <span className="opacity-50">&gt;</span>
-        <span className="hover:text-white cursor-pointer">main.py</span>
+        <span className="hover:text-white cursor-pointer">{t("codeRunner.crumbFile")}</span>
       </div>
 
       {/* Editor */}

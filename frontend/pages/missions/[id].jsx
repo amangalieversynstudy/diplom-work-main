@@ -514,6 +514,10 @@ export default function MissionDetail() {
 
   // всё, что можно заработать в миссии: XP шагов плюс бонус за завершение
   const totalXp = (mission.xp_reward || 0) + tasks.reduce((sum, task) => sum + (task.xp_reward || 0), 0);
+  const taskTypeLabel = (type) => {
+    const label = t(`missionPage.stats.types.${type}`);
+    return label.startsWith("missionPage.") ? type : label;
+  };
   const isCodeTask = activeTask?.task_type === "code";
   const showEditor = isCodeTask && mobileTab === "code";
   const activeIndex = tasks.findIndex((task) => task.id === activeTask?.id);
@@ -666,7 +670,7 @@ export default function MissionDetail() {
               </span>
               {activeTask && (
                 <span className="truncate text-right">
-                  <span className="uppercase text-[#fde68a]">{activeTask.task_type}</span>
+                  <span className="uppercase text-[#fde68a]">{taskTypeLabel(activeTask.task_type)}</span>
                   {" · "}
                   {activeTask.estimated_minutes} {t("missionPage.stats.minutesShort")}
                   {taskProgress[activeTask.id]?.attempts > 0 &&
@@ -774,7 +778,7 @@ export default function MissionDetail() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>{t("missionPage.stats.fileType")}</span>
-                    <span className="text-[#fde68a] uppercase font-semibold">{activeTask.task_type}</span>
+                    <span className="text-[#fde68a] uppercase font-semibold">{taskTypeLabel(activeTask.task_type)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>{t("missionPage.stats.timeEstimate")}</span>

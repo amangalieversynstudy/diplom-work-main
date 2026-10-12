@@ -22,10 +22,10 @@ if (typeof window !== "undefined") {
 }
 
 const navLinks = [
-  { href: "/worlds", labelKey: "nav.worlds", icon: Map },
-  { href: "/leaderboard", labelKey: "nav.legends", icon: Trophy },
+  { href: "/worlds", labelKey: "nav.worlds", staffLabelKey: "nav.staffWorlds", icon: Map },
+  { href: "/leaderboard", labelKey: "nav.legends", staffLabelKey: "nav.staffLegends", icon: Trophy },
   { href: "/journey", labelKey: "nav.journey", icon: TrendingUp },
-  { href: "/profile", labelKey: "nav.character", icon: User2 },
+  { href: "/profile", labelKey: "nav.character", staffLabelKey: "nav.staffCharacter", icon: User2 },
   { href: "/class", labelKey: "nav.class", icon: Crown },
 ];
 
@@ -189,9 +189,9 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
     () =>
       navLinks.map((item) => ({
         ...item,
-        label: t(item.labelKey),
+        label: t(isStaff && item.staffLabelKey ? item.staffLabelKey : item.labelKey),
       })),
-    [t]
+    [t, isStaff]
   );
 
   const menuLinks = isStaff

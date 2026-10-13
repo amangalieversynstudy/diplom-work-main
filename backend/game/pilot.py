@@ -7,6 +7,7 @@ into the thesis cover only learners who agreed to the research
 """
 
 import math
+from collections import Counter
 from datetime import timedelta
 from statistics import median
 from types import SimpleNamespace
@@ -18,6 +19,7 @@ from users.models import Profile
 
 from .live import freshness_summary
 from .snapshots import h3_summary
+from .stats import effective_n
 from .metrics import ABANDON_WINDOW_DAYS, _last_activity, compute_metrics
 from .models import CodeRun, LearningEvent, MissionTask, Progress, TaskProgress
 from .services import ARM_OFFER, HELP_AFTER_FAILURES, help_arm
@@ -25,24 +27,30 @@ from .usability import usability_summary
 from .warning import assess_students
 
 MIN_ARM_SIZE = 30  # below this the arm comparison is anecdote, not evidence
+MIN_ARM_LEARNERS = 15  # ...and so is a comparison of pairs that come from fewer learners than this, per arm
 WEEKS = 4
 
 _OWNER = SimpleNamespace(is_superuser=True)  # the researcher sees every course
 
 
-def two_proportions(x1, n1, x2, n2):
+def two_proportions(x1, n1, x2, n2, n_eff1=None, n_eff2=None):
     """Difference of two shares with a 95% interval and a two-sided p-value.
 
     Normal approximation: fine for hundreds of pairs, optimistic for dozens
     (the report says so). ``None`` if either group is empty.
+
+    The shares are over (learner, step) pairs, but pairs of one learner are not independent. Pass the
+    effective sample sizes ``n_eff1``/``n_eff2`` (``game.stats.effective_n`` of the rows per learner) to
+    widen the interval and the p-value accordingly; without them every pair counts as independent.
     """
     if not n1 or not n2:
         return None
     p1, p2 = x1 / n1, x2 / n2
     diff = p1 - p2
-    se = math.sqrt(p1 * (1 - p1) / n1 + p2 * (1 - p2) / n2)
+    m1, m2 = n_eff1 or n1, n_eff2 or n2
+    se = math.sqrt(p1 * (1 - p1) / m1 + p2 * (1 - p2) / m2)
     pooled = (x1 + x2) / (n1 + n2)
-    se0 = math.sqrt(pooled * (1 - pooled) * (1 / n1 + 1 / n2))
+    se0 = math.sqrt(pooled * (1 - pooled) * (1 / m1 + 1 / m2))
     z = diff / se0 if se0 else 0.0
     p_value = math.erfc(abs(z) / math.sqrt(2))
     return {
@@ -109,14 +117,21 @@ def help_experiment(now, learner_ids=None):
         row = progress.get((user_id, task_id))
         solved = bool(row) and row["status"] == "completed"
         bucket = arms.setdefault(
-            arm, {"pairs": 0, "solved": 0, "dropped": 0, "extra": [], "helped": 0, "rescued": 0}
+            arm,
+            {
+                "pairs": 0, "solved": 0, "dropped": 0, "extra": [], "helped": 0, "rescued": 0,
+                "rows": Counter(), "known_rows": Counter(),
+            },
         )
         bucket["pairs"] += 1
         bucket["solved"] += solved
+        bucket["rows"][user_id] += 1
         if solved:
             bucket["extra"].append(max(0, row["attempts"] - HELP_AFTER_FAILURES))
+            bucket["known_rows"][user_id] += 1
         elif last_seen.get(user_id, now - timedelta(days=3650)) < cutoff:
             bucket["dropped"] += 1
+            bucket["known_rows"][user_id] += 1
         bucket["helped"] += any(t > stamp for t in helped_after.get((user_id, task_id), ()))
         bucket["rescued"] += any(t > stamp for t in rescued_after.get((user_id, task_id), ()))
 
@@ -125,6 +140,9 @@ def help_experiment(now, learner_ids=None):
         pairs = b["pairs"]
         result[arm] = {
             "pairs": pairs,
+            "learners": len(b["rows"]),
+            "effective_pairs": round(effective_n(b["rows"]), 1),
+            "effective_known_pairs": round(effective_n(b["known_rows"]), 1),
             "solved": b["solved"],
             "solve_rate": round(100 * b["solved"] / pairs, 1),
             "dropped": b["dropped"],
@@ -139,16 +157,26 @@ def help_experiment(now, learner_ids=None):
             "helped_after_rate": round(100 * b["helped"] / pairs, 1),
             "rescued_after_rate": round(100 * b["rescued"] / pairs, 1),
         }
-    offer, control = arms.get(ARM_OFFER), arms.get("control")
+    offer, control = result.get(ARM_OFFER), result.get("control")
     comparison = None
     if offer and control:
+        # the rows of one learner are one observation in the interval (see two_proportions)
         comparison = {
-            "solved": two_proportions(offer["solved"], offer["pairs"], control["solved"], control["pairs"]),
+            "solved": two_proportions(
+                offer["solved"], offer["pairs"], control["solved"], control["pairs"],
+                offer["effective_pairs"], control["effective_pairs"],
+            ),
             "dropped": two_proportions(
                 offer["dropped"], offer["solved"] + offer["dropped"],
                 control["dropped"], control["solved"] + control["dropped"],
+                offer["effective_known_pairs"], control["effective_known_pairs"],
             ),
-            "enough": min(offer["pairs"], control["pairs"]) >= MIN_ARM_SIZE,
+            "enough": (
+                min(offer["pairs"], control["pairs"]) >= MIN_ARM_SIZE
+                and min(offer["learners"], control["learners"]) >= MIN_ARM_LEARNERS
+            ),
+            "min_pairs": MIN_ARM_SIZE,
+            "min_learners": MIN_ARM_LEARNERS,
         }
     return {"arms": result, "comparison": comparison}
 
@@ -224,6 +252,8 @@ def build_report(now=None):
         "kpi": metrics["kpi"],
         "failure_curve": metrics["failure_curve"],
         "critical_threshold": metrics["critical_threshold"],
+        "critical_point": metrics["critical_point"],
+        "threshold_status": metrics["threshold_status"],
         "ews": {
             "high": sum(a["level"] == "high" for a in warnings.values()),
             "medium": sum(a["level"] == "medium" for a in warnings.values()),
@@ -238,6 +268,25 @@ def build_report(now=None):
 
 def _fmt(value, unit=""):
     return "—" if value is None else f"{value}{unit}"
+
+
+def _threshold_text(report):
+    """The H1 line: estimate and the lower bound of the interval apart, or "too little data"."""
+    meta, point = report["metrics_meta"], report["critical_point"]
+    need = f"нужно не меньше {meta['min_curve_pairs']} пар с известным исходом от {meta['min_curve_learners']} учеников"
+    if report["threshold_status"] == "too_few":
+        return f"мало данных ({need}), вывод не делаем"
+    if point is None:
+        return f"не найден: ни в одной точке с достаточной выборкой не ушло {meta['critical_share']}% и больше"
+    verdict = (
+        "нижняя граница интервала тоже не ниже порога" if point["confirmed"]
+        else f"нижняя граница интервала ниже {meta['critical_share']}%, оценка предварительная"
+    )
+    return (
+        f"{point['failures']} — ушли около {point['dropout_rate']}% "
+        f"(95% ДИ {point['ci_low']}–{point['ci_high']}%, {point['learners']} учеников, "
+        f"{point['known']} пар); {verdict}"
+    )
 
 
 def render_markdown(report):
@@ -264,18 +313,23 @@ def render_markdown(report):
         f"ещё в процессе: {k['missions_in_progress']}).",
         f"- Попыток до успеха (MAS): **{_fmt(k['mean_attempts_to_success'])}**.",
         f"- Отсев по шагам: **{_fmt(k['task_dropout_rate'], '%')}** ({k['steps_dropped']} из {k['steps_known']} с известным исходом; ещё в процессе: {k['steps_in_progress']}).",
-        f"- Критический порог неудач подряд: **{_fmt(report['critical_threshold'])}**"
-        f" (порог {report['metrics_meta']['critical_share']}% ушедших, выборка от {report['metrics_meta']['min_sample']}).",
+        f"- Критический порог неудач подряд: **{_threshold_text(report)}**",
         f"- Список раннего предупреждения сейчас: срочно {report['ews']['high']}, внимание {report['ews']['medium']}.",
         "",
         f"Ушёл = нет активности {report['metrics_meta']['inactive_days']} дней. "
         "Ученики, у которых окно ещё не прошло, в знаменатели не входят (колонка «в процессе»).",
         "",
-        "| Неудач подряд | Дошли | Исход известен | В процессе | Ушли |",
-        "|---|---|---|---|---|",
+        "| Неудач подряд | Дошли | Исход известен | В процессе | Учеников | Ушли | 95% ДИ (по ученикам) |",
+        "|---|---|---|---|---|---|---|",
     ]
     lines += [
-        f"| {c['failures']} | {c['reached']} | {c['known']} | {c['in_progress']} | {_fmt(c['dropout_rate'], '%')} |"
+        f"| {c['failures']} | {c['reached']} | {c['known']} | {c['in_progress']} | {c['learners']} | "
+        + (
+            _fmt(c["dropout_rate"], "%") + " | " + f"{c['ci_low']}–{c['ci_high']}%"
+            if c["enough"]
+            else ("мало данных | —" if c["reached"] else "— | —")
+        )
+        + " |"
         for c in report["failure_curve"]
     ]
     lines += ["", "## Эксперимент с помощью после 3 неудач", ""]
@@ -289,27 +343,33 @@ def render_markdown(report):
         lines.append("Пока никто не дошёл до порога неудач.")
     else:
         lines += [
-            "| Группа | Пар ученик×шаг | Решили | Ушли (из тех, у кого исход известен) | Доп. попыток | Взяли помощь после | Из них бесплатная подсказка |",
-            "|---|---|---|---|---|---|---|",
+            "| Группа | Учеников | Пар ученик×шаг | Решили | Ушли (из тех, у кого исход известен) | Доп. попыток | Взяли помощь после | Из них бесплатная подсказка |",
+            "|---|---|---|---|---|---|---|---|",
         ]
         for arm, a in sorted(experiment["arms"].items()):
             lines.append(
                 f"| {'баннер + бесплатная подсказка' if arm == ARM_OFFER else 'контроль (без баннера и без бесплатной подсказки)'} | "
-                f"{a['pairs']} | {a['solve_rate']}% | {_fmt(a['dropout_rate'], '%')} | {_fmt(a['extra_attempts'])} | "
+                f"{a['learners']} | {a['pairs']} | {a['solve_rate']}% | {_fmt(a['dropout_rate'], '%')} | {_fmt(a['extra_attempts'])} | "
                 f"{a['helped_after_rate']}% | {a['rescued_after_rate']}% |"
             )
         comparison = experiment["comparison"]
-        if comparison:
+        if comparison and not comparison["enough"]:
+            lines.append(
+                f"\n**Мало данных** (в каждой группе нужно не меньше {comparison['min_pairs']} пар "
+                f"и {comparison['min_learners']} учеников): разницу и p-value не показываем, "
+                "таблица выше — наблюдение, а не вывод."
+            )
+        elif comparison:
             for key, title in (("solved", "решили"), ("dropped", "ушли")):
                 c = comparison[key]
                 lines.append(
                     f"\nРазница «баннер + бесплатная подсказка» − «контроль», {title}: {c['diff'] * 100:+.1f} п.п., "
                     f"95% ДИ [{c['ci_low'] * 100:+.1f}; {c['ci_high'] * 100:+.1f}], p = {c['p_value']}."
                 )
-            if not comparison["enough"]:
-                lines.append(
-                    f"\n**Выборка мала** (меньше {MIN_ARM_SIZE} пар в группе): это наблюдение, а не доказательство."
-                )
+            lines.append(
+                "\nИнтервалы и p-value посчитаны с поправкой на кластеры: пары одного ученика считаются "
+                "одним наблюдением (консервативно). Единица рандомизации — ученик."
+            )
         else:
             lines.append("\nКонтрольной группы нет: `HELP_OFFER_SHARE` = 100 или в группе никого.")
     lines += ["", "## H3: ушли ли «срочные» чаще остальных", ""]

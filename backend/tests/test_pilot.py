@@ -127,6 +127,14 @@ def test_two_proportions_edge_cases():
     assert pilot.two_proportions(0, 20, 0, 20)["p_value"] == pytest.approx(1.0)  # no variance
 
 
+def test_clustering_widens_the_interval_but_not_the_estimate():
+    plain = pilot.two_proportions(30, 100, 20, 100)
+    clustered = pilot.two_proportions(30, 100, 20, 100, n_eff1=25, n_eff2=25)
+    assert clustered["diff"] == plain["diff"]
+    assert (clustered["ci_high"] - clustered["ci_low"]) > 1.8 * (plain["ci_high"] - plain["ci_low"])
+    assert clustered["p_value"] > plain["p_value"]
+
+
 # ── the report ──────────────────────────────────────────────────────────────
 
 
@@ -257,6 +265,52 @@ def test_the_report_uses_one_fixed_window_for_leaving(course):
     report = pilot.build_report()
     assert report["metrics_meta"]["inactive_days"] == ABANDON_WINDOW_DAYS == 14
     assert "нет активности 14 дней" in pilot.render_markdown(report)
+
+
+def _arm_with_pairs(prefix, arm, learners, steps_each, quiz_mission, *, solve_every):
+    """``learners`` learners of ``arm``, each failing ``steps_each`` different steps; every ``solve_every``-th solves."""
+    tasks = [
+        MissionTask.objects.create(mission=quiz_mission, order=10 + i, task_type="quiz", data={"correct_answer": "a"})
+        for i in range(steps_each)
+    ]
+    for n in range(learners):
+        user = _consent(_in_arm(arm, prefix=f"{prefix}{n}-"))
+        for task in tasks:
+            _offered(user, task, arm, solved=n % solve_every == 0, attempts=4, gone=n % solve_every != 0)
+
+
+def test_a_comparison_of_few_learners_is_not_a_conclusion(course, settings):
+    settings.HELP_OFFER_SHARE = 50
+    _, mission, _ = course
+    # 40 pairs per arm, but they come from only 4 learners per arm
+    _arm_with_pairs("o", ARM_OFFER, 4, 10, mission, solve_every=2)
+    _arm_with_pairs("c", ARM_CONTROL, 4, 10, mission, solve_every=3)
+    result = pilot.help_experiment(timezone.now())
+    assert min(a["pairs"] for a in result["arms"].values()) >= pilot.MIN_ARM_SIZE
+    assert result["comparison"]["enough"] is False
+    text = pilot.render_markdown(pilot.build_report())
+    assert "Мало данных" in text and "Разница «баннер" not in text
+
+
+def test_a_comparison_with_enough_learners_shows_the_clustered_difference(course, settings):
+    settings.HELP_OFFER_SHARE = 50
+    _, mission, _ = course
+    _arm_with_pairs("o", ARM_OFFER, pilot.MIN_ARM_LEARNERS, 2, mission, solve_every=1)
+    _arm_with_pairs("c", ARM_CONTROL, pilot.MIN_ARM_LEARNERS, 2, mission, solve_every=2)
+    result = pilot.help_experiment(timezone.now())
+    assert result["comparison"]["enough"] is True
+    solved = result["comparison"]["solved"]
+    assert solved["diff"] > 0
+    # 30 pairs but 15 learners with two pairs each: the interval is built on 15 observations
+    assert result["arms"][ARM_OFFER]["effective_pairs"] == pytest.approx(15.0)
+    assert "с поправкой на кластеры" in pilot.render_markdown(pilot.build_report())
+
+
+def test_the_report_says_too_little_data_for_the_threshold_instead_of_a_number(course):
+    report = pilot.build_report()
+    assert report["threshold_status"] == "too_few"
+    text = pilot.render_markdown(report)
+    assert "мало данных" in text and "вывод не делаем" in text
 
 
 def test_the_free_rescue_hint_is_help_after_the_banner_and_is_reported_apart(course):

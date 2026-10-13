@@ -31,6 +31,7 @@ from django.db.models import Count, Max
 from django.utils import timezone
 
 from .models import CodeRun, LearningEvent, MissionTask, Progress, TaskProgress
+from .stats import clustered_share
 
 GRADED_TYPES = ("quiz", "code")
 
@@ -42,8 +43,12 @@ MAX_INACTIVE_DAYS = 60
 
 MAX_FAILURE_STREAK = 8
 CRITICAL_DROPOUT_SHARE = 0.7
-# A threshold backed by fewer pairs than this is noise, not a finding.
+# A cell or a cohort average backed by fewer learners than this is not shown as a number.
 MIN_SAMPLE = 5
+# The failure curve and its critical threshold (H1) need more: fewer known pairs, or pairs from fewer
+# learners, than this and the dashboard says "too little data" instead of a conclusion.
+MIN_CURVE_PAIRS = 20
+MIN_CURVE_LEARNERS = 10
 
 TOP_ERRORS = 8
 
@@ -178,6 +183,8 @@ def _failure_curve(graded_pairs, dropped_pairs):
     first success are consecutive by construction: a success ends the streak.
     Unsolved pairs of learners who are still active have no outcome yet
     (``in_progress``); the share is taken over the pairs with a known outcome.
+    Pairs of one learner are not independent (if they leave, all their open pairs "leave"),
+    so the 95% interval is computed with the learner as the cluster (``game.stats``).
     """
     curve = []
     for k in range(1, MAX_FAILURE_STREAK + 1):
@@ -186,6 +193,9 @@ def _failure_curve(graded_pairs, dropped_pairs):
         dropped = [pair for pair in unsolved if pair in dropped_pairs]
         in_progress = len(unsolved) - len(dropped)
         known = len(reached) - in_progress
+        waiting = {pair for pair in unsolved if pair not in dropped_pairs}
+        sizes = Counter(pair[0] for pair in reached if pair not in waiting)
+        stats = clustered_share(len(dropped), sizes)
         curve.append(
             {
                 "failures": k,
@@ -194,20 +204,39 @@ def _failure_curve(graded_pairs, dropped_pairs):
                 "dropped": len(dropped),
                 "in_progress": in_progress,
                 "known": known,
+                "learners": len(sizes),
                 "dropout_rate": _pct(len(dropped), known),
+                "ci_low": round(100 * stats["ci_low"], 1) if stats else None,
+                "ci_high": round(100 * stats["ci_high"], 1) if stats else None,
+                "enough": known >= MIN_CURVE_PAIRS and len(sizes) >= MIN_CURVE_LEARNERS,
             }
         )
     return curve
 
 
+def _enough(point):
+    """Is the point backed by enough known pairs from enough learners to say anything?"""
+    return (
+        point.get("known", point["reached"]) >= MIN_CURVE_PAIRS
+        and point.get("learners", MIN_CURVE_LEARNERS) >= MIN_CURVE_LEARNERS
+    )
+
+
 def _critical_threshold(curve):
-    """First streak length whose drop-out share reaches the critical level."""
+    """First streak length whose drop-out share reaches the critical level (with enough data)."""
     for point in curve:
-        if point.get("known", point["reached"]) < MIN_SAMPLE or point["dropout_rate"] is None:
+        if not _enough(point) or point["dropout_rate"] is None:
             continue
         if point["dropout_rate"] >= 100 * CRITICAL_DROPOUT_SHARE:
             return point["failures"]
     return None
+
+
+def _threshold_status(curve, threshold):
+    """``found``, ``none`` (enough data, no such point) or ``too_few`` (nothing to conclude from)."""
+    if threshold is not None:
+        return "found"
+    return "none" if any(_enough(point) for point in curve) else "too_few"
 
 
 def compute_metrics(
@@ -394,6 +423,8 @@ def compute_metrics(
         )
 
     curve = _failure_curve(graded_pairs, dropped)
+    threshold = _critical_threshold(curve)
+    critical_point = next((p for p in curve if p["failures"] == threshold), None)
     solved_graded = [attempts[pair] for pair, (_, ok) in graded_pairs.items() if ok]
 
     return {
@@ -405,6 +436,8 @@ def compute_metrics(
             "learners": len(learner_ids),
             "critical_share": int(100 * CRITICAL_DROPOUT_SHARE),
             "min_sample": MIN_SAMPLE,
+            "min_curve_pairs": MIN_CURVE_PAIRS,
+            "min_curve_learners": MIN_CURVE_LEARNERS,
         },
         "kpi": {
             "mission_completion_rate": _pct(completed_total, started_total - missions_in_progress),
@@ -422,7 +455,23 @@ def compute_metrics(
         "funnel": funnel,
         "tasks": task_table,
         "failure_curve": curve,
-        "critical_threshold": _critical_threshold(curve),
+        "critical_threshold": threshold,
+        # the point behind the threshold: the estimate and the interval are reported apart, and
+        # ``confirmed`` says whether even the lower bound reaches the critical share
+        "critical_point": (
+            {
+                "failures": critical_point["failures"],
+                "dropout_rate": critical_point["dropout_rate"],
+                "ci_low": critical_point["ci_low"],
+                "ci_high": critical_point["ci_high"],
+                "known": critical_point["known"],
+                "learners": critical_point["learners"],
+                "confirmed": critical_point["ci_low"] >= 100 * CRITICAL_DROPOUT_SHARE,
+            }
+            if critical_point
+            else None
+        ),
+        "threshold_status": _threshold_status(curve, threshold),
         "help_effect": help_effect,
         "top_errors": [
             {"error_type": row["error_type"], "runs": row["runs"], "learners": row["learners"]}

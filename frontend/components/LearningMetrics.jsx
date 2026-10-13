@@ -120,7 +120,29 @@ export default function LearningMetrics() {
 
   const { kpi, funnel, failure_curve: curve, help_effect: help } = data;
   const threshold = data.critical_threshold;
+  const critical = data.critical_point;
   const share = data.meta.critical_share;
+  // Оценка и нижняя граница интервала — раздельно; при нехватке данных вывода нет.
+  const thresholdText =
+    data.threshold_status === "found" && critical
+      ? `${fill(t("analytics.metrics.threshold.found"), {
+          n: critical.failures,
+          est: critical.dropout_rate,
+          lo: critical.ci_low,
+          hi: critical.ci_high,
+          learners: critical.learners,
+          pairs: critical.known,
+        })} ${
+          critical.confirmed
+            ? fill(t("analytics.metrics.threshold.confirmed"), { share })
+            : fill(t("analytics.metrics.threshold.notConfirmed"), { lo: critical.ci_low, share })
+        }`
+      : data.threshold_status === "too_few"
+      ? fill(t("analytics.metrics.threshold.tooFewAll"), {
+          pairs: data.meta.min_curve_pairs,
+          learners: data.meta.min_curve_learners,
+        })
+      : fill(t("analytics.metrics.threshold.none"), { share });
   const empty = data.meta.learners === 0;
 
   return (
@@ -240,9 +262,7 @@ export default function LearningMetrics() {
                 : "border-border bg-panel text-muted"
             }`}
           >
-            {threshold
-              ? fill(t("analytics.metrics.threshold.found"), { n: threshold, share })
-              : fill(t("analytics.metrics.threshold.none"), { share })}
+            {thresholdText}
           </p>
           <table className="w-full text-sm">
             <thead>
@@ -256,11 +276,16 @@ export default function LearningMetrics() {
               {curve.map((point) => (
                 <tr key={point.failures} className="border-t border-border tabular-nums">
                   <td className="py-1.5 text-text">{point.failures}</td>
-                  <td className="py-1.5 text-right text-muted">{point.reached}</td>
+                  <td className="py-1.5 text-right text-muted">
+                    {point.reached}
+                    {point.reached > 0 ? ` (${point.known})` : ""}
+                  </td>
                   <td className="py-1.5 text-right text-text">
-                    {point.reached > 0 && point.reached < data.meta.min_sample
+                    {point.reached === 0
+                      ? none
+                      : !point.enough
                       ? t("analytics.metrics.threshold.tooFew")
-                      : pct(point.dropout_rate)}
+                      : `${pct(point.dropout_rate)} (${point.ci_low}–${point.ci_high})`}
                   </td>
                 </tr>
               ))}

@@ -174,13 +174,18 @@ export const en = {
       threshold: {
         title: "Critical streak of failures",
         subtitle:
-          "Among learners who failed k times in a row, how many left without solving the step.",
+          "Among learner×step pairs with k failures in a row and a known outcome: how many left without solving the step. The interval accounts for the pairs of one learner not being independent.",
         colFailures: "Failures in a row",
-        colReached: "Reached",
-        colDropout: "Left",
+        colReached: "Reached (outcome known)",
+        colDropout: "Left, % (95% CI)",
         found:
-          "Threshold: after {n} failures in a row at least {share}% of learners leave. Offer help earlier.",
-        none: "No threshold yet: no point with enough data where {share}% or more leave.",
+          "Threshold: after {n} failures in a row about {est}% left (95% CI {lo}-{hi}%; {learners} learners, {pairs} pairs).",
+        confirmed: "The lower bound of the interval is not below {share}%: the threshold is supported by the data.",
+        notConfirmed:
+          "The lower bound of the interval ({lo}%) is below {share}%: this is an estimate, not a confirmed threshold.",
+        none: "No threshold found: no point with enough data where {share}% or more left.",
+        tooFewAll:
+          "Too little data: a conclusion needs at least {pairs} pairs with a known outcome from {learners} learners. No threshold is declared.",
         tooFew: "too little data",
       },
       help: {

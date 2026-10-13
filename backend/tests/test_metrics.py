@@ -9,7 +9,8 @@ from rest_framework.test import APIClient
 
 from game.metrics import (
     CRITICAL_DROPOUT_SHARE,
-    MIN_SAMPLE,
+    MIN_CURVE_LEARNERS,
+    MIN_CURVE_PAIRS,
     _critical_threshold,
     clamp_inactive_days,
 )
@@ -188,27 +189,73 @@ def test_failure_streak_curve(teacher, class_room):
 
 
 def test_critical_threshold_needs_a_real_sample():
-    def point(k, reached, rate):
-        return {"failures": k, "reached": reached, "dropout_rate": rate}
+    def point(k, known, rate, learners=MIN_CURVE_LEARNERS):
+        return {"failures": k, "reached": known, "known": known, "learners": learners, "dropout_rate": rate}
 
     share = 100 * CRITICAL_DROPOUT_SHARE
     curve = [
         point(1, 40, 10.0),
-        point(2, MIN_SAMPLE - 1, 100.0),  # too few pairs to trust
-        point(3, MIN_SAMPLE, share),
-        point(4, MIN_SAMPLE, 100.0),
+        point(2, MIN_CURVE_PAIRS - 1, 100.0),  # too few pairs to trust
+        point(3, MIN_CURVE_PAIRS, 100.0, learners=MIN_CURVE_LEARNERS - 1),  # pairs of too few learners
+        point(4, MIN_CURVE_PAIRS, share),
+        point(5, MIN_CURVE_PAIRS, 100.0),
     ]
-    assert _critical_threshold(curve) == 3
+    assert _critical_threshold(curve) == 4
     assert _critical_threshold([point(1, 40, 10.0), point(2, 20, 30.0)]) is None
+    assert MIN_CURVE_PAIRS >= 20  # five pairs used to be enough; that is noise
+
+
+def test_threshold_status_says_too_little_data_instead_of_no_threshold():
+    from game.metrics import _threshold_status
+
+    few = [{"failures": 1, "reached": 4, "known": 4, "learners": 4, "dropout_rate": 100.0}]
+    enough = [{"failures": 1, "reached": 40, "known": 40, "learners": 20, "dropout_rate": 10.0}]
+    assert _threshold_status(few, None) == "too_few"
+    assert _threshold_status(enough, None) == "none"
+    assert _threshold_status(enough, 1) == "found"
+
+
+def test_five_pairs_do_not_make_a_threshold(teacher):
+    _, _, _, quiz, _ = _course(teacher)
+    gone = timezone.now() - timedelta(days=40)
+    for i in range(5):  # 5 of 5 left after one failure: used to be "threshold found"
+        _try(_user(f"few{i}"), quiz, 3, solved=False, when=gone)
+    data = _get(teacher)
+    assert data["critical_threshold"] is None and data["critical_point"] is None
+    assert data["threshold_status"] == "too_few"
+    assert data["failure_curve"][0]["enough"] is False
 
 
 def test_critical_threshold_found_in_api(teacher):
     _, mission, _, quiz, _ = _course(teacher)
     gone = timezone.now() - timedelta(days=40)
-    for i in range(MIN_SAMPLE):
+    for i in range(MIN_CURVE_PAIRS):
         _try(_user(f"quitter{i}"), quiz, 3, solved=False, when=gone)
     data = _get(teacher)
     assert data["critical_threshold"] == 1  # everyone who failed once left
+    point = data["critical_point"]
+    assert point["dropout_rate"] == 100.0 and point["learners"] == MIN_CURVE_PAIRS
+    assert point["ci_low"] < 100.0 and point["confirmed"] is True  # the lower bound is reported apart
+    assert data["threshold_status"] == "found"
+
+
+def test_the_interval_follows_the_learner_not_the_pair(teacher):
+    """20 pairs from 20 learners vs 20 pairs from 10 learners (two steps each): same share, wider interval."""
+    _, _, _, quiz, code = _course(teacher)
+    gone = timezone.now() - timedelta(days=40)
+    for i in range(MIN_CURVE_PAIRS):
+        _try(_user(f"solo{i}"), quiz, 3, solved=False, when=gone)
+    spread = _get(teacher)["failure_curve"][0]
+    TaskProgress.objects.all().delete()
+    for i in range(MIN_CURVE_PAIRS // 2):
+        learner = _user(f"pair{i}")
+        _try(learner, quiz, 3, solved=False, when=gone)
+        _try(learner, code, 3, solved=False, when=gone)
+    clustered = _get(teacher)["failure_curve"][0]
+    assert spread["known"] == clustered["known"] == MIN_CURVE_PAIRS
+    assert spread["dropout_rate"] == clustered["dropout_rate"] == 100.0
+    assert clustered["learners"] == MIN_CURVE_PAIRS // 2
+    assert clustered["ci_low"] < spread["ci_low"]
 
 
 def test_help_effect_groups(teacher, class_room):

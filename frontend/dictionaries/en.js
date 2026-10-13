@@ -1178,6 +1178,7 @@ export const en = {
       reset: "Reset",
       run: "Run Code",
       stop: "Stop",
+      stopped: "Run stopped.",
       terminal: "Terminal",
       placeholder: "# Write your code here...",
       editorLabel: "Python code editor",

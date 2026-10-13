@@ -24,6 +24,7 @@ import { getTokens } from "../lib/auth";
 import { useI18n } from "../lib/i18n";
 import { indentAction, newlineAction } from "../lib/editorKeys";
 import { createTracker } from "../lib/provenance";
+import { isAccidentalStop } from "../lib/runGuard";
 import { detectErrorType } from "../lib/errorHelp";
 import Terminal from "./Terminal";
 import AIMentorChat from "./AIMentorChat";
@@ -80,6 +81,10 @@ function CodeRunnerPanel(
   const { t } = useI18n();
   const termRef = useRef(null);
   const wsRef = useRef(null);
+  // синхронная защита от двойного щелчка: state `running` обновляется только после рендера
+  const runLockRef = useRef(false);
+  const runStartedAtRef = useRef(0);
+  const userStoppedRef = useRef(false);
   const [running, setRunning] = useState(false);
   const [lastExit, setLastExit] = useState(null);
   const [usingItem, setUsingItem] = useState(false);
@@ -159,15 +164,19 @@ function CodeRunnerPanel(
   };
 
   const stopRun = useCallback(() => {
+    // Двойной щелчок по «Запустить»: второй клик попадает на «Стоп» и отменял бы запуск.
+    if (isAccidentalStop(runStartedAtRef.current, Date.now())) return;
+    userStoppedRef.current = true;
     if (wsRef.current) {
       try { wsRef.current.close(); } catch { /* noop */ }
       wsRef.current = null;
     }
+    runLockRef.current = false;
     setRunning(false);
   }, []);
 
   const runCode = useCallback(() => {
-    if (running) return;
+    if (running || runLockRef.current) return;
 
     const { access } = getTokens();
     if (!access) {
@@ -187,6 +196,9 @@ function CodeRunnerPanel(
       `${ANSI_CYAN}user@academy:~$${ANSI_RESET} python main.py\r\n${ANSI_DIM}─────────────────────────────────────────${ANSI_RESET}\r\n`
     );
 
+    runLockRef.current = true;
+    runStartedAtRef.current = Date.now();
+    userStoppedRef.current = false;
     setRunning(true);
     setLastExit(null);
     onRunStateChange?.("running");
@@ -196,6 +208,7 @@ function CodeRunnerPanel(
       ws = new WebSocket(wsUrl);
     } catch (err) {
       term?.write(`${ANSI_RED}[connect failed] ${err?.message || err}${ANSI_RESET}\r\n`);
+      runLockRef.current = false;
       setRunning(false);
       return;
     }
@@ -271,11 +284,18 @@ function CodeRunnerPanel(
       }
     };
 
-    ws.onerror = () => { term?.write(`\r\n${ANSI_RED}[ws error]${ANSI_RESET}\r\n`); };
+    ws.onerror = () => {
+      if (userStoppedRef.current) return;
+      term?.write(`\r\n${ANSI_RED}[ws error]${ANSI_RESET}\r\n`);
+    };
 
     ws.onclose = (ev) => {
       wsRef.current = null;
+      runLockRef.current = false;
       setRunning(false);
+      if (userStoppedRef.current && !exited) {
+        term?.write(`\r\n${ANSI_DIM}${t("codeRunner.stopped")}${ANSI_RESET}\r\n`);
+      }
       // 4403 = refused (locked task), 4409 = a run is already going, 4429 = too many runs
       if (!exited && (ev.code === 4401 || ev.code === 4403 || ev.code === 4409 || ev.code === 4429)) {
         // refused before the code ran: no "exit" event will come

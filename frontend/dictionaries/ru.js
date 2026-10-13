@@ -1178,6 +1178,7 @@ export const ru = {
       reset: "Сбросить",
       run: "Запустить",
       stop: "Остановить",
+      stopped: "Запуск остановлен.",
       terminal: "Терминал",
       placeholder: "# Напиши свой код здесь...",
       editorLabel: "Редактор кода на Python",

@@ -1,8 +1,9 @@
-"""In-process daily scheduler: runs ``send_streak_reminders`` once a day.
+"""In-process daily scheduler: runs ``send_streak_reminders`` and ``snapshot_early_warning`` once a day.
 
 A daemon thread (started only when ``ENABLE_STREAK_SCHEDULER=1``) wakes at the
-configured UTC hour and runs the command. Sends are idempotent per day, so a
-missed or duplicated run is harmless.
+configured UTC hour and runs the commands. Both are idempotent per day (reminders
+are stamped, the snapshot is one row per learner per date), so a missed or
+duplicated run is harmless.
 """
 
 import logging
@@ -29,10 +30,12 @@ def _seconds_until(hour, minute, *, now=None):
 def _run_once():
     from django.core.management import call_command
 
-    try:
-        call_command("send_streak_reminders")
-    except Exception:  # noqa: BLE001 — a failure must never kill the loop
-        logger.exception("send_streak_reminders failed")
+    # each job on its own: one failing must not stop the other, nor the loop
+    for command in ("send_streak_reminders", "snapshot_early_warning"):
+        try:
+            call_command(command)
+        except Exception:  # noqa: BLE001
+            logger.exception("%s failed", command)
 
 
 def _loop(hour, minute):

@@ -31,6 +31,8 @@ from .models import CodeRun, LearningEvent, MissionTask, Progress, TaskProgress
 
 GRADED_TYPES = ("quiz", "code")
 
+# One definition of "left" for the dashboard, the pilot report and the H3 outcome: no sign of life for this long.
+ABANDON_WINDOW_DAYS = 14
 DEFAULT_INACTIVE_DAYS = 7
 MIN_INACTIVE_DAYS = 1
 MAX_INACTIVE_DAYS = 60

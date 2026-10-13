@@ -62,10 +62,17 @@ def _scoped_learners(viewer):
 scoped_learners = _scoped_learners  # public name for the teacher's per-student screen
 
 
-def assess_students(viewer, *, now=None):
-    """{user_id: assessment} for every learner in the viewer's scope."""
+def assess_students(viewer, *, now=None, consented_only=False):
+    """{user_id: assessment} for every learner in the viewer's scope.
+
+    ``consented_only`` keeps just the learners who agreed to the research (the pilot report and the
+    daily snapshots use it; the teacher's own list does not need consent).
+    """
     now = now or timezone.now()
-    students = list(_scoped_learners(viewer).select_related("profile"))
+    scope = _scoped_learners(viewer)
+    if consented_only:
+        scope = scope.filter(profile__research_consent=True)
+    students = list(scope.select_related("profile"))
     learner_ids = [student.pk for student in students]
     # three wrong guesses at an "explain" question say little about being stuck: leave them out
     tasks = {task.pk: task for task in scoped_tasks(viewer) if task.kind != "explain"}

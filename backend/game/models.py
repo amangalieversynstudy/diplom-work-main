@@ -631,3 +631,29 @@ class UsabilityResponse(models.Model):
 
     def __str__(self):
         return f"{self.user_id}: SUS {self.score:.1f}"
+
+
+class EarlyWarningSnapshot(models.Model):
+    """The early-warning list as it stood on one day (the data behind hypothesis H3).
+
+    The list is computed on demand and nothing else keeps yesterday's version, so "were the learners marked
+    urgent the ones who left?" could not be answered afterwards. One row per learner per day, written once a
+    day by ``snapshot_early_warning``; only learners who agreed to the research (``research_consent``) are
+    stored, and only the level, score and reason *codes* (no names, steps or code).
+    """
+
+    date = models.DateField(db_index=True)
+    user = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name="warning_snapshots")
+    level = models.CharField(max_length=8)  # high | medium | ok
+    score = models.PositiveSmallIntegerField(default=0)
+    reasons = models.JSONField(default=list, blank=True)  # codes only: stuck_task, inactive, model_risk
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date", "user_id"]
+        constraints = [
+            models.UniqueConstraint(fields=["date", "user"], name="one_warning_snapshot_per_learner_per_day"),
+        ]
+
+    def __str__(self):
+        return f"{self.date}:{self.user_id}:{self.level}"

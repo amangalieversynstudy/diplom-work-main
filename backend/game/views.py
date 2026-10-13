@@ -65,6 +65,7 @@ from .models import (
 )
 from .permissions import IsSuperUser
 from .variants import personalize
+from .metrics import _last_activity
 from .warning import assess_students
 from .serializers import (
     LeaderboardEntrySerializer,
@@ -1117,15 +1118,16 @@ class TeacherStudentsView(APIView):
         # работе. Попытки миссии (Progress.attempts) для этого не годятся: это
         # число стартов, а не ошибок.
         warnings = assess_students(request.user, now=now)
+        rows = list(rows)
+        # «Активность» считается так же, как в списке раннего предупреждения: любые события, запуски кода,
+        # попытки и старты/завершения миссий, а не только старт и завершение миссии.
+        activity = _last_activity([s.id for s in rows])
         students = []
         stuck_count = 0
         active_week = 0
         for s in rows:
             profile = getattr(s, "profile", None)
-            last_active = max(
-                [t for t in (s.last_completed, s.last_started) if t],
-                default=None,
-            )
+            last_active = activity.get(s.id)
             warning = warnings.get(s.id)
             codes = {r["code"] for r in warning["reasons"]} if warning else set()
             stuck = bool(warning) and warning["level"] != "ok"

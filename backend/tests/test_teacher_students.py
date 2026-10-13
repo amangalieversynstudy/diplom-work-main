@@ -227,3 +227,20 @@ def test_summary_counts_stuck_and_active_week():
     assert summary["total_students"] == 2
     assert summary["stuck_count"] == 1
     assert summary["active_week"] == 1  # only the recent one
+
+
+@pytest.mark.django_db
+def test_activity_counts_solving_steps_not_only_starting_missions():
+    """Started a mission 10 days ago but solves its steps every day: active, like in the warning list."""
+    learner = _student("steady")
+    mission = _mission("C")
+    _open_progress(learner, mission, last_started=timezone.now() - timedelta(days=10))
+    step = MissionTask.objects.create(mission=mission, order=1, task_type="quiz")
+    TaskProgress.objects.create(
+        user=learner, task=step, attempts=2, status="in_progress", last_submitted_at=timezone.now()
+    )
+    body = _staff_client().get(URL).json()
+    assert body["summary"]["active_week"] == 1
+    row = body["students"][0]
+    assert row["last_active"] is not None
+    assert (timezone.now() - timezone.datetime.fromisoformat(row["last_active"])).days == 0

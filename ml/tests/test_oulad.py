@@ -112,3 +112,13 @@ def test_leaving_before_the_window_ends_is_leakage_not_forecasting(directory):
 def test_missing_files_are_reported_clearly(tmp_path):
     with pytest.raises(FileNotFoundError, match="OULAD"):
         oulad.build_snapshots(tmp_path)
+
+
+def test_question_mark_is_a_missing_value(directory):
+    """Real OULAD writes missing dates as "?"; that must not turn the column into text."""
+    path = directory / "studentRegistration.csv"
+    text = path.read_text().replace(",\n", ",?\n")
+    path.write_text(text)
+    assert "?" in text
+    table = oulad.build_snapshots(directory, window_days=28)
+    assert len(table) == 4  # the student who left on day 10 is still dropped

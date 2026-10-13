@@ -29,7 +29,7 @@ def _read(directory, name, **kwargs):
     path = Path(directory) / name
     if not path.exists():
         raise FileNotFoundError(f"{path} not found - is this the OULAD directory?")
-    return pd.read_csv(path, **kwargs)
+    return pd.read_csv(path, na_values=["?"], **kwargs)
 
 
 def build_snapshots(directory, window_days=28):

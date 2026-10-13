@@ -204,7 +204,7 @@ if (loading) {
 
         <div className="grid md:grid-cols-3 gap-8">
           {/* Hero column - avatar & stats */}
-          <div className="md:col-span-1 space-y-6">
+          <div className="md:col-span-1 min-w-0 space-y-6">
             <Card variant="scroll" className="text-center">
               <div className="mx-auto mb-4 flex justify-center">
                 <ClassPortrait
@@ -213,7 +213,7 @@ if (loading) {
                   label={profile?.class_role ? t(`profile.classes.${profile.class_role}`) : undefined}
                 />
               </div>
-              <h2 className="font-title text-2xl text-text mb-1">
+              <h2 className="font-title text-2xl text-text mb-1 [overflow-wrap:anywhere]">
                 {profile?.username || t("profile.unknownPlayer")}
               </h2>
               {profile?.class_role && (
@@ -300,7 +300,7 @@ if (loading) {
           </div>
 
           {/* Правая колонка - Настройки */}
-          <div className="md:col-span-2 space-y-6">
+          <div className="md:col-span-2 min-w-0 space-y-6">
             <Card variant="scroll">
               <details className="group">
                 <summary className="flex cursor-pointer list-none items-center justify-between [&::-webkit-details-marker]:hidden">

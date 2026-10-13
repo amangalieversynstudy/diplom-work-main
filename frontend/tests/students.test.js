@@ -62,3 +62,17 @@ test("sort by completed ties keep the original order; input is not mutated", () 
 test("non-array input gives an empty list", () => {
   assert.deepEqual(filterAndSortStudents(undefined, { query: "a" }), []);
 });
+
+// ── пустой список «Кому нужна помощь» ───────────────────────────────────────
+
+const emptySource = fs
+  .readFileSync(path.join(__dirname, "..", "lib", "students.js"), "utf8")
+  .replace(/^export /gm, "");
+const { warningEmptyState } = new Function(`${emptySource}; return { warningEmptyState };`)();
+
+test("an empty warning list is 'all clear' only when there is data behind it", () => {
+  assert.equal(warningEmptyState({ total: 0, with_activity: 0 }), "noStudents");
+  assert.equal(warningEmptyState({ total: 12, with_activity: 0 }), "noData");
+  assert.equal(warningEmptyState({ total: 12, with_activity: 3 }), "clear");
+  assert.equal(warningEmptyState(undefined), "noStudents");
+});

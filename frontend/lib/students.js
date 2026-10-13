@@ -28,6 +28,19 @@ function timeOrNull(value) {
   return Number.isNaN(ts) ? null : ts;
 }
 
+/**
+ * Что сказать, когда список «Кому нужна помощь» пуст. «Никому не нужна помощь» честно только тогда,
+ * когда за этим есть данные: ученики есть и хоть кто-то что-то делал. Иначе пустой список означает
+ * «проверять некого» или «данных пока нет».
+ * @returns {"noStudents" | "noData" | "clear"}
+ */
+export function warningEmptyState(summary) {
+  const total = Number(summary?.total) || 0;
+  if (total === 0) return "noStudents";
+  if (!(Number(summary?.with_activity) > 0)) return "noData";
+  return "clear";
+}
+
 export const SORT_KEYS = ["name", "xp", "completed", "lastActive"];
 
 // Значение для сравнения; null означает «нет данных» и всегда уходит в конец.

@@ -199,7 +199,7 @@ def test_levels_follow_the_rules(teacher, course):
         "gone": "medium",
         "gone_and_stuck": "high",
     }
-    assert body["summary"] == {"total": 7, "high": 2, "medium": 2}
+    assert body["summary"] == {"total": 7, "with_activity": 7, "high": 2, "medium": 2}
 
 
 def test_reasons_explain_the_flag(teacher, course):
@@ -290,3 +290,23 @@ def test_an_old_failure_on_a_step_no_longer_counts_as_stuck(course):
     TaskProgress.objects.filter(user=student).update(last_submitted_at=now - timedelta(days=2))
     assessed = assess_students(teacher, now=now)[student.pk]
     assert assessed["level"] == "medium" and assessed["reasons"][0]["code"] == "stuck_task"
+
+
+def test_summary_tells_apart_no_learners_no_data_and_all_clear(course, teacher):
+    from game.warning import early_warning
+
+    assert early_warning(teacher)["summary"] == {"total": 0, "with_activity": 0, "high": 0, "medium": 0}
+
+    mission, *_ = course
+    student = _user("quiet")
+    now = timezone.now()
+    Progress.objects.create(
+        user=student, mission=mission, status="in_progress", completed=True,
+        started_at=None, last_started_at=None,
+    )
+    summary = early_warning(teacher)["summary"]
+    assert summary["total"] == 1 and summary["with_activity"] == 0  # a learner, but nothing done yet
+
+    LearningEvent.objects.create(user=student, event_type="login")
+    summary = early_warning(teacher, now=now)["summary"]
+    assert summary["total"] == 1 and summary["with_activity"] == 1 and summary["high"] == summary["medium"] == 0

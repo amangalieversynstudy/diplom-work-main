@@ -260,7 +260,9 @@ export const en = {
       title: "Who needs help right now",
       subtitle:
         "Early warning list: learners who are stuck on a step or have gone quiet with unfinished work.",
-      empty: "Nobody needs help right now.",
+      empty: "Nobody needs help right now. Learners checked: {n}.",
+      noStudents: "No learners in your courses yet, nobody to check.",
+      noData: "No data yet: learners have not done anything, the list will appear when they start.",
       high: "Urgent",
       medium: "Attention",
       reasonStuck: "{n} failures in a row: “{task}” ({mission})",

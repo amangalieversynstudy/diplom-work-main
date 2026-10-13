@@ -11,7 +11,7 @@ import {
   Profile as ProfileAPI,
 } from "../lib/api";
 import logger from "../lib/logger";
-import { filterAndSortStudents } from "../lib/students";
+import { filterAndSortStudents, warningEmptyState } from "../lib/students";
 import { useI18n } from "../lib/i18n";
 import {
   AlertTriangle,
@@ -96,6 +96,7 @@ const fill = (template, values) =>
 function EarlyWarningPanel({ warning, t }) {
   const students = warning?.students || [];
   const rules = warning?.rules;
+  const emptyState = warningEmptyState(warning?.summary);
   const reasonText = (reason) => {
     if (reason.code === "stuck_task") {
       return fill(t("teacher.warning.reasonStuck"), {
@@ -128,7 +129,9 @@ function EarlyWarningPanel({ warning, t }) {
 
       {students.length === 0 ? (
         <p className="text-sm text-muted py-4 text-center">
-          {t("teacher.warning.empty")}
+          {emptyState === "clear"
+            ? fill(t("teacher.warning.empty"), { n: warning?.summary?.total })
+            : t(`teacher.warning.${emptyState}`)}
         </p>
       ) : (
         <ul className="space-y-2">

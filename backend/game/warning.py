@@ -164,6 +164,8 @@ def early_warning(viewer, *, now=None):
         "students": at_risk,
         "summary": {
             "total": len(everyone),
+            # learners who did anything at all: an empty list is only good news when there is data behind it
+            "with_activity": sum(a["last_active"] is not None for a in everyone.values()),
             "high": sum(a["level"] == "high" for a in at_risk),
             "medium": sum(a["level"] == "medium" for a in at_risk),
         },

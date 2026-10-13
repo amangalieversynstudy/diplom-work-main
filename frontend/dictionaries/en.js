@@ -138,6 +138,9 @@ export const en = {
       subtitle:
         "Key indicators for your courses: mission completion, attempts to success and drop-out by step.",
       windowLabel: "Count as gone after days of inactivity",
+      windowHelp:
+        "\u201cGone\u201d means no activity on the platform for {n} days. Learners whose window has not passed yet are left out of the drop-out, curve and completion shares: their outcome is not known yet.",
+      inProgressNote: "Still in progress: {steps} steps, {missions} missions.",
       exportCsv: "Download CSV",
       loadFailed: "Could not load the metrics.",
       empty: "No data yet: learners have not opened any steps of your courses.",
@@ -145,11 +148,11 @@ export const en = {
       inSample: "in the sample",
       kpi: {
         mcr: "Mission completion",
-        mcrHint: "Share of learners who started a mission and finished it",
+        mcrHint: "Of those who started a mission and have a known outcome (finished or gone), the share who finished",
         mas: "Attempts to success",
         masHint: "Mean over the quiz and code steps that were solved",
         dropout: "Step drop-out",
-        dropoutHint: "Opened a step, did not solve it and stopped coming",
+        dropoutHint: "Of steps with a known outcome: not solved and the learner stopped coming",
       },
       funnel: {
         title: "Funnel: story → quiz → code → explanation",

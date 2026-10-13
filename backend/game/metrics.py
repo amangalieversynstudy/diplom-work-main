@@ -2,16 +2,19 @@
 
 Definitions (they are also written in ``docs/METRICS.md`` and must stay in sync):
 
-* **Mission Completion Rate (MCR)** - of the learners who *started* a mission,
-  the share who completed it.
+* **Mission Completion Rate (MCR)** - of the learners who started a mission *and
+  have a known outcome* (completed it, or are gone), the share who completed it.
 * **Mean Attempts to Success (MAS)** - for quiz/code steps, the mean number of
   counted attempts (up to and including the first success) over the learners who
   solved the step. Story steps are not graded, so they have no MAS.
-* **Task Drop-out Rate** - of the learners who *opened* a step, the share who did
-  not solve it and have been inactive on the platform for ``inactive_days``.
-  Learners who are still active are neither counted as dropped nor as solved.
+* **Task Drop-out Rate** - of the (learner, step) pairs with a *known outcome*
+  (solved, or not solved and the learner has been inactive for ``inactive_days``),
+  the share that was dropped. Pairs of learners who are still active have not
+  finished their observation window yet: they are censored, counted apart as
+  "in progress" and left out of every denominator.
 * **Failure streak curve** - for k = 1, 2, ...: among (learner, step) pairs that
-  reached k failed attempts in a row, the share that ended in drop-out. The first
+  reached k failed attempts in a row and have a known outcome, the share that ended
+  in drop-out. The first
   k where that share reaches ``CRITICAL_DROPOUT_SHARE`` is the "critical
   threshold" after which help must be offered.
 
@@ -33,7 +36,7 @@ GRADED_TYPES = ("quiz", "code")
 
 # One definition of "left" for the dashboard, the pilot report and the H3 outcome: no sign of life for this long.
 ABANDON_WINDOW_DAYS = 14
-DEFAULT_INACTIVE_DAYS = 7
+DEFAULT_INACTIVE_DAYS = ABANDON_WINDOW_DAYS  # the dashboard selector may move it; the pilot report may not
 MIN_INACTIVE_DAYS = 1
 MAX_INACTIVE_DAYS = 60
 
@@ -173,19 +176,25 @@ def _failure_curve(graded_pairs, dropped_pairs):
 
     ``graded_pairs`` maps a pair to ``(failures, solved)``. Failures before the
     first success are consecutive by construction: a success ends the streak.
+    Unsolved pairs of learners who are still active have no outcome yet
+    (``in_progress``); the share is taken over the pairs with a known outcome.
     """
     curve = []
     for k in range(1, MAX_FAILURE_STREAK + 1):
         reached = [pair for pair, (fails, _) in graded_pairs.items() if fails >= k]
         unsolved = [pair for pair in reached if not graded_pairs[pair][1]]
         dropped = [pair for pair in unsolved if pair in dropped_pairs]
+        in_progress = len(unsolved) - len(dropped)
+        known = len(reached) - in_progress
         curve.append(
             {
                 "failures": k,
                 "reached": len(reached),
                 "unsolved": len(unsolved),
                 "dropped": len(dropped),
-                "dropout_rate": _pct(len(dropped), len(reached)),
+                "in_progress": in_progress,
+                "known": known,
+                "dropout_rate": _pct(len(dropped), known),
             }
         )
     return curve
@@ -194,7 +203,7 @@ def _failure_curve(graded_pairs, dropped_pairs):
 def _critical_threshold(curve):
     """First streak length whose drop-out share reaches the critical level."""
     for point in curve:
-        if point["reached"] < MIN_SAMPLE or point["dropout_rate"] is None:
+        if point.get("known", point["reached"]) < MIN_SAMPLE or point["dropout_rate"] is None:
             continue
         if point["dropout_rate"] >= 100 * CRITICAL_DROPOUT_SHARE:
             return point["failures"]
@@ -299,17 +308,22 @@ def compute_metrics(
                 "solve_rate": _pct(stats["solved"], stats["opened"]),
                 "mas": _mean(stats["tries"]),
                 "dropped": stats["dropped"],
-                "dropout_rate": _pct(stats["dropped"], stats["opened"]),
+                # unsolved but the learner is still active: no outcome yet, kept out of the denominator
+                "in_progress": stats["opened"] - stats["solved"] - stats["dropped"],
+                "known": stats["solved"] + stats["dropped"],
+                "dropout_rate": _pct(stats["dropped"], stats["solved"] + stats["dropped"]),
                 "help_rate": _pct(stats["helped"], stats["opened"]),
                 "top_error": top_error[0][0] if top_error else "",
             }
         )
 
     # ── mission level ───────────────────────────────────────────────────────
-    by_mission = defaultdict(lambda: {"started": 0, "completed": 0})
+    by_mission = defaultdict(lambda: {"started": 0, "completed": 0, "abandoned": 0})
     for row in mission_rows:
         by_mission[row["mission_id"]]["started"] += 1
         by_mission[row["mission_id"]]["completed"] += bool(row["completed"])
+        # not finished and the learner is gone: a known failure; not finished but active: still going
+        by_mission[row["mission_id"]]["abandoned"] += not row["completed"] and row["user_id"] in inactive
     mission_titles = {}
     for task in tasks:
         mission_titles.setdefault(task.mission_id, _title(task.mission))
@@ -319,14 +333,19 @@ def compute_metrics(
             "title": mission_titles[mission_id],
             "started": by_mission[mission_id]["started"],
             "completed": by_mission[mission_id]["completed"],
+            "in_progress": by_mission[mission_id]["started"]
+            - by_mission[mission_id]["completed"]
+            - by_mission[mission_id]["abandoned"],
             "completion_rate": _pct(
-                by_mission[mission_id]["completed"], by_mission[mission_id]["started"]
+                by_mission[mission_id]["completed"],
+                by_mission[mission_id]["completed"] + by_mission[mission_id]["abandoned"],
             ),
         }
         for mission_id in mission_ids
     ]
     started_total = sum(m["started"] for m in missions)
     completed_total = sum(m["completed"] for m in missions)
+    missions_in_progress = sum(m["in_progress"] for m in missions)
 
     # ── by step type (the Story -> Quiz -> Code funnel) ─────────────────────
     funnel = []
@@ -340,7 +359,10 @@ def compute_metrics(
                 "opened": opened_n,
                 "solved": sum(row["solved"] for row in rows),
                 "dropped": sum(row["dropped"] for row in rows),
-                "dropout_rate": _pct(sum(row["dropped"] for row in rows), opened_n),
+                "in_progress": sum(row["in_progress"] for row in rows),
+                "dropout_rate": _pct(
+                    sum(row["dropped"] for row in rows), sum(row["known"] for row in rows)
+                ),
                 "mas": _mean(
                     tries
                     for task in tasks
@@ -357,6 +379,7 @@ def compute_metrics(
     help_effect = []
     for name, pairs in groups.items():
         solved_pairs = [pair for pair in pairs if pair in solved]
+        gone = sum(pair in dropped for pair in pairs)
         help_effect.append(
             {
                 "group": name,
@@ -365,7 +388,8 @@ def compute_metrics(
                 "solved": len(solved_pairs),
                 "solve_rate": _pct(len(solved_pairs), len(pairs)),
                 "mas": _mean(attempts[pair] for pair in solved_pairs),
-                "dropout_rate": _pct(sum(pair in dropped for pair in pairs), len(pairs)),
+                "in_progress": len(pairs) - len(solved_pairs) - gone,
+                "dropout_rate": _pct(gone, len(solved_pairs) + gone),
             }
         )
 
@@ -383,13 +407,16 @@ def compute_metrics(
             "min_sample": MIN_SAMPLE,
         },
         "kpi": {
-            "mission_completion_rate": _pct(completed_total, started_total),
+            "mission_completion_rate": _pct(completed_total, started_total - missions_in_progress),
             "missions_started": started_total,
             "missions_completed": completed_total,
+            "missions_in_progress": missions_in_progress,
             "mean_attempts_to_success": _mean(solved_graded),
-            "task_dropout_rate": _pct(len(dropped), len(opened)),
+            "task_dropout_rate": _pct(len(dropped), len(solved & opened) + len(dropped)),
             "steps_opened": len(opened),
             "steps_dropped": len(dropped),
+            "steps_in_progress": len(opened) - len(solved & opened) - len(dropped),
+            "steps_known": len(solved & opened) + len(dropped),
         },
         "missions": missions,
         "funnel": funnel,
@@ -415,6 +442,7 @@ CSV_COLUMNS = (
     "solve_rate",
     "mas",
     "dropped",
+    "in_progress",
     "dropout_rate",
     "help_rate",
     "top_error",

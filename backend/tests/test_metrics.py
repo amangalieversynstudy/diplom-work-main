@@ -107,21 +107,25 @@ def _get(user, **params):
 
 def test_kpi_formulas(teacher, class_room):
     kpi = _get(teacher)["kpi"]
-    assert kpi["mission_completion_rate"] == 50.0  # 2 of 4 started
+    # D is still active, so D's mission and step have no outcome yet and stay out of the denominators
+    assert kpi["mission_completion_rate"] == 66.7  # 2 completed, 1 abandoned (C); D in progress
+    assert kpi["missions_started"] == 4 and kpi["missions_in_progress"] == 1
     assert kpi["mean_attempts_to_success"] == 2.0  # (1 + 3) / 2, unsolved ignored
     assert kpi["steps_opened"] == 4
     assert kpi["steps_dropped"] == 1  # only C is both unsolved and gone
-    assert kpi["task_dropout_rate"] == 25.0
+    assert kpi["steps_in_progress"] == 1 and kpi["steps_known"] == 3
+    assert kpi["task_dropout_rate"] == 33.3  # 1 of 3 known outcomes
 
 
 def test_task_row_and_funnel(teacher, class_room):
     data = _get(teacher)
     row = next(r for r in data["tasks"] if r["task_id"] == class_room["quiz"].pk)
-    assert (row["opened"], row["solved"], row["dropped"]) == (4, 2, 1)
+    assert (row["opened"], row["solved"], row["dropped"], row["in_progress"]) == (4, 2, 1, 1)
+    assert row["dropout_rate"] == 33.3
     assert row["solve_rate"] == 50.0
     assert row["mas"] == 2.0
     quiz_step = next(f for f in data["funnel"] if f["task_type"] == "quiz")
-    assert quiz_step["dropout_rate"] == 25.0
+    assert quiz_step["dropout_rate"] == 33.3 and quiz_step["in_progress"] == 1
     story_step = next(f for f in data["funnel"] if f["task_type"] == "story")
     assert story_step["opened"] == 0 and story_step["mas"] is None
 
@@ -131,13 +135,43 @@ def test_active_learner_is_not_a_dropout_until_inactive_window_passes(
 ):
     d = class_room["users"][3]
     assert _get(teacher)["kpi"]["steps_dropped"] == 1
-    TaskProgress.objects.filter(user=d).update(
-        last_submitted_at=timezone.now() - timedelta(days=10)
-    )
-    Progress.objects.filter(user=d).update(
-        last_started_at=timezone.now() - timedelta(days=10)
-    )
-    assert _get(teacher)["kpi"]["steps_dropped"] == 2
+    for days_ago, expected in ((10, 1), (20, 2)):  # the default window is 14 days
+        TaskProgress.objects.filter(user=d).update(
+            last_submitted_at=timezone.now() - timedelta(days=days_ago)
+        )
+        Progress.objects.filter(user=d).update(
+            last_started_at=timezone.now() - timedelta(days=days_ago)
+        )
+        assert _get(teacher)["kpi"]["steps_dropped"] == expected
+    assert _get(teacher, inactive_days=7)["meta"]["inactive_days"] == 7
+
+
+def test_the_default_window_is_the_one_used_for_the_hypotheses(teacher, class_room):
+    from game.metrics import ABANDON_WINDOW_DAYS
+
+    assert ABANDON_WINDOW_DAYS == 14
+    assert _get(teacher)["meta"]["inactive_days"] == ABANDON_WINDOW_DAYS
+
+
+def test_learners_inside_their_window_are_not_in_any_denominator(teacher):
+    """Ten learners failed a step; nine are still around. Only the one who left has a known outcome."""
+    _, mission, _, quiz, _ = _course(teacher)
+    gone = timezone.now() - timedelta(days=40)
+    _try(_user("left"), quiz, 3, solved=False, when=gone)
+    _mission_row(User.objects.get(username="left"), mission, completed=False)
+    Progress.objects.filter(user__username="left").update(last_started_at=gone, started_at=gone)
+    for i in range(9):
+        learner = _user(f"here{i}")
+        _try(learner, quiz, 3, solved=False)
+        _mission_row(learner, mission, completed=False)
+    data = _get(teacher)
+    kpi = data["kpi"]
+    assert (kpi["steps_dropped"], kpi["steps_in_progress"], kpi["steps_known"]) == (1, 9, 1)
+    assert kpi["task_dropout_rate"] == 100.0  # not 10%: the nine have not had time to leave
+    assert kpi["mission_completion_rate"] == 0.0 and kpi["missions_in_progress"] == 9
+    point = data["failure_curve"][0]
+    assert (point["reached"], point["known"], point["in_progress"]) == (10, 1, 9)
+    assert point["dropout_rate"] == 100.0
     # a longer patience window turns them back into "still around"
     assert _get(teacher, inactive_days=14)["kpi"]["steps_dropped"] == 1
 
@@ -145,7 +179,9 @@ def test_active_learner_is_not_a_dropout_until_inactive_window_passes(
 def test_failure_streak_curve(teacher, class_room):
     curve = {p["failures"]: p for p in _get(teacher)["failure_curve"]}
     # B (2 failures, solved), C (2, unsolved), D (1, unsolved) reach one failure
-    assert curve[1]["reached"] == 3 and curve[1]["dropout_rate"] == 33.3
+    # D is still active (no outcome yet): the share is over the two pairs with a known outcome
+    assert curve[1]["reached"] == 3 and curve[1]["known"] == 2 and curve[1]["in_progress"] == 1
+    assert curve[1]["dropout_rate"] == 50.0
     assert curve[2]["reached"] == 2 and curve[2]["dropped"] == 1
     assert curve[2]["dropout_rate"] == 50.0
     assert curve[3]["reached"] == 0 and curve[3]["dropout_rate"] is None
@@ -262,8 +298,8 @@ def test_inactive_days_is_clamped():
     assert clamp_inactive_days("3") == 3
     assert clamp_inactive_days("0") == 1
     assert clamp_inactive_days("9999") == 60
-    assert clamp_inactive_days("abc") == 7
-    assert clamp_inactive_days(None) == 7
+    assert clamp_inactive_days("abc") == 14
+    assert clamp_inactive_days(None) == 14
 
 
 def test_csv_export(teacher, class_room):

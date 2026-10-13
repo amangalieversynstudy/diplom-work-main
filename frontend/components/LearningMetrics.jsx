@@ -6,6 +6,8 @@ import { useI18n } from "../lib/i18n";
 import { unit } from "../lib/plural";
 
 const WINDOW_OPTIONS = [3, 7, 14, 30];
+// Окно по умолчанию совпадает с бэкендом (ABANDON_WINDOW_DAYS) и с окном гипотез пилота.
+const DEFAULT_WINDOW = 14;
 const RED = "239, 68, 68";
 
 const fill = (template, values) =>
@@ -50,7 +52,7 @@ function Kpi({ label, value, hint }) {
 
 export default function LearningMetrics() {
   const { t, language } = useI18n();
-  const [days, setDays] = useState(7);
+  const [days, setDays] = useState(DEFAULT_WINDOW);
   const [data, setData] = useState(null);
   const [failed, setFailed] = useState(false);
 
@@ -183,6 +185,13 @@ export default function LearningMetrics() {
       </div>
       <p className="text-xs text-muted">
         {data.meta.learners} {unit(t, language, "student", data.meta.learners)} {t("analytics.metrics.inSample")}
+      </p>
+      <p className="text-xs text-muted -mt-3">
+        {fill(t("analytics.metrics.windowHelp"), { n: data.meta.inactive_days })}{" "}
+        {fill(t("analytics.metrics.inProgressNote"), {
+          steps: kpi.steps_in_progress,
+          missions: kpi.missions_in_progress,
+        })}
       </p>
 
       <div className="grid lg:grid-cols-2 gap-6">

@@ -18,7 +18,7 @@ from users.models import Profile
 
 from .live import freshness_summary
 from .snapshots import h3_summary
-from .metrics import DEFAULT_INACTIVE_DAYS, _last_activity, compute_metrics
+from .metrics import ABANDON_WINDOW_DAYS, _last_activity, compute_metrics
 from .models import CodeRun, LearningEvent, MissionTask, Progress, TaskProgress
 from .services import ARM_OFFER, HELP_AFTER_FAILURES, help_arm
 from .usability import usability_summary
@@ -80,7 +80,7 @@ def help_experiment(now, learner_ids=None):
     events = list(offered.values_list("user_id", "task_id", "created_at", "meta"))
     users = {user_id for user_id, *_ in events}
     last_seen = _last_activity(users)
-    cutoff = now - timedelta(days=DEFAULT_INACTIVE_DAYS)
+    cutoff = now - timedelta(days=ABANDON_WINDOW_DAYS)
     progress = {
         (row["user_id"], row["task_id"]): row
         for row in TaskProgress.objects.filter(user_id__in=users).values(
@@ -128,7 +128,13 @@ def help_experiment(now, learner_ids=None):
             "solved": b["solved"],
             "solve_rate": round(100 * b["solved"] / pairs, 1),
             "dropped": b["dropped"],
-            "dropout_rate": round(100 * b["dropped"] / pairs, 1),
+            # still active and unsolved: no outcome yet, not in the drop-out denominator
+            "in_progress": pairs - b["solved"] - b["dropped"],
+            "dropout_rate": (
+                round(100 * b["dropped"] / (b["solved"] + b["dropped"]), 1)
+                if b["solved"] + b["dropped"]
+                else None
+            ),
             "extra_attempts": round(sum(b["extra"]) / len(b["extra"]), 2) if b["extra"] else None,
             "helped_after_rate": round(100 * b["helped"] / pairs, 1),
             "rescued_after_rate": round(100 * b["rescued"] / pairs, 1),
@@ -138,7 +144,10 @@ def help_experiment(now, learner_ids=None):
     if offer and control:
         comparison = {
             "solved": two_proportions(offer["solved"], offer["pairs"], control["solved"], control["pairs"]),
-            "dropped": two_proportions(offer["dropped"], offer["pairs"], control["dropped"], control["pairs"]),
+            "dropped": two_proportions(
+                offer["dropped"], offer["solved"] + offer["dropped"],
+                control["dropped"], control["solved"] + control["dropped"],
+            ),
             "enough": min(offer["pairs"], control["pairs"]) >= MIN_ARM_SIZE,
         }
     return {"arms": result, "comparison": comparison}
@@ -189,7 +198,7 @@ def build_report(now=None):
         user_id__in=learner_ids, status="completed"
     ).count()
 
-    metrics = compute_metrics(_OWNER, now=now, consented_only=True)
+    metrics = compute_metrics(_OWNER, now=now, inactive_days=ABANDON_WINDOW_DAYS, consented_only=True)
     warnings = assess_students(_OWNER, now=now, consented_only=True)
     opened = {row["task_id"] for row in metrics["tasks"] if row["opened"]}
     all_steps = MissionTask.objects.filter(mission__is_active=True).count()
@@ -251,18 +260,22 @@ def render_markdown(report):
         "## Ключевые показатели",
         "",
         f"- Завершение миссий (MCR): **{_fmt(k['mission_completion_rate'], '%')}** "
-        f"({k['missions_completed']} из {k['missions_started']}).",
+        f"({k['missions_completed']} из {k['missions_started'] - k['missions_in_progress']} с известным исходом; "
+        f"ещё в процессе: {k['missions_in_progress']}).",
         f"- Попыток до успеха (MAS): **{_fmt(k['mean_attempts_to_success'])}**.",
-        f"- Отсев по шагам: **{_fmt(k['task_dropout_rate'], '%')}** ({k['steps_dropped']} из {k['steps_opened']}).",
+        f"- Отсев по шагам: **{_fmt(k['task_dropout_rate'], '%')}** ({k['steps_dropped']} из {k['steps_known']} с известным исходом; ещё в процессе: {k['steps_in_progress']}).",
         f"- Критический порог неудач подряд: **{_fmt(report['critical_threshold'])}**"
         f" (порог {report['metrics_meta']['critical_share']}% ушедших, выборка от {report['metrics_meta']['min_sample']}).",
         f"- Список раннего предупреждения сейчас: срочно {report['ews']['high']}, внимание {report['ews']['medium']}.",
         "",
-        "| Неудач подряд | Дошли | Ушли |",
-        "|---|---|---|",
+        f"Ушёл = нет активности {report['metrics_meta']['inactive_days']} дней. "
+        "Ученики, у которых окно ещё не прошло, в знаменатели не входят (колонка «в процессе»).",
+        "",
+        "| Неудач подряд | Дошли | Исход известен | В процессе | Ушли |",
+        "|---|---|---|---|---|",
     ]
     lines += [
-        f"| {c['failures']} | {c['reached']} | {_fmt(c['dropout_rate'], '%')} |"
+        f"| {c['failures']} | {c['reached']} | {c['known']} | {c['in_progress']} | {_fmt(c['dropout_rate'], '%')} |"
         for c in report["failure_curve"]
     ]
     lines += ["", "## Эксперимент с помощью после 3 неудач", ""]
@@ -276,13 +289,13 @@ def render_markdown(report):
         lines.append("Пока никто не дошёл до порога неудач.")
     else:
         lines += [
-            "| Группа | Пар ученик×шаг | Решили | Ушли | Доп. попыток | Взяли помощь после | Из них бесплатная подсказка |",
+            "| Группа | Пар ученик×шаг | Решили | Ушли (из тех, у кого исход известен) | Доп. попыток | Взяли помощь после | Из них бесплатная подсказка |",
             "|---|---|---|---|---|---|---|",
         ]
         for arm, a in sorted(experiment["arms"].items()):
             lines.append(
                 f"| {'баннер + бесплатная подсказка' if arm == ARM_OFFER else 'контроль (без баннера и без бесплатной подсказки)'} | "
-                f"{a['pairs']} | {a['solve_rate']}% | {a['dropout_rate']}% | {_fmt(a['extra_attempts'])} | "
+                f"{a['pairs']} | {a['solve_rate']}% | {_fmt(a['dropout_rate'], '%')} | {_fmt(a['extra_attempts'])} | "
                 f"{a['helped_after_rate']}% | {a['rescued_after_rate']}% |"
             )
         comparison = experiment["comparison"]

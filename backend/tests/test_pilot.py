@@ -240,6 +240,25 @@ def test_help_experiment_compares_the_arms(course):
     assert result["comparison"]["enough"] is False  # far below 30 pairs
 
 
+def test_help_experiment_keeps_still_active_learners_out_of_the_dropout_share(course):
+    _, _, quiz = course
+    _offered(_user("s"), quiz, ARM_OFFER, solved=True, attempts=4)
+    _offered(_user("g"), quiz, ARM_OFFER, solved=False, attempts=3, gone=True)
+    for i in range(2):  # failed, but still around: their window has not passed
+        _offered(_user(f"a{i}"), quiz, ARM_OFFER, solved=False, attempts=3)
+    offer = pilot.help_experiment(timezone.now())["arms"][ARM_OFFER]
+    assert (offer["pairs"], offer["dropped"], offer["in_progress"]) == (4, 1, 2)
+    assert offer["dropout_rate"] == 50.0  # 1 of the 2 known outcomes, not 1 of 4
+
+
+def test_the_report_uses_one_fixed_window_for_leaving(course):
+    from game.metrics import ABANDON_WINDOW_DAYS
+
+    report = pilot.build_report()
+    assert report["metrics_meta"]["inactive_days"] == ABANDON_WINDOW_DAYS == 14
+    assert "нет активности 14 дней" in pilot.render_markdown(report)
+
+
 def test_the_free_rescue_hint_is_help_after_the_banner_and_is_reported_apart(course):
     _, _, quiz = course
     user = _user("rescued")

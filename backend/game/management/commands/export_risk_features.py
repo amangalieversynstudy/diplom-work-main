@@ -28,6 +28,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from game.management.commands.export_learning_data import pseudonym
+from game.metrics import ABANDON_WINDOW_DAYS
 from game.models import Progress
 from game.risk import BASE_FEATURES, activity_rows, features_from
 from users.models import Profile
@@ -69,7 +70,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--out", required=True, help="Output CSV file.")
         parser.add_argument("--window-days", type=int, default=14)
-        parser.add_argument("--horizon-days", type=int, default=14)
+        parser.add_argument("--horizon-days", type=int, default=ABANDON_WINDOW_DAYS)  # the one definition of "left"
         parser.add_argument("--step-days", type=int, default=7)
         parser.add_argument("--all-users", action="store_true")
 

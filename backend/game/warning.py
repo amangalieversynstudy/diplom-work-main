@@ -9,16 +9,19 @@ signal, not as a replacement that cannot explain itself.
 Signals (weights in ``WEIGHTS``):
 
 * ``stuck_task`` - failed the same quiz/code step several times in a row
-  (``HELP_AFTER_FAILURES`` or more; ``DEEP_STRUGGLE_FAILURES`` counts double).
+  (``HELP_AFTER_FAILURES`` or more; ``DEEP_STRUGGLE_FAILURES`` counts double),
+  and tried it within the last ``STUCK_RECENT_DAYS``.
 * ``inactive`` - has unfinished work but has not shown up for a while.
 * ``model_risk`` - the trained drop-out model (``game.risk``), if one is
   configured, puts the learner above its decision threshold.
 """
 
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from .metrics import _last_activity, _title, scoped_tasks
+from .metrics import ABANDON_WINDOW_DAYS, _last_activity, _title, scoped_tasks
 from .models import Progress, TaskProgress
 from .risk import load_risk_model, risk_probabilities
 from .services import HELP_AFTER_FAILURES
@@ -26,6 +29,9 @@ from .services import HELP_AFTER_FAILURES
 DEEP_STRUGGLE_FAILURES = 5
 INACTIVE_SOON_DAYS = 3
 INACTIVE_LONG_DAYS = 7
+# A step failed this long ago and not touched since is no longer "stuck now": the learner moved on
+# (or went quiet, which the inactivity signal catches). Same length as the "left" window.
+STUCK_RECENT_DAYS = ABANDON_WINDOW_DAYS
 
 WEIGHTS = {
     "stuck_task": 2,
@@ -87,6 +93,7 @@ def assess_students(viewer, *, now=None, consented_only=False):
         user_id__in=learner_ids,
         task_id__in=list(tasks),
         attempts__gte=HELP_AFTER_FAILURES,
+        last_submitted_at__gte=now - timedelta(days=STUCK_RECENT_DAYS),
     ).exclude(status="completed")
     for row in unsolved.values("user_id", "task_id", "attempts"):
         best = worst.get(row["user_id"])

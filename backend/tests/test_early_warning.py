@@ -267,3 +267,26 @@ def test_rules_are_published_with_the_list(teacher):
     rules = _warning(teacher)["rules"]
     assert rules["stuck_failures"] == HELP_AFTER_FAILURES
     assert rules["inactive_long_days"] == 7
+
+
+def test_an_old_failure_on_a_step_no_longer_counts_as_stuck(course):
+    """Three failures a month ago on a step the learner left, but they keep working: not on the list."""
+    from game.warning import STUCK_RECENT_DAYS, assess_students
+
+    mission, quiz, _ = course
+    teacher = User.objects.get(username="teacher")
+    student = _user("moved-on")
+    now = timezone.now()
+    Progress.objects.create(
+        user=student, mission=mission, status="in_progress", started_at=now, last_started_at=now
+    )
+    TaskProgress.objects.create(
+        user=student, task=quiz, attempts=HELP_AFTER_FAILURES, status="in_progress",
+        last_submitted_at=now - timedelta(days=STUCK_RECENT_DAYS + 5),
+    )
+    LearningEvent.objects.create(user=student, event_type="login")  # active today
+    assert assess_students(teacher, now=now)[student.pk]["level"] == "ok"
+
+    TaskProgress.objects.filter(user=student).update(last_submitted_at=now - timedelta(days=2))
+    assessed = assess_students(teacher, now=now)[student.pk]
+    assert assessed["level"] == "medium" and assessed["reasons"][0]["code"] == "stuck_task"

@@ -335,7 +335,14 @@ export default function LearningMetrics() {
             <tbody>
               {help.map((row) => (
                 <tr key={row.group} className="border-t border-border tabular-nums">
-                  <td className="py-1.5 text-text">{helpLabel(row.group)}</td>
+                  <td className="py-1.5 text-text">
+                    {helpLabel(row.group)}
+                    {row.rescued ? (
+                      <span className="block text-xs text-muted">
+                        {fill(t("analytics.metrics.help.rescued"), { n: row.rescued })}
+                      </span>
+                    ) : null}
+                  </td>
                   <td className="py-1.5 text-right text-muted">{row.pairs}</td>
                   <td className="py-1.5 text-right text-text">{pct(row.solve_rate)}</td>
                   <td className="py-1.5 text-right text-text">{num(row.mas)}</td>

@@ -48,6 +48,7 @@ EXPLAIN_MISSED_AFTER = 2
 ASSISTANCE_LEVELS = ("independent", "hint", "skeleton", "mentor")
 _EVENT_LEVEL = {
     LearningEvent.HINT_USED: "hint",
+    LearningEvent.HELP_RESCUE: "hint",  # the free hint after repeated failures is platform help too
     LearningEvent.SKELETON_USED: "skeleton",
     LearningEvent.AI_HINT_USED: "mentor",
     LearningEvent.AI_MENTOR_USED: "mentor",
@@ -217,7 +218,7 @@ def authorship_report(student, viewer, *, lang="ru", context=None):
                 "solved_at": run.created_at,
                 "assistance": level,
                 "help_uses": {
-                    "hint": events.count(LearningEvent.HINT_USED),
+                    "hint": events.count(LearningEvent.HINT_USED) + events.count(LearningEvent.HELP_RESCUE),
                     "skeleton": events.count(LearningEvent.SKELETON_USED),
                     "mentor": events.count(LearningEvent.AI_HINT_USED)
                     + events.count(LearningEvent.AI_MENTOR_USED),

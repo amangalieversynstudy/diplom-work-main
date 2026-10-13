@@ -240,6 +240,19 @@ def test_help_experiment_compares_the_arms(course):
     assert result["comparison"]["enough"] is False  # far below 30 pairs
 
 
+def test_the_free_rescue_hint_is_help_after_the_banner_and_is_reported_apart(course):
+    _, _, quiz = course
+    user = _user("rescued")
+    _offered(user, quiz, ARM_OFFER, solved=True, attempts=4)
+    _offered(_user("plain"), quiz, ARM_OFFER, solved=True, attempts=4)
+    LearningEvent.objects.create(user=user, task=quiz, event_type=LearningEvent.HELP_RESCUE)
+
+    offer = pilot.help_experiment(timezone.now())["arms"][ARM_OFFER]
+    assert offer["helped_after_rate"] == 50.0 and offer["rescued_after_rate"] == 50.0
+    text = pilot.render_markdown(pilot.build_report())
+    assert "баннер + бесплатная подсказка" in text
+
+
 def test_events_without_an_arm_are_assigned_the_learners_arm(course):
     _, _, quiz = course
     user = _user("old")

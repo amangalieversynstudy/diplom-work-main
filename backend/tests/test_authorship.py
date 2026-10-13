@@ -135,6 +135,13 @@ def test_the_strongest_help_before_the_solve_counts(student, step, teacher):
     assert row["help_uses"] == {"hint": 2, "skeleton": 0, "mentor": 1}
 
 
+def test_the_free_rescue_hint_is_platform_help(student, step, teacher):
+    _event(student, step, LearningEvent.HELP_RESCUE)
+    solve(student, step, typed())
+    row = authorship_report(student, teacher)["steps"][0]
+    assert row["assistance"] == "hint" and row["help_uses"]["hint"] == 1
+
+
 def test_help_used_after_the_solve_does_not_count(student, step, teacher):
     solve(student, step, typed())
     _event(student, step, LearningEvent.SKELETON_USED, when=timezone.now() + timedelta(minutes=5))

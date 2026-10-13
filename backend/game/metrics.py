@@ -47,7 +47,9 @@ TOP_ERRORS = 8
 HELP_NONE = "none"
 HELP_HINT = "hint"
 HELP_AI = "ai"
-_HINT_EVENTS = (LearningEvent.HINT_USED, LearningEvent.SKELETON_USED)
+# The free "rescue" hint after repeated failures is help like any other: leaving it out would file the
+# learners who needed it most under "no help" and make that group look worse than it is.
+_HINT_EVENTS = (LearningEvent.HINT_USED, LearningEvent.SKELETON_USED, LearningEvent.HELP_RESCUE)
 _AI_EVENTS = (LearningEvent.AI_HINT_USED, LearningEvent.AI_MENTOR_USED)
 
 
@@ -127,8 +129,9 @@ def _last_activity(learner_ids):
 
 
 def _help_by_pair(task_ids, learner_ids):
-    """{(user_id, task_id): HELP_HINT | HELP_AI} for pairs that used any help."""
+    """({(user_id, task_id): HELP_HINT | HELP_AI} for pairs that used any help, pairs that took the free rescue hint)."""
     used = {}
+    rescued = set()
     rows = LearningEvent.objects.filter(
         task_id__in=task_ids,
         user_id__in=learner_ids,
@@ -140,7 +143,9 @@ def _help_by_pair(task_ids, learner_ids):
             used[key] = HELP_AI
         else:
             used.setdefault(key, HELP_HINT)
-    return used
+        if event_type == LearningEvent.HELP_RESCUE:
+            rescued.add(key)
+    return used, rescued
 
 
 def _opened_pairs(task_ids, students, progress_rows):
@@ -240,7 +245,7 @@ def compute_metrics(
     }
     attempts = {(row["user_id"], row["task_id"]): row["attempts"] for row in progress_rows}
     dropped = {pair for pair in opened - solved if pair[0] in inactive}
-    help_used = _help_by_pair(task_ids, learner_ids)
+    help_used, rescued_pairs = _help_by_pair(task_ids, learner_ids)
 
     by_task = defaultdict(lambda: {"opened": 0, "solved": 0, "dropped": 0, "helped": 0, "tries": []})
     for pair in opened:
@@ -356,6 +361,7 @@ def compute_metrics(
             {
                 "group": name,
                 "pairs": len(pairs),
+                "rescued": sum(pair in rescued_pairs for pair in pairs),  # of them, took the free rescue hint
                 "solved": len(solved_pairs),
                 "solve_rate": _pct(len(solved_pairs), len(pairs)),
                 "mas": _mean(attempts[pair] for pair in solved_pairs),

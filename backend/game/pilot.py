@@ -88,16 +88,20 @@ def help_experiment(now, learner_ids=None):
         )
     }
     helped_after = {}
-    for user_id, task_id, stamp in LearningEvent.objects.filter(
+    rescued_after = {}
+    for user_id, task_id, stamp, event_type in LearningEvent.objects.filter(
         user_id__in=users,
         event_type__in=(
             LearningEvent.HINT_USED,
             LearningEvent.SKELETON_USED,
             LearningEvent.AI_HINT_USED,
             LearningEvent.AI_MENTOR_USED,
+            LearningEvent.HELP_RESCUE,  # the free hint is part of what the "banner" arm receives
         ),
-    ).values_list("user_id", "task_id", "created_at"):
+    ).values_list("user_id", "task_id", "created_at", "event_type"):
         helped_after.setdefault((user_id, task_id), []).append(stamp)
+        if event_type == LearningEvent.HELP_RESCUE:
+            rescued_after.setdefault((user_id, task_id), []).append(stamp)
 
     arms = {}
     for user_id, task_id, stamp, meta in events:
@@ -105,7 +109,7 @@ def help_experiment(now, learner_ids=None):
         row = progress.get((user_id, task_id))
         solved = bool(row) and row["status"] == "completed"
         bucket = arms.setdefault(
-            arm, {"pairs": 0, "solved": 0, "dropped": 0, "extra": [], "helped": 0}
+            arm, {"pairs": 0, "solved": 0, "dropped": 0, "extra": [], "helped": 0, "rescued": 0}
         )
         bucket["pairs"] += 1
         bucket["solved"] += solved
@@ -114,6 +118,7 @@ def help_experiment(now, learner_ids=None):
         elif last_seen.get(user_id, now - timedelta(days=3650)) < cutoff:
             bucket["dropped"] += 1
         bucket["helped"] += any(t > stamp for t in helped_after.get((user_id, task_id), ()))
+        bucket["rescued"] += any(t > stamp for t in rescued_after.get((user_id, task_id), ()))
 
     result = {}
     for arm, b in arms.items():
@@ -126,6 +131,7 @@ def help_experiment(now, learner_ids=None):
             "dropout_rate": round(100 * b["dropped"] / pairs, 1),
             "extra_attempts": round(sum(b["extra"]) / len(b["extra"]), 2) if b["extra"] else None,
             "helped_after_rate": round(100 * b["helped"] / pairs, 1),
+            "rescued_after_rate": round(100 * b["rescued"] / pairs, 1),
         }
     offer, control = arms.get(ARM_OFFER), arms.get("control")
     comparison = None
@@ -260,25 +266,31 @@ def render_markdown(report):
         for c in report["failure_curve"]
     ]
     lines += ["", "## Эксперимент с помощью после 3 неудач", ""]
+    lines += [
+        "Вмешательство — **баннер + бесплатная подсказка** (подсказка доступна только группе «баннер», "
+        "см. `PILOT.md`): сравнение измеряет их вместе, эффект одного баннера отделить нельзя.",
+        "",
+    ]
     experiment = report["help_experiment"]
     if not experiment["arms"]:
         lines.append("Пока никто не дошёл до порога неудач.")
     else:
         lines += [
-            "| Группа | Пар ученик×шаг | Решили | Ушли | Доп. попыток | Взяли помощь после |",
-            "|---|---|---|---|---|---|",
+            "| Группа | Пар ученик×шаг | Решили | Ушли | Доп. попыток | Взяли помощь после | Из них бесплатная подсказка |",
+            "|---|---|---|---|---|---|---|",
         ]
         for arm, a in sorted(experiment["arms"].items()):
             lines.append(
-                f"| {'видят баннер' if arm == ARM_OFFER else 'контроль'} | {a['pairs']} | "
-                f"{a['solve_rate']}% | {a['dropout_rate']}% | {_fmt(a['extra_attempts'])} | {a['helped_after_rate']}% |"
+                f"| {'баннер + бесплатная подсказка' if arm == ARM_OFFER else 'контроль (без баннера и без бесплатной подсказки)'} | "
+                f"{a['pairs']} | {a['solve_rate']}% | {a['dropout_rate']}% | {_fmt(a['extra_attempts'])} | "
+                f"{a['helped_after_rate']}% | {a['rescued_after_rate']}% |"
             )
         comparison = experiment["comparison"]
         if comparison:
             for key, title in (("solved", "решили"), ("dropped", "ушли")):
                 c = comparison[key]
                 lines.append(
-                    f"\nРазница «видят баннер» − «контроль», {title}: {c['diff'] * 100:+.1f} п.п., "
+                    f"\nРазница «баннер + бесплатная подсказка» − «контроль», {title}: {c['diff'] * 100:+.1f} п.п., "
                     f"95% ДИ [{c['ci_low'] * 100:+.1f}; {c['ci_high'] * 100:+.1f}], p = {c['p_value']}."
                 )
             if not comparison["enough"]:

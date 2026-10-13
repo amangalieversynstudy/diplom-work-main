@@ -189,6 +189,17 @@ def test_help_effect_groups(teacher, class_room):
     assert task["help_rate"] == 50.0
 
 
+def test_the_free_rescue_hint_counts_as_help_and_is_marked(teacher, class_room):
+    quiz = class_room["quiz"]
+    d = class_room["users"][3]
+    LearningEvent.objects.create(user=d, task=quiz, event_type=LearningEvent.HELP_RESCUE)
+    groups = {g["group"]: g for g in _get(teacher)["help_effect"]}
+    assert groups["hint"]["pairs"] == 1 and groups["hint"]["rescued"] == 1
+    assert groups["none"]["pairs"] == 3 and groups["none"]["rescued"] == 0  # not filed under "no help"
+    task = next(r for r in _get(teacher)["tasks"] if r["task_id"] == quiz.pk)
+    assert task["help_rate"] == 25.0
+
+
 def test_top_errors_and_task_top_error(teacher, class_room):
     code = class_room["code"]
     a, b, *_ = class_room["users"]

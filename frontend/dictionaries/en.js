@@ -185,9 +185,10 @@ export const en = {
         subtitle:
           "Solved versus abandoned steps for learners who used help and those who did not.",
         caveat:
-          "This is an observation, not an experiment: learners reach for help more often on harder steps.",
+          "This is an observation, not an experiment: learners reach for help more often on harder steps. The free hint after three failures (together with the banner, this is the pilot's intervention) counts as help too.",
         none: "No help",
-        hint: "Hint scrolls",
+        hint: "Hints and outline",
+        rescued: "of them with the free hint: {n}",
         ai: "AI mentor",
         pairs: "Learner×step pairs",
         solveRate: "Solved",

@@ -168,10 +168,57 @@ def test_report_counts_participants_and_consent(course):
         started_at=timezone.now(), completed_at=timezone.now(),
     )
     p = pilot.build_report()["participants"]
-    assert (p["learners"], p["consented"], p["with_activity"]) == (3, 1, 2)
+    assert (p["learners"], p["consented"], p["excluded_without_consent"]) == (3, 1, 2)
+    # activity is counted for the consenting learner only; the other one is just noted
+    assert p["with_activity"] == 1 and p["activity_without_consent"] == 1
     assert (p["started_a_mission"], p["finished_a_mission"]) == (1, 1)
-    assert p["activity_without_consent"] == 1
-    assert p["active_by_week"][-1] == 2  # both were active this week
+    assert p["active_by_week"][-1] == 1
+
+
+def _consent(user):
+    user.profile.set_research_consent(True)
+    user.profile.save()
+    return user
+
+
+def test_report_numbers_cover_only_learners_who_agreed(course):
+    _, mission, quiz = course
+    agreed, refused = _consent(_user("agreed")), _user("refused")
+    for user in (agreed, refused):
+        Progress.objects.create(
+            user=user, mission=mission, status="in_progress",
+            started_at=timezone.now(), last_started_at=timezone.now(),
+        )
+        TaskProgress.objects.create(
+            user=user, task=quiz, attempts=5, status="in_progress", last_submitted_at=timezone.now()
+        )
+        LearningEvent.objects.create(user=user, event_type="task_opened", task=quiz)
+    # the refuser also has a banner moment and a solved step: none of it may reach the report
+    _offered(_user("refuser2"), quiz, ARM_OFFER, solved=True, attempts=4)
+
+    report = pilot.build_report()
+    assert report["kpi"]["steps_opened"] == 1  # agreed's step only
+    assert report["kpi"]["missions_started"] == 1
+    assert report["ews"]["high"] == 1  # agreed, 5 failures in a row; refused is not counted
+    assert report["steps"]["solved"] == 0
+    assert report["help_experiment"]["arms"] == {}
+    assert report["participants"]["excluded_without_consent"] == 2
+    text = pilot.render_markdown(report)
+    assert "только по 1 согласившимся" in text and "без согласия: 2" in text
+
+
+def test_help_experiment_can_be_limited_to_given_learners(course):
+    _, _, quiz = course
+    a, b = _user("a"), _user("b")
+    _offered(a, quiz, ARM_OFFER, solved=True, attempts=4)
+    _offered(b, quiz, ARM_OFFER, solved=True, attempts=4)
+    assert pilot.help_experiment(timezone.now())["arms"][ARM_OFFER]["pairs"] == 2
+    assert pilot.help_experiment(timezone.now(), {a.pk})["arms"][ARM_OFFER]["pairs"] == 1
+
+
+def test_report_has_an_h3_block(course):
+    text = pilot.render_markdown(pilot.build_report())
+    assert "H3" in text and "snapshot_early_warning" in text
 
 
 def test_help_experiment_compares_the_arms(course):

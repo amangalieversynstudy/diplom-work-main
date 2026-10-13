@@ -1,8 +1,9 @@
 """The pilot's weekly report: who took part, how it is going, does help help.
 
-Everything is computed from data the platform already stores, for *all*
-non-staff learners (the report is for the researcher running the pilot, who owns
-the platform; nothing personal is printed, only counts and rates).
+Everything is computed from data the platform already stores. The numbers that go
+into the thesis cover only learners who agreed to the research
+(``Profile.research_consent``); the others are only counted, never analysed
+(nothing personal is printed, only counts and rates).
 """
 
 import math
@@ -16,6 +17,7 @@ from django.utils import timezone
 from users.models import Profile
 
 from .live import freshness_summary
+from .snapshots import h3_summary
 from .metrics import DEFAULT_INACTIVE_DAYS, _last_activity, compute_metrics
 from .models import CodeRun, LearningEvent, MissionTask, Progress, TaskProgress
 from .services import ARM_OFFER, HELP_AFTER_FAILURES, help_arm
@@ -67,12 +69,15 @@ def _weekly_active(learner_ids, now, weeks):
     return [len(seen.get(week, ())) for week in range(weeks - 1, -1, -1)]  # oldest first
 
 
-def help_experiment(now):
-    """Outcomes after the help threshold, per experiment arm."""
-    events = list(
-        LearningEvent.objects.filter(event_type=LearningEvent.HELP_OFFERED, task__isnull=False)
-        .values_list("user_id", "task_id", "created_at", "meta")
-    )
+def help_experiment(now, learner_ids=None):
+    """Outcomes after the help threshold, per experiment arm.
+
+    ``learner_ids`` limits the analysis to those learners (the report passes the consenting ones).
+    """
+    offered = LearningEvent.objects.filter(event_type=LearningEvent.HELP_OFFERED, task__isnull=False)
+    if learner_ids is not None:
+        offered = offered.filter(user_id__in=learner_ids)
+    events = list(offered.values_list("user_id", "task_id", "created_at", "meta"))
     users = {user_id for user_id, *_ in events}
     last_seen = _last_activity(users)
     cutoff = now - timedelta(days=DEFAULT_INACTIVE_DAYS)
@@ -152,11 +157,20 @@ def build_report(now=None):
     """Everything the weekly pilot report shows, as plain data."""
     now = now or timezone.now()
     learners = get_user_model().objects.filter(is_staff=False)
-    learner_ids = list(learners.values_list("pk", flat=True))
-    consenting = Profile.objects.filter(user__in=learners, research_consent=True).count()
-    with_footprint = set(
-        LearningEvent.objects.filter(user_id__in=learner_ids).values_list("user_id", flat=True)
-    ) | set(CodeRun.objects.filter(user_id__in=learner_ids).values_list("user_id", flat=True))
+    registered = learners.count()
+    # Only learners who agreed are analysed; the rest are counted (n), never looked at.
+    consenting_ids = set(
+        Profile.objects.filter(user__in=learners, research_consent=True).values_list("user_id", flat=True)
+    )
+    learner_ids = sorted(consenting_ids)
+    consenting = len(consenting_ids)
+    footprint_of = lambda ids: set(  # noqa: E731
+        LearningEvent.objects.filter(user_id__in=ids).values_list("user_id", flat=True)
+    ) | set(CodeRun.objects.filter(user_id__in=ids).values_list("user_id", flat=True))
+    with_footprint = footprint_of(learner_ids)
+    footprint_without_consent = footprint_of(
+        list(learners.exclude(pk__in=consenting_ids).values_list("pk", flat=True))
+    )
     started = set(
         Progress.objects.filter(user_id__in=learner_ids, started_at__isnull=False)
         .values_list("user_id", flat=True)
@@ -169,27 +183,22 @@ def build_report(now=None):
         user_id__in=learner_ids, status="completed"
     ).count()
 
-    metrics = compute_metrics(_OWNER, now=now)
-    warnings = assess_students(_OWNER, now=now)
+    metrics = compute_metrics(_OWNER, now=now, consented_only=True)
+    warnings = assess_students(_OWNER, now=now, consented_only=True)
     opened = {row["task_id"] for row in metrics["tasks"] if row["opened"]}
     all_steps = MissionTask.objects.filter(mission__is_active=True).count()
 
     return {
         "generated_at": now.isoformat(timespec="seconds"),
         "participants": {
-            "learners": len(learner_ids),
+            "learners": registered,
             "consented": consenting,
+            "excluded_without_consent": registered - consenting,
             "with_activity": len(with_footprint),
             "started_a_mission": len(started),
             "finished_a_mission": len(finished),
             "active_by_week": _weekly_active(learner_ids, now, WEEKS),
-            "activity_without_consent": len(
-                with_footprint
-                - set(
-                    Profile.objects.filter(user__in=learners, research_consent=True)
-                    .values_list("user_id", flat=True)
-                )
-            ),
+            "activity_without_consent": len(footprint_without_consent),
         },
         "steps": {
             "solved": solved_steps,
@@ -204,7 +213,8 @@ def build_report(now=None):
             "high": sum(a["level"] == "high" for a in warnings.values()),
             "medium": sum(a["level"] == "medium" for a in warnings.values()),
         },
-        "help_experiment": help_experiment(now),
+        "help_experiment": help_experiment(now, learner_ids),
+        "h3": h3_summary(now=now),
         "sandbox": sandbox_health(),
         "dashboard": {"freshness": freshness_summary(), "usability": usability_summary()},
         "metrics_meta": metrics["meta"],
@@ -222,13 +232,15 @@ def render_markdown(report):
         "",
         "## Участники",
         "",
-        f"- Учеников зарегистрировано: **{p['learners']}**, согласились на исследование: **{p['consented']}**.",
-        f"- Хоть что-то делали на платформе: {p['with_activity']}; начали миссию: {p['started_a_mission']}; "
+        f"- Учеников зарегистрировано: **{p['learners']}**, согласились на исследование: **{p['consented']}**. "
+        f"**Все цифры ниже посчитаны только по {p['consented']} согласившимся**; "
+        f"без согласия: {p['excluded_without_consent']}, в расчёт не вошли.",
+        f"- Среди согласившихся хоть что-то делали на платформе: {p['with_activity']}; начали миссию: {p['started_a_mission']}; "
         f"завершили хотя бы одну: {p['finished_a_mission']}.",
         f"- Активны по неделям (от старых к новым): {', '.join(map(str, p['active_by_week']))}.",
         f"- Решено шагов: {s['solved']} ({_fmt(s['per_active_learner'])} на активного ученика). "
         f"Шагов, которые никто не открыл: {s['never_opened']} из {s['total']}.",
-        f"- Есть след, но нет согласия: {p['activity_without_consent']} (в экспорт для исследования они не попадут).",
+        f"- Есть след, но нет согласия: {p['activity_without_consent']} (в расчёты и в экспорт для исследования они не попадут).",
         "",
         "## Ключевые показатели",
         "",
@@ -275,8 +287,36 @@ def render_markdown(report):
                 )
         else:
             lines.append("\nКонтрольной группы нет: `HELP_OFFER_SHARE` = 100 или в группе никого.")
+    lines += ["", "## H3: ушли ли «срочные» чаще остальных", ""]
+    h3 = report["h3"]
+    if not h3["mature_days"]:
+        lines.append(
+            f"Пока нет снимков, у которых прошло окно наблюдения ({h3['window_days']} дн.). "
+            "Снимки пишет `snapshot_early_warning` раз в сутки."
+        )
+    else:
+        names = {"high": "срочно", "medium": "внимание", "ok": "остальные"}
+        lines += [
+            f"Ушёл = нет активности {h3['window_days']} дней после дня снимка; дней со снимками: {h3['mature_days']}.",
+            "",
+            "| Уровень | Строк (ученик×день) | Учеников | Ушли | Доля | 95% ДИ (по ученикам) |",
+            "|---|---|---|---|---|---|",
+        ]
+        for level in ("high", "medium", "ok"):
+            c = h3["levels"][level]
+            lines.append(
+                f"| {names[level]} | {c['rows']} | {c['learners']} | {c['left']} | {_fmt(c['share'], '%')} | "
+                f"{'—' if c['ci_low'] is None else str(c['ci_low']) + '–' + str(c['ci_high']) + '%'} |"
+            )
+        lines.append(
+            "\n"
+            f"В списке (срочно + внимание) была доля ушедших **{_fmt(h3['listed']['share'], '%')}**, "
+            f"среди всех **{_fmt(h3['all']['share'], '%')}**; доля ушедших, которых список заметил заранее: "
+            f"{_fmt(h3['recall_listed'], '%')}. Дни одного ученика зависимы, поэтому интервал считается "
+            "по числу учеников, а не строк."
+        )
     sb = report["sandbox"]
-    lines += ["", "## Здоровье песочницы", ""]
+    lines += ["", "## Здоровье песочницы (техническая метрика по всем запускам, без привязки к людям)", ""]
     if not sb["runs"]:
         lines.append("Запусков кода пока нет.")
     else:

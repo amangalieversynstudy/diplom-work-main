@@ -196,8 +196,13 @@ def _critical_threshold(curve):
     return None
 
 
-def compute_metrics(viewer, *, track_id=None, inactive_days=DEFAULT_INACTIVE_DAYS, now=None):
-    """All dashboard metrics for the tasks the viewer may see."""
+def compute_metrics(
+    viewer, *, track_id=None, inactive_days=DEFAULT_INACTIVE_DAYS, now=None, consented_only=False
+):
+    """All dashboard metrics for the tasks the viewer may see.
+
+    ``consented_only`` leaves out learners who did not agree to the research (the pilot report).
+    """
     now = now or timezone.now()
     cutoff = now - timedelta(days=inactive_days)
     User = get_user_model()
@@ -206,6 +211,8 @@ def compute_metrics(viewer, *, track_id=None, inactive_days=DEFAULT_INACTIVE_DAY
     task_ids = [task.pk for task in tasks]
     mission_ids = sorted({task.mission_id for task in tasks})
     students = User.objects.filter(is_staff=False)
+    if consented_only:
+        students = students.filter(profile__research_consent=True)
 
     progress_rows = list(
         TaskProgress.objects.filter(task_id__in=task_ids, user__in=students).values(

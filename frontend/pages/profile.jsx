@@ -177,6 +177,26 @@ if (loading) {
     );
   }
 
+  // Сервер не ответил: не рисуем «Неизвестный, 0 XP» вместо настоящего героя
+  if (!profile) {
+    return (
+      <Layout>
+        <div className="max-w-4xl mx-auto pt-24 pb-16 px-4 text-center space-y-4">
+          <h1 className="text-4xl font-title text-text">{t("profile.heroProfile")}</h1>
+          <p className="text-muted">{t("profile.toasts.loadError")}</p>
+          <Button
+            onClick={() => {
+              setLoading(true);
+              fetchProfile();
+            }}
+          >
+            {t("profile.retry")}
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="max-w-4xl mx-auto pt-24 pb-16 px-4">

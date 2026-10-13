@@ -13,6 +13,7 @@ const GLOBAL = "global";
 export default function Leaderboard() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [scope, setScope] = useState(GLOBAL); // "global" или slug курса
   const [courses, setCourses] = useState([]);
@@ -40,9 +41,11 @@ export default function Leaderboard() {
       const res = await LeaderboardAPI.list(scope === GLOBAL ? { scope: GLOBAL } : { track: scope });
       if (request !== latestRequest.current) return; // пока ждали, выбрали другой зачёт
       setData(res || []);
+      setLoadFailed(false);
       if (isRefresh) toast.success(copy.successRefreshed || "Обновлено");
     } catch {
       if (request !== latestRequest.current) return;
+      setLoadFailed(true);
       toast.error(copy.errors?.load || "Ошибка загрузки лидерборда");
     } finally {
       if (request === latestRequest.current) {
@@ -208,8 +211,10 @@ export default function Leaderboard() {
             ))}
           </div>
         ) : data.length === 0 ? (
-          // Пустое состояние
-          <EmptyScroll icon={Trophy}>{copy.empty}</EmptyScroll>
+          // Пустое состояние; ошибка загрузки не должна выглядеть как «зал пуст»
+          <EmptyScroll icon={Trophy}>
+            {loadFailed ? `${copy.errors?.load}. ${copy.errors?.retryHint}` : copy.empty}
+          </EmptyScroll>
         ) : (
           <>
           {hasPodium && (

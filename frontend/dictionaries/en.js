@@ -720,6 +720,7 @@ export const en = {
     },
     profile: {
       heroProfile: "Hero Profile",
+      retry: "Retry",
       inventoryTitle: "Hero's pack",
       summons: "Sage summons",
       unknownPlayer: "Unknown",
@@ -867,6 +868,7 @@ export const en = {
       xpGained: "XP",
       pickAnswer: "Pick the correct answer:",
       loading: "Loading Mission Chronicles...",
+      retry: "Retry",
       noSteps: "Sage: \"The scrolls of this mission are still being written. Check back a little later.\"",
       quizWrong: "🛡️ Sage: \"Not that one, and that is fine. Think it over once more.\"",
       helpOffer: {
@@ -981,6 +983,7 @@ export const en = {
       empty: "The Hall of Fame is empty for now. Solve your first step and your name will appear here.",
       errors: {
         load: "Could not open the Hall of Fame",
+        retryHint: "Press Refresh when the connection is back.",
       },
       successRefreshed: "Leaderboard updated",
       filters: {
@@ -1054,6 +1057,8 @@ export const en = {
       mapSubtitle: "Every archipelago hides knowledge and danger. Follow the ink trails to find the treasures of code.",
       mapLoading: "Unfurling the parchment...",
       mapEmpty: "The map is still blank: no missions are inked on the parchment yet.",
+      mapLoadFailed: "Could not load the map. Check your connection and try again.",
+      mapRetry: "Retry",
       statusCompleted: "Completed",
       statusAvailable: "Available",
       statusLocked: "Locked",
@@ -1179,6 +1184,7 @@ export const en = {
       run: "Run Code",
       stop: "Stop",
       stopped: "Run stopped.",
+      connectLost: "Could not reach the code runner. Check your connection and press Run again.",
       terminal: "Terminal",
       placeholder: "# Write your code here...",
       editorLabel: "Python code editor",

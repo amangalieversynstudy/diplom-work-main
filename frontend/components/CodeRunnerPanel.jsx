@@ -286,7 +286,7 @@ function CodeRunnerPanel(
 
     ws.onerror = () => {
       if (userStoppedRef.current) return;
-      term?.write(`\r\n${ANSI_RED}[ws error]${ANSI_RESET}\r\n`);
+      term?.write(`\r\n${ANSI_RED}${t("codeRunner.connectLost")}${ANSI_RESET}\r\n`);
     };
 
     ws.onclose = (ev) => {

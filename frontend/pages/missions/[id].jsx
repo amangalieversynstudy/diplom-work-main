@@ -49,6 +49,8 @@ export default function MissionDetail() {
   const { id } = router.query;
   const { language, t } = useI18n();
   const [mission, setMission] = useState(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [tasks, setTasks] = useState([]);
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [taskProgress, setTaskProgress] = useState({});
@@ -150,6 +152,7 @@ export default function MissionDetail() {
   useEffect(() => {
     if (!id) return;
     let active = true;
+    setLoadFailed(false);
 
     // 1. Миссия и прогресс по задачам грузятся вместе — сразу видно, на каком
     // шаге остановился ученик.
@@ -189,7 +192,9 @@ export default function MissionDetail() {
         }
       })
       .catch(() => {
-        if (active) toast.error(t("missionPage.toasts.loadFail"));
+        if (!active) return;
+        setLoadFailed(true);
+        toast.error(t("missionPage.toasts.loadFail"));
       });
 
     // 3. Загружаем профиль для получения актуального инвентаря.
@@ -215,7 +220,7 @@ export default function MissionDetail() {
       active = false;
     };
     // при смене языка миссия перезагружается с правильными title_ru/title_en
-  }, [id, language, t]);
+  }, [id, language, t, reloadKey]);
 
   // Открытие шага — событие для аналитики (сколько ученик сидит на каждом шаге).
   // Один раз на шаг за посещение страницы; для закрытой миссии не шлём.
@@ -475,6 +480,22 @@ export default function MissionDetail() {
       setSavingTaskId(null);
     }
   };
+
+  if (!mission && loadFailed) {
+    return (
+      <Layout fullBleed hideFooter>
+        <div className="h-screen pt-24 bg-bg dark:bg-[#0f0f11] flex items-center justify-center px-4">
+          <div className="max-w-md w-full text-center space-y-4">
+            <p className="text-text dark:text-gray-200">{t("missionPage.toasts.loadFail")}</p>
+            <div className="flex justify-center gap-3">
+              <Button onClick={() => setReloadKey((k) => k + 1)}>{t("missionPage.retry")}</Button>
+              <Button variant="secondary" onClick={() => router.push("/worlds")}>{t("missionPage.backToMap")}</Button>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!mission) {
     return (

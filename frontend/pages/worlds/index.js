@@ -97,6 +97,8 @@ export default function Worlds() {
   
   const [missions, setMissions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const pinContainerRef = useRef(null);
   const mapScrollRef = useRef(null);
@@ -108,15 +110,19 @@ export default function Worlds() {
 
   useEffect(() => {
     setLoading(true);
+    setLoadFailed(false);
     Missions.list()
       .then((data) => {
         const items = Array.isArray(data) ? data : data?.results || [];
         setMissions(items);
       })
-      .catch(logger.error)
+      .catch((error) => {
+        logger.error(error);
+        setLoadFailed(true);
+      })
       .finally(() => setLoading(false));
-    // refetch при смене языка
-  }, [language]);
+    // refetch при смене языка или по кнопке «Повторить»
+  }, [language, reloadKey]);
 
   // Координаты узлов и тропа считаются в lib/worldMap.js (их же использует лендинг)
   const getCoords = mapCoords;
@@ -288,7 +294,20 @@ export default function Worlds() {
           </div>
         )}
 
-        {!loading && missions.length === 0 && (
+        {!loading && loadFailed && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-text font-display text-xl font-bold z-20 text-center px-6">
+            <span>{worldsDict.mapLoadFailed || "Не удалось загрузить карту. Проверь соединение и попробуй ещё раз."}</span>
+            <button
+              type="button"
+              onClick={() => setReloadKey((k) => k + 1)}
+              className="rounded-lg border border-ink/70 bg-ink px-4 py-2 text-sm font-semibold text-straw hover:bg-wood"
+            >
+              {worldsDict.mapRetry || "Повторить"}
+            </button>
+          </div>
+        )}
+
+        {!loading && !loadFailed && missions.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-text font-display text-xl font-bold z-20 pointer-events-none">
             {worldsDict.mapEmpty || "Пираты украли карту. Задания не найдены."}
           </div>

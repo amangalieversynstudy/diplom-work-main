@@ -505,7 +505,7 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
         </div>
 
         <div className="flex-1 min-w-0" />
-        <div className="pl-1 pr-2 sm:px-2 py-0.5 flex items-center gap-1.5 sm:gap-2 bg-[#252526] shrink-0">
+        <div className="pl-1 pr-3 sm:pl-2 sm:pr-4 py-0.5 flex items-center gap-1.5 sm:gap-2 bg-[#252526] shrink-0">
           {/* Развернуть редактор на весь экран / свернуть обратно. */}
           <button
             onClick={() => setFullscreen((v) => !v)}

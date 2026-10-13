@@ -267,7 +267,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
   const isShrunk = scrolled && scrollDir === "down" && !isMenuOpen;
 
   return (
-    <div className="min-h-screen text-text bg-bg relative overflow-x-hidden transition-colors duration-300">
+    <div className="min-h-screen flex flex-col text-text bg-bg relative overflow-x-hidden transition-colors duration-300">
       {/* Ссылка для клавиатуры: сразу к содержимому, минуя шапку и меню */}
       <a
         href="#main-content"
@@ -371,7 +371,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
 
       <StreakReminder />
 
-      <main id="main-content" tabIndex={-1} className={fullBleed ? "relative" : `max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 relative ${noBottomPadding ? "pt-10 pb-0" : "py-10"}`}>
+      <main id="main-content" tabIndex={-1} className={fullBleed ? "relative w-full flex-1" : `w-full flex-1 max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 relative ${noBottomPadding ? "pt-10 pb-0" : "py-10"}`}>
         {children}
       </main>
 

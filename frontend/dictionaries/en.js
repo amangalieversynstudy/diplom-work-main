@@ -165,10 +165,12 @@ export const en = {
       heatmap: {
         title: "Drop-out map by step",
         subtitle:
-          "A row is a mission, a cell is a step. The redder the cell, the larger the share who left among those who opened it.",
+          "A row is a mission, a cell is a step. The redder the cell, the larger the share who left among those with a known outcome.",
         legendLow: "few leave",
         legendHigh: "many leave",
+        legendFew: "grey: too little data (outcome known for fewer than {min})",
         cell: "step {order} · {type}: opened {opened}, left {dropped} ({rate}%)",
+        cellFew: "step {order} · {type}: opened {opened}, outcome known for {known}: too little data (need {min})",
         noData: "no data",
       },
       threshold: {

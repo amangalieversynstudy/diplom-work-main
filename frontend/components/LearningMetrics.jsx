@@ -4,6 +4,7 @@ import { Analytics as AnalyticsAPI } from "../lib/api";
 import logger from "../lib/logger";
 import { useI18n } from "../lib/i18n";
 import { unit } from "../lib/plural";
+import { heatCellState } from "../lib/metricsView";
 
 const WINDOW_OPTIONS = [3, 7, 14, 30];
 // Окно по умолчанию совпадает с бэкендом (ABANDON_WINDOW_DAYS) и с окном гипотез пилота.
@@ -312,23 +313,34 @@ export default function LearningMetrics() {
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {mission.steps.map((step) => {
-                    const label = fill(t("analytics.metrics.heatmap.cell"), {
-                      order: step.order,
-                      type: typeLabel(step.task_type),
-                      opened: step.opened,
-                      dropped: step.dropped,
-                      rate: step.dropout_rate ?? 0,
-                    });
+                    const cell = heatCellState(step, data.meta.min_sample);
+                    const label = fill(
+                      t(cell.state === "few" ? "analytics.metrics.heatmap.cellFew" : "analytics.metrics.heatmap.cell"),
+                      {
+                        order: step.order,
+                        type: typeLabel(step.task_type),
+                        opened: step.opened,
+                        dropped: step.dropped,
+                        known: step.known,
+                        min: data.meta.min_sample,
+                        rate: step.dropout_rate ?? 0,
+                      }
+                    );
                     return (
                       <div
                         key={step.task_id}
                         role="img"
                         aria-label={label}
                         title={label}
-                        style={{ backgroundColor: heat(step.dropout_rate) }}
-                        className="grid h-9 min-w-[2.75rem] place-items-center rounded-lg border border-border px-1 text-xs font-bold text-text tabular-nums"
+                        style={{
+                          backgroundColor:
+                            cell.state === "few" ? "rgba(148, 163, 184, 0.18)" : heat(cell.rate),
+                        }}
+                        className={`grid h-9 min-w-[2.75rem] place-items-center rounded-lg border border-border px-1 text-xs tabular-nums ${
+                          cell.state === "few" ? "font-medium text-muted" : "font-bold text-text"
+                        }`}
                       >
-                        {step.opened ? `${Math.round(step.dropout_rate)}%` : "·"}
+                        {cell.text}
                       </div>
                     );
                   })}
@@ -345,6 +357,12 @@ export default function LearningMetrics() {
                 }}
               />
               <span>{t("analytics.metrics.heatmap.legendHigh")}</span>
+              <span
+                aria-hidden="true"
+                className="ml-3 h-3 w-5 rounded border border-border"
+                style={{ backgroundColor: "rgba(148, 163, 184, 0.18)" }}
+              />
+              <span>{fill(t("analytics.metrics.heatmap.legendFew"), { min: data.meta.min_sample })}</span>
             </div>
           </div>
         )}

@@ -122,7 +122,7 @@ def test_task_row_and_funnel(teacher, class_room):
     data = _get(teacher)
     row = next(r for r in data["tasks"] if r["task_id"] == class_room["quiz"].pk)
     assert (row["opened"], row["solved"], row["dropped"], row["in_progress"]) == (4, 2, 1, 1)
-    assert row["dropout_rate"] == 33.3
+    assert row["dropout_rate"] == 33.3 and row["known"] == 3  # the dashboard greys a cell when known is small
     assert row["solve_rate"] == 50.0
     assert row["mas"] == 2.0
     quiz_step = next(f for f in data["funnel"] if f["task_type"] == "quiz")

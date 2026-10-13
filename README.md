@@ -85,7 +85,7 @@ BI-системы для этого не подходят: им нужны по�
   - Frontend → **Vercel** (Next.js, `NEXT_PUBLIC_API_BASE` указывает на Railway-домен)
   - Email → **Resend** (HTTP API, SMTP закрыт на Railway)
 - Фоновые задачи (напоминания о серии и т. п.) выполняет `backend/game/scheduler.py` — поток внутри процесса бэкенда; Celery в проекте нет. Redis используется в CI и prod-compose
-- 891 pytest-тест пройден, 3 пропущены (прогон `python -m pytest` в `backend/`, 2026-10-11) и 40 тестов фронтенда (`npm test`), включая async WebSocket-тесты через `WebsocketCommunicator`
+- 924 pytest-теста пройдено, 3 пропущены (прогон `python -m pytest` в `backend/`, 2026-10-13), 20 тестов ml и 84 теста фронтенда (`npm test`), включая async WebSocket-тесты через `WebsocketCommunicator`
 
 ### Django Admin (CMS для методологов)
 - Редактирование курсов без кода: fieldsets RU/EN, stacked inline задач

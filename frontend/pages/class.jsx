@@ -10,6 +10,7 @@ import Link from "next/link";
 import { Code, ServerCog, Share2, Lock, Check } from "lucide-react";
 import { useDictionary } from "../lib/i18n";
 import logger from "../lib/logger";
+import { pathAfterClassChoice } from "../lib/onboarding";
 
 // Frontend id → backend ClassRole pk (must match fixtures/class_roles.json)
 const CLASS_ROLE_IDS = { python: 1, django: 2, devops: 3 };
@@ -84,7 +85,8 @@ export default function ChooseClassPage() {
         ? (dict.classPage?.toastChanged || "Класс изменён! Новые силы пробуждаются...")
         : (dict.classPage?.toastSuccess || "Класс успешно выбран!");
       toast.success(successMsg, { duration: 3000 });
-      router.push("/profile");
+      // первый выбор класса (после регистрации) ведёт на карту: следующий шаг новичка — первая миссия
+      router.push(pathAfterClassChoice(hasClass));
     } catch (e) {
       logger.error("classPage save failed:", e.response?.data);
       let errorMsg = dict.classPage?.toastError || "Не удалось сохранить класс. Попробуй ещё раз.";

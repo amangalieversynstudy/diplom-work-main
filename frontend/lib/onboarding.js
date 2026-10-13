@@ -39,3 +39,9 @@ export function readProfileFlags(me) {
 export function shouldRedirectToClass({ pending, isStaff, hasClass }) {
   return Boolean(pending) && !isStaff && !hasClass;
 }
+
+// Куда вести после выбора класса: первый выбор (после регистрации) ведёт на карту к первой миссии,
+// смена класса позже возвращает на лист героя.
+export function pathAfterClassChoice(hadClass) {
+  return hadClass ? "/profile" : "/worlds";
+}

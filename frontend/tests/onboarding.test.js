@@ -29,3 +29,10 @@ test("readProfileFlags handles nested and flat profile shapes", () => {
   assert.deepEqual(readProfileFlags({ class_role: null, user: { is_staff: true } }), { isStaff: true, hasClass: false });
   assert.deepEqual(readProfileFlags(null), { isStaff: false, hasClass: false });
 });
+
+const { pathAfterClassChoice } = new Function(`${source}; return { pathAfterClassChoice };`)();
+
+test("first class choice leads to the map, a later change back to the profile", () => {
+  assert.equal(pathAfterClassChoice(false), "/worlds");
+  assert.equal(pathAfterClassChoice(true), "/profile");
+});

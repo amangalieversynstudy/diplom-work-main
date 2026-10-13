@@ -4,7 +4,7 @@ import { Analytics as AnalyticsAPI } from "../lib/api";
 import logger from "../lib/logger";
 import { useI18n } from "../lib/i18n";
 import { unit } from "../lib/plural";
-import { heatCellState } from "../lib/metricsView";
+import { heatCellState, kpiState } from "../lib/metricsView";
 
 const WINDOW_OPTIONS = [3, 7, 14, 30];
 // Окно по умолчанию совпадает с бэкендом (ABANDON_WINDOW_DAYS) и с окном гипотез пилота.
@@ -43,7 +43,7 @@ function Kpi({ label, value, hint }) {
       <p className="text-xs uppercase tracking-widest font-bold text-muted mb-2">
         {label}
       </p>
-      <p className="text-3xl font-display font-bold text-text leading-none tabular-nums">
+      <p className={`${String(value).length > 8 ? "text-xl" : "text-3xl"} font-display font-bold text-text leading-none tabular-nums`}>
         {value}
       </p>
       <p className="text-xs text-muted mt-2">{hint}</p>
@@ -105,6 +105,11 @@ export default function LearningMetrics() {
   const none = t("analytics.metrics.noValue");
   const pct = (value) => (value == null ? none : `${value}%`);
   const num = (value) => (value == null ? none : value);
+  // процент по малой выборке не показываем: «мало данных (n=…)» вместо числа
+  const kpiValue = (value, n) => {
+    const s = kpiState(n, data.meta.min_sample);
+    return value != null && s.few ? fill(t("analytics.metrics.kpi.few"), { n: s.n }) : pct(value);
+  };
   const typeLabel = (key) => t(`analytics.taskTypes.types.${key}`);
   const helpLabel = (key) => t(`analytics.metrics.help.${key}`);
 
@@ -192,7 +197,7 @@ export default function LearningMetrics() {
       <div className="grid sm:grid-cols-3 gap-4">
         <Kpi
           label={t("analytics.metrics.kpi.mcr")}
-          value={pct(kpi.mission_completion_rate)}
+          value={kpiValue(kpi.mission_completion_rate, kpi.missions_started - kpi.missions_in_progress)}
           hint={t("analytics.metrics.kpi.mcrHint")}
         />
         <Kpi
@@ -202,7 +207,7 @@ export default function LearningMetrics() {
         />
         <Kpi
           label={t("analytics.metrics.kpi.dropout")}
-          value={pct(kpi.task_dropout_rate)}
+          value={kpiValue(kpi.task_dropout_rate, kpi.steps_known)}
           hint={t("analytics.metrics.kpi.dropoutHint")}
         />
       </div>

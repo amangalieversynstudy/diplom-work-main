@@ -152,6 +152,7 @@ export const en = {
         mas: "Attempts to success",
         masHint: "Mean over the quiz and code steps that were solved",
         dropout: "Step drop-out",
+        few: "too little data (n={n})",
         dropoutHint: "Of steps with a known outcome: not solved and the learner stopped coming",
       },
       funnel: {

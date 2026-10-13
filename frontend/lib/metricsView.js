@@ -17,3 +17,13 @@ export function heatCellState(step, minSample) {
   }
   return { state: "ok", text: `${Math.round(step.dropout_rate)}%`, rate: step.dropout_rate };
 }
+
+/**
+ * Плитка KPI: процент по меньше чем minSample известных исходов ничего не говорит
+ * («Отсев 100%» на одном шаге), вместо числа показываем «мало данных».
+ * @returns {{few: boolean, n: number}}
+ */
+export function kpiState(n, minSample) {
+  const known = Number(n) || 0;
+  return { few: known < minSample, n: known };
+}

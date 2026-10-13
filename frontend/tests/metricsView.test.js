@@ -25,3 +25,15 @@ test("a step nobody opened stays an empty dot, and pairs still in progress do no
   assert.equal(heatCellState({ opened: 0, known: 0, dropout_rate: null }, 5).state, "empty");
   assert.equal(heatCellState({ opened: 30, known: 2, dropout_rate: 50 }, 5).state, "few");
 });
+
+const { kpiState } = new Function(`${source}; return { kpiState };`)();
+
+test("a KPI tile on a tiny sample says too little data", () => {
+  assert.deepEqual(kpiState(1, 5), { few: true, n: 1 });
+  assert.deepEqual(kpiState(undefined, 5), { few: true, n: 0 });
+});
+
+test("a KPI tile with enough known outcomes shows the number", () => {
+  assert.equal(kpiState(5, 5).few, false);
+  assert.equal(kpiState(40, 5).few, false);
+});

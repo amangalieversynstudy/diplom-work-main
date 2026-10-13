@@ -88,6 +88,7 @@ export default function MyApp({ Component, pageProps }) {
         <meta property="og:image" content="/og-image.png" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon-32.png" sizes="32x32" />
         <link rel="icon" href="/favicon-16.png" sizes="16x16" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

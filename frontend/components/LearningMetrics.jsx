@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, Gauge, LifeBuoy, Repeat, TrendingDown } from "lucide-react";
+import { Activity, Download, Gauge, LifeBuoy, Repeat, TrendingDown } from "lucide-react";
 import { Analytics as AnalyticsAPI } from "../lib/api";
 import logger from "../lib/logger";
 import { useI18n } from "../lib/i18n";
 import { unit } from "../lib/plural";
-import { heatCellState, kpiState } from "../lib/metricsView";
+import { dailyTotals, heatCellState, kpiState, splitEmptyMissions } from "../lib/metricsView";
 
 const WINDOW_OPTIONS = [3, 7, 14, 30];
 // Окно по умолчанию совпадает с бэкендом (ABANDON_WINDOW_DAYS) и с окном гипотез пилота.
@@ -51,11 +51,110 @@ function Kpi({ label, value, hint }) {
   );
 }
 
+// График класса по дням: столбики это ученики, которые что-то делали, линия это решённые шаги.
+// Рисуем SVG сами (без библиотеки): два ряда, подписи по краям, под графиком текстовые итоги.
+function DailyChart({ daily, t }) {
+  const totals = dailyTotals(daily);
+  const W = 640;
+  const H = 180;
+  const pad = { top: 14, right: 12, bottom: 26, left: 30 };
+  const innerW = W - pad.left - pad.right;
+  const innerH = H - pad.top - pad.bottom;
+  const peak = Math.max(totals.peak, 1);
+  const maxSolved = Math.max(totals.maxSolved, 1);
+  const step = innerW / Math.max(daily.length, 1);
+  const x = (i) => pad.left + step * i + step / 2;
+  const barH = (value) => (value / peak) * innerH;
+  const lineY = (value) => pad.top + innerH - (value / maxSolved) * innerH;
+  const line = daily.map((d, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${lineY(d.solved).toFixed(1)}`).join(" ");
+  const dayLabel = (iso) => iso.slice(8, 10) + "." + iso.slice(5, 7);
+  const label = (d) =>
+    fill(t("analytics.metrics.daily.point"), { date: dayLabel(d.date), active: d.active, solved: d.solved, runs: d.runs });
+
+  if (totals.empty) {
+    return (
+      <p className="text-sm text-muted py-4 text-center">
+        {fill(t("analytics.metrics.daily.empty"), { n: totals.days })}
+      </p>
+    );
+  }
+  return (
+    <div>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        role="img"
+        aria-label={fill(t("analytics.metrics.daily.total"), { n: totals.days, steps: totals.solved, peak: totals.peak })}
+        className="w-full h-auto"
+      >
+        {[0, 0.5, 1].map((share) => (
+          <g key={share}>
+            <line
+              x1={pad.left}
+              x2={W - pad.right}
+              y1={pad.top + innerH * (1 - share)}
+              y2={pad.top + innerH * (1 - share)}
+              stroke="currentColor"
+              className="text-border"
+              strokeWidth="1"
+            />
+            <text
+              x={pad.left - 6}
+              y={pad.top + innerH * (1 - share) + 3}
+              textAnchor="end"
+              fontSize="10"
+              className="fill-current text-muted"
+            >
+              {Math.round(peak * share)}
+            </text>
+          </g>
+        ))}
+        {daily.map((d, i) => (
+          <g key={d.date}>
+            <title>{label(d)}</title>
+            <rect
+              x={x(i) - step * 0.3}
+              y={pad.top + innerH - barH(d.active)}
+              width={step * 0.6}
+              height={Math.max(barH(d.active), d.active > 0 ? 2 : 0)}
+              rx="3"
+              className="fill-current text-primary"
+              opacity="0.75"
+            />
+            {i % 2 === 0 || daily.length < 8 ? (
+              <text x={x(i)} y={H - 8} textAnchor="middle" fontSize="10" className="fill-current text-muted">
+                {dayLabel(d.date)}
+              </text>
+            ) : null}
+          </g>
+        ))}
+        <path d={line} fill="none" stroke="currentColor" className="text-amber-600" strokeWidth="2" strokeLinejoin="round" />
+        {daily.map((d, i) => (
+          <circle key={d.date} cx={x(i)} cy={lineY(d.solved)} r="2.5" className="fill-current text-amber-600" />
+        ))}
+      </svg>
+      <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-muted">
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-sm bg-primary opacity-75" />
+          {t("analytics.metrics.daily.active")}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden="true" className="h-0.5 w-4 bg-amber-600" />
+          {t("analytics.metrics.daily.solved")} ({fill(t("analytics.metrics.daily.scale"), { max: totals.maxSolved })})
+        </span>
+      </div>
+      <p className="text-xs text-muted mt-1">
+        {fill(t("analytics.metrics.daily.total"), { n: totals.days, steps: totals.solved, peak: totals.peak })}
+      </p>
+    </div>
+  );
+}
+
 export default function LearningMetrics() {
   const { t, language } = useI18n();
   const [days, setDays] = useState(DEFAULT_WINDOW);
   const [data, setData] = useState(null);
   const [failed, setFailed] = useState(false);
+  const [showEmpty, setShowEmpty] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,6 +186,10 @@ export default function LearningMetrics() {
     });
     return [...groups.values()];
   }, [data]);
+
+  const { shown: shownMissions, hidden: emptyMissions } = useMemo(() => splitEmptyMissions(missions), [missions]);
+  const visibleMissions = showEmpty ? missions : shownMissions;
+  const visibleIds = new Set(visibleMissions.map((mission) => mission.id));
 
   const downloadCsv = useCallback(async () => {
     try {
@@ -150,6 +253,22 @@ export default function LearningMetrics() {
         })
       : fill(t("analytics.metrics.threshold.none"), { share });
   const empty = data.meta.learners === 0;
+
+  const emptyToggle = emptyMissions.length ? (
+    <div className="flex flex-wrap items-center gap-3 pt-2 text-xs text-muted">
+      {!showEmpty ? <span>{fill(t("analytics.metrics.emptyMissions.note"), { n: emptyMissions.length })}</span> : null}
+      <button
+        type="button"
+        onClick={() => setShowEmpty((value) => !value)}
+        aria-expanded={showEmpty}
+        className="rounded-lg border border-border px-3 py-1.5 font-medium text-text hover:border-primary"
+      >
+        {showEmpty
+          ? t("analytics.metrics.emptyMissions.hide")
+          : fill(t("analytics.metrics.emptyMissions.show"), { n: emptyMissions.length })}
+      </button>
+    </div>
+  ) : null;
 
   return (
     <div className="space-y-6">
@@ -221,6 +340,14 @@ export default function LearningMetrics() {
           missions: kpi.missions_in_progress,
         })}
       </p>
+
+      <Panel
+        icon={Activity}
+        title={t("analytics.metrics.daily.title")}
+        subtitle={fill(t("analytics.metrics.daily.subtitle"), { n: data.daily.length })}
+      >
+        <DailyChart daily={data.daily} t={t} />
+      </Panel>
 
       <div className="grid lg:grid-cols-2 gap-6">
         <Panel
@@ -311,7 +438,7 @@ export default function LearningMetrics() {
           </p>
         ) : (
           <div className="space-y-2">
-            {missions.map((mission) => (
+            {visibleMissions.map((mission) => (
               <div key={mission.id} className="flex items-center gap-3">
                 <p className="w-40 shrink-0 truncate text-sm text-text" title={mission.title}>
                   {mission.title}
@@ -369,6 +496,7 @@ export default function LearningMetrics() {
               />
               <span>{fill(t("analytics.metrics.heatmap.legendFew"), { min: data.meta.min_sample })}</span>
             </div>
+            {emptyToggle}
           </div>
         )}
       </Panel>
@@ -455,7 +583,9 @@ export default function LearningMetrics() {
               </tr>
             </thead>
             <tbody>
-              {data.tasks.map((row) => (
+              {data.tasks
+                .filter((row) => visibleIds.has(row.mission_id))
+                .map((row) => (
                 <tr key={row.task_id} className="border-t border-border tabular-nums">
                   <td className="py-1.5 pr-3 text-text max-w-[12rem] truncate">{row.mission_title}</td>
                   <td className="py-1.5 pr-3 text-muted">
@@ -472,6 +602,7 @@ export default function LearningMetrics() {
             </tbody>
           </table>
         </div>
+        {emptyToggle}
       </Panel>
     </div>
   );

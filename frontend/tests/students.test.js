@@ -76,3 +76,13 @@ test("an empty warning list is 'all clear' only when there is data behind it", (
   assert.equal(warningEmptyState({ total: 12, with_activity: 3 }), "clear");
   assert.equal(warningEmptyState(undefined), "noStudents");
 });
+
+test("default order follows urgency: high, medium, then the rest", () => {
+  const list = [
+    { id: 1, username: "a", warning_level: "ok" },
+    { id: 2, username: "b", warning_level: "medium" },
+    { id: 3, username: "c", warning_level: "high" },
+    { id: 4, username: "d", warning_level: "ok" },
+  ];
+  assert.deepEqual(ids(filterAndSortStudents(list)), [3, 2, 1, 4]);
+});

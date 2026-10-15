@@ -56,8 +56,17 @@ function compareValues(a, b) {
   return a - b;
 }
 
+const LEVEL_RANK = { high: 0, medium: 1 };
+
+/** Насколько срочно: 0 «срочно», 1 «внимание», 2 «в норме». Без warning_level работает старое поле stuck. */
+export function urgencyRank(student) {
+  const rank = LEVEL_RANK[student?.warning_level];
+  if (rank !== undefined) return rank;
+  return student?.stuck ? 1 : 2;
+}
+
 /**
- * Фильтр и сортировка. Без sortKey порядок прежний: застрявшие сверху, дальше порядок сервера.
+ * Фильтр и сортировка. Без sortKey: сначала срочные, затем внимание, затем остальные; внутри групп порядок сервера.
  * Сортировка устойчива: при равных значениях сохраняется исходный порядок, пустые значения
  * идут в конце при любом направлении.
  */
@@ -68,7 +77,7 @@ export function filterAndSortStudents(students, { query = "", sortKey = null, di
   const read = READERS[sortKey];
   const sign = direction === "asc" ? 1 : -1;
   list.sort((x, y) => {
-    if (!read) return Number(Boolean(y.s?.stuck)) - Number(Boolean(x.s?.stuck)) || x.index - y.index;
+    if (!read) return urgencyRank(x.s) - urgencyRank(y.s) || x.index - y.index;
     const a = read(x.s);
     const b = read(y.s);
     if (a === null && b === null) return x.index - y.index;

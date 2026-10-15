@@ -27,3 +27,31 @@ export function kpiState(n, minSample) {
   const known = Number(n) || 0;
   return { few: known < minSample, n: known };
 }
+
+/**
+ * Миссии без единого открытого шага прячем: в курсе их десятки, и пустые строки закрывают сигнал.
+ * @param {{steps: {opened?: number}[]}[]} missions
+ * @returns {{shown: object[], hidden: object[]}}
+ */
+export function splitEmptyMissions(missions) {
+  const shown = [];
+  const hidden = [];
+  (missions || []).forEach((mission) => {
+    const touched = (mission.steps || []).some((step) => Number(step?.opened) > 0);
+    (touched ? shown : hidden).push(mission);
+  });
+  return { shown, hidden };
+}
+
+/**
+ * Итоги ряда «по дням» для подписи и масштаба графика.
+ * @param {{active?: number, solved?: number, runs?: number}[]} daily
+ */
+export function dailyTotals(daily) {
+  const rows = Array.isArray(daily) ? daily : [];
+  const peak = rows.reduce((max, d) => Math.max(max, Number(d?.active) || 0), 0);
+  const solved = rows.reduce((sum, d) => sum + (Number(d?.solved) || 0), 0);
+  const runs = rows.reduce((sum, d) => sum + (Number(d?.runs) || 0), 0);
+  const maxSolved = rows.reduce((max, d) => Math.max(max, Number(d?.solved) || 0), 0);
+  return { days: rows.length, peak, solved, runs, maxSolved, empty: peak === 0 && solved === 0 && runs === 0 };
+}

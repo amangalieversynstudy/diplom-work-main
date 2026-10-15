@@ -16,6 +16,7 @@ import { useI18n } from "../lib/i18n";
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronRight,
   Clock,
   GraduationCap,
   LifeBuoy,
@@ -54,9 +55,11 @@ function StatCard({ icon: Icon, label, value, accent = "primary" }) {
   );
 }
 
-// Бейдж статуса ученика: «застрял» (с причиной) либо «в норме».
+// Бейдж статуса ученика. Тот же уровень и те же слова, что в списке «Кому нужна помощь сейчас»
+// (Срочно / Внимание / В норме): оба экрана считает система раннего предупреждения.
 function StatusBadge({ student, t }) {
-  if (!student.stuck) {
+  const level = student.warning_level || (student.stuck ? "medium" : "ok");
+  if (level === "ok") {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
         <CheckCircle2 size={13} />
@@ -64,27 +67,31 @@ function StatusBadge({ student, t }) {
       </span>
     );
   }
-  const isAttempts = student.stuck_reason === "many_attempts";
-  const Icon = isAttempts ? AlertTriangle : Moon;
-  const label = isAttempts
-    ? t("teacher.status.manyAttempts")
-    : t("teacher.status.inactive");
-  const cls = isAttempts
-    ? "border-amber-400/20 bg-amber-400/10 text-amber-800 dark:text-amber-400"
-    : "border-rose-400/20 bg-rose-400/10 text-rose-700 dark:text-rose-400";
-  const title = isAttempts
-    ? t("teacher.attemptsHint").replace("{n}", student.max_attempts)
-    : undefined;
+  const Icon = student.stuck_reason === "inactive" ? Moon : AlertTriangle;
+  const cls =
+    level === "high"
+      ? "border-rose-400/30 bg-rose-400/10 text-rose-700 dark:text-rose-400"
+      : "border-amber-400/30 bg-amber-400/10 text-amber-800 dark:text-amber-400";
+  const title =
+    student.stuck_reason === "many_attempts"
+      ? t("teacher.attemptsHint").replace("{n}", student.max_attempts)
+      : undefined;
   return (
     <span
       title={title}
       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${cls}`}
     >
       <Icon size={13} />
-      {label}
+      {t(`teacher.warning.${level}`)}
     </span>
   );
 }
+
+// Вся строка ведёт на страницу ученика: ссылка растянута на строку, поэтому клик в любое место
+// открывает ученика, а для клавиатуры и скринридера это по-прежнему одна ссылка.
+const ROW_LINK = "after:absolute after:inset-0 after:content-['']";
+const ROW_HOVER =
+  "relative transition-colors hover:border-primary/50 hover:bg-surface focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/30";
 
 const fill = (template, values) =>
   Object.entries(values).reduce(
@@ -138,7 +145,7 @@ function EarlyWarningPanel({ warning, t }) {
           {students.map((s) => (
             <li
               key={s.id}
-              className="flex flex-wrap items-start gap-3 bg-panel border border-border rounded-xl px-3 py-2.5"
+              className={`${ROW_HOVER} flex flex-wrap items-start gap-3 bg-panel border border-border rounded-xl px-3 py-2.5`}
             >
               <span
                 className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${
@@ -152,7 +159,7 @@ function EarlyWarningPanel({ warning, t }) {
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/teacher/student/${s.id}`}
-                  className="text-sm font-semibold text-text underline-offset-4 hover:text-primary hover:underline truncate block py-1.5 -my-1.5"
+                  className={`${ROW_LINK} text-sm font-semibold text-text underline-offset-4 hover:text-primary hover:underline truncate block py-1.5 -my-1.5 focus:outline-none`}
                 >
                   {s.display_name || s.username}
                 </Link>
@@ -162,6 +169,7 @@ function EarlyWarningPanel({ warning, t }) {
                   ))}
                 </ul>
               </div>
+              <ChevronRight size={18} className="shrink-0 self-center text-muted" aria-hidden="true" />
             </li>
           ))}
         </ul>
@@ -200,16 +208,17 @@ function AuthorshipWatchPanel({ overview, t }) {
           {students.map((s) => (
             <li
               key={s.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-panel px-4 py-2"
+              className={`${ROW_HOVER} flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-panel px-4 py-2`}
             >
               <Link
                 href={`/teacher/student/${s.id}`}
-                className="block py-1.5 -my-1.5 text-sm font-semibold text-text underline-offset-4 hover:text-primary hover:underline"
+                className={`${ROW_LINK} block py-1.5 -my-1.5 text-sm font-semibold text-text underline-offset-4 hover:text-primary hover:underline focus:outline-none`}
               >
                 {s.username}
               </Link>
-              <span className="text-xs text-muted">
+              <span className="flex items-center gap-2 text-xs text-muted">
                 {fill(t("teacher.authorshipWatch.row"), { flagged: s.flagged, solved: s.solved })}
+                <ChevronRight size={16} aria-hidden="true" />
               </span>
             </li>
           ))}
@@ -471,14 +480,14 @@ export default function TeacherPage() {
                 {students.map((s) => (
                   <div
                     key={s.id}
-                    className="md:grid md:grid-cols-[1.6fr_0.5fr_0.7fr_0.9fr_0.9fr_1fr_8.5rem] md:items-center gap-3 px-1 md:px-3 py-3 md:hover:bg-panel/40 rounded-xl transition-colors"
+                    className="relative md:grid md:grid-cols-[1.6fr_0.5fr_0.7fr_0.9fr_0.9fr_1fr_8.5rem] md:items-center gap-3 px-1 md:px-3 py-3 md:hover:bg-panel/60 focus-within:bg-panel/60 focus-within:ring-2 focus-within:ring-primary/30 rounded-xl transition-colors"
                   >
                     {/* Имя + статус (статус виден на мобиле рядом с именем) */}
                     <div className="flex items-center justify-between gap-2 min-w-0 mb-2 md:mb-0">
                       <div className="min-w-0">
                         <Link
                           href={`/teacher/student/${s.id}`}
-                          className="text-sm font-semibold text-text underline-offset-4 hover:text-primary hover:underline truncate block py-1.5 -my-1.5"
+                          className={`${ROW_LINK} text-sm font-semibold text-text underline-offset-4 hover:text-primary hover:underline truncate block py-1.5 -my-1.5 focus:outline-none`}
                         >
                           {s.display_name || s.username}
                         </Link>

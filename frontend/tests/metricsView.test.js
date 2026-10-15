@@ -37,3 +37,27 @@ test("a KPI tile with enough known outcomes shows the number", () => {
   assert.equal(kpiState(5, 5).few, false);
   assert.equal(kpiState(40, 5).few, false);
 });
+
+const { splitEmptyMissions, dailyTotals } = new Function(`${source}; return { splitEmptyMissions, dailyTotals };`)();
+
+test("missions nobody opened are split off from the ones with data", () => {
+  const missions = [
+    { id: 1, steps: [{ opened: 3 }, { opened: 0 }] },
+    { id: 2, steps: [{ opened: 0 }, { opened: 0 }] },
+    { id: 3, steps: [] },
+  ];
+  const { shown, hidden } = splitEmptyMissions(missions);
+  assert.deepEqual(shown.map((m) => m.id), [1]);
+  assert.deepEqual(hidden.map((m) => m.id), [2, 3]);
+  assert.deepEqual(splitEmptyMissions(undefined), { shown: [], hidden: [] });
+});
+
+test("daily totals give the scale of the chart and say when nothing happened", () => {
+  const totals = dailyTotals([
+    { active: 2, solved: 1, runs: 4 },
+    { active: 5, solved: 3, runs: 0 },
+  ]);
+  assert.deepEqual(totals, { days: 2, peak: 5, solved: 4, runs: 4, maxSolved: 3, empty: false });
+  assert.equal(dailyTotals([{ active: 0, solved: 0, runs: 0 }]).empty, true);
+  assert.equal(dailyTotals(null).empty, true);
+});

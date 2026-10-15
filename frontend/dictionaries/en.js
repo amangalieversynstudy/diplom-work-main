@@ -163,6 +163,21 @@ export const en = {
         dropped: "left",
         mas: "attempts",
       },
+      daily: {
+        title: "Class activity by day",
+        subtitle: "Last {n} days: how many learners did anything each day (bars) and how many steps were solved (line).",
+        active: "learners active",
+        solved: "steps solved",
+        scale: "scale up to {max}",
+        total: "Over {n} days: {steps} steps solved, up to {peak} active learners a day.",
+        empty: "Nothing happened in your courses in the last {n} days.",
+        point: "{date}: {active} active, {solved} steps solved, {runs} code runs",
+      },
+      emptyMissions: {
+        show: "Show missions without data ({n})",
+        hide: "Hide missions without data",
+        note: "Missions nobody has opened yet are hidden: {n}.",
+      },
       heatmap: {
         title: "Drop-out map by step",
         subtitle:
@@ -226,14 +241,14 @@ export const en = {
   },
   teacher: {
     title: "Teacher cabinet",
-    subtitle: "Every learner — progress, activity, and who is stuck.",
+    subtitle: "Every learner — progress, activity, and who needs help.",
     staffOnly: "Available to staff only",
     staffOnlyHint:
       "This section shows every learner's progress and is visible only to accounts with teacher (staff) rights.",
     backHome: "Back home",
     summary: {
       students: "Learners",
-      stuck: "Stuck",
+      stuck: "Need help",
       activeWeek: "Active in 7 days",
     },
     search: {

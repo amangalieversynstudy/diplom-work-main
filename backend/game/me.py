@@ -16,7 +16,7 @@ from django.utils import timezone
 from .metrics import MIN_SAMPLE, _last_activity, _mean
 from .models import CodeRun, LearningEvent, Mission, MissionTask, Progress, TaskProgress
 from .services import HELP_AFTER_FAILURES, only_published
-from .warning import INACTIVE_SOON_DAYS
+from .warning import INACTIVE_LONG_DAYS
 
 GRADED = ("quiz", "code")
 # a solved step that needed this many tries is worth a second look
@@ -96,7 +96,7 @@ def _next_step(user, missions, tasks_by_mission, solved, completed_missions):
 def _status(has_activity, days_away, stuck, mean_attempts, solved_graded):
     if not has_activity:
         return "new"
-    if days_away is not None and days_away >= INACTIVE_SOON_DAYS:
+    if days_away is not None and days_away >= INACTIVE_LONG_DAYS:
         return "away"
     if any(item["attempts"] >= HELP_AFTER_FAILURES for item in stuck):
         return "stuck"

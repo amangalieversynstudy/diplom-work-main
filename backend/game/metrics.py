@@ -27,7 +27,7 @@ from collections import Counter, defaultdict
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 
 from .models import CodeRun, LearningEvent, MissionTask, Progress, TaskProgress
@@ -51,6 +51,8 @@ MIN_CURVE_PAIRS = 20
 MIN_CURVE_LEARNERS = 10
 
 TOP_ERRORS = 8
+# Class activity by day for the dashboard chart.
+DAILY_DAYS = 14
 
 HELP_NONE = "none"
 HELP_HINT = "hint"
@@ -134,6 +136,45 @@ def _last_activity(learner_ids):
         "last",
     )
     return latest
+
+
+def _daily_activity(task_ids, mission_ids, learner_ids, now, days=DAILY_DAYS):
+    """Per day of the last ``days``: learners who did anything, steps solved, code runs (the class trend).
+
+    Only work in the viewer's own courses counts; free-practice runs belong to no course and stay out.
+    Days are UTC dates, like every other day-level figure here.
+    """
+    today = now.date()
+    dates = [today - timedelta(days=offset) for offset in range(days - 1, -1, -1)]
+    since = now - timedelta(days=days)
+    active = {day: set() for day in dates}
+    solved = {day: 0 for day in dates}
+    runs = {day: 0 for day in dates}
+    learners = list(learner_ids)
+
+    for user_id, stamp in CodeRun.objects.filter(
+        user_id__in=learners, task_id__in=task_ids, created_at__gte=since
+    ).values_list("user_id", "created_at"):
+        if stamp.date() in runs:
+            runs[stamp.date()] += 1
+            active[stamp.date()].add(user_id)
+    for user_id, stamp in LearningEvent.objects.filter(
+        Q(task_id__in=task_ids) | Q(mission_id__in=mission_ids),
+        user_id__in=learners,
+        created_at__gte=since,
+    ).values_list("user_id", "created_at"):
+        if stamp.date() in active:
+            active[stamp.date()].add(user_id)
+    for user_id, stamp, status in TaskProgress.objects.filter(
+        user_id__in=learners, task_id__in=task_ids, last_submitted_at__gte=since
+    ).values_list("user_id", "last_submitted_at", "status"):
+        if stamp.date() in active:
+            active[stamp.date()].add(user_id)
+            solved[stamp.date()] += status == "completed"
+    return [
+        {"date": day.isoformat(), "active": len(active[day]), "solved": solved[day], "runs": runs[day]}
+        for day in dates
+    ]
 
 
 def _help_by_pair(task_ids, learner_ids):
@@ -452,6 +493,7 @@ def compute_metrics(
             "steps_known": len(solved & opened) + len(dropped),
         },
         "missions": missions,
+        "daily": _daily_activity(task_ids, mission_ids, learner_ids, now),
         "funnel": funnel,
         "tasks": task_table,
         "failure_curve": curve,

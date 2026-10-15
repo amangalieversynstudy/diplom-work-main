@@ -366,3 +366,36 @@ def test_csv_export_neutralises_formulas(teacher):
     text = _client(teacher).get(EXPORT_URL).content.decode("utf-8-sig")
     assert "'=HYPERLINK(1)" in text
     assert ",=HYPERLINK" not in text
+
+
+def test_daily_series_counts_class_activity_by_day(teacher):
+    _, _, _, quiz, _ = _course(teacher)
+    first, second = _user("daily_a"), _user("daily_b")
+    now = timezone.now()
+    _try(first, quiz, 1, solved=True, when=now)
+    _try(second, quiz, 2, solved=False, when=now)
+    for user in (first, second):
+        _mission_row(user, quiz.mission, completed=False)
+
+    body = _client(teacher).get(URL).json()
+
+    daily = body["daily"]
+    assert len(daily) == 14
+    assert daily[-1]["date"] == now.date().isoformat()
+    # both learners submitted today, one of them solved the step
+    assert daily[-1]["active"] == 2
+    assert daily[-1]["solved"] == 1
+    assert all(day["active"] == 0 for day in daily[:-1])
+
+
+def test_daily_series_ignores_other_teachers_courses(teacher):
+    _, _, _, quiz, _ = _course(teacher)
+    other = _user("other_teacher", is_staff=True)
+    _, _, _, other_quiz, _ = _course(other, slug="other-course")
+    learner = _user("daily_c")
+    _try(learner, other_quiz, 1, solved=True)
+    _mission_row(learner, other_quiz.mission, completed=False)
+
+    daily = _client(teacher).get(URL).json()["daily"]
+
+    assert sum(day["active"] for day in daily) == 0

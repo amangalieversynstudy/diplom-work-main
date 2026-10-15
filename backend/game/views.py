@@ -1158,6 +1158,8 @@ class TeacherStudentsView(APIView):
                     "last_active": last_active.isoformat() if last_active else None,
                     "stuck": stuck,
                     "stuck_reason": stuck_reason,
+                    # the same level as the early-warning list, so both screens speak one language
+                    "warning_level": warning["level"] if warning else "ok",
                 }
             )
 

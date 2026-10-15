@@ -119,13 +119,13 @@ def test_a_step_solved_only_after_many_tries_is_suggested_for_review(student, co
 
 def test_a_learner_who_stopped_coming_is_called_away(student, course):
     TaskProgress.objects.create(user=student, task=course["code"], status="in_progress", attempts=1)
-    old = timezone.now() - timedelta(days=6)
+    old = timezone.now() - timedelta(days=8)
     TaskProgress.objects.filter(user=student).update(last_submitted_at=old)
     run = CodeRun.objects.create(user=student, task=course["code"], outcome="error", duration_ms=5)
     CodeRun.objects.filter(pk=run.pk).update(created_at=old)
     data = _get(student)
     assert data["status"] == "away"
-    assert data["summary"]["days_away"] >= 5
+    assert data["summary"]["days_away"] >= 7
 
 
 def test_quick_solvers_get_the_great_status(student, course):

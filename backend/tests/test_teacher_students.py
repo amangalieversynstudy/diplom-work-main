@@ -144,6 +144,7 @@ def test_inactive_open_mission_is_stuck_inactive():
     s = _staff_client().get(URL).json()["students"][0]
     assert s["stuck"] is True
     assert s["stuck_reason"] == "inactive"
+    assert s["warning_level"] == "medium"
 
 
 @pytest.mark.django_db
@@ -165,6 +166,7 @@ def test_repeated_failures_on_a_step_are_stuck_attempts():
     assert s["stuck"] is True
     assert s["stuck_reason"] == "many_attempts"
     assert s["max_attempts"] == 3
+    assert s["warning_level"] == "medium"
 
 
 @pytest.mark.django_db

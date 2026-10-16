@@ -31,7 +31,8 @@ def _teacher_name(track):
     owner = track.owner
     if owner is None:
         return ""
-    return owner.display_name or owner.username
+    # the nickname always shows, so a display name cannot pass for somebody else
+    return f"{owner.display_name} (@{owner.username})" if owner.display_name else owner.username
 
 
 def _title(track):

@@ -438,6 +438,9 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        # rows of a closed class (and who studies there) are not for strangers
+        visible_tracks = only_published(Track.objects.all(), self.request.user, "")
+        qs = qs.filter(Q(track__isnull=True) | Q(track__in=visible_tracks))
         track_slug = self.request.query_params.get("track")
         if track_slug:
             qs = qs.filter(track__slug=track_slug)

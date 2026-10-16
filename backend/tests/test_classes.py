@@ -164,7 +164,7 @@ def test_lookup_shows_who_invites_before_joining():
     teacher, learner = _user("t9", is_teacher=True, display_name="Айгерим"), _user("l9")
     track, _, _ = _class(teacher)
     body = _client(learner).get(LOOKUP, {"code": track.join_code.lower()}).json()
-    assert body["teacher"] == "Айгерим" and body["joined"] is False and body["open"] is True
+    assert body["teacher"] == "Айгерим (@t9)" and body["joined"] is False and body["open"] is True
     assert not Enrollment.objects.exists()  # looking is not joining
 
 
@@ -284,3 +284,23 @@ def test_public_courses_keep_the_old_rule_progress_is_enough():
     _work(learner, mission, task)
 
     assert _roster(teacher) == ["l18"]
+
+
+@pytest.mark.django_db
+def test_the_leaderboard_does_not_reveal_a_closed_class():
+    from game.models import LeaderboardEntry
+
+    teacher, member, stranger = _user("t19", is_teacher=True), _user("l19"), _user("l19x")
+    track, _, _ = _class(teacher)
+    _client(member).post(JOIN, {"code": track.join_code, "consent": True}, format="json")
+    LeaderboardEntry.objects.create(
+        user=member, scope="track", track=track, period_label="all_time", xp_total=50, position=1
+    )
+
+    def rows(client):
+        body = client.get("/api/leaderboard/", {"scope": "track"}).json()
+        return body["results"] if isinstance(body, dict) else body
+
+    assert rows(APIClient()) == []  # anonymous
+    assert rows(_client(stranger)) == []  # signed in, not in the class
+    assert len(rows(_client(member))) == 1  # a classmate sees it

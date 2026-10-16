@@ -64,6 +64,11 @@ CORS_ALLOW_CREDENTIALS = True
 # the host (and rotate it by changing the variable); or grant is_staff to
 # teachers by hand in the Django admin.
 
+# Open teacher sign-up is OFF in production until it is switched on on purpose: set TEACHER_SELF_REGISTRATION=1
+# only after the open points of the security review are closed (cross-course aggregates, XP farming through an own
+# course, SUS/freshness spoofing). With it off a teacher needs the invite code.
+TEACHER_SELF_REGISTRATION = os.getenv("TEACHER_SELF_REGISTRATION", "0").strip().lower() in ("1", "true", "yes", "on")
+
 # ─── code runner on Docker-less hosts (Railway) ───────────────────────────
 # Primary path here is the external Judge0 sandbox (RUNNER_JUDGE0_URL, inherited
 # from base) - code runs OFF this server, so app secrets/filesystem stay safe.

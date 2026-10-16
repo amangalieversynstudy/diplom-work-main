@@ -13,6 +13,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import connection
+from django.db.models import Q
 from django.db.migrations.executor import MigrationExecutor
 
 from game.models import Mission, MissionTask, Track
@@ -171,7 +172,7 @@ def check_data():
         )
 
     User = get_user_model()
-    if not User.objects.filter(is_staff=True, is_active=True).exists():
+    if not User.objects.filter(Q(is_staff=True) | Q(is_teacher=True), is_active=True).exists():
         yield FAIL, "Нет ни одного преподавателя (staff): некому смотреть аналитику."
     homeless = [t.slug for t in tracks if t.owner_id is None]
     if homeless and not User.objects.filter(is_superuser=True, is_active=True).exists():
@@ -195,7 +196,7 @@ def check_data():
 
     yield OK, (
         f"Согласились на исследование: {Profile.objects.filter(research_consent=True).count()} "
-        f"из {Profile.objects.filter(user__is_staff=False).count()} учеников."
+        f"из {Profile.objects.filter(user__is_staff=False, user__is_teacher=False).count()} учеников."
     )
 
 

@@ -38,6 +38,9 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 # (the default) disables teacher self-registration entirely — no one can gain
 # staff via the public endpoint unless this is explicitly configured in env.
 TEACHER_INVITE_CODE = os.getenv("TEACHER_INVITE_CODE", "")
+# Self-service teacher role at sign-up (the "I am a teacher" choice). Switch it off with
+# TEACHER_SELF_REGISTRATION=0 and a teacher can only join with the invite code above.
+TEACHER_SELF_REGISTRATION = os.getenv("TEACHER_SELF_REGISTRATION", "1").strip().lower() not in ("0", "false", "no", "")
 
 # Debug flag (enable via env DEBUG=True/False)
 DEBUG = os.getenv("DEBUG", "True").lower() in {"1", "true", "yes", "on"}

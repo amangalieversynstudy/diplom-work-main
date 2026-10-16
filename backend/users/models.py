@@ -19,6 +19,14 @@ class User(AbstractUser):
     # confirmation link would then undo a block. This flag is True only while
     # sign-up waits for its confirmation link; the link works for no one else.
     email_verification_pending = models.BooleanField(default=False)
+    # Self-service teacher role (chosen at sign-up). Unlike ``is_staff`` it does not open the Django admin
+    # and it never makes the account count as a learner in the metrics.
+    is_teacher = models.BooleanField(default=False)
+
+    @property
+    def can_teach(self):
+        """Teacher cabinet, analytics and Studio: a self-service teacher or a staff account."""
+        return bool(self.is_teacher or self.is_staff)
 
 
 class Profile(models.Model):

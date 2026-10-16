@@ -7,6 +7,8 @@ from django.utils.dateparse import parse_datetime
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions
+
+from .permissions import IsTeacher
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -67,7 +69,7 @@ class TeacherStudentLearningView(APIView):
     own courses. A student who does not take the teacher's courses is a 404.
     """
 
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsTeacher]
 
     @swagger_auto_schema(
         operation_summary="A student's learning picture (teacher)",
@@ -99,7 +101,7 @@ class TeacherStudentAuthorshipView(APIView):
     teacher's courses like the learning view.
     """
 
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsTeacher]
 
     @swagger_auto_schema(
         operation_summary="Authorship of a student's solved code steps (teacher)",
@@ -120,7 +122,7 @@ class TeacherAuthorshipOverviewView(APIView):
     GET /api/teacher/authorship/ -> {"students": [{id, username, flagged, solved}]}
     """
 
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsTeacher]
 
     @swagger_auto_schema(
         operation_summary="Whose solutions to look at first (teacher)",
@@ -142,7 +144,7 @@ class TeacherLiveView(APIView):
     learner actions that appeared after it are timed (see game/live.py). Without ``since`` nothing is measured.
     """
 
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsTeacher]
 
     @swagger_auto_schema(
         operation_summary="Live activity of the teacher's learners",
@@ -167,7 +169,7 @@ class TeacherUsabilityView(APIView):
     A teacher never sees anyone else's answers or the score; the pilot report aggregates them.
     """
 
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsTeacher]
 
     def get_throttles(self):
         # only the submission is limited, reading "did I answer" is not
@@ -208,7 +210,7 @@ class LearningMetricsView(APIView):
     A teacher sees the metrics of their own courses only; a superuser sees all.
     """
 
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsTeacher]
 
     @swagger_auto_schema(
         operation_summary="Learning-effectiveness metrics (staff)",
@@ -233,7 +235,7 @@ class LearningMetricsView(APIView):
 class LearningMetricsExportView(APIView):
     """The per-step metrics table as CSV, for a spreadsheet or a thesis chapter."""
 
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsTeacher]
 
     @swagger_auto_schema(
         operation_summary="Per-step metrics as CSV (staff)",
@@ -261,7 +263,7 @@ class EarlyWarningView(APIView):
     GET /api/analytics/early-warning/ -> {students, summary, rules}
     """
 
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsTeacher]
 
     @swagger_auto_schema(
         operation_summary="Early warning list (staff)",

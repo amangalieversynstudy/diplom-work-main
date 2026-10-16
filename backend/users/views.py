@@ -60,6 +60,9 @@ class ProfileMeView(APIView):
             "display_name": user.display_name,
             # staff видит аналитику/кабинет преподавателя (гейтинг на фронте)
             "is_staff": user.is_staff,
+            "is_teacher": user.is_teacher,
+            # одно поле для гейтинга на фронте: кабинет, аналитика и студия
+            "can_teach": user.can_teach,
             "xp": profile.xp,
             "level": profile.level,
             "bio": profile.bio,

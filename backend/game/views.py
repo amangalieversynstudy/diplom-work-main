@@ -63,7 +63,7 @@ from .models import (
     TaskProgress,
     Track,
 )
-from .permissions import IsSuperUser
+from .permissions import IsSuperUser, IsTeacher
 from .variants import personalize
 from .metrics import _last_activity
 from .warning import assess_students
@@ -1057,7 +1057,7 @@ class TeacherStudentsView(APIView):
     GET /api/teacher/students/ -> {students: [...], summary: {...}}
     """
 
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsTeacher]
 
     @swagger_auto_schema(
         operation_summary="Teacher cabinet: per-student progress (staff)",
@@ -1075,7 +1075,7 @@ class TeacherStudentsView(APIView):
         # Преподаватель видит только «своих» учеников — тех, кто проходит миссии
         # его курсов (Студия). Суперюзер видит всех. Используем подзапрос id__in
         # (а не JOIN-фильтр), чтобы агрегаты ниже остались точными.
-        base = User.objects.filter(is_staff=False)
+        base = User.objects.filter(is_staff=False, is_teacher=False)
         if not request.user.is_superuser:
             my_student_ids = (
                 Progress.objects.filter(

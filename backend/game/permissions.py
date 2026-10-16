@@ -14,3 +14,15 @@ class IsSuperUser(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_superuser)
+
+
+class IsTeacher(permissions.BasePermission):
+    """The teacher's cabinet, analytics and Studio: a signed-in user with the teacher role or staff rights.
+
+    Every queryset behind these endpoints is still limited to the viewer's own courses (superusers see
+    all), so the role alone never exposes another teacher's learners.
+    """
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and user.is_authenticated and user.can_teach)

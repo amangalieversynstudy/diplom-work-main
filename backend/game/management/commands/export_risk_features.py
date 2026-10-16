@@ -86,7 +86,7 @@ class Command(BaseCommand):
         key = getattr(settings, "ANALYTICS_EXPORT_SALT", "") or settings.SECRET_KEY
         now = timezone.now()
 
-        learners = Profile.objects.filter(user__is_staff=False)
+        learners = Profile.objects.filter(user__is_staff=False, user__is_teacher=False)
         if not options["all_users"]:
             learners = learners.filter(research_consent=True)
         ids = list(learners.values_list("user_id", flat=True))

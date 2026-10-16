@@ -56,7 +56,7 @@ def _level(score):
 
 def _scoped_learners(viewer):
     """Non-staff learners doing the viewer's courses (all learners for a superuser)."""
-    students = get_user_model().objects.filter(is_staff=False)
+    students = get_user_model().objects.filter(is_staff=False, is_teacher=False)
     if viewer.is_superuser:
         return students
     doing_my_courses = Progress.objects.filter(

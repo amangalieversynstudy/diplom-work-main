@@ -199,7 +199,7 @@ def sandbox_health():
 def build_report(now=None):
     """Everything the weekly pilot report shows, as plain data."""
     now = now or timezone.now()
-    learners = get_user_model().objects.filter(is_staff=False)
+    learners = get_user_model().objects.filter(is_staff=False, is_teacher=False)
     registered = learners.count()
     # Only learners who agreed are analysed; the rest are counted (n), never looked at.
     consenting_ids = set(

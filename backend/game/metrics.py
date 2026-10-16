@@ -294,7 +294,7 @@ def compute_metrics(
     tasks = list(scoped_tasks(viewer, track_id))
     task_ids = [task.pk for task in tasks]
     mission_ids = sorted({task.mission_id for task in tasks})
-    students = User.objects.filter(is_staff=False)
+    students = User.objects.filter(is_staff=False, is_teacher=False)
     if consented_only:
         students = students.filter(profile__research_consent=True)
 

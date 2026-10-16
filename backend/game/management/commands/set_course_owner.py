@@ -29,9 +29,9 @@ class Command(BaseCommand):
             teacher = get_user_model().objects.get(username=options["teacher"])
         except get_user_model().DoesNotExist:
             raise CommandError(f"No user named {options['teacher']!r}.")
-        if not teacher.is_staff:
+        if not teacher.can_teach:
             raise CommandError(
-                f"{teacher.username} is not staff: only teachers can own a course."
+                f"{teacher.username} is not a teacher or staff: only teachers can own a course."
             )
         previous = track.owner.username if track.owner_id else "nobody"
         track.owner = teacher

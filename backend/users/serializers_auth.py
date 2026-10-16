@@ -23,6 +23,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         write_only=True, required=False, allow_blank=True
     )
 
+    # Who is signing up. "teacher" gives the self-service teacher role (cabinet, analytics, Studio for the
+    # person's OWN courses only); it is open unless TEACHER_SELF_REGISTRATION is switched off.
+    role = serializers.ChoiceField(
+        choices=("student", "teacher"), write_only=True, required=False, default="student"
+    )
+
     # Opt-in consent to use this learner's activity in research. Off unless
     # the sign-up form sends true.
     research_consent = serializers.BooleanField(
@@ -37,6 +43,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             "email",
             "password",
             "teacher_code",
+            "role",
             "research_consent",
         )
 
@@ -67,6 +74,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         teacher_code = (validated_data.pop("teacher_code", "") or "").strip()
         research_consent = validated_data.pop("research_consent", False)
+        wants_teacher_role = validated_data.pop("role", "student") == "teacher"
         username = validated_data["username"]
         if User.objects.filter(username__iexact=username).exists():
             raise serializers.ValidationError({"username": "Это имя пользователя уже занято."})
@@ -83,6 +91,10 @@ class RegisterSerializer(serializers.ModelSerializer):
                     {"teacher_code": "Неверный код преподавателя."}
                 )
             is_teacher = True
+        elif wants_teacher_role and not getattr(settings, "TEACHER_SELF_REGISTRATION", True):
+            raise serializers.ValidationError(
+                {"role": "Регистрация преподавателей сейчас закрыта: нужен код приглашения."}
+            )
 
         user = User.objects.create_user(
             username=username,
@@ -92,6 +104,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         if is_teacher:
             user.is_staff = True
             user.save(update_fields=["is_staff"])
+        elif wants_teacher_role:
+            user.is_teacher = True
+            user.save(update_fields=["is_teacher"])
         if research_consent:
             profile = user.profile
             profile.set_research_consent(True)

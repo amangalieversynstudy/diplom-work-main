@@ -15,6 +15,8 @@ import re
 
 from django.utils.text import slugify
 from rest_framework import permissions, serializers, viewsets
+
+from .permissions import IsTeacher
 from rest_framework.exceptions import PermissionDenied
 
 from .codeanalysis import CONSTRUCTS
@@ -251,7 +253,7 @@ class StudioTrackViewSet(viewsets.ModelViewSet):
     """A teacher's own courses. Superusers see all."""
 
     serializer_class = StudioTrackSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsTeacher]
     queryset = Track.objects.all()
 
     def get_queryset(self):
@@ -268,7 +270,7 @@ class StudioLocationViewSet(viewsets.ModelViewSet):
     """Sections inside a teacher's courses. Filter with ``?track=<id>``."""
 
     serializer_class = StudioLocationSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsTeacher]
     queryset = Location.objects.all()
 
     def get_queryset(self):
@@ -301,7 +303,7 @@ class StudioMissionViewSet(viewsets.ModelViewSet):
     """Missions inside a teacher's courses. Filter with ``?location=<id>``."""
 
     serializer_class = StudioMissionSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsTeacher]
     queryset = Mission.objects.all()
 
     def get_queryset(self):
@@ -565,7 +567,7 @@ class StudioTaskViewSet(viewsets.ModelViewSet):
     """Tasks inside a teacher's missions. Filter with ``?mission=<id>``."""
 
     serializer_class = StudioTaskSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsTeacher]
     queryset = MissionTask.objects.all()
 
     def get_queryset(self):

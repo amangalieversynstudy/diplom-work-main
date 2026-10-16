@@ -51,6 +51,12 @@ class TaskSubmitThrottle(UserRateThrottle):
     scope = "task_submit"
 
 
+class ClassJoinThrottle(UserRateThrottle):
+    """Class codes: a few tries an hour is plenty and stops guessing codes."""
+
+    scope = "class_join"
+
+
 class UsabilitySubmitThrottle(UserRateThrottle):
     """SUS questionnaire: a handful of submissions a day is plenty."""
 

@@ -15,7 +15,10 @@ import re
 
 from django.utils.text import slugify
 from rest_framework import permissions, serializers, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
+from .classes import new_join_code
 from .permissions import IsTeacher
 from rest_framework.exceptions import PermissionDenied
 
@@ -78,10 +81,13 @@ class StudioTrackSerializer(serializers.ModelSerializer):
             "banner_url",
             "order",
             "is_active",
+            "is_public",
+            "join_code",
+            "join_open",
             "locations_count",
             "missions_count",
         ]
-        read_only_fields = ["slug"]
+        read_only_fields = ["slug", "is_public", "join_code"]
 
     def get_locations_count(self, obj):
         return obj.worlds.count()
@@ -263,7 +269,16 @@ class StudioTrackViewSet(viewsets.ModelViewSet):
         return qs.filter(owner=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        # A new course is a closed class with its own join code: learners find it by code, not by browsing.
+        serializer.save(owner=self.request.user, is_public=False, join_code=new_join_code())
+
+    @action(detail=True, methods=["post"], url_path="new-code")
+    def new_code(self, request, pk=None):
+        """Replace the class code (the old one stops working); learners who already joined stay."""
+        track = self.get_object()
+        track.join_code = new_join_code()
+        track.save(update_fields=["join_code"])
+        return Response({"join_code": track.join_code})
 
 
 class StudioLocationViewSet(viewsets.ModelViewSet):

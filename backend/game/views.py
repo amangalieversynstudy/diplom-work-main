@@ -63,6 +63,7 @@ from .models import (
     TaskProgress,
     Track,
 )
+from .classes import visible_learners
 from .permissions import IsSuperUser, IsTeacher
 from .variants import personalize
 from .metrics import _last_activity
@@ -90,7 +91,8 @@ class TrackViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = super().get_queryset()
         if self.request.method in ("GET", "HEAD", "OPTIONS"):
-            return qs.filter(is_active=True)
+            # drafts stay hidden; closed courses (classes) only for their owner and the learners who joined
+            return only_published(qs, self.request.user, "").filter(is_active=True)
         return qs
 
     def get_permissions(self):
@@ -1075,16 +1077,7 @@ class TeacherStudentsView(APIView):
         # Преподаватель видит только «своих» учеников — тех, кто проходит миссии
         # его курсов (Студия). Суперюзер видит всех. Используем подзапрос id__in
         # (а не JOIN-фильтр), чтобы агрегаты ниже остались точными.
-        base = User.objects.filter(is_staff=False, is_teacher=False)
-        if not request.user.is_superuser:
-            my_student_ids = (
-                Progress.objects.filter(
-                    mission__location__track__owner=request.user
-                )
-                .values_list("user_id", flat=True)
-                .distinct()
-            )
-            base = base.filter(id__in=my_student_ids)
+        base = visible_learners(request.user)
 
         # Одним запросом: считаем по каждому ученику завершённые / открытые
         # миссии, максимум попыток на незавершённой и время последней активности.

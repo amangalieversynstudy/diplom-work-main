@@ -41,6 +41,21 @@ class Track(models.Model):
         ),
     )
 
+    is_public = models.BooleanField(
+        default=True,
+        help_text=(
+            "Виден всем ученикам. Выключено = «класс»: курс видят только вошедшие по коду "
+            "и сам преподаватель. Новые курсы Студии создаются закрытыми."
+        ),
+    )
+    join_code = models.CharField(
+        max_length=12, unique=True, null=True, blank=True,
+        help_text="Код класса: ученик вводит его или открывает ссылку /join/<код>.",
+    )
+    join_open = models.BooleanField(
+        default=True, help_text="Принимает ли класс новых учеников по коду."
+    )
+
     class Meta:
         ordering = ["order", "id"]
 
@@ -104,6 +119,28 @@ class Track(models.Model):
 
     def get_localized_tagline(self, lang: str = "ru") -> str:
         return self._get_localized_value("tagline", lang)
+
+
+class Enrollment(models.Model):
+    """A learner who joined a teacher's class (a closed course) with its code, and agreed to be seen there."""
+
+    user = models.ForeignKey(
+        "users.User", on_delete=models.CASCADE, related_name="enrollments"
+    )
+    track = models.ForeignKey(Track, on_delete=models.CASCADE, related_name="enrollments")
+    joined_at = models.DateTimeField(auto_now_add=True)
+    consented_at = models.DateTimeField(
+        help_text="Когда ученик согласился, что преподаватель видит его ник и прогресс в этом курсе."
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "track"], name="one_enrollment_per_user_and_track")
+        ]
+        ordering = ["-joined_at"]
+
+    def __str__(self):
+        return f"{self.user_id} in {self.track_id}"
 
 
 class ClassRole(models.Model):

@@ -21,6 +21,7 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
+from .classes import visible_learners
 from .metrics import ABANDON_WINDOW_DAYS, _last_activity, _title, scoped_tasks
 from .models import Progress, TaskProgress
 from .risk import load_risk_model, risk_probabilities
@@ -55,14 +56,9 @@ def _level(score):
 
 
 def _scoped_learners(viewer):
-    """Non-staff learners doing the viewer's courses (all learners for a superuser)."""
-    students = get_user_model().objects.filter(is_staff=False, is_teacher=False)
-    if viewer.is_superuser:
-        return students
-    doing_my_courses = Progress.objects.filter(
-        mission__location__track__owner=viewer
-    ).values("user_id")
-    return students.filter(id__in=doing_my_courses)
+    """Learners the viewer may see: those who joined their classes or took their public courses
+    (all learners for a superuser). See ``classes.visible_learners``."""
+    return visible_learners(viewer)
 
 
 scoped_learners = _scoped_learners  # public name for the teacher's per-student screen

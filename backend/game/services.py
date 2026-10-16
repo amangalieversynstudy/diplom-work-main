@@ -18,7 +18,7 @@ from rest_framework.exceptions import APIException
 
 from . import help as help_module
 from .achievements import evaluate_achievements
-from .models import MissionTask, Progress, TaskProgress
+from .models import Enrollment, MissionTask, Progress, TaskProgress
 from .variants import personalize
 from .runner import execute_python_code
 
@@ -53,9 +53,18 @@ def only_published(queryset, user, track_lookup):
     """
     if user is not None and getattr(user, "is_superuser", False):
         return queryset
-    return queryset.filter(
-        Q(**{f"{track_lookup}__isnull": True}) | Q(**{f"{track_lookup}__is_active": True})
-    )
+    # an empty lookup means the queryset is of tracks themselves
+    prefix = f"{track_lookup}__" if track_lookup else ""
+    active = Q(**{f"{prefix}is_active": True})
+    visible = active & Q(**{f"{prefix}is_public": True})
+    if track_lookup:
+        visible |= Q(**{f"{track_lookup}__isnull": True})
+    if user is not None and getattr(user, "is_authenticated", False):
+        # a closed course (class): only its owner and the learners who joined it
+        joined = Enrollment.objects.filter(user=user).values("track_id")
+        member_of = Q(**{f"{track_lookup}__in" if track_lookup else "pk__in": joined})
+        visible |= active & (Q(**{f"{prefix}owner": user}) | member_of)
+    return queryset.filter(visible)
 
 
 def public_task_data(task):

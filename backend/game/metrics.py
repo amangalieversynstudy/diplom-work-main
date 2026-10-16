@@ -30,6 +30,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Max, Q
 from django.utils import timezone
 
+from .classes import visible_learners
 from .models import CodeRun, LearningEvent, MissionTask, Progress, TaskProgress
 from .stats import clustered_share
 
@@ -294,7 +295,9 @@ def compute_metrics(
     tasks = list(scoped_tasks(viewer, track_id))
     task_ids = [task.pk for task in tasks]
     mission_ids = sorted({task.mission_id for task in tasks})
-    students = User.objects.filter(is_staff=False, is_teacher=False)
+    # only learners this viewer may see: their classes and their public courses (never a learner who merely
+    # wandered into a closed course, or who left the class)
+    students = visible_learners(viewer)
     if consented_only:
         students = students.filter(profile__research_consent=True)
 

@@ -3,6 +3,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
+from .class_views import ClassJoinView, ClassLookupView, LeaveClassView, MyClassesView
 from .analytics_views import (
     EarlyWarningView,
     LearningMetricsExportView,
@@ -94,6 +95,10 @@ urlpatterns = [
         LearningMetricsExportView.as_view(),
         name="learning_metrics_export",
     ),
+    path("classes/lookup/", ClassLookupView.as_view(), name="class_lookup"),
+    path("classes/join/", ClassJoinView.as_view(), name="class_join"),
+    path("classes/mine/", MyClassesView.as_view(), name="my_classes"),
+    path("classes/<int:track_id>/leave/", LeaveClassView.as_view(), name="class_leave"),
     path("achievements/", AchievementsView.as_view(), name="achievements"),
     path("events/", LearningEventView.as_view(), name="learning_events"),
     path(

@@ -217,6 +217,10 @@ def test_a_learner_can_finish_a_mission_a_teacher_built_in_the_studio():
 
     learner = User.objects.create_user(username="learner", password="TestPass123!")
     student = _client(learner)
+    # a Studio course is a closed class: invisible until the learner joins it with the code
+    assert student.get("/api/mission-tasks/", {"mission": mission_id}).json() in ([], {"count": 0, "next": None, "previous": None, "results": []})
+    code = Track.objects.get(pk=track_id).join_code
+    assert student.post("/api/classes/join/", {"code": code, "consent": True}, format="json").status_code == 201
     listed = student.get("/api/mission-tasks/", {"mission": mission_id}).json()
     rows = listed["results"] if isinstance(listed, dict) else listed
     assert {r["id"] for r in rows} == {story, quiz}

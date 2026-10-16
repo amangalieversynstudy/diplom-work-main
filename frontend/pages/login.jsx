@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { login, Auth, Profile as ProfileAPI } from "../lib/api";
 import { useDictionary } from "../lib/i18n";
 import { homePathFor } from "../lib/roles";
+import { pathAfterAuth, takeJoinCode } from "../lib/join";
 
 export default function Login() {
   const [identifier, setIdentifier] = useState("");
@@ -67,7 +68,9 @@ export default function Login() {
 
       // Куда после входа: преподаватель в свой кабинет, ученик на карту. Выбор класса
       // никуда не ведёт и не мешает начать, поэтому первым экраном он не показывается.
-      router.push(homePathFor(userData));
+      const home = homePathFor(userData);
+      // учитель в кабинет; ученик, пришедший по ссылке класса, во вступление, иначе на карту
+      router.push(home === "/worlds" ? pathAfterAuth(home, takeJoinCode()) : home);
     } catch (err) {
       const data = err?.response?.data || {};
       const detail = data.detail || "";

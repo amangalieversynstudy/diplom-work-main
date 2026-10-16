@@ -23,6 +23,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { canTeach } from "../../lib/roles";
+import { joinLink } from "../../lib/join";
 
 const inputCls =
   "w-full rounded-xl border border-border bg-panel px-3.5 py-2.5 text-sm text-text placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-primary/50";
@@ -487,6 +488,93 @@ function SectionCard({
   );
 }
 
+// Код и ссылка класса: преподаватель даёт их группе; ученик вступает с согласием и видит только свой курс.
+function ClassBlock({ track, t, onTrack }) {
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState("");
+  const link = joinLink(typeof window === "undefined" ? "" : window.location.origin, track.join_code);
+
+  const copy = async (what, text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(what);
+      setTimeout(() => setCopied(""), 1800);
+    } catch {
+      setCopied("");
+    }
+  };
+
+  const toggleOpen = async () => {
+    setBusy(true);
+    try {
+      const updated = await StudioAPI.tracks.update(track.id, { join_open: !track.join_open });
+      onTrack((prev) => ({ ...prev, join_open: updated.join_open }));
+    } catch (e) {
+      logger.error("Class open toggle failed:", e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const newCode = async () => {
+    if (!window.confirm(t("classes.studio.newCodeConfirm"))) return;
+    setBusy(true);
+    try {
+      const { join_code: code } = await StudioAPI.tracks.newCode(track.id);
+      onTrack((prev) => ({ ...prev, join_code: code }));
+    } catch (e) {
+      logger.error("New class code failed:", e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mb-8 rounded-3xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+      <h2 className="mb-1 text-lg font-semibold text-text">{t("classes.studio.title")}</h2>
+      <p className="mb-4 text-xs text-muted">{t("classes.studio.hint")}</p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <p className="mb-1.5 text-xs font-semibold text-muted">{t("classes.studio.code")}</p>
+          <div className="flex items-center gap-2">
+            <code className="rounded-xl border border-border bg-panel px-3 py-2 font-mono text-lg tracking-widest text-text">
+              {track.join_code}
+            </code>
+            <Button variant="outline" onClick={() => copy("code", track.join_code)}>
+              {copied === "code" ? t("classes.studio.copied") : t("classes.studio.copy")}
+            </Button>
+          </div>
+        </div>
+        <div>
+          <p className="mb-1.5 text-xs font-semibold text-muted">{t("classes.studio.link")}</p>
+          <div className="flex items-center gap-2">
+            <input readOnly value={link} className={`${inputCls} min-w-0 flex-1 font-mono text-xs`} onFocus={(e) => e.target.select()} />
+            <Button variant="outline" onClick={() => copy("link", link)}>
+              {copied === "link" ? t("classes.studio.copied") : t("classes.studio.copy")}
+            </Button>
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <label className="flex cursor-pointer items-center gap-2.5 text-sm text-text">
+          <input
+            type="checkbox"
+            checked={track.join_open !== false}
+            disabled={busy}
+            onChange={toggleOpen}
+            className="h-4 w-4 rounded border-border accent-primary focus:ring-primary/50"
+          />
+          {t("classes.studio.open")}
+        </label>
+        <Button variant="outline" onClick={newCode} disabled={busy}>
+          {t("classes.studio.newCode")}
+        </Button>
+      </div>
+      <p className="mt-3 text-xs text-faint">{t("classes.studio.privacy")}</p>
+    </div>
+  );
+}
+
 export default function StudioEditorPage() {
   const router = useRouter();
   const { t } = useI18n();
@@ -778,6 +866,11 @@ export default function StudioEditorPage() {
             </Button>
           </div>
         </div>
+
+        {/* Класс: код и ссылка для группы */}
+        {track?.join_code ? (
+          <ClassBlock track={track} t={t} onTrack={setTrack} />
+        ) : null}
 
         {/* Разделы */}
         <div className="mb-4 flex items-center justify-between">

@@ -11,6 +11,7 @@ import { useDictionary } from "../lib/i18n";
 import { clearPlayerClass } from "../lib/class";
 import { markOnboardingPending } from "../lib/onboarding";
 import { homePathFor } from "../lib/roles";
+import { pathAfterAuth, takeJoinCode } from "../lib/join";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -82,7 +83,8 @@ export default function Register() {
         toast.success(copy.success);
         try {
           await loginUser({ email: username, username, password });
-          router.push(role === "teacher" ? homePathFor({ is_teacher: true }) : "/worlds");
+          const toJoin = role === "student" ? takeJoinCode() : "";
+          router.push(pathAfterAuth(role === "teacher" ? homePathFor({ is_teacher: true }) : "/worlds", toJoin));
         } catch {
           router.push("/login");
         }

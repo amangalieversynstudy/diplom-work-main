@@ -152,6 +152,14 @@ export const Tracks = {
   list: () => api.get("/tracks/").then((r) => (Array.isArray(r.data) ? r.data : r.data?.results || [])),
 };
 
+// Классы: вступление ученика к преподавателю по коду (согласие передаётся явно).
+export const Classes = {
+  lookup: (code) => api.get("/classes/lookup/", { params: { code } }).then((r) => r.data),
+  join: (code) => api.post("/classes/join/", { code, consent: true }).then((r) => r.data),
+  mine: () => api.get("/classes/mine/").then((r) => r.data),
+  leave: (trackId) => api.delete(`/classes/${trackId}/leave/`),
+};
+
 export const Missions = {
   list: () => api.get("/missions/").then((r) => r.data),
   get: (id) => api.get(`/missions/${id}/`).then((r) => r.data),
@@ -334,6 +342,7 @@ export const Studio = {
     update: (id, payload) =>
       api.patch(`/teacher/studio/tracks/${id}/`, payload).then((r) => r.data),
     remove: (id) => api.delete(`/teacher/studio/tracks/${id}/`),
+    newCode: (id) => api.post(`/teacher/studio/tracks/${id}/new-code/`).then((r) => r.data),
   },
   locations: {
     list: (trackId) =>

@@ -279,6 +279,9 @@ export default function Worlds() {
             {worldsDict.mapSubtitle ||
               "Каждый архипелаг таит в себе знания и опасности. Следуй по чернильным тропам, чтобы найти сокровища кода."}
           </p>
+          <Link href="/join" className="mt-3 inline-block text-sm font-semibold text-primary underline-offset-4 hover:underline">
+            {dict.classes?.join?.haveCode || "У меня есть код класса"}
+          </Link>
         </div>
 
         <QuestJournal missions={missions} current={current} />

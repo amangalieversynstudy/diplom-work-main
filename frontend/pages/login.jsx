@@ -9,6 +9,7 @@ import PasswordInput from "../components/PasswordInput";
 import { toast } from "sonner";
 import { login, Auth, Profile as ProfileAPI } from "../lib/api";
 import { useDictionary } from "../lib/i18n";
+import { homePathFor } from "../lib/roles";
 
 export default function Login() {
   const [identifier, setIdentifier] = useState("");
@@ -66,8 +67,7 @@ export default function Login() {
 
       // Куда после входа: преподаватель в свой кабинет, ученик на карту. Выбор класса
       // никуда не ведёт и не мешает начать, поэтому первым экраном он не показывается.
-      const staff = !!(userData?.is_staff ?? userData?.user?.is_staff);
-      router.push(staff ? "/teacher" : "/worlds");
+      router.push(homePathFor(userData));
     } catch (err) {
       const data = err?.response?.data || {};
       const detail = data.detail || "";

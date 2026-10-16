@@ -633,6 +633,11 @@ export const ru = {
       },
       registerExtra: {
         successWithEmail: "Аккаунт создан! Проверь почту — мы отправили ссылку для активации.",
+        roleLabel: "Кто ты?",
+        roleStudent: "Я ученик",
+        roleTeacher: "Я преподаватель",
+        roleStudentHint: "Проходи миссии, получай опыт и смотри свой путь.",
+        roleTeacherHint: "Кабинет, аналитика и студия курсов. Ты видишь только учеников своих курсов.",
         teacherToggle: "Регистрируешься как преподаватель?",
         teacherCodeLabel: "Код преподавателя",
         teacherCodePlaceholder: "Код, выданный администратором",

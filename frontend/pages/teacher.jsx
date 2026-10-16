@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
+import { canTeach } from "../lib/roles";
 
 // Карточка одной сводной метрики (учеников / застряли / активны за неделю).
 function StatCard({ icon: Icon, label, value, accent = "primary" }) {
@@ -265,7 +266,7 @@ export default function TeacherPage() {
       try {
         // Сначала гейтинг: показываем кабинет только staff-аккаунтам.
         const me = await ProfileAPI.me();
-        const isStaff = !!(me?.is_staff ?? me?.user?.is_staff);
+        const isStaff = canTeach(me);
         if (cancelled) return;
         if (!isStaff) {
           setAllowed(false);

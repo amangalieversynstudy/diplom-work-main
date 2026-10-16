@@ -10,6 +10,7 @@ import { useTheme } from "../lib/theme";
 import { Profile as ProfileAPI, revokeSession } from "../lib/api";
 import CustomCursor from "./CustomCursor";
 import TransitionLink from "./TransitionLink";
+import { canTeach } from "../lib/roles";
 import StreakReminder from "./StreakReminder";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
@@ -228,7 +229,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
     // страниц не дёргать API и не словить редирект на /login.
     if (token) {
       ProfileAPI.me()
-        .then((me) => setIsStaff(!!(me?.is_staff ?? me?.user?.is_staff)))
+        .then((me) => setIsStaff(canTeach(me)))
         .catch(() => setIsStaff(false));
     }
   }, []);

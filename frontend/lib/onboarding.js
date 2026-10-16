@@ -30,7 +30,11 @@ export function clearOnboardingPending() {
 
 // Ответ профиля -> { isStaff, hasClass }.
 export function readProfileFlags(me) {
-  const isStaff = Boolean(me?.is_staff ?? me?.user?.is_staff);
+  // преподаватель по роли (is_teacher) или staff: файл без импортов, его читает тест как текст
+  const isStaff = Boolean(
+    me?.can_teach || me?.is_teacher || me?.is_staff ||
+      me?.user?.can_teach || me?.user?.is_teacher || me?.user?.is_staff
+  );
   const classRole = me?.profile?.class_role ?? me?.class_role ?? me?.class_role_id ?? null;
   return { isStaff, hasClass: classRole !== null && classRole !== undefined && classRole !== "" };
 }

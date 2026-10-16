@@ -7,6 +7,7 @@ import { Profile as ProfileAPI } from "../lib/api";
 import logger from "../lib/logger";
 import { useI18n } from "../lib/i18n";
 import { BarChart3, Lock } from "lucide-react";
+import { canTeach } from "../lib/roles";
 
 // Одна панель метрик вместо двух: раньше рядом стояли «общие итоги платформы» и
 // «эффективность обучения», и «среднее число попыток» в них было разным.
@@ -19,7 +20,7 @@ export default function AnalyticsPage() {
     let cancelled = false;
     ProfileAPI.me()
       .then((me) => {
-        if (!cancelled) setAllowed(!!(me?.is_staff ?? me?.user?.is_staff));
+        if (!cancelled) setAllowed(canTeach(me));
       })
       .catch((error) => {
         // 401 перехватит axios-интерсептор (редирект на /login).

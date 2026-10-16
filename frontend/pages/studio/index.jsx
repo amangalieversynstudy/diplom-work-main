@@ -15,6 +15,7 @@ import {
   Swords,
   X,
 } from "lucide-react";
+import { canTeach } from "../../lib/roles";
 
 const inputCls =
   "w-full rounded-xl border border-border bg-panel px-3.5 py-2.5 text-sm text-text placeholder:text-faint focus:outline-none focus:ring-2 focus:ring-primary/50";
@@ -83,7 +84,7 @@ export default function StudioIndexPage() {
     (async () => {
       try {
         const me = await ProfileAPI.me();
-        const isStaff = !!(me?.is_staff ?? me?.user?.is_staff);
+        const isStaff = canTeach(me);
         if (cancelled) return;
         if (!isStaff) {
           setAllowed(false);

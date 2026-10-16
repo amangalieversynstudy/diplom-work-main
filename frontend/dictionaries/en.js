@@ -633,6 +633,11 @@ export const en = {
       },
       registerExtra: {
         successWithEmail: "Account created! Check your email — we sent an activation link.",
+        roleLabel: "Who are you?",
+        roleStudent: "I am a student",
+        roleTeacher: "I am a teacher",
+        roleStudentHint: "Play missions, earn XP and follow your path.",
+        roleTeacherHint: "Cabinet, analytics and the course studio. You only see learners of your own courses.",
         teacherToggle: "Registering as a teacher?",
         teacherCodeLabel: "Teacher code",
         teacherCodePlaceholder: "Enter the code issued by your administrator",

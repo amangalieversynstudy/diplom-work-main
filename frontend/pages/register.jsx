@@ -12,6 +12,7 @@ import { clearPlayerClass } from "../lib/class";
 import { markOnboardingPending } from "../lib/onboarding";
 import { homePathFor } from "../lib/roles";
 import { pathAfterAuth, takeJoinCode } from "../lib/join";
+import { errorBody, fieldErrorsFrom, serverMessage } from "../lib/apiErrors";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -90,21 +91,13 @@ export default function Register() {
         }
       }
     } catch (err) {
-      const detail = err?.response?.data || {};
-      // Разложим ошибки бэкенда по полям, если они пришли структурой.
-      const fieldErrors = {};
-      ["username", "email", "password", "teacher_code", "role"].forEach((k) => {
-        if (detail[k])
-          fieldErrors[k] = Array.isArray(detail[k]) ? detail[k][0] : detail[k];
-      });
+      // Ошибки по полям, если сервер ответил структурой DRF. HTML-страница прокси (502, 500) сюда не попадает.
+      const body = errorBody(err) || {};
+      const fieldErrors = fieldErrorsFrom(err, ["username", "email", "password", "teacher_code", "role"]);
       // Свободная регистрация преподавателей выключена или код неверен: просим код приглашения.
-      if (detail.teacher_code || detail.role) setNeedCode(true);
+      if (body.teacher_code || body.role) setNeedCode(true);
       if (Object.keys(fieldErrors).length) setErrors((p) => ({ ...p, ...fieldErrors }));
-      const msg =
-        detail.detail ||
-        Object.values(detail).flat().join(", ") ||
-        copy.error;
-      toast.error(msg || copy.error);
+      toast.error(serverMessage(err, copy.error, extra.offline || copy.error));
     } finally {
       setLoading(false);
     }

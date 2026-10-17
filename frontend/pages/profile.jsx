@@ -17,6 +17,7 @@ import logger from "../lib/logger";
 import { toast } from "sonner";
 import { LogOut, Settings, Mail, User, Shield, Flame, ChevronDown, Sparkles, FlaskConical, ScrollText } from "lucide-react";
 import { useI18n } from "../lib/i18n";
+import { serverMessage } from "../lib/apiErrors";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -140,11 +141,7 @@ export default function ProfilePage() {
       fetchProfile();
     } catch (error) {
       logger.error(error);
-      const detail =
-        error?.response?.data?.detail ||
-        Object.values(error?.response?.data || {})[0] ||
-        t("profile.toasts.saveError");
-      toast.error(String(detail));
+      toast.error(serverMessage(error, t("profile.toasts.saveError")));
     }
   };
 

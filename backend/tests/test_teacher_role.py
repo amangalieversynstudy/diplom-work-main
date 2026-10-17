@@ -14,7 +14,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from game.metrics import compute_metrics
-from game.models import Location, Mission, MissionTask, Progress, TaskProgress, Track
+from game.models import Enrollment, Location, Mission, MissionTask, Progress, TaskProgress, Track
 
 User = get_user_model()
 
@@ -111,11 +111,14 @@ def test_a_teacher_sees_only_learners_of_their_own_courses():
     _signup("teacher", name="teacher_a")
     teacher_a = User.objects.get(username="teacher_a")
     teacher_b = User.objects.create_user(username="teacher_b", password="x", is_teacher=True)
-    _, mission_a, task_a = _course(teacher_a, "course-a")
-    _, mission_b, task_b = _course(teacher_b, "course-b")
+    track_a, mission_a, task_a = _course(teacher_a, "course-a")
+    track_b, mission_b, task_b = _course(teacher_b, "course-b")
     mine = User.objects.create_user(username="learner_of_a", password="x")
     theirs = User.objects.create_user(username="learner_of_b", password="x")
     now = timezone.now()
+    # a self-service teacher sees learners who joined their class (consent), not everyone who touched a course
+    for learner, track in ((mine, track_a), (theirs, track_b)):
+        Enrollment.objects.create(user=learner, track=track, consented_at=now)
     for learner, mission, task in ((mine, mission_a, task_a), (theirs, mission_b, task_b)):
         Progress.objects.create(
             user=learner, mission=mission, status="in_progress", started_at=now, last_started_at=now

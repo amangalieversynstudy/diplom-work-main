@@ -275,7 +275,7 @@ def test_a_second_teacher_never_sees_another_teachers_class_members():
 
 @pytest.mark.django_db
 def test_public_courses_keep_the_old_rule_progress_is_enough():
-    teacher = _user("t18", is_teacher=True)
+    teacher = _user("t18", is_staff=True)  # only a vetted teacher sees every learner of a public course
     track = Track.objects.create(slug="public-owned", title="Public", owner=teacher)  # public by default
     location = Location.objects.create(track=track, title="Loc")
     mission = Mission.objects.create(location=location, title="M", xp_reward=10)

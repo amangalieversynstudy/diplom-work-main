@@ -15,7 +15,9 @@ move with every solved step, so unlocks are evaluated when a step is solved, whe
 mission is completed and when the profile list is built.
 """
 
-from .models import Mission, Progress, Track, UserAchievement
+from django.db.models import Count
+
+from .models import Mission, Progress, UserAchievement
 
 
 def _missions_completed(user):
@@ -28,15 +30,29 @@ def _tracks_completed(user):
     Guards against the fail-open ``Track.is_completed_by`` (an empty track reads
     as "complete"): only tracks with at least one active mission are counted, so
     a misconfigured empty track can't hand out a free achievement.
+
+    Two bounded queries over the learner's own rows, not a loop over every track on the platform: anyone with
+    the teacher role can create courses, and this runs on every solved step. ``Count("mission_id")`` is exact
+    because Progress is unique per (user, mission).
     """
-    count = 0
-    for track in Track.objects.all():
-        total = Mission.objects.filter(
-            location__track=track, is_active=True
-        ).count()
-        if total > 0 and track.is_completed_by(user):
-            count += 1
-    return count
+    done = {
+        row["mission__location__track"]: row["n"]
+        for row in Progress.objects.filter(
+            user=user, completed=True, mission__is_active=True, mission__location__track__isnull=False
+        )
+        .values("mission__location__track")
+        .annotate(n=Count("mission_id"))
+        .order_by()
+    }
+    if not done:
+        return 0
+    totals = (
+        Mission.objects.filter(is_active=True, location__track__in=list(done))
+        .values("location__track")
+        .annotate(n=Count("id"))
+        .order_by()
+    )
+    return sum(1 for row in totals if row["n"] > 0 and done.get(row["location__track"]) == row["n"])
 
 
 def _level(user):

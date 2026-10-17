@@ -174,3 +174,45 @@ def test_complete_endpoint_returns_new_achievements(finish_mission):
     resp2 = client.post(f"/api/missions/{mission.id}/complete/")
     assert resp2.status_code == 200
     assert "first_mission" not in resp2.json().get("new_achievements", [])
+
+
+@pytest.mark.django_db
+def test_track_complete_counts_only_fully_cleared_tracks_with_one_query_per_call(django_assert_max_num_queries):
+    """Many courses on the platform must not make every solved step slower: the count is one query."""
+    from game.achievements import _tracks_completed
+    from game.models import Location, Mission, Progress, Track
+
+    user = User.objects.create_user(username="many_tracks", password="TestPass123!")
+    for i in range(30):
+        track = Track.objects.create(slug=f"t-{i}", title=f"T{i}")
+        location = Location.objects.create(track=track, title="L")
+        Mission.objects.create(location=location, title="M1", xp_reward=10)
+    cleared = Track.objects.get(slug="t-0")
+    half = Track.objects.get(slug="t-1")
+    Mission.objects.create(location=half.worlds.first(), title="M2", xp_reward=10)
+    for mission in Mission.objects.filter(location__track__in=[cleared, half], title="M1"):
+        Progress.objects.create(user=user, mission=mission, completed=True, status="completed")
+
+    with django_assert_max_num_queries(2):
+        assert _tracks_completed(user) == 1
+
+
+@pytest.mark.django_db
+def test_track_complete_cost_does_not_grow_with_other_learners(django_assert_max_num_queries):
+    """The per-user filter sits in a WHERE on Progress, not in a conditional count over everybody's rows."""
+    from game.achievements import _tracks_completed
+    from game.models import Location, Mission, Progress, Track
+
+    track = Track.objects.create(slug="shared", title="Shared")
+    location = Location.objects.create(track=track, title="L")
+    missions = [Mission.objects.create(location=location, title=f"M{i}", xp_reward=10) for i in range(3)]
+    me = User.objects.create_user(username="me_ach", password="TestPass123!")
+    for i in range(50):
+        other = User.objects.create_user(username=f"other_{i}", password="TestPass123!")
+        for mission in missions:
+            Progress.objects.create(user=other, mission=mission, completed=True, status="completed")
+    for mission in missions:
+        Progress.objects.create(user=me, mission=mission, completed=True, status="completed")
+
+    with django_assert_max_num_queries(2):
+        assert _tracks_completed(me) == 1

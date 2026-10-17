@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 
 from .classes import normalize_code
 from .models import Enrollment, Track
-from .throttles import ClassJoinThrottle
+from .throttles import ClassJoinIPThrottle, ClassJoinThrottle
 
 
 def _class_or_404(code):
@@ -43,7 +43,7 @@ class ClassLookupView(APIView):
     """Who invites me and to what: shown before the learner agrees."""
 
     permission_classes = [permissions.IsAuthenticated]
-    throttle_classes = [ClassJoinThrottle]
+    throttle_classes = [ClassJoinThrottle, ClassJoinIPThrottle]
 
     def get(self, request):
         track = _class_or_404(request.query_params.get("code"))
@@ -65,7 +65,7 @@ class ClassJoinView(APIView):
     """Join a class. Needs the code and an explicit ``consent`` flag."""
 
     permission_classes = [permissions.IsAuthenticated]
-    throttle_classes = [ClassJoinThrottle]
+    throttle_classes = [ClassJoinThrottle, ClassJoinIPThrottle]
 
     def post(self, request):
         track = _class_or_404(request.data.get("code"))

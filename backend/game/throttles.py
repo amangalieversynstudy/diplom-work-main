@@ -11,7 +11,7 @@ parse_rate(), который поддерживает синтаксис вид�
 """
 
 from django.core.cache import cache
-from rest_framework.throttling import UserRateThrottle
+from rest_framework.throttling import SimpleRateThrottle, UserRateThrottle
 
 
 class _CustomPeriodThrottle(UserRateThrottle):
@@ -55,6 +55,50 @@ class ClassJoinThrottle(UserRateThrottle):
     """Class codes: a few tries an hour is plenty and stops guessing codes."""
 
     scope = "class_join"
+
+
+class ClassJoinIPThrottle(SimpleRateThrottle):
+    """Class codes per client address: many throwaway accounts from one place still get few guesses.
+
+    Sized for a school class behind one NAT (30-40 learners, a lookup and a join each). The address is the
+    right-most X-Forwarded-For entry when ``REST_FRAMEWORK["NUM_PROXIES"]`` is set (production), else REMOTE_ADDR.
+    """
+
+    scope = "class_join_ip"
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
+
+
+class TeacherAnalyticsThrottle(UserRateThrottle):
+    """Heavy teacher reads (roster, metrics, CSV, early warning, authorship): recomputed on every request."""
+
+    scope = "teacher_analytics"
+
+
+class TeacherLiveThrottle(UserRateThrottle):
+    """The live panel polls every 10 s; this leaves room for two tabs and tab switches, not for faster polling
+    (which would also make the measured data freshness look better than the design)."""
+
+    scope = "teacher_live"
+
+
+class StudioWriteThrottle(UserRateThrottle):
+    """Studio content writes per minute (create, edit, delete, new class code)."""
+
+    scope = "studio_write"
+
+
+class StudioDailyWriteThrottle(UserRateThrottle):
+    """Studio content writes per day."""
+
+    scope = "studio_write_day"
+
+
+class MissionCompleteThrottle(UserRateThrottle):
+    """Completing a mission: a learner finishes a few a minute at most."""
+
+    scope = "mission_complete"
 
 
 class UsabilitySubmitThrottle(UserRateThrottle):

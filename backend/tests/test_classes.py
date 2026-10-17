@@ -304,3 +304,18 @@ def test_the_leaderboard_does_not_reveal_a_closed_class():
     assert rows(APIClient()) == []  # anonymous
     assert rows(_client(stranger)) == []  # signed in, not in the class
     assert len(rows(_client(member))) == 1  # a classmate sees it
+
+
+
+@pytest.mark.django_db
+def test_class_lookup_is_throttled_per_address(monkeypatch):
+    """Many accounts from one address share one budget, although each is under the per-user limit."""
+    from game.throttles import ClassJoinIPThrottle
+
+    monkeypatch.setitem(ClassJoinIPThrottle.THROTTLE_RATES, "class_join_ip", "3/hour")
+    codes = []
+    for i in range(4):
+        learner = _user(f"ip_l{i}")
+        codes.append(_client(learner).get(LOOKUP, {"code": "ZZZZZZZZ"}, REMOTE_ADDR="10.0.0.7").status_code)
+    assert codes[:3] == [404, 404, 404]
+    assert codes[3] == 429

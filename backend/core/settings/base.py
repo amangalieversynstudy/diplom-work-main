@@ -41,6 +41,23 @@ TEACHER_INVITE_CODE = os.getenv("TEACHER_INVITE_CODE", "")
 # Self-service teacher role at sign-up (the "I am a teacher" choice). Switch it off with
 # TEACHER_SELF_REGISTRATION=0 and a teacher can only join with the invite code above.
 TEACHER_SELF_REGISTRATION = os.getenv("TEACHER_SELF_REGISTRATION", "1").strip().lower() in ("1", "true", "yes", "on")
+# A self-service teacher must give an e-mail and confirm it before the cabinet opens. Applies only when e-mail
+# really goes out (not DEBUG, not the console backend), so teachers are never locked out by a missing mail setup.
+TEACHER_REQUIRE_EMAIL = os.getenv("TEACHER_REQUIRE_EMAIL", "0").strip().lower() in ("1", "true", "yes", "on")
+
+# Studio size limits for teachers who are not superusers (env-tunable). The built-in courses have 1 section,
+# 8 missions and at most 4 steps a mission, so every cap stays well above them.
+STUDIO_LIMITS = {
+    "tracks_per_teacher": int(os.getenv("STUDIO_TRACKS_PER_TEACHER", "10")),
+    "tracks_per_vetted_teacher": int(os.getenv("STUDIO_TRACKS_PER_VETTED_TEACHER", "50")),
+    "sections_per_track": int(os.getenv("STUDIO_SECTIONS_PER_TRACK", "20")),
+    "missions_per_track": int(os.getenv("STUDIO_MISSIONS_PER_TRACK", "60")),
+    "tasks_per_mission": int(os.getenv("STUDIO_TASKS_PER_MISSION", "20")),
+}
+
+# Start of the pilot (ISO date-time with a time zone, e.g. 2026-11-02T00:00:00+05:00). The pilot report's teacher
+# measurements (SUS, data freshness) count only what was recorded from then on; empty = everything.
+PILOT_STARTED_AT = os.getenv("PILOT_STARTED_AT", "")
 
 # Debug flag (enable via env DEBUG=True/False)
 DEBUG = os.getenv("DEBUG", "True").lower() in {"1", "true", "yes", "on"}
@@ -191,6 +208,12 @@ REST_FRAMEWORK = {
         "task_submit": "60/min",       # ответы на квизы/сюжет
         "usability_submit": "5/day",   # анкета SUS
         "class_join": "20/hour",       # вход в класс по коду: нельзя подбирать коды
+        "class_join_ip": "150/hour",   # то же с одного адреса (класс за одним NAT укладывается)
+        "teacher_analytics": "30/min", # тяжёлые отчёты преподавателя (кабинет, метрики, CSV)
+        "teacher_live": "20/min",      # живая панель опрашивает раз в 10 с
+        "studio_write": "60/min",      # правки Студии
+        "studio_write_day": "1000/day",
+        "mission_complete": "20/min",  # завершение миссии
         "learning_event": "120/min",   # события UI (открытие шага)
         "code_runner": "20/min",       # Docker sandbox — ресурсоёмко
         "code_runner_burst": "5/10s",  # Защита от спам-кликов Run

@@ -12,18 +12,22 @@ could open it but never finish it.
 """
 
 import re
+import secrets
 
+from django.conf import settings
+from django.db.models import Q
 from django.utils.text import slugify
 from rest_framework import permissions, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .classes import new_join_code
+from .classes import is_vetted_teacher, with_fresh_code
 from .permissions import IsTeacher
 from rest_framework.exceptions import PermissionDenied
 
 from .codeanalysis import CONSTRUCTS
-from .models import Location, Mission, MissionTask, Track
+from .models import CodeRun, Enrollment, Location, Mission, MissionTask, Progress, TaskProgress, Track
+from .throttles import StudioDailyWriteThrottle, StudioWriteThrottle
 from .variants import MAX_VARIANTS, MIN_VARIANTS
 
 # Rewards are authored by teachers, so they are capped: an absurd value would
@@ -40,14 +44,84 @@ MAX_CODE = 10_000
 
 
 def _unique_slug(base: str) -> str:
-    """Slugify *base* and append -2/-3/... until the slug is unique."""
+    """Slugify *base*; on a clash append a short random suffix (one or two queries, not one per existing course:
+    every Cyrillic-only title slugifies to "course")."""
     base = slugify(base, allow_unicode=False) or "course"
     slug = base
-    n = 2
     while Track.objects.filter(slug=slug).exists():
-        slug = f"{base}-{n}"
-        n += 1
+        slug = f"{base}-{secrets.token_hex(3)}"
     return slug
+
+
+DESCRIPTION_LIMIT = {"description_ru": {"max_length": 5000}, "description_en": {"max_length": 5000}}
+
+
+def _is_learner_row():
+    """Rows of learners only: a teacher's own trial runs do not lock their course."""
+    return Q(user__is_staff=False, user__is_teacher=False)
+
+
+def _has_learner_data(path, obj):
+    """Is there learners' work under ``obj`` (a course, section, mission or step)? ``path`` is the lookup from a
+    step to ``obj`` (``"mission__location__track"``, ``"mission__location"``, ``"mission"`` or ``""``)."""
+    step = f"task__{path}" if path else "task"
+    mission_path = path.split("__", 1)[1] if path.startswith("mission__") else ("" if path == "mission" else None)
+    learner = _is_learner_row()
+    if TaskProgress.objects.filter(learner, **{step: obj}).exists():
+        return True
+    if CodeRun.objects.filter(learner, **{step: obj}).exists():
+        return True
+    if mission_path is not None:
+        lookup = f"mission__{mission_path}" if mission_path else "mission"
+        if Progress.objects.filter(learner, **{lookup: obj}).exists():
+            return True
+    if isinstance(obj, Track) and Enrollment.objects.filter(track=obj).exists():
+        return True
+    return False
+
+
+class StudioGuardMixin:
+    """Shared limits of the four Studio viewsets (superusers are exempt from all of them):
+
+    * write throttles on top of the default ones;
+    * a parent (course of a section, section of a mission, mission of a step) is set once: moving content would
+      carry learners' rows into another course (from a closed class into a public course or back);
+    * nothing with learners' work under it is deleted (unpublish it instead): a delete would erase that history.
+    """
+
+    parent_field = None  # "track" / "location" / "mission"
+    data_path = None  # lookup from a step to this object
+
+    def get_throttles(self):
+        throttles = super().get_throttles()
+        if self.request.method in permissions.SAFE_METHODS or self.request.user.is_superuser:
+            return throttles
+        return [*throttles, StudioWriteThrottle(), StudioDailyWriteThrottle()]
+
+    def _guard_parent(self, serializer):
+        if self.parent_field is None or self.request.user.is_superuser:
+            return
+        new = serializer.validated_data.get(self.parent_field)
+        if new is not None and new != getattr(serializer.instance, self.parent_field):
+            raise serializers.ValidationError(
+                {self.parent_field: "Перенести в другой курс, раздел или миссию нельзя: создайте новое."}
+            )
+
+    def perform_destroy(self, instance):
+        if not self.request.user.is_superuser and _has_learner_data(self.data_path, instance):
+            raise serializers.ValidationError(
+                {"detail": "Здесь есть работа учеников: снимите с публикации вместо удаления, иначе их история пропадёт."}
+            )
+        super().perform_destroy(instance)
+
+
+def _quota(user, count, key, message):
+    """Refuse when a non-superuser already has ``count`` items of this kind (settings.STUDIO_LIMITS)."""
+    if user.is_superuser:
+        return
+    limit = settings.STUDIO_LIMITS[key]
+    if count >= limit:
+        raise serializers.ValidationError({"detail": message.format(n=limit)})
 
 
 def _mirror(localized_ru, localized_en, fallback):
@@ -88,6 +162,7 @@ class StudioTrackSerializer(serializers.ModelSerializer):
             "missions_count",
         ]
         read_only_fields = ["slug", "is_public", "join_code"]
+        extra_kwargs = DESCRIPTION_LIMIT
 
     def get_locations_count(self, obj):
         return obj.worlds.count()
@@ -146,6 +221,7 @@ class StudioLocationSerializer(serializers.ModelSerializer):
             "order",
             "missions_count",
         ]
+        extra_kwargs = DESCRIPTION_LIMIT
 
     def get_missions_count(self, obj):
         return obj.missions.count()
@@ -200,6 +276,9 @@ class StudioMissionSerializer(serializers.ModelSerializer):
             "min_level",
             "tasks_count",
         ]
+        extra_kwargs = DESCRIPTION_LIMIT
+        # a level gate is global (profile level), which class work no longer raises: order the missions instead
+        read_only_fields = ["min_level"]
 
     def get_tasks_count(self, obj):
         return obj.tasks.count()
@@ -255,7 +334,7 @@ class StudioMissionSerializer(serializers.ModelSerializer):
 # ── ViewSets ─────────────────────────────────────────────────────────────────
 
 
-class StudioTrackViewSet(viewsets.ModelViewSet):
+class StudioTrackViewSet(StudioGuardMixin, viewsets.ModelViewSet):
     """A teacher's own courses. Superusers see all."""
 
     serializer_class = StudioTrackSerializer
@@ -268,20 +347,32 @@ class StudioTrackViewSet(viewsets.ModelViewSet):
             return qs
         return qs.filter(owner=self.request.user)
 
+    data_path = "mission__location__track"
+
     def perform_create(self, serializer):
+        user = self.request.user
+        key = "tracks_per_vetted_teacher" if is_vetted_teacher(user) else "tracks_per_teacher"
+        _quota(user, Track.objects.filter(owner=user).count(), key, "Не больше {n} курсов у преподавателя.")
         # A new course is a closed class with its own join code: learners find it by code, not by browsing.
-        serializer.save(owner=self.request.user, is_public=False, join_code=new_join_code())
+        # A clash of the code (or of the slug) with a parallel create is retried, not answered with a 500.
+        with_fresh_code(lambda code: serializer.save(owner=user, is_public=False, join_code=code))
 
     @action(detail=True, methods=["post"], url_path="new-code")
     def new_code(self, request, pk=None):
         """Replace the class code (the old one stops working); learners who already joined stay."""
         track = self.get_object()
-        track.join_code = new_join_code()
-        track.save(update_fields=["join_code"])
+        if track.is_public:
+            raise serializers.ValidationError({"join_code": "У публичного курса нет кода класса."})
+
+        def write(code):
+            track.join_code = code
+            track.save(update_fields=["join_code"])
+
+        with_fresh_code(write)
         return Response({"join_code": track.join_code})
 
 
-class StudioLocationViewSet(viewsets.ModelViewSet):
+class StudioLocationViewSet(StudioGuardMixin, viewsets.ModelViewSet):
     """Sections inside a teacher's courses. Filter with ``?track=<id>``."""
 
     serializer_class = StudioLocationSerializer
@@ -294,8 +385,11 @@ class StudioLocationViewSet(viewsets.ModelViewSet):
             qs = qs.filter(track__owner=self.request.user)
         track_id = self.request.query_params.get("track")
         if track_id:
-            qs = qs.filter(track_id=track_id)
+            qs = qs.filter(track_id=track_id) if str(track_id).isdigit() else qs.none()
         return qs
+
+    parent_field = "track"
+    data_path = "mission__location"
 
     def _check_track(self, track):
         if track is None:
@@ -304,17 +398,21 @@ class StudioLocationViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Можно добавлять разделы только в свои курсы.")
 
     def perform_create(self, serializer):
-        self._check_track(serializer.validated_data.get("track"))
+        track = serializer.validated_data.get("track")
+        self._check_track(track)
+        _quota(self.request.user, Location.objects.filter(track=track).count(), "sections_per_track",
+               "Не больше {n} разделов в курсе.")
         serializer.save()
 
     def perform_update(self, serializer):
         self._check_track(
             serializer.validated_data.get("track", serializer.instance.track)
         )
+        self._guard_parent(serializer)
         serializer.save()
 
 
-class StudioMissionViewSet(viewsets.ModelViewSet):
+class StudioMissionViewSet(StudioGuardMixin, viewsets.ModelViewSet):
     """Missions inside a teacher's courses. Filter with ``?location=<id>``."""
 
     serializer_class = StudioMissionSerializer
@@ -329,8 +427,11 @@ class StudioMissionViewSet(viewsets.ModelViewSet):
             qs = qs.filter(location__track__owner=self.request.user)
         location_id = self.request.query_params.get("location")
         if location_id:
-            qs = qs.filter(location_id=location_id)
+            qs = qs.filter(location_id=location_id) if str(location_id).isdigit() else qs.none()
         return qs
+
+    parent_field = "location"
+    data_path = "mission"
 
     def _check_location(self, location):
         if location is None:
@@ -342,13 +443,17 @@ class StudioMissionViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Можно добавлять миссии только в свои курсы.")
 
     def perform_create(self, serializer):
-        self._check_location(serializer.validated_data.get("location"))
+        location = serializer.validated_data.get("location")
+        self._check_location(location)
+        _quota(self.request.user, Mission.objects.filter(location__track=location.track).count(),
+               "missions_per_track", "Не больше {n} миссий в курсе.")
         serializer.save()
 
     def perform_update(self, serializer):
         self._check_location(
             serializer.validated_data.get("location", serializer.instance.location)
         )
+        self._guard_parent(serializer)
         serializer.save()
 
 
@@ -578,7 +683,7 @@ class StudioTaskSerializer(serializers.ModelSerializer):
         return super().update(instance, validated)
 
 
-class StudioTaskViewSet(viewsets.ModelViewSet):
+class StudioTaskViewSet(StudioGuardMixin, viewsets.ModelViewSet):
     """Tasks inside a teacher's missions. Filter with ``?mission=<id>``."""
 
     serializer_class = StudioTaskSerializer
@@ -605,15 +710,26 @@ class StudioTaskViewSet(viewsets.ModelViewSet):
         ):
             raise PermissionDenied("Можно добавлять шаги только в миссии своих курсов.")
 
+    parent_field = "mission"
+    data_path = ""
+
     def perform_create(self, serializer):
-        self._check_mission(serializer.validated_data.get("mission"))
+        mission = serializer.validated_data.get("mission")
+        self._check_mission(mission)
+        _quota(self.request.user, MissionTask.objects.filter(mission=mission).count(), "tasks_per_mission",
+               "Не больше {n} шагов в миссии.")
         serializer.save()
 
     def perform_update(self, serializer):
         self._check_mission(serializer.validated_data.get("mission", serializer.instance.mission))
+        self._guard_parent(serializer)
         serializer.save()
 
     def perform_destroy(self, instance):
+        if not self.request.user.is_superuser and _has_learner_data("", instance):
+            raise serializers.ValidationError(
+                {"detail": "Здесь есть работа учеников: снимите с публикации вместо удаления, иначе их история пропадёт."}
+            )
         mission = instance.mission
         instance.delete()
         # a mission that lost its last task can no longer be finished

@@ -382,7 +382,7 @@ export const en = {
       error: "That did not work. Try again.",
       invite: "{teacher} invites you to the course “{title}”.",
       teacherFallback: "A teacher",
-      consent: "I understand the teacher will see my nickname and my progress in this course. I can leave the class at any time.",
+      consent: "I understand the teacher will see my nickname, my progress in this course and how I solved its steps (hints, the Sage, pasted code), and classmates will see me in the class table. I can leave the class at any time.",
       join: "Join",
       joining: "Joining…",
       cancel: "Cancel",

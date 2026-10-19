@@ -4,7 +4,7 @@ A class is a closed course (``Track.is_public`` off) with a join code. The learn
 will be able to see their nickname and progress, agrees, and only then is enrolled. Leaving is one request.
 """
 
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import permissions, serializers, status
@@ -21,7 +21,8 @@ def _class_or_404(code):
     code = normalize_code(code)
     if not code:
         raise serializers.ValidationError({"code": "Введите код класса."})
-    track = Track.objects.filter(join_code=code, is_active=True).select_related("owner").first()
+    # only a closed course is a class: a public course is open to all and has nothing to join or leave
+    track = Track.objects.filter(join_code=code, is_active=True, is_public=False).select_related("owner").first()
     if track is None:
         return None
     return track
@@ -81,7 +82,7 @@ class ClassJoinView(APIView):
             )
         if request.data.get("consent") is not True:
             return Response(
-                {"detail": "Нужно согласие: преподаватель увидит ваш ник и прогресс в этом курсе."},
+                {"detail": "Нужно согласие: преподаватель увидит ваш ник, прогресс и то, как решены шаги этого курса."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         already = Enrollment.objects.filter(user=request.user, track=track).exists()
@@ -89,7 +90,8 @@ class ClassJoinView(APIView):
             if not track.join_open:
                 return Response({"detail": "Набор в этот класс закрыт."}, status=status.HTTP_403_FORBIDDEN)
             try:
-                Enrollment.objects.create(user=request.user, track=track, consented_at=timezone.now())
+                with transaction.atomic():
+                    Enrollment.objects.create(user=request.user, track=track, consented_at=timezone.now())
             except IntegrityError:  # a double click: the first request already did it
                 pass
         return Response(

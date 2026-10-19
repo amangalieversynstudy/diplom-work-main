@@ -74,7 +74,7 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
       await onReload();
     } catch (e) {
       logger.error("Mission save failed:", e);
-      setError(t("studio.saveError"));
+      setError(apiError(e, t("studio.saveError")));
     } finally {
       setSaving(false);
     }
@@ -92,7 +92,7 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
           await onReload();
         } catch (e) {
           logger.error("Mission delete failed:", e);
-          setError(t("studio.saveError"));
+          setError(apiError(e, t("studio.saveError")));
         }
       },
     });
@@ -266,7 +266,7 @@ function SectionCard({
       await onReloadSections();
     } catch (e) {
       logger.error("Section save failed:", e);
-      setError(t("studio.saveError"));
+      setError(apiError(e, t("studio.saveError")));
     } finally {
       setSavingEdit(false);
     }
@@ -284,7 +284,7 @@ function SectionCard({
           await onReloadSections();
         } catch (e) {
           logger.error("Section delete failed:", e);
-          setError(t("studio.saveError"));
+          setError(apiError(e, t("studio.saveError")));
         }
       },
     });
@@ -306,7 +306,7 @@ function SectionCard({
       await onReloadMissions(section.id);
     } catch (e2) {
       logger.error("Mission create failed:", e2);
-      setError(t("studio.saveError"));
+      setError(apiError(e2, t("studio.saveError")));
     } finally {
       setMissionBusy(false);
     }
@@ -685,7 +685,7 @@ export default function StudioEditorPage() {
       setTimeout(() => setSavedFlash(false), 1800);
     } catch (e) {
       logger.error("Course save failed:", e);
-      setError(t("studio.saveError"));
+      setError(apiError(e, t("studio.saveError")));
     } finally {
       setSavingSettings(false);
     }
@@ -707,7 +707,7 @@ export default function StudioEditorPage() {
       await reloadSections();
     } catch (e2) {
       logger.error("Section create failed:", e2);
-      setError(t("studio.saveError"));
+      setError(apiError(e2, t("studio.saveError")));
     } finally {
       setSectionBusy(false);
     }
@@ -725,7 +725,7 @@ export default function StudioEditorPage() {
           router.push("/studio");
         } catch (e) {
           logger.error("Course delete failed:", e);
-          setError(t("studio.saveError"));
+          setError(apiError(e, t("studio.saveError")));
         }
       },
     });

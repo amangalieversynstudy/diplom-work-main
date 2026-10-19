@@ -122,3 +122,39 @@ def test_learners_records_in_the_admin_are_for_superusers_only():
     root = User.objects.create_user(username="adm_root", password="x", is_staff=True, is_superuser=True)
     client.force_login(root)
     assert client.get("/admin/game/progress/").status_code == 200
+
+
+@pytest.mark.django_db
+def test_json_logins_of_different_people_do_not_share_one_limit():
+    """The per-account login limit reads JSON bodies: a class logging in together is not blocked."""
+    for i in range(15):
+        User.objects.create_user(username=f"pupil_{i}", password="HardPass123!")
+    codes = [
+        APIClient().post(
+            "/api/auth/login/", {"username": f"pupil_{i}", "password": "HardPass123!"}, format="json",
+            REMOTE_ADDR=f"10.1.0.{i}",
+        ).status_code
+        for i in range(15)
+    ]
+    assert codes == [200] * 15
+
+
+@pytest.mark.django_db
+def test_one_account_is_limited_whatever_the_address():
+    User.objects.create_user(username="target", password="HardPass123!")
+    codes = [
+        APIClient().post(
+            "/api/auth/login/", {"username": "target", "password": f"wrong{i}"}, format="json",
+            REMOTE_ADDR=f"10.2.0.{i}",
+        ).status_code
+        for i in range(12)
+    ]
+    assert codes[-1] == 429
+
+
+@pytest.mark.django_db
+def test_a_forged_forwarded_for_header_neither_bypasses_limits_nor_breaks_sign_up():
+    response = APIClient().post(
+        REGISTER, {"username": "xff_user", "password": "HardPass123!"}, HTTP_X_FORWARDED_FOR="a, b, not-an-ip"
+    )
+    assert response.status_code == 201

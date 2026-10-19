@@ -296,8 +296,10 @@ def _pay_for_solved_step(user, task, progress, task_progress):
     # global leaderboard, so an own course cannot be used to farm them.
     global_pay = pays_globally(user, track)
     profile = Profile.objects.select_for_update().get(user=user)
-    if not teacher:
-        profile.register_activity()  # a solved step is a day of learning, not only a finished mission
+    if global_pay:
+        # a solved step is a day of learning, not only a finished mission; the streak is global (badge, leaderboard
+        # tie-break), so only work that pays globally counts, and never a teacher's trial run
+        profile.register_activity()
     reward = 0 if teacher else max(0, int(task.xp_reward or 0))
     task_progress.counts_globally = global_pay
     if reward:

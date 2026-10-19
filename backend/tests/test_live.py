@@ -196,7 +196,7 @@ def test_the_verdict_uses_the_usual_benchmarks():
 
 def test_a_teacher_rates_the_dashboard_and_only_the_latest_answer_counts(teacher):
     client = _api(teacher)
-    assert client.get("/api/teacher/usability/").json() == {"answered_at": None}
+    assert client.get("/api/teacher/usability/").json()["answered_at"] is None
     first = client.post("/api/teacher/usability/", {"answers": [3] * 10, "comment": "ok"}, format="json")
     assert first.status_code == 201 and first.json() == {"saved": True}
     assert client.get("/api/teacher/usability/").json()["answered_at"]
@@ -307,6 +307,8 @@ def test_a_self_registered_teachers_sus_answer_is_not_counted_in_the_pilot(teach
 def test_only_pilot_teachers_can_answer_the_questionnaire(teacher):
     self_service = User.objects.create_user(username="selfie2", password="TestPass123!", is_teacher=True)
     answers = {"answers": [4, 2] * 5}
+    assert _api(self_service).get("/api/teacher/usability/").json()["eligible"] is False
+    assert _api(teacher).get("/api/teacher/usability/").json()["eligible"] is True
     assert _api(self_service).post("/api/teacher/usability/", answers, format="json").status_code == 403
     assert _api(teacher).post("/api/teacher/usability/", answers, format="json").status_code == 201
 

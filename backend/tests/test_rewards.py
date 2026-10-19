@@ -83,8 +83,8 @@ def test_an_unvetted_class_pays_class_xp_only():
     assert LeaderboardEntry.objects.get(user=learner, scope="track", track=track).xp_total == 140
     assert not LeaderboardEntry.objects.filter(user=learner, scope="global").exists()
     assert not UserAchievement.objects.filter(user=learner).exists()
-    # class learners keep their streak (one day at a time, it cannot be sped up)
-    assert learner.profile.current_streak == 1
+    # the streak is global (badge, leaderboard tie-break): class-only work does not move it
+    assert learner.profile.current_streak == 0
 
 
 @pytest.mark.django_db

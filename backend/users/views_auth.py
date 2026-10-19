@@ -119,7 +119,7 @@ def _find_login_user(identifier):
 # rate-limiting декоратор для брутфорс-защиты
 # 10 попыток/мин с одного IP — для login и register
 @method_decorator(ratelimit(key="ip", rate="60/m", method="POST", block=True), name="post")
-@method_decorator(ratelimit(key="post:username", rate="10/m", method="POST", block=True), name="post")
+@method_decorator(ratelimit(key="core.client_ip.login_key", rate="10/m", method="POST", block=True), name="post")
 class LoginView(TokenObtainPairView):
     """Custom login that accepts either username or email."""
 

@@ -453,9 +453,11 @@ class Progress(models.Model):
             self.status = "completed"
             self.completed_at = timezone.now()
             self.save()
+            from .classes import pays_globally
+
             profile = getattr(self.user, "profile", None)
-            # a teacher's trial run is not a day of learning
-            if profile and not getattr(self.user, "can_teach", False):
+            # the streak is global: a teacher's trial run or a class whose XP stays inside it does not move it
+            if profile and pays_globally(self.user, self.mission.location.track if self.mission.location_id else None):
                 profile.register_activity()
 
 

@@ -157,6 +157,9 @@ class TeacherLiveView(APIView):
 
     permission_classes = [IsTeacher]
 
+    def get_throttles(self):
+        return [*super().get_throttles(), TeacherLiveThrottle()]
+
     @swagger_auto_schema(
         operation_summary="Live activity of the teacher's learners",
         operation_description=(
@@ -164,9 +167,6 @@ class TeacherLiveView(APIView):
             "Только ученики и курсы преподавателя; в ленте нет кода учеников."
         ),
     )
-    def get_throttles(self):
-        return [*super().get_throttles(), TeacherLiveThrottle()]
-
     def get(self, request):
         now = timezone.now()
         try:
@@ -189,8 +189,8 @@ class TeacherUsabilityView(APIView):
     A teacher never sees anyone else's answers or the score; the pilot report aggregates them.
     """
 
-    # the questionnaire is a pilot instrument: only teachers the platform vouched for answer it
-    permission_classes = [IsVettedTeacher]
+    # any teacher may ask whether to show the form; only a pilot teacher (vouched for) may answer it
+    permission_classes = [IsTeacher]
 
     def get_throttles(self):
         # only the submission is limited, reading "did I answer" is not
@@ -201,13 +201,21 @@ class TeacherUsabilityView(APIView):
     @swagger_auto_schema(operation_summary="Did I already rate the dashboard (teacher)")
     def get(self, request):
         last = UsabilityResponse.objects.filter(user=request.user).first()
-        return Response({"answered_at": last.created_at.isoformat() if last else None})
+        return Response(
+            {
+                "answered_at": last.created_at.isoformat() if last else None,
+                # the questionnaire is a pilot instrument: only teachers the platform vouched for answer it
+                "eligible": IsVettedTeacher().has_permission(request, self),
+            }
+        )
 
     @swagger_auto_schema(
         operation_summary="Rate the dashboard's usability (teacher)",
         operation_description=f"Десять оценок 1-5 по шкале SUS (system usability scale) и необязательный комментарий. Нужно ровно {ITEMS} оценок.",
     )
     def post(self, request):
+        if not IsVettedTeacher().has_permission(request, self):
+            return Response({"detail": "Анкету заполняют преподаватели пилота."}, status=403)
         if not isinstance(request.data, dict):
             return Response({"detail": "Ожидается объект."}, status=400)
         try:

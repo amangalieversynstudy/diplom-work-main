@@ -37,7 +37,7 @@ def users_for_reset(email):
 
 
 @method_decorator(ratelimit(key="ip", rate="5/m", method="POST", block=True), name="post")
-@method_decorator(ratelimit(key="post:email", rate="3/h", method="POST", block=True), name="post")
+@method_decorator(ratelimit(key="core.client_ip.reset_key", rate="3/h", method="POST", block=True), name="post")
 class PasswordResetRequestView(generics.GenericAPIView):
     """Accepts an email and sends a password reset link if the user exists."""
 

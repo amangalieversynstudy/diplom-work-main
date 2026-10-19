@@ -386,9 +386,23 @@ class LeaderboardEntrySerializer(serializers.ModelSerializer):
     def _profile(self, obj):
         return getattr(obj.user, "profile", None)
 
+    @staticmethod
+    def _closed_class_row(obj):
+        """A class's own table shows the class to its members: no platform-wide level, XP, streak or hero class."""
+        return obj.scope == "track" and obj.track is not None and not obj.track.is_public
+
     def get_user_display(self, obj):
         user = obj.user
         profile = self._profile(obj)
+        if self._closed_class_row(obj):
+            return {
+                "id": user.id,
+                "username": user.username,
+                "display_name": getattr(user, "display_name", "") or user.username,
+                "level": None,
+                "xp": obj.xp_total or 0,
+                "streak": None,
+            }
         return {
             "id": user.id,
             "username": user.username,
@@ -402,6 +416,8 @@ class LeaderboardEntrySerializer(serializers.ModelSerializer):
         return getattr(obj.user, "display_name", "") or obj.user.username
 
     def get_level(self, obj):
+        if self._closed_class_row(obj):
+            return None
         p = self._profile(obj)
         return p.level if p else 1
 
@@ -418,15 +434,21 @@ class LeaderboardEntrySerializer(serializers.ModelSerializer):
 
     def get_streak(self, obj):
         # оборванная серия показывается нулём везде (Profile.streak_active), и здесь тоже
+        if self._closed_class_row(obj):
+            return None
         p = self._profile(obj)
         return p.current_streak if p and p.streak_active else 0
 
     def get_class_role(self, obj):
+        if self._closed_class_row(obj):
+            return None
         p = self._profile(obj)
         cr = getattr(p, "class_role", None)
         return cr.name if cr else None
 
     def get_class_role_id(self, obj):
+        if self._closed_class_row(obj):
+            return None
         p = self._profile(obj)
         return getattr(p, "class_role_id", None)
 

@@ -454,7 +454,8 @@ class Progress(models.Model):
             self.completed_at = timezone.now()
             self.save()
             profile = getattr(self.user, "profile", None)
-            if profile:
+            # a teacher's trial run is not a day of learning
+            if profile and not getattr(self.user, "can_teach", False):
                 profile.register_activity()
 
 

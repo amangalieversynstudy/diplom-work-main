@@ -17,11 +17,16 @@ mission is completed and when the profile list is built.
 
 from django.db.models import Count
 
+from .classes import paying_tracks_q
+
 from .models import Mission, Progress, UserAchievement
 
 
 def _missions_completed(user):
-    return Progress.objects.filter(user=user, completed=True).count()
+    # only work that pays globally: an own course or a class of an unvetted teacher gives no badges
+    return Progress.objects.filter(user=user, completed=True).filter(
+        paying_tracks_q(user, "mission__location__track")
+    ).count()
 
 
 def _tracks_completed(user):
@@ -40,6 +45,7 @@ def _tracks_completed(user):
         for row in Progress.objects.filter(
             user=user, completed=True, mission__is_active=True, mission__location__track__isnull=False
         )
+        .filter(paying_tracks_q(user, "mission__location__track"))
         .values("mission__location__track")
         .annotate(n=Count("mission_id"))
         .order_by()
@@ -68,34 +74,48 @@ ACHIEVEMENTS = [
     {
         "slug": "first_mission",
         "icon": "Footprints",
-        "progress": lambda u: (_missions_completed(u), 1),
+        "metric": _missions_completed,
+        "target": 1,
     },
     {
         "slug": "five_missions",
         "icon": "Swords",
-        "progress": lambda u: (_missions_completed(u), 5),
+        "metric": _missions_completed,
+        "target": 5,
     },
     {
         "slug": "ten_missions",
         "icon": "Crown",
-        "progress": lambda u: (_missions_completed(u), 10),
+        "metric": _missions_completed,
+        "target": 10,
     },
     {
         "slug": "track_complete",
         "icon": "Flag",
-        "progress": lambda u: (_tracks_completed(u), 1),
+        "metric": _tracks_completed,
+        "target": 1,
     },
     {
         "slug": "level_5",
         "icon": "Star",
-        "progress": lambda u: (_level(u), 5),
+        "metric": _level,
+        "target": 5,
     },
     {
         "slug": "streak_7",
         "icon": "Flame",
-        "progress": lambda u: (_longest_streak(u), 7),
+        "metric": _longest_streak,
+        "target": 7,
     },
 ]
+
+
+def _progress(ach, user, measured):
+    """(current, target) of one badge; each underlying count runs once per call (``measured`` is the memo)."""
+    metric = ach["metric"]
+    if metric not in measured:
+        measured[metric] = metric(user)
+    return measured[metric], ach["target"]
 
 
 def evaluate_achievements(user):
@@ -105,14 +125,17 @@ def evaluate_achievements(user):
     :class:`UserAchievement` makes a concurrent double-call harmless. Safe to
     call from any code path (mission complete, signals, admin actions).
     """
+    if getattr(user, "can_teach", False):
+        return []  # teachers are not players
     earned = set(
         UserAchievement.objects.filter(user=user).values_list("slug", flat=True)
     )
     newly = []
+    measured = {}
     for ach in ACHIEVEMENTS:
         if ach["slug"] in earned:
             continue
-        current, target = ach["progress"](user)
+        current, target = _progress(ach, user, measured)
         if current >= target:
             _, created = UserAchievement.objects.get_or_create(
                 user=user, slug=ach["slug"]
@@ -135,8 +158,9 @@ def achievements_for(user):
         for ua in UserAchievement.objects.filter(user=user)
     }
     items = []
+    measured = {}
     for ach in ACHIEVEMENTS:
-        current, target = ach["progress"](user)
+        current, target = _progress(ach, user, measured)
         items.append(
             {
                 "slug": ach["slug"],

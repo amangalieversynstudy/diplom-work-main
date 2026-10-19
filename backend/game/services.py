@@ -230,7 +230,7 @@ def prepare_code_task(user, task_id):
         raise RuleViolation("task_id must be an integer", http.HTTP_400_BAD_REQUEST)
     task = (
         only_published(
-            MissionTask.objects.select_related("mission"),
+            MissionTask.objects.select_related("mission", "mission__location__track__owner"),
             user,
             "mission__location__track",
         )
@@ -287,21 +287,32 @@ def _pay_for_solved_step(user, task, progress, task_progress):
 
     from .signals import refresh_leaderboard
 
+    from .classes import pays_globally
+
+    track = getattr(task.mission.location, "track", None)
+    teacher = getattr(user, "can_teach", False)
+    # Teachers try courses but earn nothing. In a class of a teacher the platform has not vetted, XP stays inside
+    # the class (Progress.xp_earned and the class leaderboard): no profile XP, level-up items, achievements or
+    # global leaderboard, so an own course cannot be used to farm them.
+    global_pay = pays_globally(user, track)
     profile = Profile.objects.select_for_update().get(user=user)
-    profile.register_activity()  # a solved step is a day of learning, not only a finished mission
-    reward = max(0, int(task.xp_reward or 0))
+    if not teacher:
+        profile.register_activity()  # a solved step is a day of learning, not only a finished mission
+    reward = 0 if teacher else max(0, int(task.xp_reward or 0))
+    task_progress.counts_globally = global_pay
     if reward:
-        leveled_up, _old, new_level = profile.add_xp(reward)
         Progress.objects.filter(pk=progress.pk).update(xp_earned=F("xp_earned") + reward)
         task_progress.xp_added = reward
-        task_progress.leveled_up = leveled_up
-        task_progress.new_level = new_level
-        refresh_leaderboard(user, getattr(task.mission.location, "track", None), profile=profile)
+        if global_pay:
+            leveled_up, _old, new_level = profile.add_xp(reward)
+            task_progress.leveled_up = leveled_up
+            task_progress.new_level = new_level
+        refresh_leaderboard(user, track, profile=profile)
     # Level and streak now move with every solved step, so a badge such as "level 5" or "7 days"
     # opens here and not only at the end of the next mission (the profile showed a full bar with
     # the badge still locked).
     user.profile = profile
-    task_progress.new_achievements = evaluate_achievements(user)
+    task_progress.new_achievements = evaluate_achievements(user) if global_pay else []
 
 
 def failures_in_a_row(task_progress):
@@ -358,6 +369,8 @@ def progress_payload(task_progress):
         "xp_added": getattr(task_progress, "xp_added", 0),
         "leveled_up": getattr(task_progress, "leveled_up", False),
         "new_level": getattr(task_progress, "new_level", None),
+        # false in a class whose XP stays inside the class (see classes.pays_globally)
+        "counts_globally": getattr(task_progress, "counts_globally", True),
         # slugs of badges opened by this step (the client shows a toast for each)
         "new_achievements": getattr(task_progress, "new_achievements", []),
     }

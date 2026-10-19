@@ -29,6 +29,11 @@ class User(AbstractUser):
         return bool(self.is_teacher or self.is_staff)
 
 
+# Level-ups refill the bag only up to these stocks.
+MAX_LEVEL_UP_HINTS = 30
+MAX_LEVEL_UP_SUMMONS = 20
+
+
 class Profile(models.Model):
     """Profile stores game-related user state such as XP, level, and inventory."""
 
@@ -147,10 +152,11 @@ class Profile(models.Model):
         leveled_up = new_level > old_level
         if leveled_up:
             self.level = new_level
-            # Награда за каждый новый уровень: +1 hint, +1 ai_summon
+            # Награда за каждый новый уровень: +1 hint, +1 ai_summon, но не выше потолка (вызовы Мудреца тратят
+            # платный ключ). Запас выше потолка, если он уже есть, не урезается.
             levels_gained = new_level - old_level
-            self.hint_scrolls += levels_gained
-            self.ai_summons += levels_gained
+            self.hint_scrolls = min(self.hint_scrolls + levels_gained, max(self.hint_scrolls, MAX_LEVEL_UP_HINTS))
+            self.ai_summons = min(self.ai_summons + levels_gained, max(self.ai_summons, MAX_LEVEL_UP_SUMMONS))
         self.save()
         return leveled_up, old_level, new_level
 

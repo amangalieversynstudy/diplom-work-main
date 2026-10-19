@@ -10,6 +10,7 @@ from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions, status, viewsets
+from rest_framework.throttling import UserRateThrottle
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from users.models import Profile
@@ -65,7 +66,7 @@ from .models import (
     TaskProgress,
     Track,
 )
-from .classes import MISSION_TRACK, owner_scope, visible_learners, visible_work
+from .classes import MISSION_TRACK, member_or_public, owner_scope, pays_globally, visible_learners, visible_work
 from .permissions import IsSuperUser, IsTeacher
 from .variants import personalize
 from .metrics import _last_activity
@@ -131,7 +132,7 @@ class MissionViewSet(viewsets.ModelViewSet):
     # Порядок «курс → локация → миссия»: без него миссии двух курсов с одинаковыми
     # order перемешиваются, и тропа на карте прыгает между курсами.
     queryset = (
-        Mission.objects.select_related('location', 'location__track')
+        Mission.objects.select_related('location', 'location__track', 'location__track__owner')
         .prefetch_related('prerequisites')
         .order_by("location__track__order", "location__order", "order", "id")
     )
@@ -190,7 +191,10 @@ class MissionViewSet(viewsets.ModelViewSet):
         responses={200: ProgressSerializer},
     )
     @action(
-        detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated]
+        detail=True,
+        methods=["post"],
+        permission_classes=[permissions.IsAuthenticated],
+        throttle_classes=[UserRateThrottle, MissionCompleteThrottle],
     )
     @transaction.atomic
     def complete(self, request, pk=None):
@@ -206,10 +210,12 @@ class MissionViewSet(viewsets.ModelViewSet):
         Profile.objects.select_for_update().get(pk=profile.pk)
         profile.refresh_from_db()
 
-        # Double-click guard: a completion within 5 s of the previous one is
-        # answered with the current state and no side effects.
-        if prog.completed and prog.completed_at and (
-            timezone.now() - prog.completed_at < timedelta(seconds=5)
+        # A finished mission that cannot be repeated is answered with its state and no side effects: no save
+        # (which would rebuild the leaderboard), no event, no achievements. The same for a double click within 5 s.
+        if (prog.completed and not mission.repeatable) or (
+            prog.completed
+            and prog.completed_at
+            and timezone.now() - prog.completed_at < timedelta(seconds=5)
         ):
             return Response(
                 self._completion_payload(prog, profile, 0, False, deduplicated=True)
@@ -225,11 +231,15 @@ class MissionViewSet(viewsets.ModelViewSet):
             xp_gain = mission.xp_reward
         elif mission.repeatable:
             xp_gain = max(0, (mission.xp_reward * mission.repeat_xp_rate) // 100)
+        if user.can_teach:
+            xp_gain = 0  # a teacher's trial run is graded but pays nothing
+        # class XP of a class whose XP stays inside it: Progress.xp_earned only (see classes.pays_globally)
+        global_pay = pays_globally(user, mission.location.track if mission.location_id else None)
 
         # XP first: the leaderboard signal fired by saving the progress below
         # reads the profile, so it must already contain the new XP.
         leveled_up = False
-        if xp_gain > 0:
+        if xp_gain > 0 and global_pay:
             leveled_up, _old, _new = profile.add_xp(xp_gain)
 
         prog.xp_earned += xp_gain
@@ -250,17 +260,17 @@ class MissionViewSet(viewsets.ModelViewSet):
         )
         # complete() also updated the streak on another Profile instance.
         profile.refresh_from_db()
-        new_achievements = evaluate_achievements(user)
-        return Response(
-            self._completion_payload(
-                prog,
-                profile,
-                xp_gain,
-                leveled_up,
-                new_achievements=new_achievements,
-                first_completion=not was_completed,
-            )
+        new_achievements = evaluate_achievements(user) if global_pay else []
+        payload = self._completion_payload(
+            prog,
+            profile,
+            xp_gain,
+            leveled_up,
+            new_achievements=new_achievements,
+            first_completion=not was_completed,
         )
+        payload["counts_globally"] = global_pay
+        return Response(payload)
 
     @staticmethod
     def _completion_payload(
@@ -313,7 +323,9 @@ class MissionTaskViewSet(viewsets.ReadOnlyModelViewSet):
     the code through the WebSocket runner with the task id.
     """
 
-    queryset = MissionTask.objects.select_related("mission", "mission__location").order_by(
+    queryset = MissionTask.objects.select_related(
+        "mission", "mission__location", "mission__location__track__owner"
+    ).order_by(
         "mission_id", "order"
     )
     serializer_class = MissionTaskSerializer
@@ -440,9 +452,11 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        # rows of a closed class (and who studies there) are not for strangers
+        # Teachers and staff are not players. Rows of a closed class (and who studies there) are for its members
+        # and owner only, and a learner who left the class drops out of its table.
+        qs = qs.filter(user__is_staff=False, user__is_teacher=False)
         visible_tracks = only_published(Track.objects.all(), self.request.user, "")
-        qs = qs.filter(Q(track__isnull=True) | Q(track__in=visible_tracks))
+        qs = qs.filter(Q(track__isnull=True) | (Q(track__in=visible_tracks) & member_or_public("track")))
         track_slug = self.request.query_params.get("track")
         if track_slug:
             qs = qs.filter(track__slug=track_slug)
@@ -470,7 +484,12 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
                 output_field=IntegerField(),
             )
         )
-        return qs.order_by("-xp_total", "-live_streak", "user__username")[:200]
+        return qs.order_by("-xp_total", "-live_streak", "user__username")
+
+    def list(self, request, *args, **kwargs):
+        # the top 200 is cut here and not in get_queryset, so GET /leaderboard/<id>/ can still filter the rows
+        rows = self.filter_queryset(self.get_queryset())[:200]
+        return Response(self.get_serializer(rows, many=True).data)
 
 class IntroStatusView(APIView):
     """Reports whether the current user has finished the intro course.

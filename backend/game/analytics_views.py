@@ -18,7 +18,7 @@ from .me import my_learning
 from .metrics import CSV_COLUMNS, clamp_inactive_days, compute_metrics
 from .models import UsabilityResponse
 from .serializers import _resolve_language
-from .throttles import UsabilitySubmitThrottle
+from .throttles import TeacherAnalyticsThrottle, UsabilitySubmitThrottle
 from .usability import ITEMS, sus_score
 from .warning import early_warning, scoped_learners
 
@@ -71,6 +71,9 @@ class TeacherStudentLearningView(APIView):
 
     permission_classes = [IsTeacher]
 
+    def get_throttles(self):
+        return [*super().get_throttles(), TeacherAnalyticsThrottle()]
+
     @swagger_auto_schema(
         operation_summary="A student's learning picture (teacher)",
         operation_description=(
@@ -85,8 +88,9 @@ class TeacherStudentLearningView(APIView):
         data["student"] = {
             "id": student.pk,
             "username": student.username,
-            "level": student.profile.level,
-            "xp": student.profile.xp,
+            # global level/XP only for a superuser; a teacher gets the XP of their own courses
+            "level": student.profile.level if owner is None else None,
+            "xp": student.profile.xp if owner is None else data["summary"]["xp"],
         }
         return Response(data)
 
@@ -102,6 +106,9 @@ class TeacherStudentAuthorshipView(APIView):
     """
 
     permission_classes = [IsTeacher]
+
+    def get_throttles(self):
+        return [*super().get_throttles(), TeacherAnalyticsThrottle()]
 
     @swagger_auto_schema(
         operation_summary="Authorship of a student's solved code steps (teacher)",
@@ -123,6 +130,9 @@ class TeacherAuthorshipOverviewView(APIView):
     """
 
     permission_classes = [IsTeacher]
+
+    def get_throttles(self):
+        return [*super().get_throttles(), TeacherAnalyticsThrottle()]
 
     @swagger_auto_schema(
         operation_summary="Whose solutions to look at first (teacher)",
@@ -212,6 +222,9 @@ class LearningMetricsView(APIView):
 
     permission_classes = [IsTeacher]
 
+    def get_throttles(self):
+        return [*super().get_throttles(), TeacherAnalyticsThrottle()]
+
     @swagger_auto_schema(
         operation_summary="Learning-effectiveness metrics (staff)",
         operation_description=(
@@ -236,6 +249,9 @@ class LearningMetricsExportView(APIView):
     """The per-step metrics table as CSV, for a spreadsheet or a thesis chapter."""
 
     permission_classes = [IsTeacher]
+
+    def get_throttles(self):
+        return [*super().get_throttles(), TeacherAnalyticsThrottle()]
 
     @swagger_auto_schema(
         operation_summary="Per-step metrics as CSV (staff)",
@@ -264,6 +280,9 @@ class EarlyWarningView(APIView):
     """
 
     permission_classes = [IsTeacher]
+
+    def get_throttles(self):
+        return [*super().get_throttles(), TeacherAnalyticsThrottle()]
 
     @swagger_auto_schema(
         operation_summary="Early warning list (staff)",

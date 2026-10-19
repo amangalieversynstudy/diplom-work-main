@@ -186,7 +186,10 @@ export default function JourneyView({ data, mode = "student", backHref }) {
         </h1>
         <p className="mt-3 max-w-2xl text-lg leading-relaxed text-muted">
           {teacher
-            ? fmt(t("teacherStudent.subtitle"), { level: data.student?.level ?? 1, xp: data.student?.xp ?? 0 })
+            ? // уровень и серия считаются по всей платформе: преподавателю без прав администратора их не присылают
+              data.student?.level == null
+              ? fmt(t("teacherStudent.subtitleCourse"), { xp: data.student?.xp ?? 0 })
+              : fmt(t("teacherStudent.subtitle"), { level: data.student.level, xp: data.student?.xp ?? 0 })
             : t("journey.subtitle")}
         </p>
       </header>
@@ -240,12 +243,14 @@ export default function JourneyView({ data, mode = "student", backHref }) {
             label={t("journey.tiles.steps")}
             value={`${summary.steps_done}/${summary.steps_total}`}
           />
-          <Tile
-            icon={Flame}
-            label={t("journey.tiles.streak")}
-            value={summary.streak}
-            hint={fmt(t("journey.tiles.streakBest"), { n: summary.longest_streak })}
-          />
+          {summary.streak == null ? null : (
+            <Tile
+              icon={Flame}
+              label={t("journey.tiles.streak")}
+              value={summary.streak}
+              hint={fmt(t("journey.tiles.streakBest"), { n: summary.longest_streak })}
+            />
+          )}
           <Tile
             icon={RotateCcw}
             label={t("journey.tiles.attempts")}

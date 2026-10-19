@@ -509,7 +509,7 @@ export default function TeacherPage() {
                         {t("teacher.table.level")}
                       </span>
                       <span className="font-semibold text-text tabular-nums">
-                        {s.level}
+                        {s.level ?? "—"}
                       </span>
                     </div>
                     <div className="flex justify-between md:block md:text-right text-sm">

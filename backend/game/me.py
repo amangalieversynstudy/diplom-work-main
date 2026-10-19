@@ -10,9 +10,10 @@ like "72% chance you will quit" would do harm).
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.db.models import Max, Q
+from django.db.models import Avg, Count, Max, Sum
 from django.utils import timezone
 
+from .classes import MISSION_TRACK, TASK_TRACK, visible_learners, visible_work
 from .metrics import MIN_SAMPLE, _last_activity, _mean
 from .models import CodeRun, LearningEvent, Mission, MissionTask, Progress, TaskProgress
 from .services import HELP_AFTER_FAILURES, only_published
@@ -54,28 +55,31 @@ def _step_ref(task, lang, attempts=None):
     return ref
 
 
-def _cohort_mean_attempts(exclude_user_id):
+def _cohort_mean_attempts(exclude_user_id, task_ids=None, users=None):
     """Mean tries-to-success of everyone else, or None when the group is too small
-    to show without pointing at individuals."""
-    # guessing among options is not debugging: explain questions stay out (filtered here, not in SQL,
-    # because "key is not equal" on a JSON field also drops the rows that lack the key)
-    explain_ids = [
-        pk
-        for pk, data in MissionTask.objects.filter(task_type="quiz").values_list("pk", "data")
-        if isinstance(data, dict) and data.get("kind") == "explain"
-    ]
+    to show without pointing at individuals.
+
+    One aggregate query. Explain questions stay out (guessing among options is not debugging), and so do
+    teacher and staff accounts (their trial runs are not learners' work). In a teacher's view of a student the
+    comparison is limited to that teacher's steps (``task_ids``) and the learners the teacher may see
+    (``users``)."""
+    explain = MissionTask.objects.filter(task_type="quiz", data__kind="explain").values("pk")
     rows = (
         TaskProgress.objects.filter(status="completed", task__task_type__in=GRADED)
-        .exclude(task_id__in=explain_ids)
+        .exclude(task_id__in=explain)
         .exclude(user_id=exclude_user_id)
+        .exclude(user__is_staff=True)
+        .exclude(user__is_teacher=True)
     )
-    per_user = {}
-    for user_id, attempts in rows.values_list("user_id", "attempts"):
-        per_user.setdefault(user_id, []).append(attempts)
-    if len(per_user) < MIN_SAMPLE:
-        return None, len(per_user)
-    everyone = [a for values in per_user.values() for a in values]
-    return _mean(everyone), len(per_user)
+    if task_ids is not None:
+        rows = rows.filter(task_id__in=list(task_ids))
+    if users is not None:
+        rows = rows.filter(user__in=users)
+    agg = rows.aggregate(mean=Avg("attempts"), n=Count("user_id", distinct=True))
+    size = agg["n"] or 0
+    if size < MIN_SAMPLE or agg["mean"] is None:
+        return None, size
+    return round(agg["mean"], 2), size
 
 
 def _next_step(user, missions, tasks_by_mission, solved, completed_missions):
@@ -175,18 +179,15 @@ def my_learning(user, *, lang="ru", now=None, owner=None):
         if solved_graded
         else None
     )
-    cohort_mean, cohort_size = _cohort_mean_attempts(user.pk)
-
     if owner is None:
-        last_seen = _last_activity([user.pk]).get(user.pk)
+        cohort_mean, cohort_size = _cohort_mean_attempts(user.pk)
     else:
-        own_run = CodeRun.objects.filter(
-            user=user, task__mission__location__track__owner=owner
-        ).aggregate(last=Max("created_at"))["last"]
-        own_event = LearningEvent.objects.filter(user=user).filter(
-            Q(task__mission__location__track__owner=owner) | Q(mission__location__track__owner=owner)
-        ).aggregate(last=Max("created_at"))["last"]
-        last_seen = max((s for s in (own_run, own_event) if s), default=None)
+        cohort_mean, cohort_size = _cohort_mean_attempts(
+            user.pk, task_ids=list(task_by_id), users=visible_learners(owner)
+        )
+
+    # a teacher sees only work in their own courses (a closed one while the learner is enrolled)
+    last_seen = _last_activity([user.pk], owner=owner).get(user.pk)
     days_away = (now - last_seen).days if last_seen else None
     has_activity = bool(progress) or last_seen is not None
 
@@ -201,8 +202,8 @@ def my_learning(user, *, lang="ru", now=None, owner=None):
     )
     if owner is not None:
         # a teacher sees activity in their own courses only; free-practice runs (no task) belong to none
-        run_rows = run_rows.filter(task__mission__location__track__owner=owner)
-        solved_rows = solved_rows.filter(task__mission__location__track__owner=owner)
+        run_rows = run_rows.filter(visible_work(owner, TASK_TRACK))
+        solved_rows = solved_rows.filter(visible_work(owner, TASK_TRACK))
     for created in run_rows.values_list(
         "created_at", flat=True
     ):
@@ -215,6 +216,17 @@ def my_learning(user, *, lang="ru", now=None, owner=None):
 
     next_task = _next_step(user, missions, tasks_by_mission, solved, completed_missions)
     profile = user.profile
+    if owner is None:
+        xp, level, streak, longest = profile.xp, profile.level, profile.current_streak, profile.longest_streak
+    else:
+        # level and streak are platform-wide: a teacher gets the XP earned in their own courses and no more
+        xp = (
+            Progress.objects.filter(user=user)
+            .filter(visible_work(owner, MISSION_TRACK))
+            .aggregate(xp=Sum("xp_earned"))["xp"]
+            or 0
+        )
+        level = streak = longest = None
 
     return {
         "status": _status(has_activity, days_away, stuck, mean_attempts, len(solved_graded)),
@@ -223,10 +235,10 @@ def my_learning(user, *, lang="ru", now=None, owner=None):
             "missions_total": len(missions),
             "steps_done": len(solved),
             "steps_total": len(tasks),
-            "xp": profile.xp,
-            "level": profile.level,
-            "streak": profile.current_streak,
-            "longest_streak": profile.longest_streak,
+            "xp": xp,
+            "level": level,
+            "streak": streak,
+            "longest_streak": longest,
             "days_away": days_away,
         },
         "attempts": {

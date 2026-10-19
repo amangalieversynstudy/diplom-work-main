@@ -55,6 +55,7 @@ export const en = {
   teacherStudent: {
     badge: "Student",
     subtitle: "This is how their path through your courses looks: where they go strongly, where it is hard and what is next. Level {level}, {xp} XP.",
+    subtitleCourse: "This is how their path through your courses looks: where they go strongly, where it is hard and what is next. In your courses: {xp} XP.",
     back: "Back to the cabinet",
     loadFail: "Could not load the student.",
     notFound: "There is no such student among your courses.",

@@ -19,6 +19,7 @@ from django.db.models import Max, Q
 from django.utils import timezone
 
 from .models import CodeRun, FreshnessSample, LearningEvent
+from .classes import TASK_TRACK, visible_events, visible_work
 from .warning import scoped_learners
 
 POLL_SECONDS = 10
@@ -44,13 +45,12 @@ _EVENT_KIND = {
 
 
 def _own_events(viewer):
-    if viewer.is_superuser:
-        return Q()
-    return Q(task__mission__location__track__owner=viewer) | Q(mission__location__track__owner=viewer)
+    # the viewer's courses, a closed one only while the learner is enrolled; Q() for a superuser
+    return visible_events(viewer)
 
 
 def _own_runs(viewer):
-    return Q() if viewer.is_superuser else Q(task__mission__location__track__owner=viewer)
+    return visible_work(viewer, TASK_TRACK)
 
 
 def _title(obj, lang):

@@ -248,6 +248,9 @@ def test_model_flags_a_fading_learner_and_explains_it(class_with_model):
     teacher, learner = class_with_model
     learner("busy", events=60)
     learner("fading", events=0)
+    # the model reads platform-wide behaviour: only a superuser gets its probability
+    teacher.is_superuser = True
+    teacher.save(update_fields=["is_superuser"])
 
     body = _warning(teacher)
     assert body["rules"]["model"] is True
@@ -366,3 +369,16 @@ def test_export_rejects_nonsense_windows(tmp_path):
 
     with pytest.raises(CommandError):
         call_command("export_risk_features", "--out", str(tmp_path / "x.csv"), "--step-days", "0")
+
+
+
+def test_a_teacher_who_is_not_a_superuser_gets_no_model_probability(class_with_model):
+    """The model's features cover the whole platform, beyond what a class agreed to show its teacher."""
+    teacher, learner = class_with_model
+    learner("busy", events=60)
+    learner("fading", events=0)
+
+    body = _warning(teacher)
+    assert body["rules"]["model"] is False
+    assert all(s["risk_probability"] is None for s in body["students"])
+    assert all(r["code"] != "model_risk" for s in body["students"] for r in s["reasons"])

@@ -18,6 +18,7 @@ Nothing here decides anything about a learner: the teacher sees the facts and th
 from .metrics import scoped_tasks
 from .models import CodeRun, LearningEvent, TaskProgress
 from .variants import variant_index, variants_of
+from .classes import TASK_TRACK, visible_work
 from .warning import scoped_learners
 
 # provenance fields the editor may send; anything else is dropped, values are clamped
@@ -143,6 +144,7 @@ def authorship_report(student, viewer, *, lang="ru", context=None):
         CodeRun.objects.filter(
             user=student, task_id__in=list(tasks), passed=True, after_solved=False
         )
+        .filter(visible_work(viewer, TASK_TRACK))  # a class the learner left is not shown any more
         .order_by("created_at")
     )
     for run in runs:
@@ -160,6 +162,7 @@ def authorship_report(student, viewer, *, lang="ru", context=None):
                 after_solved=False,
                 user__in=scoped_learners(viewer),
             )
+            .filter(visible_work(viewer, TASK_TRACK))
             .exclude(user=student)
             .select_related("user")
             .order_by("created_at")
@@ -250,7 +253,7 @@ def authorship_overview(viewer, *, limit=8):
     # a learner who has not solved a code step has nothing to report: do not build a report for them
     solvers = CodeRun.objects.filter(
         task_id__in=list(context["tasks"]), passed=True, after_solved=False
-    ).values("user_id")
+    ).filter(visible_work(viewer, TASK_TRACK)).values("user_id")
     rows = []
     for student in scoped_learners(viewer).filter(pk__in=solvers):
         summary = authorship_report(student, viewer, context=context)["summary"]

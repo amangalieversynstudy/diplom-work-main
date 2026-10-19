@@ -307,6 +307,9 @@ def test_summary_tells_apart_no_learners_no_data_and_all_clear(course, teacher):
     summary = early_warning(teacher)["summary"]
     assert summary["total"] == 1 and summary["with_activity"] == 0  # a learner, but nothing done yet
 
+    # a login is private to the learner; work in the teacher's course is what the teacher sees
     LearningEvent.objects.create(user=student, event_type="login")
+    assert early_warning(teacher, now=now)["summary"]["with_activity"] == (1 if teacher.is_superuser else 0)
+    LearningEvent.objects.create(user=student, event_type="mission_started", mission=mission)
     summary = early_warning(teacher, now=now)["summary"]
     assert summary["total"] == 1 and summary["with_activity"] == 1 and summary["high"] == summary["medium"] == 0

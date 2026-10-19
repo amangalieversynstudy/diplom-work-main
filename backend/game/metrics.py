@@ -30,7 +30,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Max, Q
 from django.utils import timezone
 
-from .classes import visible_learners
+from .classes import MISSION_TRACK, TASK_TRACK, owner_scope, visible_events, visible_learners, visible_work
 from .models import CodeRun, LearningEvent, MissionTask, Progress, TaskProgress
 from .stats import clustered_share
 
@@ -100,9 +100,23 @@ def scoped_tasks(viewer, track_id=None):
     )
 
 
-def _last_activity(learner_ids):
-    """{user_id: datetime of the learner's most recent sign of life}."""
+def _last_activity(learner_ids, owner=None):
+    """{user_id: datetime of the learner's most recent sign of life}.
+
+    Without ``owner``: anywhere on the platform (the definition of "left" in the pilot report and H3). With an
+    ``owner`` (a teacher who is not a superuser): only work in that teacher's courses, and in a closed course only
+    while the learner is enrolled, so logins, free practice and other teachers' classes stay private.
+    """
     latest = {}
+    events = LearningEvent.objects.filter(user_id__in=learner_ids)
+    runs = CodeRun.objects.filter(user_id__in=learner_ids)
+    missions = Progress.objects.filter(user_id__in=learner_ids)
+    steps = TaskProgress.objects.filter(user_id__in=learner_ids)
+    if owner is not None:
+        events = events.filter(visible_events(owner))
+        runs = runs.filter(visible_work(owner, TASK_TRACK))
+        missions = missions.filter(visible_work(owner, MISSION_TRACK))
+        steps = steps.filter(visible_work(owner, TASK_TRACK))
 
     def merge(rows, *fields):
         for row in rows:
@@ -111,35 +125,18 @@ def _last_activity(learner_ids):
                 if stamp and (row["user_id"] not in latest or stamp > latest[row["user_id"]]):
                     latest[row["user_id"]] = stamp
 
+    merge(events.values("user_id").annotate(last=Max("created_at")).order_by(), "last")
+    merge(runs.values("user_id").annotate(last=Max("created_at")).order_by(), "last")
     merge(
-        LearningEvent.objects.filter(user_id__in=learner_ids)
-        .values("user_id")
-        .annotate(last=Max("created_at")),
-        "last",
-    )
-    merge(
-        CodeRun.objects.filter(user_id__in=learner_ids)
-        .values("user_id")
-        .annotate(last=Max("created_at")),
-        "last",
-    )
-    merge(
-        Progress.objects.filter(user_id__in=learner_ids)
-        .values("user_id")
-        .annotate(started=Max("last_started_at"), done=Max("completed_at")),
+        missions.values("user_id").annotate(started=Max("last_started_at"), done=Max("completed_at")).order_by(),
         "started",
         "done",
     )
-    merge(
-        TaskProgress.objects.filter(user_id__in=learner_ids)
-        .values("user_id")
-        .annotate(last=Max("last_submitted_at")),
-        "last",
-    )
+    merge(steps.values("user_id").annotate(last=Max("last_submitted_at")).order_by(), "last")
     return latest
 
 
-def _daily_activity(task_ids, mission_ids, learner_ids, now, days=DAILY_DAYS):
+def _daily_activity(task_ids, mission_ids, learner_ids, now, days=DAILY_DAYS, *, work=Q(), events=Q()):
     """Per day of the last ``days``: learners who did anything, steps solved, code runs (the class trend).
 
     Only work in the viewer's own courses counts; free-practice runs belong to no course and stay out.
@@ -155,7 +152,7 @@ def _daily_activity(task_ids, mission_ids, learner_ids, now, days=DAILY_DAYS):
 
     for user_id, stamp in CodeRun.objects.filter(
         user_id__in=learners, task_id__in=task_ids, created_at__gte=since
-    ).values_list("user_id", "created_at"):
+    ).filter(work).values_list("user_id", "created_at"):
         if stamp.date() in runs:
             runs[stamp.date()] += 1
             active[stamp.date()].add(user_id)
@@ -163,12 +160,12 @@ def _daily_activity(task_ids, mission_ids, learner_ids, now, days=DAILY_DAYS):
         Q(task_id__in=task_ids) | Q(mission_id__in=mission_ids),
         user_id__in=learners,
         created_at__gte=since,
-    ).values_list("user_id", "created_at"):
+    ).filter(events).values_list("user_id", "created_at"):
         if stamp.date() in active:
             active[stamp.date()].add(user_id)
     for user_id, stamp, status in TaskProgress.objects.filter(
         user_id__in=learners, task_id__in=task_ids, last_submitted_at__gte=since
-    ).values_list("user_id", "last_submitted_at", "status"):
+    ).filter(work).values_list("user_id", "last_submitted_at", "status"):
         if stamp.date() in active:
             active[stamp.date()].add(user_id)
             solved[stamp.date()] += status == "completed"
@@ -178,7 +175,7 @@ def _daily_activity(task_ids, mission_ids, learner_ids, now, days=DAILY_DAYS):
     ]
 
 
-def _help_by_pair(task_ids, learner_ids):
+def _help_by_pair(task_ids, learner_ids, work=Q()):
     """({(user_id, task_id): HELP_HINT | HELP_AI} for pairs that used any help, pairs that took the free rescue hint)."""
     used = {}
     rescued = set()
@@ -186,7 +183,7 @@ def _help_by_pair(task_ids, learner_ids):
         task_id__in=task_ids,
         user_id__in=learner_ids,
         event_type__in=_HINT_EVENTS + _AI_EVENTS,
-    ).values_list("user_id", "task_id", "event_type")
+    ).filter(work).values_list("user_id", "task_id", "event_type")
     for user_id, task_id, event_type in rows:
         key = (user_id, task_id)
         if event_type in _AI_EVENTS:
@@ -198,7 +195,7 @@ def _help_by_pair(task_ids, learner_ids):
     return used, rescued
 
 
-def _opened_pairs(task_ids, students, progress_rows):
+def _opened_pairs(task_ids, students, progress_rows, work=Q()):
     """(user_id, task_id) pairs where the learner opened or tried the step."""
     pairs = {(row["user_id"], row["task_id"]) for row in progress_rows}
     pairs.update(
@@ -207,11 +204,13 @@ def _opened_pairs(task_ids, students, progress_rows):
             task_id__in=task_ids,
             user__in=students,
         )
+        .filter(work)
         .values_list("user_id", "task_id")
         .distinct()
     )
     pairs.update(
         CodeRun.objects.filter(task_id__in=task_ids, user__in=students)
+        .filter(work)
         .values_list("user_id", "task_id")
         .distinct()
     )
@@ -301,13 +300,16 @@ def compute_metrics(
     if consented_only:
         students = students.filter(profile__research_consent=True)
 
+    # rows of a closed course count only while their learner is enrolled; Q() for a superuser
+    work = visible_work(viewer, TASK_TRACK)
     progress_rows = list(
-        TaskProgress.objects.filter(task_id__in=task_ids, user__in=students).values(
+        TaskProgress.objects.filter(task_id__in=task_ids, user__in=students).filter(work).values(
             "user_id", "task_id", "status", "attempts"
         )
     )
     mission_rows = list(
         Progress.objects.filter(mission_id__in=mission_ids, user__in=students)
+        .filter(visible_work(viewer, MISSION_TRACK))
         .exclude(started_at__isnull=True)
         .values("mission_id", "user_id", "completed")
     )
@@ -315,9 +317,11 @@ def compute_metrics(
     learner_ids = {row["user_id"] for row in progress_rows} | {
         row["user_id"] for row in mission_rows
     }
-    opened = _opened_pairs(task_ids, students, progress_rows)
+    opened = _opened_pairs(task_ids, students, progress_rows, work)
     learner_ids |= {user_id for user_id, _ in opened}
-    last_seen = _last_activity(learner_ids)
+    # a teacher's "left" means no work in the teacher's own courses; the platform-wide definition is kept for a
+    # superuser and therefore for the pilot report and H3 (they run as a superuser stand-in)
+    last_seen = _last_activity(learner_ids, owner=owner_scope(viewer))
     inactive = {
         user_id for user_id in learner_ids if last_seen.get(user_id, now - timedelta(days=3650)) < cutoff
     }
@@ -327,7 +331,7 @@ def compute_metrics(
     }
     attempts = {(row["user_id"], row["task_id"]): row["attempts"] for row in progress_rows}
     dropped = {pair for pair in opened - solved if pair[0] in inactive}
-    help_used, rescued_pairs = _help_by_pair(task_ids, learner_ids)
+    help_used, rescued_pairs = _help_by_pair(task_ids, learner_ids, work)
 
     by_task = defaultdict(lambda: {"opened": 0, "solved": 0, "dropped": 0, "helped": 0, "tries": []})
     for pair in opened:
@@ -352,6 +356,7 @@ def compute_metrics(
 
     error_runs = (
         CodeRun.objects.filter(task_id__in=task_ids, user__in=students)
+        .filter(work)
         .exclude(error_type="")
         .exclude(outcome="runner_error")
     )
@@ -476,6 +481,8 @@ def compute_metrics(
             "generated_at": now.isoformat(),
             "inactive_days": inactive_days,
             "scope": "all" if viewer.is_superuser else "own",
+            # where "left" is measured: the whole platform, or only the teacher's own courses
+            "activity_scope": "platform" if viewer.is_superuser else "own_courses",
             "track": track_id,
             "learners": len(learner_ids),
             "critical_share": int(100 * CRITICAL_DROPOUT_SHARE),
@@ -496,7 +503,9 @@ def compute_metrics(
             "steps_known": len(solved & opened) + len(dropped),
         },
         "missions": missions,
-        "daily": _daily_activity(task_ids, mission_ids, learner_ids, now),
+        "daily": _daily_activity(
+            task_ids, mission_ids, learner_ids, now, work=work, events=visible_events(viewer)
+        ),
         "funnel": funnel,
         "tasks": task_table,
         "failure_curve": curve,

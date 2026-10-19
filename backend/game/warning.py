@@ -19,9 +19,10 @@ Signals (weights in ``WEIGHTS``):
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.db.models import Sum
 from django.utils import timezone
 
-from .classes import visible_learners
+from .classes import MISSION_TRACK, TASK_TRACK, owner_scope, visible_learners, visible_work
 from .metrics import ABANDON_WINDOW_DAYS, _last_activity, _title, scoped_tasks
 from .models import Progress, TaskProgress
 from .risk import load_risk_model, risk_probabilities
@@ -79,8 +80,11 @@ def assess_students(viewer, *, now=None, consented_only=False):
     # three wrong guesses at an "explain" question say little about being stuck: leave them out
     tasks = {task.pk: task for task in scoped_tasks(viewer) if task.kind != "explain"}
 
+    # Only work the viewer may see counts: their own courses, a closed one only while the learner is enrolled
+    # (Q() for a superuser, so the pilot report and H3 snapshots are unchanged).
     open_missions = set(
         Progress.objects.filter(user_id__in=learner_ids, completed=False)
+        .filter(visible_work(viewer, MISSION_TRACK))
         .exclude(started_at__isnull=True)
         .values_list("user_id", flat=True)
     )
@@ -90,14 +94,27 @@ def assess_students(viewer, *, now=None, consented_only=False):
         task_id__in=list(tasks),
         attempts__gte=HELP_AFTER_FAILURES,
         last_submitted_at__gte=now - timedelta(days=STUCK_RECENT_DAYS),
-    ).exclude(status="completed")
+    ).filter(visible_work(viewer, TASK_TRACK)).exclude(status="completed")
     for row in unsolved.values("user_id", "task_id", "attempts"):
         best = worst.get(row["user_id"])
         if best is None or row["attempts"] > best["attempts"]:
             worst[row["user_id"]] = row
 
-    last_seen = _last_activity(learner_ids)
-    model = load_risk_model()
+    owner = owner_scope(viewer)
+    last_seen = _last_activity(learner_ids, owner=owner)
+    # The model reads platform-wide behaviour (its features cannot be scoped to one course), so only a superuser
+    # gets its probability; a teacher's list stays within what the learner agreed to show them.
+    model = load_risk_model() if owner is None else None
+    course_xp = {}
+    if owner is not None:
+        course_xp = dict(
+            Progress.objects.filter(user_id__in=learner_ids)
+            .filter(visible_work(viewer, MISSION_TRACK))
+            .values("user_id")
+            .annotate(xp=Sum("xp_earned"))
+            .order_by()
+            .values_list("user_id", "xp")
+        )
     chances = risk_probabilities(model, learner_ids, now) if model else {}
     assessments = {}
     for student in students:
@@ -144,7 +161,8 @@ def assess_students(viewer, *, now=None, consented_only=False):
             "risk_probability": round(chance, 3) if chance is not None else None,
             "last_active": seen.isoformat() if seen else None,
             "days_inactive": days,
-            "xp": getattr(profile, "xp", 0),
+            # a teacher sees XP earned in their own courses, a superuser the profile total
+            "xp": getattr(profile, "xp", 0) if owner is None else (course_xp.get(student.pk) or 0),
         }
     return assessments
 
@@ -170,6 +188,6 @@ def early_warning(viewer, *, now=None):
             "deep_failures": DEEP_STRUGGLE_FAILURES,
             "inactive_soon_days": INACTIVE_SOON_DAYS,
             "inactive_long_days": INACTIVE_LONG_DAYS,
-            "model": bool(load_risk_model()),
+            "model": bool(load_risk_model()) and owner_scope(viewer) is None,
         },
     }

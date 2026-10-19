@@ -5,7 +5,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Case, Count, F, IntegerField, Max, Q, Value, When
+from django.db.models import Case, Count, F, IntegerField, Max, Q, Sum, Value, When
 from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -33,7 +33,9 @@ from .throttles import (
     CodeRunnerBurstThrottle,
     CodeRunnerThrottle,
     LearningEventThrottle,
+    MissionCompleteThrottle,
     TaskSubmitThrottle,
+    TeacherAnalyticsThrottle,
 )
 
 logger = logging.getLogger(__name__)
@@ -63,7 +65,7 @@ from .models import (
     TaskProgress,
     Track,
 )
-from .classes import visible_learners
+from .classes import MISSION_TRACK, owner_scope, visible_learners, visible_work
 from .permissions import IsSuperUser, IsTeacher
 from .variants import personalize
 from .metrics import _last_activity
@@ -1064,6 +1066,10 @@ class TeacherStudentsView(APIView):
 
     permission_classes = [IsTeacher]
 
+    def get_throttles(self):
+        # тяжёлый пересчёт на каждый запрос: свой лимит поверх общего
+        return [*super().get_throttles(), TeacherAnalyticsThrottle()]
+
     @swagger_auto_schema(
         operation_summary="Teacher cabinet: per-student progress (staff)",
         operation_description=(
@@ -1081,43 +1087,39 @@ class TeacherStudentsView(APIView):
         # его курсов (Студия). Суперюзер видит всех. Используем подзапрос id__in
         # (а не JOIN-фильтр), чтобы агрегаты ниже остались точными.
         base = visible_learners(request.user)
+        viewer = request.user
+        owner = owner_scope(viewer)
 
-        # Одним запросом: считаем по каждому ученику завершённые / открытые
-        # миссии, максимум попыток на незавершённой и время последней активности.
-        # Все агрегаты идут по одному JOIN к progress, поэтому distinct=True на
-        # Count обязателен, чтобы строки не двоились.
-        rows = (
-            base
-            .select_related("profile")
+        # Счётчики миссий и XP отдельным запросом по Progress: только курсы преподавателя, а закрытый курс только
+        # пока ученик в классе (для суперпользователя фильтр пустой). Progress уникален по (ученик, миссия),
+        # поэтому distinct не нужен и суммы не двоятся.
+        counts = {
+            row["user_id"]: row
+            for row in Progress.objects.filter(user__in=base)
+            .filter(visible_work(viewer, MISSION_TRACK))
+            .values("user_id")
             .annotate(
-                completed_count=Count(
-                    "progress",
-                    filter=Q(progress__completed=True),
-                    distinct=True,
-                ),
-                in_progress_count=Count(
-                    "progress",
-                    filter=Q(
-                        progress__completed=False,
-                        progress__status="in_progress",
-                    ),
-                    distinct=True,
-                ),
-                last_completed=Max("progress__completed_at"),
-                last_started=Max("progress__last_started_at"),
+                done=Count("id", filter=Q(completed=True)),
+                open=Count("id", filter=Q(completed=False, status="in_progress")),
+                xp=Sum("xp_earned"),
             )
-            .order_by("-profile__xp", "username")
-        )
+            .order_by()
+        }
+        rows = base.select_related("profile")
+        if owner is None:
+            rows = list(rows.order_by("-profile__xp", "username"))
+        else:
+            # преподаватель видит XP своих курсов, по нему и сортировка (глобальный XP не раскрывается)
+            rows = sorted(rows, key=lambda s: (-(counts.get(s.id, {}).get("xp") or 0), s.username))
 
         # «Застрял» решает система раннего предупреждения (game/warning.py):
         # несколько неудач подряд на шаге либо долгое молчание при незаконченной
         # работе. Попытки миссии (Progress.attempts) для этого не годятся: это
         # число стартов, а не ошибок.
         warnings = assess_students(request.user, now=now)
-        rows = list(rows)
         # «Активность» считается так же, как в списке раннего предупреждения: любые события, запуски кода,
         # попытки и старты/завершения миссий, а не только старт и завершение миссии.
-        activity = _last_activity([s.id for s in rows])
+        activity = _last_activity([s.id for s in rows], owner=owner)
         students = []
         stuck_count = 0
         active_week = 0
@@ -1132,7 +1134,8 @@ class TeacherStudentsView(APIView):
                 if stuck and "stuck_task" in codes
                 else ("inactive" if stuck and "inactive" in codes else None)
             )
-            open_count = s.in_progress_count or 0
+            own = counts.get(s.id, {})
+            open_count = own.get("open") or 0
             max_attempts = warning["failures"] if warning else 0
 
             if stuck:
@@ -1145,10 +1148,11 @@ class TeacherStudentsView(APIView):
                     "id": s.id,
                     "username": s.username,
                     "display_name": s.display_name or "",
-                    "level": getattr(profile, "level", 1),
-                    "xp": getattr(profile, "xp", 0),
-                    "current_streak": getattr(profile, "current_streak", 0),
-                    "completed_count": s.completed_count or 0,
+                    # уровень и серия считаются по всей платформе: преподавателю их не показываем
+                    "level": getattr(profile, "level", 1) if owner is None else None,
+                    "xp": getattr(profile, "xp", 0) if owner is None else (own.get("xp") or 0),
+                    "current_streak": getattr(profile, "current_streak", 0) if owner is None else None,
+                    "completed_count": own.get("done") or 0,
                     "in_progress_count": open_count,
                     "max_attempts": max_attempts,
                     "last_active": last_active.isoformat() if last_active else None,

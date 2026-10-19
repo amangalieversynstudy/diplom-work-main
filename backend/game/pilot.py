@@ -13,14 +13,16 @@ from statistics import median
 from types import SimpleNamespace
 
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from users.models import Profile
 
 from .live import freshness_summary
 from .snapshots import h3_summary
 from .stats import effective_n
-from .metrics import ABANDON_WINDOW_DAYS, _last_activity, compute_metrics
+from .metrics import ABANDON_WINDOW_DAYS, _last_activity, compute_metrics, scoped_tasks
 from .models import CodeRun, LearningEvent, MissionTask, Progress, TaskProgress
 from .services import ARM_OFFER, HELP_AFTER_FAILURES, help_arm
 from .usability import usability_summary
@@ -30,7 +32,8 @@ MIN_ARM_SIZE = 30  # below this the arm comparison is anecdote, not evidence
 MIN_ARM_LEARNERS = 15  # ...and so is a comparison of pairs that come from fewer learners than this, per arm
 WEEKS = 4
 
-_OWNER = SimpleNamespace(is_superuser=True)  # the researcher sees every course
+# the researcher sees every course, but the numbers come only from pilot content (see metrics.pilot_content_q)
+_OWNER = SimpleNamespace(is_superuser=True, pilot_only=True)
 
 
 def two_proportions(x1, n1, x2, n2, n_eff1=None, n_eff2=None):
@@ -82,7 +85,9 @@ def help_experiment(now, learner_ids=None):
 
     ``learner_ids`` limits the analysis to those learners (the report passes the consenting ones).
     """
-    offered = LearningEvent.objects.filter(event_type=LearningEvent.HELP_OFFERED, task__isnull=False)
+    offered = LearningEvent.objects.filter(
+        event_type=LearningEvent.HELP_OFFERED, task__in=scoped_tasks(_OWNER).values("pk")
+    )
     if learner_ids is not None:
         offered = offered.filter(user_id__in=learner_ids)
     events = list(offered.values_list("user_id", "task_id", "created_at", "meta"))
@@ -226,10 +231,18 @@ def build_report(now=None):
         user_id__in=learner_ids, status="completed"
     ).count()
 
+    start = None
+    if getattr(settings, "PILOT_STARTED_AT", ""):
+        try:
+            start = parse_datetime(settings.PILOT_STARTED_AT)
+        except ValueError:
+            start = None
+        if start is not None and start.tzinfo is None:
+            start = None
     metrics = compute_metrics(_OWNER, now=now, inactive_days=ABANDON_WINDOW_DAYS, consented_only=True)
     warnings = assess_students(_OWNER, now=now, consented_only=True)
     opened = {row["task_id"] for row in metrics["tasks"] if row["opened"]}
-    all_steps = MissionTask.objects.filter(mission__is_active=True).count()
+    all_steps = scoped_tasks(_OWNER).count()
 
     return {
         "generated_at": now.isoformat(timespec="seconds"),
@@ -261,7 +274,11 @@ def build_report(now=None):
         "help_experiment": help_experiment(now, learner_ids),
         "h3": h3_summary(now=now),
         "sandbox": sandbox_health(),
-        "dashboard": {"freshness": freshness_summary(), "usability": usability_summary()},
+        "dashboard": {
+            "freshness": freshness_summary(since=start),
+            "usability": usability_summary(since=start),
+            "since": start.isoformat() if start else None,
+        },
         "metrics_meta": metrics["meta"],
     }
 
@@ -414,6 +431,11 @@ def render_markdown(report):
             lines.append("- **Сбоев больше 2%: разберитесь до того, как читать метрики** — они портят выборку.")
     lines += ["", "## Кабинет преподавателя: актуальность данных и удобство", ""]
     fresh, use = report["dashboard"]["freshness"], report["dashboard"]["usability"]
+    since = report["dashboard"].get("since")
+    lines.append(
+        "Учтены только преподаватели пилота (staff по коду приглашения, без самостоятельной регистрации)"
+        + (f", с начала пилота {since}." if since else ".")
+    )
     if not fresh["samples"]:
         lines.append("- Актуальность данных: замеров нет (живой кабинет ещё не открывали при работающих учениках).")
     else:
@@ -431,6 +453,8 @@ def render_markdown(report):
             f"({names[use['verdict']]}; ориентир среднего {use['average_benchmark']}), "
             f"ответили {use['respondents']}, от {use['lowest']} до {use['highest']}."
         )
+        if use.get("excluded_respondents"):
+            lines.append(f"  Ответы других аккаунтов не учтены: {use['excluded_respondents']}.")
         if use["respondents"] < 5:
             lines.append("  Ответивших мало: это впечатление, а не оценка.")
     return "\n".join(lines) + "\n"

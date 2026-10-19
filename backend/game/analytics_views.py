@@ -3,22 +3,23 @@
 import csv
 
 from django.http import HttpResponse
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions
 
-from .permissions import IsTeacher
+from .permissions import IsTeacher, IsVettedTeacher
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .authorship import authorship_overview, authorship_report
-from .live import live_panel
+from .live import issue_since, live_panel, redeem_since
 from .me import my_learning
 from .metrics import CSV_COLUMNS, clamp_inactive_days, compute_metrics
 from .models import UsabilityResponse
 from .serializers import _resolve_language
-from .throttles import TeacherAnalyticsThrottle, UsabilitySubmitThrottle
+from .throttles import TeacherAnalyticsThrottle, TeacherLiveThrottle, UsabilitySubmitThrottle
 from .usability import ITEMS, sus_score
 from .warning import early_warning, scoped_learners
 
@@ -163,11 +164,20 @@ class TeacherLiveView(APIView):
             "Только ученики и курсы преподавателя; в ленте нет кода учеников."
         ),
     )
+    def get_throttles(self):
+        return [*super().get_throttles(), TeacherLiveThrottle()]
+
     def get(self, request):
-        since = parse_datetime(request.query_params.get("since", "") or "")
-        if since is not None and since.tzinfo is None:
-            since = None
-        return Response(live_panel(request.user, lang=_resolve_language(request), since=since))
+        now = timezone.now()
+        try:
+            claimed = parse_datetime(request.query_params.get("since", "") or "")
+        except ValueError:  # well formed but impossible (month 13): not a measurement, not a 500
+            claimed = None
+        # only a since this server issued to this viewer, once, is measured
+        since = redeem_since(request.user, claimed)
+        panel = live_panel(request.user, lang=_resolve_language(request), since=since, now=now)
+        issue_since(request.user, now)
+        return Response(panel)
 
 
 class TeacherUsabilityView(APIView):
@@ -179,7 +189,8 @@ class TeacherUsabilityView(APIView):
     A teacher never sees anyone else's answers or the score; the pilot report aggregates them.
     """
 
-    permission_classes = [IsTeacher]
+    # the questionnaire is a pilot instrument: only teachers the platform vouched for answer it
+    permission_classes = [IsVettedTeacher]
 
     def get_throttles(self):
         # only the submission is limited, reading "did I answer" is not

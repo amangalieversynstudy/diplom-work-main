@@ -7,7 +7,9 @@ const path = require("node:path");
 const source = fs
   .readFileSync(path.join(__dirname, "..", "lib", "roles.js"), "utf8")
   .replace(/^export /gm, "");
-const { canTeach, homePathFor } = new Function(`${source}; return { canTeach, homePathFor };`)();
+const { canTeach, homePathFor, isPilotTeacher } = new Function(
+  `${source}; return { canTeach, homePathFor, isPilotTeacher };`
+)();
 
 test("a student cannot teach", () => {
   assert.equal(canTeach({ is_staff: false, is_teacher: false, can_teach: false }), false);
@@ -29,4 +31,12 @@ test("a false can_teach does not hide staff rights", () => {
 test("after sign-in a teacher goes to the cabinet and a student to the map", () => {
   assert.equal(homePathFor({ is_teacher: true }), "/teacher");
   assert.equal(homePathFor({ is_staff: false }), "/worlds");
+});
+
+test("only a staff teacher who did not sign up on their own answers the pilot questionnaire", () => {
+  assert.equal(isPilotTeacher({ is_staff: true, is_teacher: false }), true);
+  assert.equal(isPilotTeacher({ is_staff: false, is_teacher: true }), false);
+  assert.equal(isPilotTeacher({ is_staff: true, is_teacher: true }), false);
+  assert.equal(isPilotTeacher({ user: { is_staff: true } }), true);
+  assert.equal(isPilotTeacher(null), false);
 });

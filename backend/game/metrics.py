@@ -86,13 +86,30 @@ def _title(obj):
     return obj.title_ru or obj.title or obj.title_en or f"#{obj.pk}"
 
 
+def pilot_content_q(track_path):
+    """Content the pilot's numbers may come from: public courses, track-less content, and classes of teachers the
+    platform vouched for (superuser, or staff that is not a self-service teacher). A self-service teacher's class,
+    with any accounts it invites, cannot reach the dissertation figures."""
+    return (
+        Q(**{f"{track_path}__isnull": True})
+        | Q(**{f"{track_path}__is_public": True})
+        | Q(**{f"{track_path}__owner__is_superuser": True})
+        | Q(**{f"{track_path}__owner__is_staff": True, f"{track_path}__owner__is_teacher": False})
+    )
+
+
 def scoped_tasks(viewer, track_id=None):
-    """Tasks the viewer may analyse: a teacher's own courses, or all for a superuser."""
+    """Tasks the viewer may analyse: a teacher's own courses, or all for a superuser.
+
+    The pilot report and snapshots pass a stand-in with ``pilot_only``: every course, but only pilot content.
+    """
     tasks = MissionTask.objects.filter(mission__is_active=True).select_related(
         "mission", "mission__location"
     )
     if not viewer.is_superuser:
         tasks = tasks.filter(mission__location__track__owner=viewer)
+    if getattr(viewer, "pilot_only", False):
+        tasks = tasks.filter(pilot_content_q("mission__location__track"))
     if track_id is not None:
         tasks = tasks.filter(mission__location__track_id=track_id)
     return tasks.order_by(

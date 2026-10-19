@@ -26,3 +26,13 @@ class IsTeacher(permissions.BasePermission):
     def has_permission(self, request, view):
         user = request.user
         return bool(user and user.is_authenticated and user.can_teach)
+
+
+class IsVettedTeacher(permissions.BasePermission):
+    """Pilot instruments (the SUS questionnaire): a teacher the platform vouched for (``is_vetted_teacher``)."""
+
+    def has_permission(self, request, view):
+        from .classes import is_vetted_teacher
+
+        user = request.user
+        return bool(user and user.is_authenticated and is_vetted_teacher(user))

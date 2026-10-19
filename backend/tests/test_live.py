@@ -287,3 +287,58 @@ def test_the_questionnaire_is_rate_limited(teacher):
     assert codes[:5] == [201] * 5 and codes[5] == 429
     assert client.get("/api/teacher/usability/").status_code == 200
     cache.clear()
+
+
+# ── pilot integrity: whose answers and panels count ────────────────────────
+
+
+def test_a_self_registered_teachers_sus_answer_is_not_counted_in_the_pilot(teacher):
+    from game.models import UsabilityResponse
+
+    self_service = User.objects.create_user(username="selfie", password="TestPass123!", is_teacher=True)
+    UsabilityResponse.objects.create(user=teacher, answers=[5, 1] * 5, score=100)
+    UsabilityResponse.objects.create(user=self_service, answers=[1, 5] * 5, score=0)
+
+    summary = usability_summary()
+    assert summary["respondents"] == 1 and summary["mean"] == 100
+    assert summary["excluded_respondents"] == 1
+
+
+def test_only_pilot_teachers_can_answer_the_questionnaire(teacher):
+    self_service = User.objects.create_user(username="selfie2", password="TestPass123!", is_teacher=True)
+    answers = {"answers": [4, 2] * 5}
+    assert _api(self_service).post("/api/teacher/usability/", answers, format="json").status_code == 403
+    assert _api(teacher).post("/api/teacher/usability/", answers, format="json").status_code == 201
+
+
+def test_the_pilot_freshness_ignores_panels_of_self_registered_teachers(teacher):
+    self_service = User.objects.create_user(username="selfie3", password="TestPass123!", is_teacher=True)
+    now = timezone.now()
+    for viewer in (teacher, self_service):
+        FreshnessSample.objects.create(viewer=viewer, polled_at=now, new_events=1, lag_mean_s=1, lag_max_s=1)
+    assert freshness_summary()["samples"] == 1
+    assert freshness_summary(viewer=self_service)["samples"] == 1  # their own card is unchanged
+
+
+def test_a_since_the_server_did_not_issue_is_not_measured(teacher, world):
+    first = _api(teacher).get("/api/teacher/live/").json()
+    _run(world["learner"], world["mine"][1], ago=0)
+    made_up = (timezone.now() - timedelta(seconds=25)).isoformat()
+    _api(teacher).get("/api/teacher/live/", {"since": made_up})
+    assert FreshnessSample.objects.count() == 0
+    assert first["generated_at"]
+
+
+def test_a_since_is_measured_only_once_and_only_for_its_viewer(teacher, other_teacher, world):
+    first = _api(teacher).get("/api/teacher/live/").json()
+    _run(world["learner"], world["mine"][1], ago=0)
+    _api(other_teacher).get("/api/teacher/live/", {"since": first["generated_at"]})  # borrowed
+    assert FreshnessSample.objects.count() == 0
+    _api(teacher).get("/api/teacher/live/", {"since": first["generated_at"]})
+    _api(teacher).get("/api/teacher/live/", {"since": first["generated_at"]})  # replayed
+    assert FreshnessSample.objects.count() == 1
+
+
+@pytest.mark.parametrize("since", ["2026-13-01T00:00:00+00:00", "2026-10-17T10:00:00+99:00"])
+def test_a_malformed_since_is_ignored_not_an_error(teacher, since):
+    assert _api(teacher).get("/api/teacher/live/", {"since": since}).status_code == 200

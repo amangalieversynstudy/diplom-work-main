@@ -13,8 +13,11 @@ Only numbers about activity are kept. What the feed shows (a learner's name, a s
 is limited to the viewer's own learners and the viewer's own courses, like the rest of the teacher's screens.
 """
 
+import logging
 from datetime import timedelta
+from datetime import timezone as dt_timezone
 
+from django.core.cache import cache
 from django.db.models import Max, Q
 from django.utils import timezone
 
@@ -129,6 +132,36 @@ def _activity_stamps(learners, *, viewer=None, after=None, until=None):
     return events, runs
 
 
+logger = logging.getLogger(__name__)
+
+
+def _since_key(viewer, stamp):
+    return f"live:since:{viewer.pk}:{stamp.astimezone(dt_timezone.utc).isoformat()}"
+
+
+def issue_since(viewer, now):
+    """Remember the moment of this answer: the panel sends it back as ``since`` on its next poll.
+
+    One key per issued moment, not one per viewer, so two open tabs each keep measuring their own window."""
+    try:
+        cache.set(_since_key(viewer, now), 1, timeout=int(MAX_GAP.total_seconds()) + 5)
+    except Exception:  # noqa: BLE001 - a cache outage means no measurement, never a broken panel
+        logger.warning("live panel: could not store the since mark", exc_info=True)
+
+
+def redeem_since(viewer, claimed):
+    """``claimed`` if the server issued it to this viewer and it was not used yet, else None.
+
+    A made-up, replayed or borrowed ``since`` would let a client inflate or deflate the measured freshness."""
+    if claimed is None or claimed.tzinfo is None:
+        return None
+    try:
+        return claimed if cache.delete(_since_key(viewer, claimed)) else None
+    except Exception:  # noqa: BLE001
+        logger.warning("live panel: could not check the since mark", exc_info=True)
+        return None
+
+
 def _record_freshness(viewer, learners, since, now):
     """One sample for the actions that happened since the panel's previous answer (see the module doc)."""
     if since is None or not (timedelta(0) < now - since <= MAX_GAP):
@@ -156,7 +189,10 @@ def freshness_summary(*, viewer=None, since=None):
     """
     samples = FreshnessSample.objects.all()
     if viewer is not None:
-        samples = samples.filter(viewer=viewer)
+        samples = samples.filter(viewer=viewer)  # a teacher's own card, whatever the role
+    else:
+        # the pilot figure: panels of teachers the platform vouched for only
+        samples = samples.filter(Q(viewer__is_superuser=True) | Q(viewer__is_staff=True, viewer__is_teacher=False))
     if since is not None:
         samples = samples.filter(polled_at__gte=since)
     rows = list(samples.values_list("new_events", "lag_mean_s", "lag_max_s"))

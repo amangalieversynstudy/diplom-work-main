@@ -16,7 +16,8 @@ from .models import CodeRun, EarlyWarningSnapshot, LearningEvent, Progress, Task
 from .stats import clustered_share, cluster_counts
 from .warning import assess_students
 
-_OWNER = SimpleNamespace(is_superuser=True)  # the snapshot covers the whole platform
+# the snapshot covers the whole platform, pilot content only (see metrics.pilot_content_q)
+_OWNER = SimpleNamespace(is_superuser=True, pilot_only=True)
 LEVELS = ("high", "medium", "ok")
 
 

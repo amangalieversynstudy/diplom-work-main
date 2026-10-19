@@ -79,6 +79,15 @@ def check_settings():
     else:
         yield WARN, "TEACHER_INVITE_CODE пуст: преподавателя придётся создать через админку."
 
+    mail_works = not settings.DEBUG and "console" not in getattr(settings, "EMAIL_BACKEND", "")
+    if getattr(settings, "TEACHER_SELF_REGISTRATION", False) and not mail_works:
+        yield WARN, (
+            "Открытая регистрация преподавателей включена, а письма не уходят: преподаватели не подтверждают почту. "
+            "Включайте её только вместе с RESEND_API_KEY и TEACHER_REQUIRE_EMAIL=1."
+        )
+    if not getattr(settings, "PILOT_STARTED_AT", ""):
+        yield WARN, "PILOT_STARTED_AT не задан: в отчёт пилота попадут SUS и замеры актуальности до его начала."
+
     if getattr(settings, "ANALYTICS_EXPORT_SALT", ""):
         yield OK, "ANALYTICS_EXPORT_SALT задан: псевдонимы в экспорте стабильны."
     else:
@@ -174,6 +183,21 @@ def check_data():
     User = get_user_model()
     if not User.objects.filter(Q(is_staff=True) | Q(is_teacher=True), is_active=True).exists():
         yield FAIL, "Нет ни одного преподавателя (staff): некому смотреть аналитику."
+    if not User.objects.filter(is_staff=True, is_superuser=False, is_teacher=False, is_active=True).exists():
+        yield WARN, (
+            "Нет преподавателя пилота (staff по коду приглашения): SUS и актуальность данных в отчёт берутся "
+            "только от них, раздел будет пустым."
+        )
+    unvetted_public = list(
+        Track.objects.filter(is_public=True, owner__isnull=False, owner__is_superuser=False)
+        .filter(Q(owner__is_staff=False) | Q(owner__is_teacher=True))
+        .values_list("slug", flat=True)
+    )
+    if unvetted_public:
+        yield WARN, (
+            "Публичные курсы у преподавателей без доверия: " + ", ".join(unvetted_public)
+            + ". Их владельцы видели бы всех учеников курса: сделайте курсы закрытыми (миграция 0021 делает это)."
+        )
     homeless = [t.slug for t in tracks if t.owner_id is None]
     if homeless and not User.objects.filter(is_superuser=True, is_active=True).exists():
         yield FAIL, f"Курсы без владельца ({', '.join(homeless)}) и нет суперпользователя: аналитика будет пустой."

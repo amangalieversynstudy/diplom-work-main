@@ -19,11 +19,11 @@ Signals (weights in ``WEIGHTS``):
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 
 from .classes import MISSION_TRACK, TASK_TRACK, owner_scope, visible_learners, visible_work
-from .metrics import ABANDON_WINDOW_DAYS, _last_activity, _title, scoped_tasks
+from .metrics import ABANDON_WINDOW_DAYS, _last_activity, _title, pilot_content_q, scoped_tasks
 from .models import Progress, TaskProgress
 from .risk import load_risk_model, risk_probabilities
 from .services import HELP_AFTER_FAILURES
@@ -85,6 +85,7 @@ def assess_students(viewer, *, now=None, consented_only=False):
     open_missions = set(
         Progress.objects.filter(user_id__in=learner_ids, completed=False)
         .filter(visible_work(viewer, MISSION_TRACK))
+        .filter(pilot_content_q(MISSION_TRACK) if getattr(viewer, "pilot_only", False) else Q())
         .exclude(started_at__isnull=True)
         .values_list("user_id", flat=True)
     )

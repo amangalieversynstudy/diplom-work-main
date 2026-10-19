@@ -37,15 +37,24 @@ def verdict(score):
     return "below_average"
 
 
-def latest_by_user():
-    """{user_id: UsabilityResponse}: a teacher who answered twice counts once, with the later answer."""
-    newest = UsabilityResponse.objects.values("user_id").annotate(last=Max("id")).values("last")
+# Who the pilot's SUS is about: teachers the platform vouched for (invite code or admin), not self-service
+# accounts and not the researcher's own superuser account (rating one's own dashboard is a conflict of interest).
+PILOT_RESPONDENT = {"user__is_staff": True, "user__is_superuser": False, "user__is_teacher": False}
+
+
+def latest_by_user(since=None):
+    """{user_id: UsabilityResponse}: a pilot teacher who answered twice counts once, with the later answer."""
+    answers = UsabilityResponse.objects.filter(**PILOT_RESPONDENT)
+    if since is not None:
+        answers = answers.filter(created_at__gte=since)
+    newest = answers.values("user_id").annotate(last=Max("id")).values("last")
     return {r.user_id: r for r in UsabilityResponse.objects.filter(id__in=newest)}
 
 
-def usability_summary():
-    """{respondents, mean, lowest, highest, verdict, average_benchmark} over the teachers' latest answers."""
-    scores = [response.score for response in latest_by_user().values()]
+def usability_summary(since=None):
+    """{respondents, mean, lowest, highest, verdict, average_benchmark, excluded_respondents} over the pilot
+    teachers' latest answers."""
+    scores = [response.score for response in latest_by_user(since).values()]
     mean = round(sum(scores) / len(scores), 1) if scores else None
     return {
         "respondents": len(scores),
@@ -54,4 +63,8 @@ def usability_summary():
         "highest": max(scores) if scores else None,
         "verdict": verdict(mean),
         "average_benchmark": AVERAGE,
+        "excluded_respondents": UsabilityResponse.objects.exclude(**PILOT_RESPONDENT)
+        .values("user_id")
+        .distinct()
+        .count(),
     }

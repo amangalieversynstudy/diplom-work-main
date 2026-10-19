@@ -25,7 +25,7 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { canTeach } from "../lib/roles";
+import { canTeach, isPilotTeacher } from "../lib/roles";
 
 // Карточка одной сводной метрики (учеников / застряли / активны за неделю).
 function StatCard({ icon: Icon, label, value, accent = "primary" }) {
@@ -233,6 +233,8 @@ export default function TeacherPage() {
   const router = useRouter();
   const { t } = useI18n();
   const [allowed, setAllowed] = useState(null); // null = проверяем, false = не staff
+  // анкета SUS только для преподавателя пилота (staff по коду приглашения)
+  const [pilotTeacher, setPilotTeacher] = useState(false);
   const [data, setData] = useState(null);
   const [warning, setWarning] = useState(null);
   const [authorship, setAuthorship] = useState(null);
@@ -274,6 +276,7 @@ export default function TeacherPage() {
           return;
         }
         setAllowed(true);
+        setPilotTeacher(isPilotTeacher(me));
         const [res, warned] = await Promise.all([
           TeacherAPI.students(),
           AnalyticsAPI.earlyWarning(),
@@ -558,7 +561,7 @@ export default function TeacherPage() {
           )}
         </div>
 
-        <UsabilityPanel />
+        {pilotTeacher ? <UsabilityPanel /> : null}
       </div>
     </Layout>
   );

@@ -10,6 +10,18 @@ export function canTeach(me) {
   );
 }
 
+/**
+ * Преподаватель пилота: staff по коду приглашения или от администратора, не самостоятельная регистрация.
+ * Только ему показывается анкета удобства (SUS): ответы остальных в отчёт пилота не идут.
+ */
+export function isPilotTeacher(me) {
+  const flat = me || {};
+  const nested = me?.user || {};
+  const staff = Boolean(flat.is_staff || nested.is_staff);
+  const selfService = Boolean(flat.is_teacher || nested.is_teacher);
+  return staff && !selfService;
+}
+
 /** Куда вести после входа: преподавателя в кабинет, ученика на карту. */
 export function homePathFor(me) {
   return canTeach(me) ? "/teacher" : "/worlds";

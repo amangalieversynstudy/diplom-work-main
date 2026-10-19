@@ -223,8 +223,29 @@ class MissionTaskAdmin(admin.ModelAdmin):
 
 
 
+
+
+class _SuperuserOnlyMixin:
+    """Learners' records (progress, attempts, runs, events, leaderboard rows): superusers only. A staff teacher
+    with any admin permission must not read every learner's footprint around the class rules."""
+
+    def has_module_permission(self, request):
+        return request.user.is_active and request.user.is_superuser
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_active and request.user.is_superuser
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_active and request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return request.user.is_active and request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_active and request.user.is_superuser
+
 @admin.register(Progress)
-class ProgressAdmin(admin.ModelAdmin):
+class ProgressAdmin(_SuperuserOnlyMixin, admin.ModelAdmin):
     list_display = ("id", "user", "mission", "status", "completed", "xp_earned", "stars", "attempts")
     list_filter = ("completed", "status")
     list_select_related = ("user", "mission")
@@ -233,7 +254,7 @@ class ProgressAdmin(admin.ModelAdmin):
 
 
 @admin.register(TaskProgress)
-class TaskProgressAdmin(admin.ModelAdmin):
+class TaskProgressAdmin(_SuperuserOnlyMixin, admin.ModelAdmin):
     list_display = ("id", "user", "task", "status", "attempts", "best_score")
     list_filter = ("status", "task__task_type")
     list_select_related = ("user", "task")
@@ -251,7 +272,7 @@ class RankAdmin(admin.ModelAdmin):
 
 
 @admin.register(LeaderboardEntry)
-class LeaderboardEntryAdmin(admin.ModelAdmin):
+class LeaderboardEntryAdmin(_SuperuserOnlyMixin, admin.ModelAdmin):
     list_display = (
         "id", "user", "track", "scope",
         "period_label", "position", "xp_total",
@@ -265,7 +286,7 @@ class LeaderboardEntryAdmin(admin.ModelAdmin):
 from .models import CodeRun, LearningEvent  # noqa: E402
 
 
-class _ReadOnlyAdmin(admin.ModelAdmin):
+class _ReadOnlyAdmin(_SuperuserOnlyMixin, admin.ModelAdmin):
     """The footprint is written by the server only; the admin just looks."""
 
     def has_add_permission(self, request):

@@ -23,7 +23,9 @@ def _resolve_user(token_str: str):
     """Decode the JWT and fetch the User. Return AnonymousUser on any failure."""
     try:
         token = AccessToken(token_str)
-        return User.objects.get(id=token["user_id"])
+        user = User.objects.get(id=token["user_id"])
+        # a blocked account with a still valid token must not keep running code
+        return user if user.is_active else AnonymousUser()
     except (TokenError, User.DoesNotExist, KeyError, ValueError):
         return AnonymousUser()
 

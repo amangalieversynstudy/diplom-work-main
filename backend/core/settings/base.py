@@ -171,7 +171,12 @@ STORAGES = {
     "staticfiles": {"BACKEND": _STATIC_BACKEND},
 }
 
+# django-ratelimit uses the same client address as the DRF throttles (see core/client_ip.py)
+RATELIMIT_IP_META_KEY = "core.client_ip.client_ip"
+
 REST_FRAMEWORK = {
+    # a django-ratelimit limit answers 429 like a DRF throttle, not 403
+    "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
     # JWT auth for API
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",

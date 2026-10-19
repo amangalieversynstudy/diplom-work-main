@@ -7,6 +7,8 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
+from django.utils.decorators import method_decorator
+from django_ratelimit.decorators import ratelimit
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 
@@ -34,6 +36,8 @@ def users_for_reset(email):
     return [u for u in candidates if u.email and _fold(u.email) == _fold(email)]
 
 
+@method_decorator(ratelimit(key="ip", rate="5/m", method="POST", block=True), name="post")
+@method_decorator(ratelimit(key="post:email", rate="3/h", method="POST", block=True), name="post")
 class PasswordResetRequestView(generics.GenericAPIView):
     """Accepts an email and sends a password reset link if the user exists."""
 

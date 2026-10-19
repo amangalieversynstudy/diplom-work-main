@@ -1,10 +1,15 @@
 """Production Django settings for deployment."""
 
 import logging
+import os
 
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F401,F403
+
+# One trusted proxy hop (the Railway edge) in front of daphne: throttles and rate limits key on the right-most
+# X-Forwarded-For entry, which the client cannot forge. Put another proxy in front (Cloudflare) -> NUM_PROXIES=2.
+REST_FRAMEWORK["NUM_PROXIES"] = int(os.getenv("NUM_PROXIES", "1"))  # noqa: F405
 
 DEBUG = False
 

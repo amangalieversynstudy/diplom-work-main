@@ -14,6 +14,7 @@ import {
 import Button from "./Button";
 import { Studio as StudioAPI } from "../lib/api";
 import logger from "../lib/logger";
+import { serverMessage } from "../lib/apiErrors";
 
 const TYPES = ["story", "quiz", "code"];
 const ICONS = { story: BookOpen, quiz: HelpCircle, code: Code2 };
@@ -23,12 +24,7 @@ const inputCls =
 
 // Сообщение сервера («Правильный ответ должен совпадать…») понятнее общей ошибки.
 export function apiError(error, fallback) {
-  const data = error?.response?.data;
-  if (data && typeof data === "object") {
-    const text = Object.values(data).flat().filter((v) => typeof v === "string").join(" ");
-    if (text) return text;
-  }
-  return fallback;
+  return serverMessage(error, fallback);
 }
 
 const emptyForm = (order) => ({

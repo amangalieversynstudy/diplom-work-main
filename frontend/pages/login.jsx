@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { login, Auth, Profile as ProfileAPI } from "../lib/api";
 import { useDictionary } from "../lib/i18n";
 import { homePathFor } from "../lib/roles";
+import { errorBody, serverMessage } from "../lib/apiErrors";
 import { pathAfterAuth, takeJoinCode } from "../lib/join";
 
 export default function Login() {
@@ -72,8 +73,9 @@ export default function Login() {
       // учитель в кабинет; ученик, пришедший по ссылке класса, во вступление, иначе на карту
       router.push(home === "/worlds" ? pathAfterAuth(home, takeJoinCode()) : home);
     } catch (err) {
-      const data = err?.response?.data || {};
-      const detail = data.detail || "";
+      // HTML-страница прокси или нестроковый detail не ломают разбор ответа
+      const data = errorBody(err) || {};
+      const detail = typeof data.detail === "string" ? data.detail : "";
       // Бэк отдаёт code:"account_inactive" для неактивного аккаунта — надёжно
       // и не зависит от локали. Строковый матч оставлен fallback'ом на случай
       // старого бэка / гонки деплоя Vercel↔Railway.
@@ -87,7 +89,7 @@ export default function Login() {
           { duration: 5000 }
         );
       } else {
-        toast.error(detail || copy.error || "Login failed", { duration: 5000 });
+        toast.error(serverMessage(err, copy.error || "Login failed"), { duration: 5000 });
       }
     } finally {
       setLoading(false);

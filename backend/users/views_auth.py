@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from .serializers_auth import email_verification_works
 from .serializers_auth import RegisterSerializer, UserDetailSerializer
 from .tokens import email_verification_token
 
@@ -117,7 +118,8 @@ def _find_login_user(identifier):
 
 # rate-limiting декоратор для брутфорс-защиты
 # 10 попыток/мин с одного IP — для login и register
-@method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True), name="post")
+@method_decorator(ratelimit(key="ip", rate="60/m", method="POST", block=True), name="post")
+@method_decorator(ratelimit(key="post:username", rate="10/m", method="POST", block=True), name="post")
 class LoginView(TokenObtainPairView):
     """Custom login that accepts either username or email."""
 
@@ -184,7 +186,8 @@ class LoginView(TokenObtainPairView):
         return response
 
 
-@method_decorator(ratelimit(key="ip", rate="5/m", method="POST", block=True), name="post")
+# sized for a school class behind one address (one NAT): 30 sign-ups a minute
+@method_decorator(ratelimit(key="ip", rate="30/m", method="POST", block=True), name="post")
 class RegisterView(generics.CreateAPIView):
     """Endpoint to register new users and send verification email."""
 
@@ -197,13 +200,9 @@ class RegisterView(generics.CreateAPIView):
         from django.conf import settings
 
         user = serializer.save()
-        # Авто-активация если DEBUG=True ИЛИ email backend = console
+        # Авто-активация, если письма не уходят (DEBUG или console-бэкенд) или почта не указана.
         # (т.е. реальные письма не уходят, верификация невозможна).
-        email_backend = getattr(settings, "EMAIL_BACKEND", "")
-        is_console_email = "console" in email_backend
-        # Активируем сразу, если: DEBUG, console-backend ИЛИ пользователь не указал email.
-        # Без почты верификация невозможна — иначе аккаунт остался бы заблокирован навсегда.
-        if getattr(settings, "DEBUG", False) or is_console_email or not user.email:
+        if not email_verification_works() or not user.email:
             user.is_active = True
             user.email_verification_pending = False
         else:
@@ -377,7 +376,8 @@ class ConfirmEmailChangeView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         # Одноразовость: ссылка выпущена для конкретного текущего адреса; после смены он другой.
-        if (user.email or "").strip().lower() != (payload.get("cur") or None):
+        # у аккаунта без почты cur == "": такой аккаунт тоже может добавить адрес
+        if (user.email or "").strip().lower() != (payload.get("cur") or ""):
             return Response(
                 {"detail": "Ссылка недействительна."},
                 status=status.HTTP_400_BAD_REQUEST,

@@ -144,7 +144,20 @@ class ProfileMeView(APIView):
                             status=status.HTTP_502_BAD_GATEWAY,
                         )
                 else:
-                    # Удаление email — без подтверждения (это не захват ящика).
+                    # Удаление email — без подтверждения (это не захват ящика). Преподаватель при правиле
+                    # «нужна почта» её не удаляет: иначе подтверждение обходится.
+                    from django.conf import settings
+
+                    from .serializers_auth import email_verification_works
+
+                    if (
+                        user.is_teacher
+                        and getattr(settings, "TEACHER_REQUIRE_EMAIL", False)
+                        and email_verification_works()
+                    ):
+                        return Response(
+                            {"email": "Преподавателю нужен e-mail."}, status=status.HTTP_400_BAD_REQUEST
+                        )
                     user.email = ""
                     user_dirty.append("email")
         if "display_name" in data:

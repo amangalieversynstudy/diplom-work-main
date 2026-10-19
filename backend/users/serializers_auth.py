@@ -3,6 +3,7 @@
 import hmac
 
 from django.conf import settings
+from django.db import IntegrityError, transaction
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
@@ -13,6 +14,12 @@ from .models import Profile
 from .validators import clean_single_email, clean_username
 
 User = get_user_model()
+
+
+def email_verification_works():
+    """Do letters really go out? Not under DEBUG and not with the console backend (then accounts are activated at
+    once, see RegisterView). Rules that depend on a confirmed address apply only when this is true."""
+    return not getattr(settings, "DEBUG", False) and "console" not in getattr(settings, "EMAIL_BACKEND", "")
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -95,12 +102,26 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"role": "Регистрация преподавателей сейчас закрыта: нужен код приглашения."}
             )
+        elif (
+            wants_teacher_role
+            and getattr(settings, "TEACHER_REQUIRE_EMAIL", False)
+            and email_verification_works()
+            and not email
+        ):
+            # the account then stays inactive until the link in the letter is opened (RegisterView)
+            raise serializers.ValidationError(
+                {"email": "Преподавателю нужен e-mail: на него придёт ссылка для активации."}
+            )
 
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=validated_data["password"],
-        )
+        try:
+            with transaction.atomic():
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=validated_data["password"],
+                )
+        except IntegrityError:  # the same name taken by a parallel sign-up: an answer, not a 500
+            raise serializers.ValidationError({"username": "Это имя пользователя уже занято."})
         if is_teacher:
             user.is_staff = True
             user.save(update_fields=["is_staff"])

@@ -179,7 +179,7 @@ def test_local_stream_truncates_runaway_output(settings):
 def _ok_response():
     return MagicMock(
         status_code=201,
-        json=lambda: {"stdout": "4\n", "stderr": None, "compile_output": None, "status": {"id": 3}},
+        json=lambda: {"stdout": "NAo=", "stderr": None, "compile_output": None, "status": {"id": 3}},  # "4\n" in base64
     )
 
 
@@ -229,3 +229,27 @@ def test_a_full_queue_gives_up_without_calling_judge0(settings, monkeypatch):
     ) as post:
         result = runner.execute_python_code("print(2 + 2)")
     assert result["infra"] is True and post.call_count == 0
+
+
+def test_code_with_russian_text_is_sent_in_base64_and_the_answer_decoded(settings, monkeypatch):
+    """ce.judge0.com refuses plain JSON with non-ASCII source; the code and the answer travel in base64."""
+    import base64
+
+    _judge0_only(settings, monkeypatch)
+    answer = MagicMock(
+        status_code=201,
+        json=lambda: {
+            "stdout": base64.b64encode("Привет, мир!\n".encode()).decode(),
+            "stderr": None,
+            "compile_output": None,
+            "status": {"id": 3},
+        },
+    )
+    with patch.object(runner.docker, "from_env", _docker_unavailable), patch.object(
+        runner.requests, "post", return_value=answer
+    ) as post:
+        result = runner.execute_python_code('print("Привет, мир!")')
+    assert result == {"status": "success", "output": "Привет, мир!\n"}
+    sent = post.call_args.kwargs
+    assert "base64_encoded=true" in post.call_args.args[0]
+    assert base64.b64decode(sent["json"]["source_code"]).decode() == 'print("Привет, мир!")'

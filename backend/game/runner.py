@@ -7,6 +7,7 @@
 Лимиты: 128 MB RAM, 64 PID, нет сети, hard-kill по таймауту.
 """
 
+import base64
 import logging
 import os
 import queue
@@ -140,6 +141,16 @@ _JUDGE0_PAUSE = 1.5            # seconds; multiplied by the number of the try
 _JUDGE0_BUSY = frozenset({429, 502, 503, 504})
 
 
+def _from_b64(value) -> str:
+    """A base64 field of a Judge0 answer as text ("" for null); undecodable bytes are replaced, never raised."""
+    if not value:
+        return ""
+    try:
+        return base64.b64decode(value).decode("utf-8", errors="replace")
+    except (ValueError, TypeError):
+        return ""
+
+
 def _judge0_run(code: str, timeout: int):
     """Гоняет код в Judge0. Возвращает разобранный ответ или None, если Judge0
     не сконфигурирован/недоступен/ответил ошибкой (тогда вызывающий уходит в
@@ -151,8 +162,10 @@ def _judge0_run(code: str, timeout: int):
     if key:  # RapidAPI-режим (или self-host с ключом)
         headers["X-RapidAPI-Key"] = key
         headers["X-RapidAPI-Host"] = host
+    # The code and the answer travel in base64: the public ce.judge0.com refuses plain JSON whose source has
+    # non-ASCII text ("cannot be converted to UTF-8"), and every first mission prints Russian.
     payload = {
-        "source_code": code,
+        "source_code": base64.b64encode(code.encode("utf-8")).decode("ascii"),
         "language_id": lang,
         "cpu_time_limit": max(1, timeout),
         "wall_time_limit": max(1, timeout) + 5,
@@ -164,7 +177,7 @@ def _judge0_run(code: str, timeout: int):
         for attempt in range(1, _JUDGE0_TRIES + 1):
             try:
                 resp = requests.post(
-                    f"{url}/submissions?base64_encoded=false&wait=true",
+                    f"{url}/submissions?base64_encoded=true&wait=true",
                     json=payload,
                     headers=headers,
                     timeout=max(1, timeout) + 20,
@@ -176,9 +189,9 @@ def _judge0_run(code: str, timeout: int):
                     data = resp.json()
                     status = data.get("status") or {}
                     return {
-                        "stdout": data.get("stdout") or "",
-                        "stderr": data.get("stderr") or "",
-                        "compile_output": data.get("compile_output") or "",
+                        "stdout": _from_b64(data.get("stdout")),
+                        "stderr": _from_b64(data.get("stderr")),
+                        "compile_output": _from_b64(data.get("compile_output")),
                         "status_id": status.get("id"),
                     }
                 logger.warning("Judge0 answered HTTP %s; the code was not run there", resp.status_code)

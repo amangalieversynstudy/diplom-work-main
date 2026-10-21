@@ -8,6 +8,7 @@ class GameConfig(AppConfig):
 
     default_auto_field = "django.db.models.BigAutoField"
     name = "game"
+    verbose_name = "Курсы и обучение"
 
     def ready(self):
         # подключаем signals для leaderboard updates

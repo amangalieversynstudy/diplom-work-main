@@ -13,15 +13,19 @@ from django.utils import timezone
 class User(AbstractUser):
     """Custom user model with optional display name."""
 
-    display_name = models.CharField(max_length=150, blank=True)
+    display_name = models.CharField(verbose_name="отображаемое имя", max_length=150, blank=True)
     # ``is_active`` is Django's on/off switch for an account (admins use it to
     # block people), so it cannot also mean "e-mail not confirmed yet": the
     # confirmation link would then undo a block. This flag is True only while
     # sign-up waits for its confirmation link; the link works for no one else.
-    email_verification_pending = models.BooleanField(default=False)
+    email_verification_pending = models.BooleanField(verbose_name="ждёт подтверждения e-mail", default=False)
     # Self-service teacher role (chosen at sign-up). Unlike ``is_staff`` it does not open the Django admin
     # and it never makes the account count as a learner in the metrics.
-    is_teacher = models.BooleanField(default=False)
+    is_teacher = models.BooleanField("преподаватель", default=False)
+
+    class Meta:
+        verbose_name = "пользователь"
+        verbose_name_plural = "пользователи"
 
     @property
     def can_teach(self):
@@ -38,15 +42,16 @@ class Profile(models.Model):
     """Profile stores game-related user state such as XP, level, and inventory."""
 
     user = models.OneToOneField(
-        "users.User", on_delete=models.CASCADE, related_name="profile"
+        "users.User", verbose_name="пользователь", on_delete=models.CASCADE, related_name="profile"
     )
-    xp = models.IntegerField(default=0)
-    level = models.IntegerField(default=1)
-    bio = models.TextField(blank=True)
+    xp = models.IntegerField(verbose_name="опыт (XP)", default=0)
+    level = models.IntegerField(verbose_name="уровень", default=1)
+    bio = models.TextField(verbose_name="о себе", blank=True)
     
     # Optional selected hero class/role
     class_role = models.ForeignKey(
         "game.ClassRole",
+        verbose_name="класс героя",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -55,14 +60,17 @@ class Profile(models.Model):
 
     # --- ИНВЕНТАРЬ (Inventory) ---
     ai_summons = models.PositiveIntegerField(
+        verbose_name="вызовы AI-помощника",
         default=3, 
         help_text="Количество вызовов AI-помощника (AI Summon Item)"
     )
     hint_scrolls = models.PositiveIntegerField(
+        verbose_name="свитки подсказок",
         default=5, 
         help_text="Зелья ясности (Hint Scroll - подсветка синтаксиса/ошибок)"
     )
     skeleton_scrolls = models.PositiveIntegerField(
+        verbose_name="свитки-каркасы",
         default=3,
         help_text="Свитки Архитектора (Skeleton Scroll - вставка стартового кода)"
     )
@@ -71,10 +79,12 @@ class Profile(models.Model):
     # register_activity() при каждом решённом шаге и завершении миссии: растёт на
     # подряд идущих днях и сбрасывается, если день пропущен.
     current_streak = models.PositiveIntegerField(
+        verbose_name="текущая серия",
         default=0,
         help_text="Текущая серия дней с завершённой миссией"
     )
     longest_streak = models.PositiveIntegerField(
+        verbose_name="лучшая серия",
         default=0,
         help_text="Лучшая серия за всё время"
     )
@@ -82,6 +92,7 @@ class Profile(models.Model):
     # отличить «уже отметился сегодня» от «новый день» и понять, жива ли
     # серия (последняя активность сегодня/вчера) или уже оборвана.
     last_streak_date = models.DateField(
+        verbose_name="день последней серии",
         null=True,
         blank=True,
         help_text="Дата последнего засчитанного в стрик дня"
@@ -89,6 +100,7 @@ class Profile(models.Model):
     # Дата последнего отправленного email-напоминания о стрике. Нужна, чтобы
     # команда send_streak_reminders не слала повторное письмо в тот же день.
     last_streak_reminder = models.DateField(
+        verbose_name="последнее напоминание о серии",
         null=True,
         blank=True,
         help_text="Дата последнего email-напоминания о стрике"
@@ -97,14 +109,20 @@ class Profile(models.Model):
     # Consent to use this learner's activity for research (the master's project
     # dataset). Off by default; the learner opts in at sign-up or in the profile.
     research_consent = models.BooleanField(
+        verbose_name="согласие на исследование",
         default=False,
         help_text="Согласие на использование учебной активности в исследовании"
     )
     research_consent_at = models.DateTimeField(
+        verbose_name="согласие изменено",
         null=True,
         blank=True,
         help_text="Когда согласие дано или отозвано в последний раз"
     )
+
+    class Meta:
+        verbose_name = "профиль"
+        verbose_name_plural = "профили"
 
     def set_research_consent(self, value: bool) -> None:
         """Record a change of consent (and when it happened)."""

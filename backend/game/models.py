@@ -10,21 +10,22 @@ DEFAULT_MISSION_XP = 50
 class Track(models.Model):
     """Learning track (e.g., Python Path, Django Path)."""
 
-    slug = models.SlugField(unique=True)
-    title = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    title_en = models.CharField(max_length=200, blank=True)
-    title_ru = models.CharField(max_length=200, blank=True)
-    description_en = models.TextField(blank=True)
-    description_ru = models.TextField(blank=True)
-    tagline_en = models.CharField(max_length=255, blank=True)
-    tagline_ru = models.CharField(max_length=255, blank=True)
-    icon_url = models.URLField(blank=True)
-    banner_url = models.URLField(blank=True)
-    color_theme = models.CharField(max_length=32, blank=True)
-    order = models.IntegerField(default=0)
-    is_active = models.BooleanField(default=True)
+    slug = models.SlugField(verbose_name="адрес (slug)", unique=True)
+    title = models.CharField(verbose_name="название", max_length=200)
+    description = models.TextField(verbose_name="описание", blank=True)
+    title_en = models.CharField(verbose_name="название (EN)", max_length=200, blank=True)
+    title_ru = models.CharField(verbose_name="название (RU)", max_length=200, blank=True)
+    description_en = models.TextField(verbose_name="описание (EN)", blank=True)
+    description_ru = models.TextField(verbose_name="описание (RU)", blank=True)
+    tagline_en = models.CharField(verbose_name="подзаголовок (EN)", max_length=255, blank=True)
+    tagline_ru = models.CharField(verbose_name="подзаголовок (RU)", max_length=255, blank=True)
+    icon_url = models.URLField(verbose_name="иконка (URL)", blank=True)
+    banner_url = models.URLField(verbose_name="баннер (URL)", blank=True)
+    color_theme = models.CharField(verbose_name="цветовая тема", max_length=32, blank=True)
+    order = models.IntegerField(verbose_name="порядок", default=0)
+    is_active = models.BooleanField(verbose_name="опубликован", default=True)
     is_intro = models.BooleanField(
+        verbose_name="вводный курс",
         default=False,
         help_text=(
             "Вводный курс. Пока пользователь не пройдёт все миссии "
@@ -34,6 +35,7 @@ class Track(models.Model):
     )
     owner = models.ForeignKey(
         "users.User",
+        verbose_name="владелец",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -45,6 +47,7 @@ class Track(models.Model):
     )
 
     is_public = models.BooleanField(
+        verbose_name="публичный",
         default=True,
         help_text=(
             "Виден всем ученикам. Выключено = «класс»: курс видят только вошедшие по коду "
@@ -52,14 +55,18 @@ class Track(models.Model):
         ),
     )
     join_code = models.CharField(
+        verbose_name="код класса",
         max_length=12, unique=True, null=True, blank=True,
         help_text="Код класса: ученик вводит его или открывает ссылку /join/<код>.",
     )
     join_open = models.BooleanField(
+        verbose_name="набор открыт",
         default=True, help_text="Принимает ли класс новых учеников по коду."
     )
 
     class Meta:
+        verbose_name = "курс"
+        verbose_name_plural = "курсы"
         ordering = ["order", "id"]
 
     def __str__(self):
@@ -128,15 +135,18 @@ class Enrollment(models.Model):
     """A learner who joined a teacher's class (a closed course) with its code, and agreed to be seen there."""
 
     user = models.ForeignKey(
-        "users.User", on_delete=models.CASCADE, related_name="enrollments"
+        "users.User", verbose_name="ученик", on_delete=models.CASCADE, related_name="enrollments"
     )
-    track = models.ForeignKey(Track, on_delete=models.CASCADE, related_name="enrollments")
-    joined_at = models.DateTimeField(auto_now_add=True)
+    track = models.ForeignKey(Track, verbose_name="курс", on_delete=models.CASCADE, related_name="enrollments")
+    joined_at = models.DateTimeField(verbose_name="присоединился", auto_now_add=True)
     consented_at = models.DateTimeField(
+        verbose_name="согласие дано",
         help_text="Когда ученик согласился, что преподаватель видит его ник и прогресс в этом курсе."
     )
 
     class Meta:
+        verbose_name = "участие в классе"
+        verbose_name_plural = "участники классов"
         constraints = [
             models.UniqueConstraint(fields=["user", "track"], name="one_enrollment_per_user_and_track")
         ]
@@ -149,8 +159,12 @@ class Enrollment(models.Model):
 class ClassRole(models.Model):
     """A player class or role with an optional description."""
 
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
+    name = models.CharField(verbose_name="название", max_length=100)
+    description = models.TextField(verbose_name="описание", blank=True)
+
+    class Meta:
+        verbose_name = "класс героя"
+        verbose_name_plural = "классы героев"
 
     def __str__(self):
         """Return human-readable name for ClassRole."""
@@ -161,15 +175,19 @@ class Location(models.Model):
     """A named location that contains missions."""
 
     track = models.ForeignKey(
-        Track, on_delete=models.CASCADE, related_name="worlds", null=True, blank=True
+        Track, verbose_name="курс", on_delete=models.CASCADE, related_name="worlds", null=True, blank=True
     )
-    title = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    title_en = models.CharField(max_length=200, blank=True)
-    title_ru = models.CharField(max_length=200, blank=True)
-    description_en = models.TextField(blank=True)
-    description_ru = models.TextField(blank=True)
-    order = models.IntegerField(default=0)
+    title = models.CharField(verbose_name="название", max_length=200)
+    description = models.TextField(verbose_name="описание", blank=True)
+    title_en = models.CharField(verbose_name="название (EN)", max_length=200, blank=True)
+    title_ru = models.CharField(verbose_name="название (RU)", max_length=200, blank=True)
+    description_en = models.TextField(verbose_name="описание (EN)", blank=True)
+    description_ru = models.TextField(verbose_name="описание (RU)", blank=True)
+    order = models.IntegerField(verbose_name="порядок", default=0)
+
+    class Meta:
+        verbose_name = "раздел"
+        verbose_name_plural = "разделы"
 
     def __str__(self):
         """Return human-readable title for Location."""
@@ -202,29 +220,34 @@ class Mission(models.Model):
     """A mission which can be completed by a user to gain XP."""
 
     location = models.ForeignKey(
-        Location, on_delete=models.CASCADE, related_name="missions"
+        Location, verbose_name="раздел", on_delete=models.CASCADE, related_name="missions"
     )
-    title = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    title_en = models.CharField(max_length=200, blank=True)
-    title_ru = models.CharField(max_length=200, blank=True)
-    description_en = models.TextField(blank=True)
-    description_ru = models.TextField(blank=True)
-    xp_reward = models.IntegerField(default=DEFAULT_MISSION_XP)
-    order = models.IntegerField(default=0)
-    is_active = models.BooleanField(default=True)
+    title = models.CharField(verbose_name="название", max_length=200)
+    description = models.TextField(verbose_name="описание", blank=True)
+    title_en = models.CharField(verbose_name="название (EN)", max_length=200, blank=True)
+    title_ru = models.CharField(verbose_name="название (RU)", max_length=200, blank=True)
+    description_en = models.TextField(verbose_name="описание (EN)", blank=True)
+    description_ru = models.TextField(verbose_name="описание (RU)", blank=True)
+    xp_reward = models.IntegerField(verbose_name="награда XP", default=DEFAULT_MISSION_XP)
+    order = models.IntegerField(verbose_name="порядок", default=0)
+    is_active = models.BooleanField(verbose_name="опубликована", default=True)
     # CodeCombat-like gates
     prerequisites = models.ManyToManyField(
-        "self", symmetrical=False, blank=True, related_name="unlocks"
+        "self", verbose_name="требуемые миссии", symmetrical=False, blank=True, related_name="unlocks"
     )
-    min_level = models.IntegerField(default=1)
-    repeatable = models.BooleanField(default=False)
+    min_level = models.IntegerField(verbose_name="минимальный уровень", default=1)
+    repeatable = models.BooleanField(verbose_name="повторяемая", default=False)
     repeat_xp_rate = models.IntegerField(
+        verbose_name="доля XP за повтор",
         default=0, help_text="Repeat completion XP in %, 0 = no XP on repeat"
     )
     # Позиция ноды на карте (в процентах по контейнеру 0..100)
-    pos_x = models.IntegerField(default=0)
-    pos_y = models.IntegerField(default=0)
+    pos_x = models.IntegerField(verbose_name="позиция X на карте", default=0)
+    pos_y = models.IntegerField(verbose_name="позиция Y на карте", default=0)
+
+    class Meta:
+        verbose_name = "миссия"
+        verbose_name_plural = "миссии"
 
     def __str__(self):
         """Return human-readable title for Mission."""
@@ -264,22 +287,24 @@ class MissionTask(models.Model):
     )
 
     mission = models.ForeignKey(
-        Mission, on_delete=models.CASCADE, related_name="tasks"
+        Mission, verbose_name="миссия", on_delete=models.CASCADE, related_name="tasks"
     )
-    order = models.IntegerField(default=0)
-    task_type = models.CharField(max_length=20, choices=TASK_TYPES, default="story")
-    title = models.CharField(max_length=255, blank=True)
-    title_en = models.CharField(max_length=255, blank=True)
-    title_ru = models.CharField(max_length=255, blank=True)
-    body = models.TextField(blank=True)
-    body_en = models.TextField(blank=True)
-    body_ru = models.TextField(blank=True)
-    data = models.JSONField(default=dict, blank=True)
-    xp_reward = models.IntegerField(default=0)
-    is_required = models.BooleanField(default=True)
-    estimated_minutes = models.IntegerField(default=5)
+    order = models.IntegerField(verbose_name="порядок", default=0)
+    task_type = models.CharField(verbose_name="тип шага", max_length=20, choices=TASK_TYPES, default="story")
+    title = models.CharField(verbose_name="название", max_length=255, blank=True)
+    title_en = models.CharField(verbose_name="название (EN)", max_length=255, blank=True)
+    title_ru = models.CharField(verbose_name="название (RU)", max_length=255, blank=True)
+    body = models.TextField(verbose_name="текст", blank=True)
+    body_en = models.TextField(verbose_name="текст (EN)", blank=True)
+    body_ru = models.TextField(verbose_name="текст (RU)", blank=True)
+    data = models.JSONField(verbose_name="данные", default=dict, blank=True)
+    xp_reward = models.IntegerField(verbose_name="награда XP", default=0)
+    is_required = models.BooleanField(verbose_name="обязательный", default=True)
+    estimated_minutes = models.IntegerField(verbose_name="время, мин", default=5)
 
     class Meta:
+        verbose_name = "шаг миссии"
+        verbose_name_plural = "шаги миссий"
         ordering = ["mission", "order", "id"]
 
     def __str__(self):
@@ -322,35 +347,39 @@ class TaskProgress(models.Model):
     )
 
     user = models.ForeignKey(
-        "users.User", on_delete=models.CASCADE, related_name="task_progress"
+        "users.User", verbose_name="ученик", on_delete=models.CASCADE, related_name="task_progress"
     )
     task = models.ForeignKey(
-        MissionTask, on_delete=models.CASCADE, related_name="progress_entries"
+        MissionTask, verbose_name="шаг", on_delete=models.CASCADE, related_name="progress_entries"
     )
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="not_started")
-    attempts = models.IntegerField(default=0)
-    best_score = models.IntegerField(default=0)
-    last_submitted_at = models.DateTimeField(null=True, blank=True)
-    answer = models.JSONField(default=dict, blank=True)
+    status = models.CharField(verbose_name="статус", max_length=20, choices=STATUS_CHOICES, default="not_started")
+    attempts = models.IntegerField(verbose_name="попыток", default=0)
+    best_score = models.IntegerField(verbose_name="лучший балл", default=0)
+    last_submitted_at = models.DateTimeField(verbose_name="последняя отправка", null=True, blank=True)
+    answer = models.JSONField(verbose_name="ответ", default=dict, blank=True)
 
     class Meta:
+        verbose_name = "прогресс по шагу"
+        verbose_name_plural = "прогресс по шагам"
         unique_together = ("user", "task")
 
 
 class Rank(models.Model):
     """XP-based rank ladder (Novice -> Python Master -> Junior Django Dev)."""
 
-    slug = models.SlugField(unique=True)
-    title_en = models.CharField(max_length=200)
-    title_ru = models.CharField(max_length=200)
-    description_en = models.TextField(blank=True)
-    description_ru = models.TextField(blank=True)
-    min_level = models.IntegerField(default=1)
-    min_xp = models.IntegerField(default=0)
-    order = models.IntegerField(default=0)
-    icon_url = models.URLField(blank=True)
+    slug = models.SlugField(verbose_name="адрес (slug)", unique=True)
+    title_en = models.CharField(verbose_name="название (EN)", max_length=200)
+    title_ru = models.CharField(verbose_name="название (RU)", max_length=200)
+    description_en = models.TextField(verbose_name="описание (EN)", blank=True)
+    description_ru = models.TextField(verbose_name="описание (RU)", blank=True)
+    min_level = models.IntegerField(verbose_name="минимальный уровень", default=1)
+    min_xp = models.IntegerField(verbose_name="минимум XP", default=0)
+    order = models.IntegerField(verbose_name="порядок", default=0)
+    icon_url = models.URLField(verbose_name="иконка (URL)", blank=True)
 
     class Meta:
+        verbose_name = "звание"
+        verbose_name_plural = "звания"
         ordering = ["order", "min_level", "min_xp"]
 
     def __str__(self):
@@ -379,22 +408,25 @@ class LeaderboardEntry(models.Model):
     )
 
     track = models.ForeignKey(
-        Track, on_delete=models.CASCADE, null=True, blank=True, related_name="leaderboard"
+        Track, verbose_name="курс", on_delete=models.CASCADE, null=True, blank=True, related_name="leaderboard"
     )
     user = models.ForeignKey(
-        "users.User", on_delete=models.CASCADE, related_name="leaderboard_entries"
+        "users.User", verbose_name="ученик", on_delete=models.CASCADE, related_name="leaderboard_entries"
     )
-    scope = models.CharField(max_length=16, choices=SCOPE_CHOICES, default="global")
+    scope = models.CharField(verbose_name="область", max_length=16, choices=SCOPE_CHOICES, default="global")
     period_label = models.CharField(
+        verbose_name="период",
         max_length=32,
         default="all_time",
         help_text="Например: all_time, weekly_2025W46, monthly_2025-11",
     )
-    xp_total = models.IntegerField(default=0)
-    position = models.IntegerField(default=0)
-    snapshot_at = models.DateTimeField(auto_now_add=True)
+    xp_total = models.IntegerField(verbose_name="всего XP", default=0)
+    position = models.IntegerField(verbose_name="позиция", default=0)
+    snapshot_at = models.DateTimeField(verbose_name="снимок сделан", auto_now_add=True)
 
     class Meta:
+        verbose_name = "запись рейтинга"
+        verbose_name_plural = "рейтинг"
         ordering = ["scope", "track_id", "period_label", "position"]
         unique_together = ("track", "user", "scope", "period_label")
 
@@ -407,12 +439,13 @@ class Progress(models.Model):
     """Tracks user progress for missions."""
 
     user = models.ForeignKey(
-        "users.User", on_delete=models.CASCADE, related_name="progress"
+        "users.User", verbose_name="ученик", on_delete=models.CASCADE, related_name="progress"
     )
-    mission = models.ForeignKey(Mission, on_delete=models.CASCADE)
+    mission = models.ForeignKey(Mission, verbose_name="миссия", on_delete=models.CASCADE)
     # Status and attempts like CodeCombat sessions
-    completed = models.BooleanField(default=False)
+    completed = models.BooleanField(verbose_name="завершена", default=False)
     status = models.CharField(
+        verbose_name="статус",
         max_length=20,
         choices=(
             ("not_started", "Not started"),
@@ -421,14 +454,16 @@ class Progress(models.Model):
         ),
         default="not_started",
     )
-    attempts = models.IntegerField(default=0)
-    started_at = models.DateTimeField(null=True, blank=True)
-    last_started_at = models.DateTimeField(null=True, blank=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
-    xp_earned = models.IntegerField(default=0)
-    stars = models.SmallIntegerField(default=0)
+    attempts = models.IntegerField(verbose_name="попыток", default=0)
+    started_at = models.DateTimeField(verbose_name="начата", null=True, blank=True)
+    last_started_at = models.DateTimeField(verbose_name="последний запуск", null=True, blank=True)
+    completed_at = models.DateTimeField(verbose_name="завершена в", null=True, blank=True)
+    xp_earned = models.IntegerField(verbose_name="получено XP", default=0)
+    stars = models.SmallIntegerField(verbose_name="звёзды", default=0)
 
     class Meta:
+        verbose_name = "прогресс по миссии"
+        verbose_name_plural = "прогресс по миссиям"
         unique_together = ("user", "mission")
 
     def start(self):
@@ -475,12 +510,14 @@ class UserAchievement(models.Model):
     """
 
     user = models.ForeignKey(
-        "users.User", on_delete=models.CASCADE, related_name="achievements"
+        "users.User", verbose_name="ученик", on_delete=models.CASCADE, related_name="achievements"
     )
-    slug = models.CharField(max_length=64)
-    earned_at = models.DateTimeField(auto_now_add=True)
+    slug = models.CharField(verbose_name="код достижения", max_length=64)
+    earned_at = models.DateTimeField(verbose_name="получено", auto_now_add=True)
 
     class Meta:
+        verbose_name = "достижение ученика"
+        verbose_name_plural = "достижения учеников"
         unique_together = ("user", "slug")
         ordering = ["earned_at"]
 
@@ -506,40 +543,46 @@ class CodeRun(models.Model):
     )
 
     user = models.ForeignKey(
-        "users.User", on_delete=models.CASCADE, related_name="code_runs"
+        "users.User", verbose_name="ученик", on_delete=models.CASCADE, related_name="code_runs"
     )
     task = models.ForeignKey(
         MissionTask,
+        verbose_name="шаг",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="code_runs",
         help_text="Empty for free practice runs outside a task.",
     )
-    outcome = models.CharField(max_length=16, choices=OUTCOMES)
+    outcome = models.CharField(verbose_name="исход", max_length=16, choices=OUTCOMES)
     error_type = models.CharField(
+        verbose_name="тип ошибки",
         max_length=64, blank=True, help_text="Exception class, e.g. NameError."
     )
-    error_message = models.CharField(max_length=200, blank=True)
-    exit_code = models.IntegerField(null=True, blank=True)
-    duration_ms = models.PositiveIntegerField(default=0)
-    code_length = models.PositiveIntegerField(default=0)
-    stdout_size = models.PositiveIntegerField(default=0)
-    stderr_size = models.PositiveIntegerField(default=0)
+    error_message = models.CharField(verbose_name="сообщение об ошибке", max_length=200, blank=True)
+    exit_code = models.IntegerField(verbose_name="код выхода", null=True, blank=True)
+    duration_ms = models.PositiveIntegerField(verbose_name="длительность, мс", default=0)
+    code_length = models.PositiveIntegerField(verbose_name="длина кода", default=0)
+    stdout_size = models.PositiveIntegerField(verbose_name="размер stdout", default=0)
+    stderr_size = models.PositiveIntegerField(verbose_name="размер stderr", default=0)
     passed = models.BooleanField(
+        verbose_name="пройдена проверка",
         null=True, blank=True, help_text="Null when the run was not graded."
     )
     attempt_no = models.PositiveIntegerField(
+        verbose_name="номер попытки",
         null=True,
         blank=True,
         help_text="The task's attempt counter after this run (graded runs only).",
     )
     after_solved = models.BooleanField(
+        verbose_name="после решения",
         default=False,
         help_text="The task was already solved before this run (re-run for fun): "
         "leave such runs out of 'attempts to success'.",
     )
     provenance = models.JSONField(
+        verbose_name="происхождение",
         default=dict,
         blank=True,
         help_text="How the code got into the editor (counts only, never the keystrokes): "
@@ -547,19 +590,23 @@ class CodeRun(models.Model):
         "Sent by the editor, so a hint at authorship and not a proof.",
     )
     fingerprint = models.CharField(
+        verbose_name="отпечаток кода",
         max_length=32,
         blank=True,
         db_index=True,
         help_text="Hash of the code's structure with the author's own names, comments and "
         "docstrings left out (game/codeanalysis.py). The code itself is not kept in this table.",
     )
-    ast_nodes = models.PositiveIntegerField(default=0, help_text="Size of the parsed code, 0 if it did not parse.")
+    ast_nodes = models.PositiveIntegerField(verbose_name="узлов AST", default=0, help_text="Size of the parsed code, 0 if it did not parse.")
     constructs = models.JSONField(
+        verbose_name="конструкции",
         default=list, blank=True, help_text="Language constructs used: def, lambda, comprehension, try, ..."
     )
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    created_at = models.DateTimeField(verbose_name="создано", auto_now_add=True, db_index=True)
 
     class Meta:
+        verbose_name = "запуск кода"
+        verbose_name_plural = "запуски кода"
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["user", "created_at"]),
@@ -604,11 +651,12 @@ class LearningEvent(models.Model):
     )
 
     user = models.ForeignKey(
-        "users.User", on_delete=models.CASCADE, related_name="learning_events"
+        "users.User", verbose_name="ученик", on_delete=models.CASCADE, related_name="learning_events"
     )
-    event_type = models.CharField(max_length=32, choices=TYPES)
+    event_type = models.CharField(verbose_name="тип события", max_length=32, choices=TYPES)
     task = models.ForeignKey(
         MissionTask,
+        verbose_name="шаг",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -616,15 +664,18 @@ class LearningEvent(models.Model):
     )
     mission = models.ForeignKey(
         Mission,
+        verbose_name="миссия",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="learning_events",
     )
-    meta = models.JSONField(default=dict, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    meta = models.JSONField(verbose_name="метаданные", default=dict, blank=True)
+    created_at = models.DateTimeField(verbose_name="создано", auto_now_add=True, db_index=True)
 
     class Meta:
+        verbose_name = "учебное событие"
+        verbose_name_plural = "учебные события"
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["user", "created_at"]),
@@ -650,6 +701,8 @@ class FreshnessSample(models.Model):
     lag_max_s = models.FloatField()
 
     class Meta:
+        verbose_name = "замер задержки"
+        verbose_name_plural = "замеры задержки"
         ordering = ["-polled_at"]
 
     def __str__(self):
@@ -670,6 +723,8 @@ class UsabilityResponse(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
+        verbose_name = "ответ SUS"
+        verbose_name_plural = "ответы SUS"
         ordering = ["-created_at"]
 
     def __str__(self):
@@ -693,6 +748,8 @@ class EarlyWarningSnapshot(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        verbose_name = "снимок раннего предупреждения"
+        verbose_name_plural = "снимки раннего предупреждения"
         ordering = ["-date", "user_id"]
         constraints = [
             models.UniqueConstraint(fields=["date", "user"], name="one_warning_snapshot_per_learner_per_day"),

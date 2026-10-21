@@ -200,3 +200,10 @@ def test_titles_follow_the_requested_language(student, course):
 def test_each_mission_row_names_its_course(student, course):
     rows = _get(student)["missions"]
     assert {row["track_title"] for row in rows} == {"Python"}
+
+
+def test_the_review_threshold_is_published_with_the_journey(student, course):
+    from game.me import REVIEW_ATTEMPTS
+
+    assert _get(student)["rules"] == {"review_attempts": REVIEW_ATTEMPTS}
+    assert REVIEW_ATTEMPTS == 4

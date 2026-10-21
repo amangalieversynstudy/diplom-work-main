@@ -267,6 +267,7 @@ def test_rules_are_published_with_the_list(teacher):
     rules = _warning(teacher)["rules"]
     assert rules["stuck_failures"] == HELP_AFTER_FAILURES
     assert rules["inactive_long_days"] == 7
+    assert rules["abandon_window_days"] == 14
 
 
 def test_an_old_failure_on_a_step_no_longer_counts_as_stuck(course):

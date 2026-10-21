@@ -189,6 +189,7 @@ def early_warning(viewer, *, now=None):
             "deep_failures": DEEP_STRUGGLE_FAILURES,
             "inactive_soon_days": INACTIVE_SOON_DAYS,
             "inactive_long_days": INACTIVE_LONG_DAYS,
+            "abandon_window_days": ABANDON_WINDOW_DAYS,
             "model": bool(load_risk_model()) and owner_scope(viewer) is None,
         },
     }

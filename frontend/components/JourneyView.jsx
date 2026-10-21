@@ -279,7 +279,7 @@ export default function JourneyView({ data, mode = "student", backHref }) {
           />
           <StepList
             title={t("journey.reviewTitle")}
-            empty={t("journey.reviewEmpty").replace("{n}", REVIEW_ATTEMPTS)}
+            empty={t("journey.reviewEmpty").replace("{n}", data.rules?.review_attempts ?? REVIEW_ATTEMPTS)}
             items={data.review}
             action={t("journey.repeat")}
             t={t}

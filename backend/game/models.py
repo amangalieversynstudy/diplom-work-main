@@ -3,6 +3,9 @@
 from django.db import models
 from django.utils import timezone
 
+# built-in missions give 60-90, so 10 made teacher courses look cheap; Studio uses the same default
+DEFAULT_MISSION_XP = 50
+
 
 class Track(models.Model):
     """Learning track (e.g., Python Path, Django Path)."""
@@ -207,7 +210,7 @@ class Mission(models.Model):
     title_ru = models.CharField(max_length=200, blank=True)
     description_en = models.TextField(blank=True)
     description_ru = models.TextField(blank=True)
-    xp_reward = models.IntegerField(default=10)
+    xp_reward = models.IntegerField(default=DEFAULT_MISSION_XP)
     order = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
     # CodeCombat-like gates

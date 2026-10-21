@@ -190,7 +190,7 @@ function EarlyWarningPanel({ warning, t }) {
         <p className="text-xs text-muted mt-1">
           {fill(t("teacher.warning.riskVsGone"), {
             risk: rules.inactive_long_days,
-            gone: ABANDON_WINDOW_DAYS,
+            gone: rules.abandon_window_days ?? ABANDON_WINDOW_DAYS,
           })}
         </p>
       ) : null}

@@ -250,6 +250,7 @@ def my_learning(user, *, lang="ru", now=None, owner=None):
         },
         "stuck": stuck,
         "review": review,
+        "rules": {"review_attempts": REVIEW_ATTEMPTS},
         "next": _step_ref(next_task, lang) if next_task else None,
         "activity": [
             {"date": day.isoformat(), "runs": runs[day], "solved": solved_per_day[day]}

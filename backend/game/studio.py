@@ -26,7 +26,7 @@ from .permissions import IsTeacher
 from rest_framework.exceptions import PermissionDenied
 
 from .codeanalysis import CONSTRUCTS
-from .models import CodeRun, Enrollment, Location, Mission, MissionTask, Progress, TaskProgress, Track
+from .models import DEFAULT_MISSION_XP, CodeRun, Enrollment, Location, Mission, MissionTask, Progress, TaskProgress, Track
 from .throttles import StudioDailyWriteThrottle, StudioWriteThrottle
 from .variants import MAX_VARIANTS, MIN_VARIANTS
 
@@ -35,7 +35,6 @@ from .variants import MAX_VARIANTS, MIN_VARIANTS
 MAX_HINTS = 5
 MAX_HINT_LENGTH = 500
 MAX_MISSION_XP = 500
-DEFAULT_MISSION_XP = 50  # built-in missions give 60-90, so 10 made teacher courses look cheap
 MAX_TASK_XP = 100
 
 STUDIO_TASK_TYPES = ("story", "quiz", "code")

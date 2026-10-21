@@ -488,6 +488,8 @@ def compute_metrics(
             }
         )
 
+    from .warning import INACTIVE_LONG_DAYS  # warning imports this module, so import late
+
     curve = _failure_curve(graded_pairs, dropped)
     threshold = _critical_threshold(curve)
     critical_point = next((p for p in curve if p["failures"] == threshold), None)
@@ -497,6 +499,7 @@ def compute_metrics(
         "meta": {
             "generated_at": now.isoformat(),
             "inactive_days": inactive_days,
+            "risk_days": INACTIVE_LONG_DAYS,
             "scope": "all" if viewer.is_superuser else "own",
             # where "left" is measured: the whole platform, or only the teacher's own courses
             "activity_scope": "platform" if viewer.is_superuser else "own_courses",

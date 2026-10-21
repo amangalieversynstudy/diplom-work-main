@@ -336,7 +336,7 @@ export default function LearningMetrics() {
         {data.meta.learners} {unit(t, language, "student", data.meta.learners)} {t("analytics.metrics.inSample")}
       </p>
       <p className="text-xs text-muted -mt-3">
-        {fill(t("analytics.metrics.riskVsGone"), { risk: RISK_DAYS, gone: DEFAULT_WINDOW })}
+        {fill(t("analytics.metrics.riskVsGone"), { risk: data.meta.risk_days ?? RISK_DAYS, gone: DEFAULT_WINDOW })}
       </p>
       <p className="text-xs text-muted -mt-3">
         {fill(t("analytics.metrics.windowHelp"), { n: data.meta.inactive_days })}{" "}

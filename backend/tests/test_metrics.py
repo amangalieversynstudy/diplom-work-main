@@ -152,6 +152,7 @@ def test_the_default_window_is_the_one_used_for_the_hypotheses(teacher, class_ro
 
     assert ABANDON_WINDOW_DAYS == 14
     assert _get(teacher)["meta"]["inactive_days"] == ABANDON_WINDOW_DAYS
+    assert _get(teacher)["meta"]["risk_days"] == 7
 
 
 def test_learners_inside_their_window_are_not_in_any_denominator(teacher):

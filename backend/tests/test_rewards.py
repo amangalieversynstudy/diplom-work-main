@@ -162,3 +162,60 @@ def test_level_up_items_are_capped_without_taking_any_away():
     profile.add_xp(500)
     profile.refresh_from_db()
     assert (profile.hint_scrolls, profile.ai_summons) == (50, 40)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("flags", [{"is_staff": True}, {"is_teacher": True}])
+def test_a_teacher_on_a_public_course_earns_nothing_and_gets_the_preview_flag(flags):
+    author = _user("author_x", is_staff=True, is_superuser=True)
+    _, mission, step = _course(author, "pub-prev", public=True)
+    teacher = _user("viewer_t", **flags)
+    solved, done = _play(teacher, mission, step)
+
+    assert solved["xp_added"] == 0 and solved["preview"] is True
+    assert done["xp_added"] == 0 and done["preview"] is True and done["leveled_up"] is False
+    assert done["new_achievements"] == []
+    teacher.profile.refresh_from_db()
+    assert teacher.profile.xp == 0 and teacher.profile.level == 1 and teacher.profile.current_streak == 0
+    assert not LeaderboardEntry.objects.filter(user=teacher).exists()
+    assert not UserAchievement.objects.filter(user=teacher).exists()
+    assert Progress.objects.get(user=teacher, mission=mission).completed
+
+
+@pytest.mark.django_db
+def test_a_learner_still_earns_and_has_no_preview_flag():
+    author = _user("author_y", is_staff=True, is_superuser=True)
+    _, mission, step = _course(author, "pub-learn", public=True)
+    learner = _user("plain_l")
+    solved, done = _play(learner, mission, step)
+    assert solved["preview"] is False and done["preview"] is False
+    assert solved["xp_added"] == 100
+
+
+@pytest.mark.django_db
+def test_potions_are_free_for_a_teacher_and_consumed_for_a_learner():
+    teacher = _user("potion_t", is_teacher=True)
+    learner = _user("potion_l")
+    for u in (teacher, learner):
+        Profile = u.profile
+        Profile.hint_scrolls = 0
+        Profile.save()
+    assert teacher.profile.use_item("hint_scrolls") is True
+    assert learner.profile.use_item("hint_scrolls") is False
+    teacher.profile.refund_item("hint_scrolls")
+    teacher.profile.refresh_from_db()
+    assert teacher.profile.hint_scrolls == 0
+
+
+@pytest.mark.django_db
+def test_a_teacher_still_spends_ai_mentor_calls():
+    """Hints are free in preview mode; the AI mentor is paid for outside, so it is metered for everybody."""
+    teacher = _user("preview_ai", is_staff=True)
+    profile = teacher.profile
+    profile.ai_summons = 1
+    profile.save(update_fields=["ai_summons"])
+    assert profile.use_item("ai_summons") is True
+    assert profile.use_item("ai_summons") is False
+    profile.refresh_from_db()
+    assert profile.ai_summons == 0
+    assert profile.use_item("hint_scrolls") is True  # still free

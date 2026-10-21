@@ -241,7 +241,7 @@ class UseItemView(APIView):
         # выдаётся только здесь; если автор шага его не написал, предмет не тратим.
         extra = {}
         task = None
-        if item_type in ITEM_EVENTS and getattr(profile, item_type, 0) <= 0:
+        if item_type in ITEM_EVENTS and getattr(profile, item_type, 0) <= 0 and not request.user.can_teach:
             return Response(
                 {"detail": "Недостаточно предметов в инвентаре или неверный тип."},
                 status=status.HTTP_400_BAD_REQUEST,

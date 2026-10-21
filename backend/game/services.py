@@ -398,6 +398,8 @@ def progress_payload(task_progress):
         "answer": task_progress.answer,
         "help_offer": help_offer(task_progress),
         "xp_added": getattr(task_progress, "xp_added", 0),
+        # a teacher's trial run: graded and recorded, but nothing is earned
+        "preview": bool(getattr(task_progress.user, "can_teach", False)),
         "leveled_up": getattr(task_progress, "leveled_up", False),
         "new_level": getattr(task_progress, "new_level", None),
         # false in a class whose XP stays inside the class (see classes.pays_globally)

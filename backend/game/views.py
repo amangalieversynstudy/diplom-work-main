@@ -221,7 +221,7 @@ class MissionViewSet(viewsets.ModelViewSet):
             and timezone.now() - prog.completed_at < timedelta(seconds=5)
         ):
             return Response(
-                self._completion_payload(prog, profile, 0, False, deduplicated=True)
+                {**self._completion_payload(prog, profile, 0, False, deduplicated=True), "preview": bool(user.can_teach)}
             )
 
         awards_xp = (not prog.completed) or mission.repeatable
@@ -273,6 +273,7 @@ class MissionViewSet(viewsets.ModelViewSet):
             first_completion=not was_completed,
         )
         payload["counts_globally"] = global_pay
+        payload["preview"] = bool(user.can_teach)
         return Response(payload)
 
     @staticmethod

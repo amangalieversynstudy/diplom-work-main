@@ -132,6 +132,8 @@ class Profile(models.Model):
             self.research_consent_at = timezone.now()
 
     INVENTORY_ITEMS = ("ai_summons", "hint_scrolls", "skeleton_scrolls")
+    # paid for outside (the AI mentor's API quota): spent by everybody, teachers included
+    METERED_ITEMS = ("ai_summons",)
 
     def use_item(self, item_field_name: str) -> bool:
         """Списать 1 предмет из инвентаря.
@@ -140,6 +142,8 @@ class Profile(models.Model):
         """
         if item_field_name not in self.INVENTORY_ITEMS:
             return False
+        if self.user.can_teach and item_field_name not in self.METERED_ITEMS:
+            return True  # preview mode: a teacher's hints are free, so a step can always be checked
         # Один атомарный UPDATE ... WHERE n > 0: два одновременных запроса не
         # спишут один и тот же предмет дважды, а остаток не уйдёт в минус.
         # Схема «прочитал, вычел в Python, сохранил» этого не гарантирует.
@@ -151,7 +155,9 @@ class Profile(models.Model):
 
     def refund_item(self, item_field_name: str) -> None:
         """Вернуть предмет, списанный заранее (например, если AI не ответил)."""
-        if item_field_name in self.INVENTORY_ITEMS:
+        if item_field_name in self.INVENTORY_ITEMS and (
+            not self.user.can_teach or item_field_name in self.METERED_ITEMS
+        ):
             type(self).objects.filter(pk=self.pk).update(
                 **{item_field_name: F(item_field_name) + 1}
             )

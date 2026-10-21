@@ -4,6 +4,7 @@ import { Award, Flame, Sparkles, Star, TrendingUp } from "lucide-react";
 import Button from "./Button";
 import { useDialog } from "../lib/useDialog";
 import { useI18n } from "../lib/i18n";
+import { useRouter } from "next/router";
 import { prefersReducedMotion } from "../lib/motion";
 
 const MAX_STARS = 3;
@@ -48,6 +49,7 @@ function LootRow({ icon: Icon, children, strong = false }) {
  */
 export default function MissionComplete({ data, onClose, onMap }) {
   const { t } = useI18n();
+  const router = useRouter();
   const ref = useRef(null);
   const titleId = useId();
   useDialog(Boolean(data), ref, onClose);
@@ -60,6 +62,46 @@ export default function MissionComplete({ data, onClose, onMap }) {
   }, [open]);
   const xpShown = useCountUp(data?.xp > 0 ? data.xp : 0, Boolean(data));
   if (!data) return null;
+
+  if (data.preview) {
+    return (
+      <div
+        role="presentation"
+        className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+      >
+        <div
+          ref={ref}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          className="complete-card scroll-frame max-h-[calc(100dvh-2rem)] w-full max-w-xl overflow-y-auto p-6 text-center text-card-text sm:p-8"
+        >
+          <h2 id={titleId} className="font-title text-3xl">
+            {t("missionPage.complete.previewDone")}
+          </h2>
+          {data.title ? <p className="mt-1 text-muted">{data.title}</p> : null}
+          <p className="mt-3 text-sm leading-relaxed text-muted">{t("missionPage.complete.previewNote")}</p>
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-nowrap sm:justify-center">
+            <Button data-autofocus variant="rune" onClick={onMap} className="justify-center !px-4 whitespace-nowrap">
+              {t("missionPage.complete.toMap")}
+            </Button>
+            <Button variant="secondary" onClick={() => router.push("/studio")} className="justify-center !px-4 whitespace-nowrap">
+              {t("missionPage.complete.toStudio")}
+            </Button>
+            <Button variant="secondary" onClick={() => router.push("/teacher")} className="justify-center !px-4 whitespace-nowrap">
+              {t("missionPage.complete.toTeacher")}
+            </Button>
+            <Button variant="ghost" onClick={onClose} className="justify-center !px-4 whitespace-nowrap">
+              {t("missionPage.complete.stay")}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const stars = Math.max(0, Math.min(MAX_STARS, Number(data.stars) || 0));
   const starsText = t("missionPage.complete.starsEarned").replace("{n}", stars).replace("{max}", MAX_STARS);

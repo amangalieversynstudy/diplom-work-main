@@ -33,6 +33,7 @@ import { useI18n } from "../../lib/i18n";
 import { sanitizeHtml } from "../../lib/sanitize";
 import { storyToHtml } from "../../lib/story";
 import { fetchIntroStatus } from "../../lib/class";
+import { canTeach } from "../../lib/roles";
 import { nextMission } from "../../lib/missions";
 
 // Стили текста свитка: тёмно-коричневый на пергаменте (светлый фон, поэтому без prose-invert).
@@ -73,6 +74,8 @@ export default function MissionDetail() {
 
   // Уровень игрока для HUD игровой сцены (Codemancer)
   const [playerLevel, setPlayerLevel] = useState(1);
+  // режим просмотра: преподаватель видит миссию глазами ученика, ничего не зарабатывая
+  const [preview, setPreview] = useState(false);
 
   // Боевая фаза сцены, завязанная на действия игрока в задаче:
   // idle | casting (код выполняется) | victory (тест пройден) | defeat (ошибка) |
@@ -213,6 +216,7 @@ export default function MissionDetail() {
           skeleton_scrolls: p.skeleton_scrolls ?? 0,
         });
         setPlayerLevel(p.level ?? 1);
+        setPreview(canTeach(userDoc));
       })
       .catch((err) => {
         logger.error("Не удалось загрузить инвентарь игрока:", err);
@@ -307,7 +311,10 @@ export default function MissionDetail() {
         setStage((st) => ({ phase: "finale", tick: st.tick + 1 }));
       }
       // backend честно шлёт leveled_up/xp_added/new_level
-      if (result?.xp_added > 0) {
+      const isPreview = Boolean(result?.preview) || preview;
+      if (isPreview) {
+        toast.success(t("missionPage.toasts.previewDone"));
+      } else if (result?.xp_added > 0) {
         toast.success(
           t("missionPage.toasts.questDoneXp").replace("{xp}", result.xp_added),
           { duration: 4000 }
@@ -315,7 +322,7 @@ export default function MissionDetail() {
       } else {
         toast.success(t("missionPage.toasts.questDone"));
       }
-      if (result?.leveled_up) {
+      if (!isPreview && result?.leveled_up) {
         setLevelUp(result.new_level);
         // Двойной toast: общая победа + level-up отдельно
         setTimeout(() => {
@@ -345,6 +352,7 @@ export default function MissionDetail() {
             skeleton_scrolls: p.skeleton_scrolls ?? 0,
           });
           setPlayerLevel(p.level ?? 1);
+          setPreview(canTeach(profileData));
           level = p.level ?? null;
           streak = p.streak_active ? p.current_streak ?? 0 : 0;
           const intro = await fetchIntroStatus();
@@ -376,6 +384,7 @@ export default function MissionDetail() {
         () =>
           setCompletion({
             title: missionName,
+            preview: isPreview,
             // впервые: всё, что миссия принесла (шаги и бонус); повтор: только бонус за повтор
             xp: result?.first_completion ? result?.xp_earned || 0 : result?.xp_added || 0,
             stars: result?.stars ?? 0,
@@ -400,13 +409,13 @@ export default function MissionDetail() {
     lastSolveRef.current = Date.now();
     setTaskProgress((prev) => ({ ...prev, [taskId]: progress }));
     // ровно столько XP сервер выдал за этот шаг (повторное решение не платит)
-    const paid = progress?.xp_added || 0;
+    const paid = progress?.preview ? 0 : progress?.xp_added || 0;
     toast.success(
       paid > 0 ? t("missionPage.toasts.stepDoneXp").replace("{xp}", paid) : t("missionPage.toasts.stepSaved")
     );
     if (paid > 0) setXpPop({ amount: paid, id: Date.now() });
-    announceAchievements(progress?.new_achievements, 900);
-    if (progress?.leveled_up) {
+    if (!progress?.preview) announceAchievements(progress?.new_achievements, 900);
+    if (!progress?.preview && progress?.leveled_up) {
       setLevelUp(progress.new_level);
       setPlayerLevel(progress.new_level);
       // новый уровень пополняет зелья и вызовы Мудреца
@@ -659,6 +668,14 @@ export default function MissionDetail() {
         onMap={() => router.push("/worlds")}
       />
       <div className="min-h-screen xl:h-screen pt-24 bg-bg dark:bg-[#0f0f11] text-text dark:text-gray-200 font-sans flex flex-col">
+        {preview && (
+        <div
+          role="status"
+          className="sticky top-24 z-40 shrink-0 border-b border-warning/60 bg-warning/20 px-4 py-2 text-center text-sm font-semibold text-text backdrop-blur"
+        >
+          {t("missionPage.previewBanner")}
+        </div>
+      )}
         {/* Квест-шапка в RPG-стиле: deep-wood band + scroll icon + Melodrama.
             Светлая тема — чистая surface-полоса; тёмная — глубокое дерево. */}
         <header className="border-b border-border dark:border-ink/40 px-4 sm:px-8 py-3 xl:py-2.5 flex items-center justify-between gap-3 select-none shadow-md bg-surface dark:bg-gradient-to-r dark:from-wood-deep dark:via-wood dark:to-wood-deep">

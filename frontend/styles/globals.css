@@ -146,7 +146,9 @@ a {
   text-decoration: none;
   transition: color 0.2s;
 }
-a:hover { color: var(--primary-dk); }
+/* hover weighs no more than plain `a`: a button-link's own colour class (text-on-primary) must win,
+   or on hover its text takes the colour of its own hover background and disappears */
+a:where(:hover) { color: var(--primary-dk); }
 
 ::selection {
   background: var(--primary-selection);

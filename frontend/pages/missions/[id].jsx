@@ -939,7 +939,7 @@ export default function MissionDetail() {
                     {activeTask.data?.options?.map((opt, i) => (
                       <label key={i} className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors group ${
                         wrongAnswers[activeTask.id] === (opt.value ?? opt)
-                          ? "bg-error/10 border-error"
+                          ? "bg-wax/10 border-wax"
                           : "bg-parchment/70 hover:bg-parchment border-ink/30 hover:border-ink/60"
                       }`}>
                         <input
@@ -958,8 +958,9 @@ export default function MissionDetail() {
                     ))}
                   </div>
                   </fieldset>
+                  {/* wax, not error: the card is parchment in both themes, and the dark theme's light red is unreadable on it */}
                   {wrongAnswers[activeTask.id] !== undefined && wrongAnswers[activeTask.id] === quizAnswers[activeTask.id] && (
-                    <p role="alert" className="text-sm font-semibold text-error">
+                    <p role="alert" className="text-sm font-semibold text-wax">
                       {t("missionPage.quizWrongInline")}
                     </p>
                   )}

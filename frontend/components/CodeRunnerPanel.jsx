@@ -355,7 +355,9 @@ function CodeRunnerPanel(
 
   const showHint = (hint, header) => {
     const level = hint.levels > 1 ? ` ${hint.level}/${hint.levels}` : "";
-    setOpenedHints((prev) => [...prev, { header: `${header}${level}`, text: hint.text }]);
+    // the terminal header is drawn with ━━━ and its own 💡; the panel has its own icon, so strip both
+    const plainHeader = header.replace(/[━💡]/gu, "").trim();
+    setOpenedHints((prev) => [...prev, { header: `${plainHeader}${level}`, text: hint.text }]);
 
     // Подсказку выводим прямо в терминал редактора — он всегда
     // привязан к панели и виден на любой ширине экрана (на 32:9

@@ -18,6 +18,9 @@ import CountUp from "./CountUp";
 import { useI18n } from "../lib/i18n";
 
 // Тон блока статуса: цвет и значок. Слова для ученика мягкие: без «риска» и процентов.
+// Шаг попадает в «Стоит повторить» от стольких попыток: REVIEW_ATTEMPTS в backend/game/me.py (HELP_AFTER_FAILURES + 1).
+const REVIEW_ATTEMPTS = 4;
+
 const STATUS_STYLE = {
   new: { icon: Compass, ring: "border-primary/30 bg-primary/10", tone: "text-primary" },
   great: { icon: Sparkles, ring: "border-success/30 bg-success/10", tone: "text-success" },
@@ -276,7 +279,7 @@ export default function JourneyView({ data, mode = "student", backHref }) {
           />
           <StepList
             title={t("journey.reviewTitle")}
-            empty={t("journey.reviewEmpty")}
+            empty={t("journey.reviewEmpty").replace("{n}", REVIEW_ATTEMPTS)}
             items={data.review}
             action={t("journey.repeat")}
             t={t}

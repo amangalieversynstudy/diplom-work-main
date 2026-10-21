@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
 import Button from "../../components/Button";
@@ -37,19 +37,29 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
   const [form, setForm] = useState({
     title_ru: mission.title_ru || "",
     title_en: mission.title_en || "",
-    xp_reward: mission.xp_reward ?? 10,
+    xp_reward: mission.xp_reward ?? 50,
   });
   const [saving, setSaving] = useState(false);
   const [showTasks, setShowTasks] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState("");
+  const uid = useId();
 
-  // Опубликовать можно только миссию с шагами: причину отказа даёт сервер.
+  // Опубликовать можно только миссию с шагами: причину отказа даёт сервер (400 без шагов, 429 при частых запросах).
+  // Состояние берётся из ответа сервера и перечитывается списком; ошибка выводится прямо у миссии,
+  // а не в блоке настроек курса, который при прокрутке вниз не виден.
   const togglePublish = async () => {
+    if (publishing) return;
+    setPublishing(true);
+    setPublishError("");
     try {
       await StudioAPI.missions.update(mission.id, { is_active: !mission.is_active });
       await onReload();
     } catch (e) {
       logger.error("Mission publish failed:", e);
-      setError(apiError(e, t("studio.saveError")));
+      setPublishError(apiError(e, t("studio.saveError")));
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -57,7 +67,7 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
     setForm({
       title_ru: mission.title_ru || "",
       title_en: mission.title_en || "",
-      xp_reward: mission.xp_reward ?? 10,
+      xp_reward: mission.xp_reward ?? 50,
     });
   }, [mission.title_ru, mission.title_en, mission.xp_reward]);
 
@@ -102,6 +112,8 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
       <div className="rounded-xl border border-border bg-panel/60 p-3">
         <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-2 items-start">
           <input
+            id={`${uid}-ru`}
+            aria-label={t("studio.editor.missionNameRu")}
             className={inputCls}
             value={form.title_ru}
             placeholder={t("studio.editor.missionNameRu")}
@@ -110,6 +122,8 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
             autoFocus
           />
           <input
+            id={`${uid}-en`}
+            aria-label={t("studio.editor.missionNameEn")}
             className={inputCls}
             value={form.title_en}
             placeholder={t("studio.editor.missionNameEn")}
@@ -187,9 +201,15 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
       <button
         type="button"
         onClick={togglePublish}
-        className="shrink-0 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted hover:bg-panel hover:text-text"
+        disabled={publishing}
+        aria-busy={publishing}
+        className="shrink-0 rounded-lg border border-border px-2.5 py-1 text-xs font-semibold text-muted hover:bg-panel hover:text-text disabled:opacity-60"
       >
-        {mission.is_active ? t("studio.editor.unpublish") : t("studio.editor.publish")}
+        {publishing
+          ? t("studio.editor.publishing")
+          : mission.is_active
+            ? t("studio.editor.unpublish")
+            : t("studio.editor.publish")}
       </button>
       <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
         <button
@@ -208,6 +228,9 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
         </button>
       </div>
     </div>
+    {publishError ? (
+      <p role="alert" className="mt-1 px-1 text-sm text-error">{publishError}</p>
+    ) : null}
     {showTasks ? (
       <StudioTasks
         missionId={mission.id}
@@ -241,7 +264,7 @@ function SectionCard({
   const [missionForm, setMissionForm] = useState({
     title_ru: "",
     title_en: "",
-    xp_reward: 10,
+    xp_reward: 50,
   });
   const [missionBusy, setMissionBusy] = useState(false);
 
@@ -301,7 +324,7 @@ function SectionCard({
         xp_reward: Number(missionForm.xp_reward) || 0,
         order: missions.length,
       });
-      setMissionForm({ title_ru: "", title_en: "", xp_reward: 10 });
+      setMissionForm({ title_ru: "", title_en: "", xp_reward: 50 });
       setAddingMission(false);
       await onReloadMissions(section.id);
     } catch (e2) {
@@ -329,6 +352,7 @@ function SectionCard({
               className={inputCls}
               value={editForm.title_ru}
               placeholder={t("studio.editor.sectionNameRu")}
+              aria-label={t("studio.editor.sectionNameRu")}
               onChange={(e) =>
                 setEditForm({ ...editForm, title_ru: e.target.value })
               }
@@ -339,6 +363,7 @@ function SectionCard({
               className={inputCls}
               value={editForm.title_en}
               placeholder={t("studio.editor.sectionNameEn")}
+              aria-label={t("studio.editor.sectionNameEn")}
               onChange={(e) =>
                 setEditForm({ ...editForm, title_en: e.target.value })
               }
@@ -425,6 +450,7 @@ function SectionCard({
                   className={inputCls}
                   value={missionForm.title_ru}
                   placeholder={t("studio.editor.missionNameRu")}
+                  aria-label={t("studio.editor.missionNameRu")}
                   onChange={(e) =>
                     setMissionForm({ ...missionForm, title_ru: e.target.value })
                   }
@@ -435,6 +461,7 @@ function SectionCard({
                   className={inputCls}
                   value={missionForm.title_en}
                   placeholder={t("studio.editor.missionNameEn")}
+                  aria-label={t("studio.editor.missionNameEn")}
                   onChange={(e) =>
                     setMissionForm({ ...missionForm, title_en: e.target.value })
                   }
@@ -462,7 +489,7 @@ function SectionCard({
                   variant="ghost"
                   onClick={() => {
                     setAddingMission(false);
-                    setMissionForm({ title_ru: "", title_en: "", xp_reward: 10 });
+                    setMissionForm({ title_ru: "", title_en: "", xp_reward: 50 });
                   }}
                 >
                   {t("studio.editor.cancel")}
@@ -578,6 +605,7 @@ function ClassBlock({ track, t, onTrack }) {
 export default function StudioEditorPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const uid = useId();
   const [allowed, setAllowed] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -730,6 +758,13 @@ export default function StudioEditorPage() {
       },
     });
 
+  // Публикация в двух местах (курс и каждая миссия): предупреждаем, если они не совпадают.
+  const allMissions = sections.flatMap((s) => s.missions || []);
+  const publishedMissions = allMissions.filter((m) => m.is_active).length;
+  let warning = "";
+  if (track?.is_active && publishedMissions === 0) warning = t("studio.editor.warnPublishedEmpty");
+  else if (track && !track.is_active && publishedMissions > 0) warning = t("studio.editor.warnDraftCourse");
+
   if (loading) {
     return (
       <Layout>
@@ -804,10 +839,11 @@ export default function StudioEditorPage() {
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-muted">
+              <label htmlFor={`${uid}-title_ru`} className="mb-1.5 block text-xs font-semibold text-muted">
                 {t("studio.form.titleRu")}
               </label>
               <input
+                id={`${uid}-title_ru`}
                 className={inputCls}
                 value={settings.title_ru}
                 onChange={(e) =>
@@ -816,10 +852,11 @@ export default function StudioEditorPage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-muted">
+              <label htmlFor={`${uid}-title_en`} className="mb-1.5 block text-xs font-semibold text-muted">
                 {t("studio.form.titleEn")}
               </label>
               <input
+                id={`${uid}-title_en`}
                 className={inputCls}
                 value={settings.title_en}
                 onChange={(e) =>
@@ -829,10 +866,11 @@ export default function StudioEditorPage() {
             </div>
           </div>
           <div className="mt-4">
-            <label className="mb-1.5 block text-xs font-semibold text-muted">
+            <label htmlFor={`${uid}-desc`} className="mb-1.5 block text-xs font-semibold text-muted">
               {t("studio.form.descRu")}
             </label>
             <textarea
+              id={`${uid}-desc`}
               className={`${inputCls} min-h-[80px] resize-y`}
               value={settings.description_ru}
               onChange={(e) =>
@@ -851,6 +889,14 @@ export default function StudioEditorPage() {
             />
             {t("studio.editor.active")}
           </label>
+          {warning ? (
+            <p
+              role="status"
+              className="mt-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3.5 py-2.5 text-sm text-amber-800 dark:text-amber-300"
+            >
+              {warning}
+            </p>
+          ) : null}
           {error && <p className="mt-3 text-sm text-error">{error}</p>}
           <div className="mt-5 flex items-center justify-end gap-3">
             {savedFlash && (
@@ -862,7 +908,7 @@ export default function StudioEditorPage() {
               <Save size={16} />
               {savingSettings
                 ? t("studio.editor.saving")
-                : t("studio.editor.save")}
+                : t("studio.editor.saveCourse")}
             </Button>
           </div>
         </div>
@@ -895,6 +941,7 @@ export default function StudioEditorPage() {
                 className={inputCls}
                 value={sectionForm.title_ru}
                 placeholder={t("studio.editor.sectionNameRu")}
+                aria-label={t("studio.editor.sectionNameRu")}
                 onChange={(e) =>
                   setSectionForm({ ...sectionForm, title_ru: e.target.value })
                 }
@@ -905,6 +952,7 @@ export default function StudioEditorPage() {
                 className={inputCls}
                 value={sectionForm.title_en}
                 placeholder={t("studio.editor.sectionNameEn")}
+                aria-label={t("studio.editor.sectionNameEn")}
                 onChange={(e) =>
                   setSectionForm({ ...sectionForm, title_en: e.target.value })
                 }

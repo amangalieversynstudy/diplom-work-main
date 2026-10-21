@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
 import Button from "../../components/Button";
@@ -71,6 +71,7 @@ function CourseCard({ track, onOpen, t, language }) {
 export default function StudioIndexPage() {
   const router = useRouter();
   const { t, language } = useI18n();
+  const uid = useId();
   const [allowed, setAllowed] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tracks, setTracks] = useState([]);
@@ -215,10 +216,11 @@ export default function StudioIndexPage() {
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-muted mb-1.5">
+                <label htmlFor={`${uid}-title_ru`} className="block text-xs font-semibold text-muted mb-1.5">
                   {t("studio.form.titleRu")}
                 </label>
                 <input
+                  id={`${uid}-title_ru`}
                   className={inputCls}
                   value={form.title_ru}
                   placeholder={t("studio.form.titlePlaceholder")}
@@ -228,10 +230,11 @@ export default function StudioIndexPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-muted mb-1.5">
+                <label htmlFor={`${uid}-title_en`} className="block text-xs font-semibold text-muted mb-1.5">
                   {t("studio.form.titleEn")}
                 </label>
                 <input
+                  id={`${uid}-title_en`}
                   className={inputCls}
                   value={form.title_en}
                   onChange={(e) => setForm({ ...form, title_en: e.target.value })}
@@ -239,10 +242,11 @@ export default function StudioIndexPage() {
               </div>
             </div>
             <div className="mt-4">
-              <label className="block text-xs font-semibold text-muted mb-1.5">
+              <label htmlFor={`${uid}-desc`} className="block text-xs font-semibold text-muted mb-1.5">
                 {t("studio.form.descRu")}
               </label>
               <textarea
+                id={`${uid}-desc`}
                 className={`${inputCls} min-h-[80px] resize-y`}
                 value={form.description_ru}
                 onChange={(e) =>

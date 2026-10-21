@@ -139,6 +139,8 @@ export const en = {
       subtitle:
         "Key indicators for your courses: mission completion, attempts to success and drop-out by step.",
       windowLabel: "Count as gone after days of inactivity",
+      riskVsGone:
+        "At risk: {risk}+ days without activity on an unfinished mission (a reason to write to the learner). Gone: by the window chosen in analytics (by default {gone} days), for drop-out statistics.",
       windowHelp:
         "\u201cGone\u201d means no activity on the platform for {n} days. Learners whose window has not passed yet are left out of the drop-out, curve and completion shares: their outcome is not known yet.",
       inProgressNote: "Still in progress: {steps} steps, {missions} missions.",
@@ -291,6 +293,8 @@ export const en = {
       rules:
         "Rules: {n}+ failures in a row on a step, or {days}+ days without activity on an unfinished mission. When a model is configured it adds one more signal.",
       step: "step",
+      riskVsGone:
+        "At risk: {risk}+ days without activity on an unfinished mission (a reason to write to the learner). Gone: by the window chosen in analytics (by default {gone} days), for drop-out statistics.",
     },
     lastActive: {
       today: "today",
@@ -300,7 +304,7 @@ export const en = {
     },
     authorshipWatch: {
       title: "Whom to talk to about solutions",
-      subtitle: "These learners have code steps with signs of outside help: pasted code, constructs not taught yet, the same structure as others, wrong answers to the 'explain' question. It is a reason to ask about the solution, not a verdict; details are on the learner's page.",
+      subtitle: "This block lists learners whose code steps show signs of outside help: pasted code, constructs not taught yet, the same structure as others, wrong answers to the 'explain' question. It is a reason to ask about the solution, not a verdict; details are on the learner's page.",
       empty: "No signs of outside help yet.",
       row: "steps with signs: {flagged} of {solved}",
     },
@@ -436,6 +440,13 @@ export const en = {
       settings: "Course settings",
       active: "Published (visible to learners)",
       save: "Save",
+      saveCourse: "Save course",
+      saveStep: "Save step",
+      publishing: "Publishing…",
+      warnPublishedEmpty:
+        "The course is published but has no published missions — learners will see an empty course. Press \"Publish\" on a mission.",
+      warnDraftCourse:
+        "Some missions are published but the course itself is not — learners will not see it. Tick \"Published (visible to learners)\" and save the course.",
       saving: "Saving…",
       saved: "Saved",
       sections: "Sections",
@@ -473,8 +484,8 @@ export const en = {
       empty: "No steps yet. Add at least one: a mission without steps cannot be published.",
       type: "Type",
       types: { story: "Story", quiz: "Quiz", code: "Code" },
-      titleRu: "Title (RU)",
-      titleEn: "Title (EN)",
+      titleRu: "Step title (RU)",
+      titleEn: "Step title (EN)",
       bodyRu: "Text (RU)",
       bodyEn: "Text (EN)",
       bodyHint: "Simple HTML is allowed: paragraphs, lists, <code>.",
@@ -1037,7 +1048,7 @@ export const en = {
       stuckEmpty: "Nothing is stuck. A great sign.",
       tryAgain: "Try again",
       reviewTitle: "Worth repeating",
-      reviewEmpty: "Nothing to repeat yet: everything was solved without extra tries.",
+      reviewEmpty: "Nothing to repeat yet: no step took {n} or more tries.",
       repeat: "Repeat",
       activityTitle: "The last two weeks",
       activitySummary: "Code runs: {runs}, steps solved: {solved}.",

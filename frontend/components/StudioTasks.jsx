@@ -535,7 +535,7 @@ export default function StudioTasks({ missionId, t, setConfirm, onChanged }) {
             </Button>
             <Button type="button" onClick={save} disabled={busy}>
               <Check size={16} />
-              {busy ? t("studio.editor.saving") : t("studio.editor.save")}
+              {busy ? t("studio.editor.saving") : t("studio.editor.saveStep")}
             </Button>
           </div>
         </div>

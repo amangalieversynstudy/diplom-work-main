@@ -35,6 +35,7 @@ from .variants import MAX_VARIANTS, MIN_VARIANTS
 MAX_HINTS = 5
 MAX_HINT_LENGTH = 500
 MAX_MISSION_XP = 500
+DEFAULT_MISSION_XP = 50  # built-in missions give 60-90, so 10 made teacher courses look cheap
 MAX_TASK_XP = 100
 
 STUDIO_TASK_TYPES = ("story", "quiz", "code")
@@ -309,6 +310,7 @@ class StudioMissionSerializer(serializers.ModelSerializer):
     def create(self, validated):
         # A new mission is a draft until its tasks exist.
         validated.setdefault("is_active", False)
+        validated.setdefault("xp_reward", DEFAULT_MISSION_XP)
         validated["title"] = _mirror(
             validated.get("title_ru"), validated.get("title_en"), "Миссия"
         )

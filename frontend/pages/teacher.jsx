@@ -27,6 +27,9 @@ import {
 } from "lucide-react";
 import { canTeach, isPilotTeacher } from "../lib/roles";
 
+// Окно «ушёл» по умолчанию в аналитике: ABANDON_WINDOW_DAYS в backend/game/metrics.py.
+const ABANDON_WINDOW_DAYS = 14;
+
 // Карточка одной сводной метрики (учеников / застряли / активны за неделю).
 function StatCard({ icon: Icon, label, value, accent = "primary" }) {
   const ring = {
@@ -180,6 +183,14 @@ function EarlyWarningPanel({ warning, t }) {
           {fill(t("teacher.warning.rules"), {
             n: rules.stuck_failures,
             days: rules.inactive_long_days,
+          })}
+        </p>
+      ) : null}
+      {rules ? (
+        <p className="text-xs text-muted mt-1">
+          {fill(t("teacher.warning.riskVsGone"), {
+            risk: rules.inactive_long_days,
+            gone: ABANDON_WINDOW_DAYS,
           })}
         </p>
       ) : null}

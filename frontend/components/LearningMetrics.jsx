@@ -9,6 +9,8 @@ import { dailyTotals, heatCellState, kpiState, splitEmptyMissions } from "../lib
 const WINDOW_OPTIONS = [3, 7, 14, 30];
 // Окно по умолчанию совпадает с бэкендом (ABANDON_WINDOW_DAYS) и с окном гипотез пилота.
 const DEFAULT_WINDOW = 14;
+// «В зоне риска» в кабинете преподавателя: INACTIVE_LONG_DAYS в backend/game/warning.py.
+const RISK_DAYS = 7;
 const RED = "239, 68, 68";
 
 const fill = (template, values) =>
@@ -332,6 +334,9 @@ export default function LearningMetrics() {
       </div>
       <p className="text-xs text-muted">
         {data.meta.learners} {unit(t, language, "student", data.meta.learners)} {t("analytics.metrics.inSample")}
+      </p>
+      <p className="text-xs text-muted -mt-3">
+        {fill(t("analytics.metrics.riskVsGone"), { risk: RISK_DAYS, gone: DEFAULT_WINDOW })}
       </p>
       <p className="text-xs text-muted -mt-3">
         {fill(t("analytics.metrics.windowHelp"), { n: data.meta.inactive_days })}{" "}

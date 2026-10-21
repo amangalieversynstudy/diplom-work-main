@@ -114,3 +114,17 @@ def test_an_explain_question_whose_mission_is_missing_is_skipped():
 
     Mission.objects.filter(pk=2).delete()
     assert "explain step 23: its mission is not in this database" in _run()
+
+
+def test_a_stale_explain_question_is_brought_in_line_with_the_fixture():
+    _seed()
+    step = MissionTask.objects.get(pk=33)
+    fresh = step.data
+    stale = {**fresh, "variants": [{"vars": {"n": 5, "o1": "5", "o2": "4", "o3": "6", "o4": "7", "right": "5"}}]}
+    step.data = stale
+    step.save()
+    assert "explain step 33: would update" in _run("--dry-run")
+    assert MissionTask.objects.get(pk=33).data == stale
+    assert "explain step 33: updated" in _run()
+    assert MissionTask.objects.get(pk=33).data == fresh
+    assert "explain step 33: present" in _run()

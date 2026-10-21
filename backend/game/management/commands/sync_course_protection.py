@@ -15,7 +15,8 @@ copies just those steps from the fixtures:
 A step is copied whole (titles, text and data), because variants only work together with their
 placeholders in the text, the starter and the hidden check. Order, rewards and progress are not touched.
 Explain questions that are missing are created, with the ids the fixtures give them (only when their
-mission exists). Only steps of the built-in fixtures are considered.
+mission exists); one whose data differs from the fixture is brought in line, because its variants have to
+match the code step's variants (the question must use the learner's own numbers). Only steps of the built-in fixtures are considered.
 """
 
 import json
@@ -104,7 +105,7 @@ class Command(BaseCommand):
                 if not dry:
                     values = {k: v for k, v in fields.items() if k != "mission"}
                     MissionTask.objects.create(pk=pk, mission_id=mission_id, **values)
-            elif force and (task.data != fields["data"]):
+            elif task.data != fields["data"]:  # explain steps belong to the fixture: keep their variants in line with the code step
                 self.stdout.write(f"explain step {pk}: {'would update' if dry else 'updated'}")
                 changed += 1
                 if not dry:

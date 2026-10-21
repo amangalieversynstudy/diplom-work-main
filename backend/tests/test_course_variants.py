@@ -183,12 +183,62 @@ def test_every_explain_question_belongs_to_a_personalised_code_step():
 def test_the_explain_key_is_the_right_answer_and_the_options_are_fair(obj, index):
     data = obj["fields"]["data"]
     task = _task(obj)
-    count = len(data["variants"])
-    uid = next(u for u in range(1, 5000) if variant_index(u, task.pk, count) == index)
-    mine = personalize(task, uid)
+    code = {obj["pk"]: _task(obj) for obj in _steps()}
+    about = code[data["about"]]
+    uid = next(u for u in range(1, 5000) if variant_index(u, about.pk, len(variants_of(about.data))) == index)
+    mine = personalize(task, uid, tasks_by_pk=code)  # the variant that goes with the learner's code variant
     assert "{{" not in mine.body_ru and "{{" not in mine.body_en
     values = [option["value"] for option in mine.data["options"]]
     assert len(values) == 4 and len(set(values)) == 4
     assert mine.data["correct_answer"] in values
     assert mine.data["correct_answer"] == str(_answer(data["about"], data["variants"][index]["vars"]))
     assert all(option["value"] == option["label"] for option in mine.data["options"])
+
+
+def _shared_agree(explain_vars, code_vars):
+    shared = set(explain_vars) & set(code_vars)
+    return all(explain_vars[key] == code_vars[key] for key in shared)
+
+
+def test_every_code_variant_has_an_explain_variant_with_the_same_shared_values():
+    code = {obj["pk"]: obj for obj in _steps()}
+    for obj in _explain_steps():
+        data = obj["fields"]["data"]
+        code_variants = variants_of(code[data["about"]]["fields"]["data"])
+        explain_variants = variants_of(data)
+        assert len(explain_variants) == len(code_variants), obj["pk"]
+        for index, variant in enumerate(code_variants):
+            # same slot, so the learner's code variant and question line up one to one
+            assert _shared_agree(explain_variants[index]["vars"], variant["vars"]), (obj["pk"], index)
+            vars_ = explain_variants[index]["vars"]
+            options = [vars_[f"o{i}"] for i in range(1, 5)]
+            assert len(set(options)) == 4 and vars_["right"] in options, (obj["pk"], index)
+
+
+def test_the_explain_question_uses_the_same_numbers_as_the_learners_code_step():
+    code = {obj["pk"]: _task(obj) for obj in _steps()}
+    for obj in _explain_steps():
+        explain = _task(obj)
+        about = code[obj["fields"]["data"]["about"]]
+        for uid in range(1, 60):
+            solved = about.data["variants"][variant_index(uid, about.pk, len(about.data["variants"]))]["vars"]
+            slot = variant_index(uid, about.pk, len(about.data["variants"]))
+            expected = explain.data["variants"][slot]["vars"]
+            assert _shared_agree(expected, solved), (obj["pk"], uid)
+            asked = personalize(explain, uid, tasks_by_pk=code)
+            assert asked.data["correct_answer"] == str(expected["right"]), (obj["pk"], uid)
+            assert asked.data["correct_answer"] in [o["value"] for o in asked.data["options"]]
+
+
+@pytest.mark.django_db
+def test_personalize_finds_the_code_step_in_the_database():
+    from django.core.management import call_command
+
+    call_command("seed_course", stdout=io.StringIO())
+    explain = MissionTask.objects.get(pk=33)
+    for uid in (1, 2, 3, 7, 11, 40):
+        solved = MissionTask.objects.get(pk=32)
+        n = solved.data["variants"][variant_index(uid, 32, len(solved.data["variants"]))]["vars"]["n"]
+        assert "{{n}}" not in personalize(explain, uid).body_ru
+        assert f"range(1, {n} + 1)" in personalize(explain, uid).body_ru
+    assert "range(1, 8 + 1)" in personalize(explain, None).body_ru  # anonymous: the first variant

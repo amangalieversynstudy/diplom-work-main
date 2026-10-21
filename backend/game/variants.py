@@ -61,7 +61,41 @@ def _fill_pair(value, variables):
     return fill(value, variables)
 
 
-def personalize(task, user_id):
+def _linked_variant(task, variants, user_id, tasks_by_pk=None):
+    """Index of the variant of an "explain" step that goes with the learner's variant of its code step.
+
+    ``data.about`` is the pk of the code step the question asks about. The learner solved *their* variant
+    of that step, so the question must use the same numbers (the keys both variants have). Falls back to
+    the explain step's own choice when nothing links them. One query at most (none if *tasks_by_pk* has it).
+    """
+    own = variant_index(user_id, task.pk, len(variants))
+    about = task.data.get("about") if isinstance(task.data, dict) else None
+    if user_id is None or isinstance(about, bool) or not isinstance(about, int):
+        return own
+    target = (tasks_by_pk or {}).get(about)
+    if target is None:
+        from .models import MissionTask
+
+        target = MissionTask.objects.filter(pk=about).only("data").first()
+    target_variants = variants_of(target.data) if target is not None else []
+    if not target_variants:
+        return own
+    wanted = target_variants[variant_index(user_id, about, len(target_variants))]["vars"]
+
+    def agrees(candidate):
+        shared = set(candidate["vars"]) & set(wanted)
+        return bool(shared) and all(candidate["vars"][key] == wanted[key] for key in shared)
+
+    same_slot = variant_index(user_id, about, len(target_variants))
+    if len(variants) == len(target_variants) and agrees(variants[same_slot]):
+        return same_slot
+    for index, candidate in enumerate(variants):
+        if agrees(candidate):
+            return index
+    return same_slot if len(variants) == len(target_variants) else own
+
+
+def personalize(task, user_id, tasks_by_pk=None):
     """The task as *user_id* should see and be graded on it.
 
     A copy that is never saved; the original is returned untouched when the step has no variants.
@@ -70,7 +104,7 @@ def personalize(task, user_id):
     variants = variants_of(data)
     if not variants:
         return task
-    chosen = variants[variant_index(user_id, task.pk, len(variants))]
+    chosen = variants[_linked_variant(task, variants, user_id, tasks_by_pk)]
     variables = chosen["vars"]
 
     personal = copy.copy(task)

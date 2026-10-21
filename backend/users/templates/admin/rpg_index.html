@@ -1,0 +1,24 @@
+{% extends "admin/index.html" %}
+{% load rpg_admin %}
+
+{% block content %}
+{% rpg_stats as stats %}
+<div class="rpg-stats row">
+  {% for label, value in stats %}
+  <div class="col-6 col-md-3 col-xl mb-3">
+    <div class="card rpg-stat"><div class="card-body">
+      <div class="rpg-stat-value">{{ value }}</div>
+      <div class="rpg-stat-label">{{ label }}</div>
+    </div></div>
+  </div>
+  {% endfor %}
+</div>
+<div class="rpg-quick mb-3">
+  <a class="btn btn-primary" href="{% url 'admin:users_user_changelist' %}?is_teacher__exact=0">Выдать роль преподавателя</a>
+  <a class="btn btn-outline-primary" href="{% url 'admin:game_track_changelist' %}">Курсы</a>
+  <a class="btn btn-outline-primary" href="{% url 'admin:users_user_changelist' %}?is_teacher__exact=0&amp;is_staff__exact=0">Ученики</a>
+  {% rpg_frontend_url as site_url %}
+  <a class="btn btn-outline-primary" href="{{ site_url }}" target="_blank" rel="noopener">Открыть сайт</a>
+</div>
+{{ block.super }}
+{% endblock %}

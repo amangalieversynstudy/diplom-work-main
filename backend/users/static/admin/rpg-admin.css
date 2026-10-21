@@ -1,0 +1,114 @@
+/* RPG Academy admin skin: parchment (light) and forest night (dark).
+   Dark mode: Jazzmin links the "darkly" theme with media="(prefers-color-scheme: dark)",
+   so the same media query switches the variables below. */
+@import url("https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Melodrama&display=swap");
+
+:root {
+  --rpg-bg: #fdfbf7; --rpg-surface: #f5f1e8; --rpg-panel: #ffffff;
+  --rpg-text: #2a241b; --rpg-muted: #6b5f4f; --rpg-border: #e6dcc7;
+  --rpg-primary: #2a6f68; --rpg-primary-hover: #1e524d; --rpg-on-primary: #ffffff;
+  --rpg-accent: #9a5f2a; --rpg-gold: #d4a24c; --rpg-wood: #3a2818; --rpg-ink: #5c3a21;
+  --rpg-error: #dc2626; --rpg-warning: #f59e0b;
+  --rpg-font-head: 'Melodrama', Georgia, serif;
+  --rpg-font-body: 'General Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --rpg-bg: #06100D; --rpg-surface: #0b1a17; --rpg-panel: #0f2421;
+    --rpg-text: #E8F0EA; --rpg-muted: #9ab4ac; --rpg-border: rgba(232,240,234,0.12);
+    --rpg-primary: #4ade80; --rpg-primary-hover: #86efac; --rpg-on-primary: #06100D;
+    --rpg-accent: #f4a261; --rpg-gold: #d4a24c; --rpg-wood: #0b1a17; --rpg-ink: #E8F0EA;
+    --rpg-error: #f87171;
+  }
+}
+
+body, .content-wrapper, .login-page, .register-page {
+  background: var(--rpg-bg) !important; color: var(--rpg-text); font-family: var(--rpg-font-body);
+}
+h1, h2, h3, h4, h5, .brand-text, .login-logo, .content-header h1 { font-family: var(--rpg-font-head); color: var(--rpg-ink); }
+a { color: var(--rpg-accent); }
+a:hover { color: var(--rpg-primary-hover); }
+.text-muted, .help, .help-block, small { color: var(--rpg-muted) !important; }
+
+.card, .login-box .card, .module, .callout, .modal-content, .dropdown-menu, .select2-dropdown {
+  background: var(--rpg-panel); color: var(--rpg-text);
+  border: 1px solid var(--rpg-border); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.card-header { background: var(--rpg-surface); border-bottom: 1px solid var(--rpg-border); border-radius: 12px 12px 0 0; color: var(--rpg-text); }
+.card-header h5, .card-title { color: var(--rpg-ink); }
+
+/* navbar and sidebar */
+.main-header, .main-header.navbar { background: var(--rpg-surface) !important; border-bottom: 1px solid var(--rpg-border); }
+.main-header .nav-link, .main-header .navbar-nav .nav-link { color: var(--rpg-text) !important; }
+.main-header .nav-link:hover { color: var(--rpg-primary) !important; }
+.main-sidebar, .main-sidebar .sidebar { background: var(--rpg-wood) !important; }
+.brand-link, .brand-link .brand-text { background: var(--rpg-wood) !important; color: var(--rpg-gold) !important; font-family: var(--rpg-font-head); border-bottom: 1px solid rgba(212,162,76,.35) !important; }
+.main-sidebar .nav-sidebar .nav-link { color: #f1e6d0 !important; border-radius: 8px; }
+.main-sidebar .nav-sidebar .nav-link:hover { background: rgba(212,162,76,.18) !important; color: #fff !important; }
+.main-sidebar .nav-sidebar > .nav-item > .nav-link.active,
+.main-sidebar .nav-sidebar .nav-treeview > .nav-item > .nav-link.active { background: var(--rpg-gold) !important; color: #2a1a0c !important; box-shadow: none; }
+.main-sidebar .nav-header { color: var(--rpg-gold); }
+
+/* buttons */
+.btn-primary, .btn-success, input[type=submit].default, .btn-info {
+  background: var(--rpg-primary) !important; border-color: var(--rpg-primary) !important; color: var(--rpg-on-primary) !important; border-radius: 8px;
+}
+.btn-primary:hover, .btn-success:hover, .btn-info:hover { background: var(--rpg-primary-hover) !important; border-color: var(--rpg-primary-hover) !important; }
+.btn-outline-primary { color: var(--rpg-primary) !important; border-color: var(--rpg-primary) !important; background: transparent !important; border-radius: 8px; }
+.btn-outline-primary:hover { background: var(--rpg-primary) !important; color: var(--rpg-on-primary) !important; }
+.btn-danger, .btn-outline-danger:hover { background: var(--rpg-error) !important; border-color: var(--rpg-error) !important; color: #fff !important; }
+.btn-warning { background: var(--rpg-warning) !important; border-color: var(--rpg-warning) !important; color: #2a1a0c !important; }
+
+/* forms and tables */
+.form-control, .vTextField, select, textarea, .select2-selection { background: var(--rpg-panel) !important; color: var(--rpg-text) !important; border: 1px solid var(--rpg-border) !important; border-radius: 8px; }
+.form-control:focus { border-color: var(--rpg-primary) !important; box-shadow: 0 0 0 2px rgba(42,111,104,.25); }
+.table, table { color: var(--rpg-text); }
+.table thead th, #result_list thead th { background: var(--rpg-surface); color: var(--rpg-ink); border-color: var(--rpg-border); }
+.table td, .table th { border-color: var(--rpg-border); }
+.table-striped tbody tr:nth-of-type(odd) { background: var(--rpg-surface); }
+.table-hover tbody tr:hover { background: rgba(212,162,76,.14); }
+.alert-success { background: rgba(42,111,104,.12); color: var(--rpg-text); border-color: var(--rpg-primary); }
+.alert-danger, .alert-error { background: rgba(220,38,38,.1); color: var(--rpg-text); border-color: var(--rpg-error); }
+.alert-warning { background: rgba(245,158,11,.14); color: var(--rpg-text); border-color: var(--rpg-warning); }
+.page-link { color: var(--rpg-primary); background: var(--rpg-panel); border-color: var(--rpg-border); }
+.page-item.active .page-link { background: var(--rpg-primary); border-color: var(--rpg-primary); color: var(--rpg-on-primary); }
+.main-footer { background: var(--rpg-surface); border-top: 1px solid var(--rpg-border); color: var(--rpg-muted); }
+
+/* dashboard cards */
+.rpg-stat { text-align: center; border-top: 3px solid var(--rpg-gold); margin-bottom: 0; height: 100%; }
+.rpg-stat-value { font-family: var(--rpg-font-head); font-size: 2rem; line-height: 1.1; color: var(--rpg-primary); }
+.rpg-stat-label { font-size: .85rem; color: var(--rpg-muted); }
+.rpg-quick .btn { margin: 0 .4rem .4rem 0; }
+
+/* navbar: search input readable in both themes, links never wrap */
+.main-header .navbar-nav .nav-link, .main-header .nav-link { white-space: nowrap; }
+.main-header .form-control, .main-header .form-control-navbar, .main-header input[type=search], .main-header input[type=text] {
+  background: var(--rpg-panel) !important; color: var(--rpg-text) !important; border: 1px solid var(--rpg-border) !important;
+}
+.main-header .form-control::placeholder, .main-header input::placeholder { color: var(--rpg-muted) !important; opacity: 1; }
+.main-header .btn-navbar { background: var(--rpg-panel) !important; color: var(--rpg-text) !important; border: 1px solid var(--rpg-border) !important; }
+@media (prefers-color-scheme: dark) {
+  .main-header .form-control, .main-header .form-control-navbar, .main-header input[type=search], .main-header input[type=text] {
+    background: var(--rpg-panel) !important; color: var(--rpg-text) !important; -webkit-text-fill-color: var(--rpg-text);
+  }
+  .main-header .form-control::placeholder, .main-header input::placeholder { color: var(--rpg-muted) !important; }
+}
+
+/* login page: the square logo at a sensible size */
+.login-logo img { width: 96px; height: 96px; max-width: 96px; border-radius: 16px; }
+
+/* side buttons on change forms ("Сохранить и добавить другой") wrap instead of being cut */
+#jazzy-actions .btn, .submit-row .btn, .card .btn-block { white-space: normal; overflow-wrap: anywhere; height: auto; min-height: 2.25rem; line-height: 1.25; }
+
+/* labels on change forms break between words, not inside one ("Преподавател-ь") */
+.form-group label, .col-form-label, .field-box label { word-break: normal; overflow-wrap: normal; hyphens: manual; }
+
+/* inline-edited numbers in change lists (order, XP) are short: do not stretch them over the whole column */
+#result_list input[type="number"], #result_list input[type="text"] { width: 5.5rem; max-width: 100%; }
+
+/* list filters (select2): the placeholder and the chosen value readable in both themes */
+.select2-container--default .select2-selection--single .select2-selection__placeholder { color: var(--rpg-muted) !important; }
+.select2-container--default .select2-selection--single .select2-selection__rendered { color: var(--rpg-text) !important; }
+.select2-results__option { color: var(--rpg-text); background: var(--rpg-panel); }
+.select2-container--default .select2-results__option--highlighted[aria-selected] { background: var(--rpg-primary) !important; color: var(--rpg-on-primary) !important; }

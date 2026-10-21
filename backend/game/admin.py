@@ -1,10 +1,12 @@
 """Регистрация моделей в админке — CMS-интерфейс для методологов."""
 
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.db.models import Count, Q
 from django.utils.html import format_html
 
 from .models import (
     ClassRole,
+    Enrollment,
     LeaderboardEntry,
     Location,
     Mission,
@@ -40,13 +42,36 @@ class ClassRoleAdmin(admin.ModelAdmin):
 @admin.register(Track)
 class TrackAdmin(_LocalisedMixin, admin.ModelAdmin):
     list_display = (
-        "id", "slug", "ru_title", "en_title",
-        "order", "is_active", "is_intro_badge",
+        "id", "slug", "ru_title", "en_title", "owner",
+        "order", "is_active", "join_code", "learners_col", "missions_col", "published_col",
+        "is_intro_badge",
     )
-    list_filter = ("is_active", "is_intro")
-    search_fields = ("slug", "title", "title_ru", "title_en")
+    list_filter = ("is_active", "is_intro", "owner__is_teacher")
+    search_fields = ("slug", "title", "title_ru", "title_en", "owner__username", "join_code")
     list_editable = ("order", "is_active")
     list_per_page = 25
+    list_select_related = ("owner",)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            _learners=Count("enrollments", distinct=True),
+            _missions=Count("worlds__missions", distinct=True),
+            _published=Count(
+                "worlds__missions", filter=Q(worlds__missions__is_active=True), distinct=True
+            ),
+        )
+
+    @admin.display(description="Учеников", ordering="_learners")
+    def learners_col(self, obj):
+        return obj._learners
+
+    @admin.display(description="Миссий", ordering="_missions")
+    def missions_col(self, obj):
+        return obj._missions
+
+    @admin.display(description="Опубликовано", ordering="_published")
+    def published_col(self, obj):
+        return obj._published
 
     fieldsets = (
         ("Идентификация", {
@@ -132,12 +157,36 @@ class MissionAdmin(_LocalisedMixin, admin.ModelAdmin):
         "id", "ru_title", "en_title", "location",
         "xp_reward", "order", "is_active", "min_level",
     )
-    list_filter = ("is_active", "location__track", "min_level")
+    list_filter = ("location__track", "is_active", "min_level")
     list_select_related = ("location", "location__track")
     search_fields = ("title", "title_ru", "title_en")
     list_editable = ("order", "is_active", "xp_reward")
     inlines = [MissionTaskInline]
     filter_horizontal = ("prerequisites",)
+    actions = ["publish_missions", "unpublish_missions"]
+
+    @admin.action(description="Опубликовать")
+    def publish_missions(self, request, queryset):
+        ok = 0
+        for m in queryset.prefetch_related("tasks"):
+            if not m.tasks.exists():
+                self.message_user(
+                    request,
+                    f"Миссия «{m}» не опубликована: добавьте хотя бы одну задачу.",
+                    messages.ERROR,
+                )
+                continue
+            if not m.is_active:
+                m.is_active = True
+                m.save(update_fields=["is_active"])
+            ok += 1
+        if ok:
+            self.message_user(request, f"Опубликовано миссий: {ok}.", messages.SUCCESS)
+
+    @admin.action(description="Снять с публикации")
+    def unpublish_missions(self, request, queryset):
+        n = queryset.update(is_active=False)
+        self.message_user(request, f"Снято с публикации: {n}.", messages.SUCCESS)
 
     fieldsets = (
         ("Идентификация", {
@@ -308,3 +357,19 @@ class LearningEventAdmin(_ReadOnlyAdmin):
     list_display = ("created_at", "user", "event_type", "task", "mission")
     list_filter = ("event_type",)
     date_hierarchy = "created_at"
+
+
+@admin.register(Enrollment)
+class EnrollmentAdmin(_SuperuserOnlyMixin, admin.ModelAdmin):
+    """Who joined which class: learners' records, superusers only, view only."""
+
+    list_display = ("user", "track", "consented_at", "joined_at")
+    list_select_related = ("user", "track")
+    search_fields = ("user__username", "track__slug", "track__title_ru", "track__title")
+    readonly_fields = ("user", "track", "consented_at", "joined_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

@@ -33,6 +33,9 @@ RUNNER_ALLOW_UNSAFE_FALLBACK = os.getenv(
 # Frontend URL — used in email verification links
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
+# Django admin login without ?next lands on the admin (API auth is JWT, not session).
+LOGIN_REDIRECT_URL = "/admin/"
+
 # Teacher registration: a shared invite code. A user who supplies the correct
 # code at registration is granted is_staff (teacher) access. An EMPTY code
 # (the default) disables teacher self-registration entirely — no one can gain
@@ -289,11 +292,20 @@ JAZZMIN_SETTINGS = {
     "site_title": "RPG Academy",
     "site_header": "RPG Academy",
     "site_brand": "RPG Academy",
-    "welcome_sign": "Панель управления курсами",
+    "welcome_sign": "Добро пожаловать в панель RPG Academy",
+    "custom_css": "admin/rpg-admin.css",
     "copyright": "RPG Academy",
     "search_model": ["game.Track", "game.Mission", "users.User"],
+    "hide_apps": ["token_blacklist"],
+    "site_logo": "admin/rpg-logo.svg",
+    "login_logo": "admin/rpg-logo.svg",
+    # the whole user card on one page: the teacher checkbox is not hidden behind a tab
+    "changeform_format_overrides": {"users.user": "single"},
+    "site_icon": "admin/rpg-logo.svg",
     "topmenu_links": [
         {"name": "Курсы", "model": "game.track"},
+        {"name": "Ученики", "url": "/admin/users/user/?is_teacher__exact=0&is_staff__exact=0"},
+        {"name": "Преподаватели", "url": "/admin/users/user/?is_teacher__exact=1"},
         {"name": "На сайт", "url": FRONTEND_URL, "new_window": True},
     ],
     "icons": {
@@ -310,6 +322,9 @@ JAZZMIN_SETTINGS = {
         "game.Progress": "fas fa-chart-line",
         "game.TaskProgress": "fas fa-clipboard-check",
         "game.LeaderboardEntry": "fas fa-trophy",
+        "game.Enrollment": "fas fa-user-graduate",
+        "game.CodeRun": "fas fa-terminal",
+        "game.LearningEvent": "fas fa-stream",
     },
     "default_icon_parents": "fas fa-chevron-circle-right",
     "default_icon_children": "fas fa-circle",
@@ -326,14 +341,15 @@ JAZZMIN_SETTINGS = {
 }
 
 JAZZMIN_UI_TWEAKS = {
-    "theme": "darkly",
+    "theme": "flatly",
     "dark_mode_theme": "darkly",
-    "navbar": "navbar-dark",
+    "navbar": "navbar-light",
+    "no_navbar_border": True,
     "navbar_fixed": True,
     "sidebar": "sidebar-dark-primary",
     "sidebar_fixed": True,
     "sidebar_nav_compact_style": True,
-    "accent": "accent-purple",
-    "brand_colour": "navbar-indigo",
+    "accent": "accent-teal",
+    "brand_colour": "navbar-light",
     "actions_sticky_top": True,
 }

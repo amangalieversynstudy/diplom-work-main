@@ -691,7 +691,13 @@ export default function MissionDetail() {
                   mission.title}
               </h1>
               <p className="text-xs text-accent dark:text-gold font-mono mt-0.5 uppercase tracking-wider">
-                {t("missionPage.rewardLabel")}: <span className="text-text dark:text-straw font-bold">{totalXp}</span> {t("missionPage.xpGained")}
+                {preview ? (
+                  t("missionPage.previewLabel")
+                ) : (
+                  <>
+                    {t("missionPage.rewardLabel")}: <span className="text-text dark:text-straw font-bold">{totalXp}</span> {t("missionPage.xpGained")}
+                  </>
+                )}
               </p>
             </div>
           </div>

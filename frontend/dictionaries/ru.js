@@ -953,6 +953,7 @@ export const ru = {
       questLog: "Свитки миссии",
       acceptChallenge: "⚔️ Принять вызов",
       rewardLabel: "Награда",
+      previewLabel: "Режим просмотра",
       xpGained: "XP",
       pickAnswer: "Выбери верный ответ:",
       loading: "Загрузка хроник миссии...",

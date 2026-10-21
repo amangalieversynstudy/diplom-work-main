@@ -953,6 +953,7 @@ export const en = {
       questLog: "Mission Scrolls",
       acceptChallenge: "⚔️ Accept the Challenge",
       rewardLabel: "Reward",
+      previewLabel: "Preview mode",
       xpGained: "XP",
       pickAnswer: "Pick the correct answer:",
       loading: "Loading Mission Chronicles...",

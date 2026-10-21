@@ -21,9 +21,9 @@ whitenoise
 channels[daphne]>=4.0,<5.0
 
 # Testing
-pytest
+pytest>=9.0.3
 pytest-django
-pytest-asyncio>=0.21,<1.0
+pytest-asyncio>=1.2,<2.0
 
 docker==7.1.0
 requests>=2.33,<3

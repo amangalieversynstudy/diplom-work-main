@@ -62,6 +62,7 @@ export default function MissionComplete({ data, onClose, onMap }) {
   if (!data) return null;
 
   const stars = Math.max(0, Math.min(MAX_STARS, Number(data.stars) || 0));
+  const starsText = t("missionPage.complete.starsEarned").replace("{n}", stars).replace("{max}", MAX_STARS);
 
   return (
     <div
@@ -123,7 +124,14 @@ export default function MissionComplete({ data, onClose, onMap }) {
             </LootRow>
           ) : null}
         </ul>
-        <p className="mt-3 text-sm leading-relaxed text-muted">{t("missionPage.complete.starsHint")}</p>
+        <p className="mt-3 text-sm font-semibold text-text">
+          <span aria-hidden="true" className="mr-2 text-warning">
+            {"★".repeat(stars)}
+            {"☆".repeat(MAX_STARS - stars)}
+          </span>
+          <span aria-label={starsText}>{starsText}</span>
+        </p>
+        <p className="mt-1 text-sm leading-relaxed text-muted">{t("missionPage.complete.starsHint")}</p>
         {data.suggestClass ? (
           <p className="mt-4 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-semibold text-text">
             {t("missionPage.complete.introDone")}

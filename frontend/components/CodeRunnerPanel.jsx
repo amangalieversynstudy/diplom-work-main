@@ -88,6 +88,11 @@ function CodeRunnerPanel(
   const [running, setRunning] = useState(false);
   const [lastExit, setLastExit] = useState(null);
   const [usingItem, setUsingItem] = useState(false);
+  // подсказки, открытые на этом шаге: остаются на экране между запусками
+  const [openedHints, setOpenedHints] = useState([]);
+  useEffect(() => {
+    setOpenedHints([]);
+  }, [task?.id]);
   const [termH, setTermH] = useState(DEFAULT_TERMINAL_H);
   const [mentorOpen, setMentorOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
@@ -350,6 +355,7 @@ function CodeRunnerPanel(
 
   const showHint = (hint, header) => {
     const level = hint.levels > 1 ? ` ${hint.level}/${hint.levels}` : "";
+    setOpenedHints((prev) => [...prev, { header: `${header}${level}`, text: hint.text }]);
 
     // Подсказку выводим прямо в терминал редактора — он всегда
     // привязан к панели и виден на любой ширине экрана (на 32:9
@@ -558,6 +564,21 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
         <span className="opacity-50">&gt;</span>
         <span className="hover:text-white cursor-pointer">{t("codeRunner.crumbFile")}</span>
       </div>
+
+      {openedHints.length > 0 && (
+        <div
+          role="region"
+          aria-label={t("codeRunner.hintsPanel")}
+          className="max-h-32 shrink-0 space-y-2 overflow-y-auto border-l border-[#333] bg-[#2a2415] px-4 py-2 text-xs text-[#e5c07b]"
+        >
+          {openedHints.map((h, i) => (
+            <p key={i} className="leading-snug">
+              <span className="font-bold">💡 {h.header}: </span>
+              {h.text}
+            </p>
+          ))}
+        </div>
+      )}
 
       {/* Editor */}
       <div className="flex-1 relative bg-[#1e1e1e] flex border-l border-[#333] min-h-[140px]">

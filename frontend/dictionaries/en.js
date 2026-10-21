@@ -946,6 +946,8 @@ export const en = {
       loading: "Loading Mission Chronicles...",
       retry: "Retry",
       noSteps: "Sage: \"The scrolls of this mission are still being written. Check back a little later.\"",
+      quizWrongInline: "Not quite — try again",
+      toCode: "To code and run",
       quizWrong: "🛡️ Sage: \"Not that one, and that is fine. Think it over once more.\"",
       helpOffer: {
         title: "{n} failures in a row — that is normal",
@@ -970,6 +972,7 @@ export const en = {
         xp: "+{xp} XP",
         noXp: "You already earned the reward for this mission",
         starsLabel: "Stars: {n} of {max}",
+        starsEarned: "Stars: {n} of {max}",
         starsHint: "Stars: 3 for solving every step on the first try, 2 for up to 3 extra tries across the steps, 1 for more. You can replay any mission.",
         loot: "Loot",
         levelUp: "New level: {level}",
@@ -987,6 +990,8 @@ export const en = {
       locked: {
         title: "Mission locked",
         body: "The path to «{title}» is still sealed. Complete the earlier missions to gain access.",
+        draft: "This mission is not published yet",
+        level: "This mission needs level {level}",
         prereqs: "Required missions:",
         back: "← Return to the world map",
       },
@@ -1240,6 +1245,7 @@ export const en = {
       },
       itemUsed: "{item} used! Remaining: {count}",
       itemFail: "Could not use the item, or you've run out.",
+      hintsPanel: "Opened hints",
       clarityHeader: "━━━ 💡 Potion of Clarity ━━━",
       items: {
         architect: "Architect's Scroll",

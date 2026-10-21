@@ -92,6 +92,8 @@ export default function MissionDetail() {
   const [completion, setCompletion] = useState(null);
   // Телефон: у кодового шага две вкладки, условие и редактор. На широком экране видно всё сразу.
   const [mobileTab, setMobileTab] = useState("task");
+  // неверный ответ в квизе: остаётся отмеченным, пока ученик не выберет другой вариант
+  const [wrongAnswers, setWrongAnswers] = useState({});
   const stripRef = useRef(null);
   const panelRef = useRef(null);
   const tabsRef = useRef(null);
@@ -472,6 +474,7 @@ export default function MissionDetail() {
       } else {
         setVitals((v) => ({ ...v, hp: heroHpAfter(v.hp, "failure") }));
         if (!defeatedRef.current) setStage((st) => ({ phase: "defeat", tick: st.tick + 1 }));
+        setWrongAnswers((prev) => ({ ...prev, [taskId]: userAnswer }));
         toast.error(t("missionPage.quizWrong"));
       }
     } catch (e) {
@@ -513,6 +516,13 @@ export default function MissionDetail() {
   // Миссия заблокирована — prerequisites не выполнены
   if (mission.available === false) {
     const prereqs = mission.prerequisites || [];
+    const reason = mission.locked_reason;
+    const lockedBody =
+      reason === "draft"
+        ? t("missionPage.locked.draft")
+        : reason === "level"
+          ? t("missionPage.locked.level").replace("{level}", mission.min_level ?? "")
+          : null;
     return (
       <Layout fullBleed hideFooter>
         <div className="h-screen pt-24 bg-bg dark:bg-[#0f0f11] flex items-center justify-center px-4">
@@ -525,17 +535,18 @@ export default function MissionDetail() {
                 {t("missionPage.locked.title")}
               </h1>
               <p className="text-muted dark:text-gray-400 text-sm leading-relaxed">
-                {t("missionPage.locked.body").replace(
-                  "{title}",
-                  (language === "en"
-                    ? mission.title_en || mission.title_ru
-                    : mission.title_ru || mission.title_en) ||
-                    mission.title ||
-                    ""
-                )}
+                {lockedBody ||
+                  t("missionPage.locked.body").replace(
+                    "{title}",
+                    (language === "en"
+                      ? mission.title_en || mission.title_ru
+                      : mission.title_ru || mission.title_en) ||
+                      mission.title ||
+                      ""
+                  )}
               </p>
             </div>
-            {prereqs.length > 0 && (
+            {!lockedBody && prereqs.length > 0 && (
               <div className="bg-panel dark:bg-[#141418] border border-border dark:border-[#222] rounded-xl p-4 text-left space-y-2">
                 <p className="text-xs font-mono uppercase tracking-widest text-muted dark:text-gray-500 mb-3">
                   {t("missionPage.locked.prereqs")}
@@ -903,6 +914,14 @@ export default function MissionDetail() {
               <div className={isCodeTask ? "space-y-4" : "mx-auto w-full max-w-3xl space-y-4 xl:text-base"}>
               <div className="story-body" dangerouslySetInnerHTML={{ __html: taskBodyHtml }} />
 
+              {isCodeTask && (
+                <div className="xl:hidden sticky bottom-0 -mx-4 bg-gradient-to-t from-parchment via-parchment/95 to-transparent px-4 pb-2 pt-4">
+                  <Button onClick={() => openMobileTab("code")} className="w-full justify-center shadow-lg" size="sm">
+                    {t("missionPage.toCode")}
+                  </Button>
+                </div>
+              )}
+
               {tasks.length === 0 && (
                 <p role="status" className="rounded-lg border-2 border-ink/40 bg-parchment-cream/70 px-4 py-3 font-semibold">
                   {t("missionPage.noSteps")}
@@ -918,13 +937,20 @@ export default function MissionDetail() {
                   </legend>
                   <div className="space-y-2">
                     {activeTask.data?.options?.map((opt, i) => (
-                      <label key={i} className="flex items-start gap-3 p-3 bg-parchment/70 hover:bg-parchment border-2 border-ink/30 hover:border-ink/60 rounded-lg cursor-pointer transition-colors group">
+                      <label key={i} className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-colors group ${
+                        wrongAnswers[activeTask.id] === (opt.value ?? opt)
+                          ? "bg-error/10 border-error"
+                          : "bg-parchment/70 hover:bg-parchment border-ink/30 hover:border-ink/60"
+                      }`}>
                         <input
                           type="radio"
                           name={`quiz-${activeTask.id}`}
                           value={opt.value ?? opt}
                           checked={quizAnswers[activeTask.id] === (opt.value ?? opt)}
-                          onChange={(e) => setQuizAnswers((prev) => ({ ...prev, [activeTask.id]: e.target.value }))}
+                          onChange={(e) => {
+                            setQuizAnswers((prev) => ({ ...prev, [activeTask.id]: e.target.value }));
+                            setWrongAnswers((prev) => (prev[activeTask.id] === undefined ? prev : { ...prev, [activeTask.id]: undefined }));
+                          }}
                           className="mt-1 accent-wax"
                         />
                         <span className="text-ink-deep group-hover:text-wood-ink font-medium transition-colors">{opt.label ?? opt}</span>
@@ -932,6 +958,11 @@ export default function MissionDetail() {
                     ))}
                   </div>
                   </fieldset>
+                  {wrongAnswers[activeTask.id] !== undefined && wrongAnswers[activeTask.id] === quizAnswers[activeTask.id] && (
+                    <p role="alert" className="text-sm font-semibold text-error">
+                      {t("missionPage.quizWrongInline")}
+                    </p>
+                  )}
                   <Button
                     onClick={() => handleQuizSubmit(activeTask.id)}
                     disabled={!quizAnswers[activeTask.id] || savingTaskId === activeTask.id}

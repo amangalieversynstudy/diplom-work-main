@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from users.models import Profile
 
-from .services import help_offer, public_task_data
+from .services import help_offer, public_task_data, sees_drafts
 from .variants import personalize
 from .models import (
     LeaderboardEntry,
@@ -88,6 +88,7 @@ class MissionSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
     track_id = serializers.SerializerMethodField()
     track_title = serializers.SerializerMethodField()
     available = serializers.SerializerMethodField()
+    locked_reason = serializers.SerializerMethodField()
     user_progress = serializers.SerializerMethodField()
     prerequisites = serializers.SerializerMethodField()
     language = serializers.SerializerMethodField()
@@ -114,21 +115,22 @@ class MissionSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
             "track_id",
             "track_title",
             "available",
+            "locked_reason",
             "user_progress",
             "prerequisites",
             "tasks",
             "language",
         ]
 
-    def get_available(self, obj):
-        # доступность миссии: активна + level >= min_level + все prerequisites пройдены
+    def get_locked_reason(self, obj):
+        # why a mission is locked: None | "draft" | "level" | "prerequisites" (checked in this order)
         request = self.context.get("request")
         if not obj.is_active:
-            return False
+            return "draft"
         if request and request.user and request.user.is_authenticated:
             profile: Profile = getattr(request.user, "profile", None)
             if profile and profile.level < obj.min_level:
-                return False
+                return "level"
             # prerequisites must be completed
             if obj.prerequisites.exists():
                 completed_missions = set(
@@ -138,8 +140,12 @@ class MissionSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
                 )
                 for pre in obj.prerequisites.all():
                     if pre.id not in completed_missions:
-                        return False
-        return True
+                        return "prerequisites"
+        return None
+
+    def get_available(self, obj):
+        # доступность миссии: активна + level >= min_level + все prerequisites пройдены
+        return self.get_locked_reason(obj) is None
 
     def get_user_progress(self, obj):
         request = self.context.get("request")
@@ -187,7 +193,7 @@ class MissionSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
 
 
 class LocationSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
-    missions = MissionSerializer(many=True, read_only=True)
+    missions = serializers.SerializerMethodField()
     track = serializers.SerializerMethodField()
     language = serializers.SerializerMethodField()
 
@@ -206,6 +212,13 @@ class LocationSerializer(LocalizedSerializerMixin, serializers.ModelSerializer):
             "missions",
             "language",
         ]
+
+    def get_missions(self, obj):
+        # drafts are shown to the course owner and vetted staff only (filtered in Python to keep the prefetch)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        missions = [m for m in obj.missions.all() if m.is_active or sees_drafts(user, obj.track)]
+        return MissionSerializer(missions, many=True, context=self.context).data
 
     def get_track(self, obj):
         track = obj.track

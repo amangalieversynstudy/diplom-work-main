@@ -18,6 +18,7 @@ from rest_framework.exceptions import APIException
 
 from . import help as help_module
 from .achievements import evaluate_achievements
+from .classes import is_vetted_teacher
 from .models import Enrollment, MissionTask, Progress, TaskProgress
 from .variants import personalize
 from .runner import execute_python_code
@@ -65,6 +66,30 @@ def only_published(queryset, user, track_lookup):
         member_of = Q(**{f"{track_lookup}__in" if track_lookup else "pk__in": joined})
         visible |= active & (Q(**{f"{prefix}owner": user}) | member_of)
     return queryset.filter(visible)
+
+
+def sees_drafts(user, track):
+    """May *user* see unpublished (``is_active`` off) missions of *track*? Only the course owner and vetted staff
+    (superusers included); a learner never gets a draft."""
+    if user is None or not getattr(user, "is_authenticated", False):
+        return False
+    if is_vetted_teacher(user):
+        return True
+    return track is not None and track.owner_id is not None and track.owner_id == user.pk
+
+
+def only_live_missions(queryset, user, mission_lookup=""):
+    """Hide draft missions (and the steps inside them) from everyone but the course owner and vetted staff.
+
+    ``mission_lookup`` is the path from the model to its Mission: ``""`` for missions, ``"mission"`` for tasks.
+    """
+    if user is not None and is_vetted_teacher(user):
+        return queryset
+    prefix = f"{mission_lookup}__" if mission_lookup else ""
+    live = Q(**{f"{prefix}is_active": True})
+    if user is not None and getattr(user, "is_authenticated", False):
+        live |= Q(**{f"{prefix}location__track__owner": user})
+    return queryset.filter(live)
 
 
 def public_task_data(task):
@@ -229,10 +254,14 @@ def prepare_code_task(user, task_id):
     if isinstance(task_id, bool) or not isinstance(task_id, int):
         raise RuleViolation("task_id must be an integer", http.HTTP_400_BAD_REQUEST)
     task = (
-        only_published(
-            MissionTask.objects.select_related("mission", "mission__location__track__owner"),
+        only_live_missions(
+            only_published(
+                MissionTask.objects.select_related("mission", "mission__location__track__owner"),
+                user,
+                "mission__location__track",
+            ),
             user,
-            "mission__location__track",
+            "mission",
         )
         .filter(pk=task_id, task_type="code")
         .first()

@@ -24,6 +24,7 @@ from .services import (
     check_task_order,
     grade_quiz,
     mission_stars,
+    only_live_missions,
     only_published,
     progress_payload,
     record_task_attempt,
@@ -140,9 +141,11 @@ class MissionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
-        return only_published(
+        qs = only_published(
             super().get_queryset(), self.request.user, "location__track"
         )
+        # a draft is shown to the course owner and vetted staff only
+        return only_live_missions(qs, self.request.user)
 
     def get_permissions(self):
         if self.action in ("start", "complete"):
@@ -335,6 +338,7 @@ class MissionTaskViewSet(viewsets.ReadOnlyModelViewSet):
         qs = only_published(
             super().get_queryset(), self.request.user, "mission__location__track"
         )
+        qs = only_live_missions(qs, self.request.user, "mission")
         mission_id = self.request.query_params.get("mission")
         if mission_id:
             qs = qs.filter(mission_id=mission_id) if mission_id.isdigit() else qs.none()

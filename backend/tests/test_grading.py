@@ -246,7 +246,7 @@ def test_submit_respects_level_and_prerequisites(client, student, course):
     inactive_story = MissionTask.objects.create(
         mission=inactive, task_type="story", order=1
     )
-    assert submit(client, inactive_story).status_code == 400
+    assert submit(client, inactive_story).status_code == 404  # a draft does not exist for a learner
 
 
 # ── progress cannot be written by the client ────────────────────────────────

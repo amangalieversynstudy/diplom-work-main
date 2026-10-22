@@ -87,22 +87,22 @@ def test_typed_code_raises_nothing(student, step):
 
 def test_a_pasted_solution_run_without_edits_is_flagged(student, step):
     signals = signals_for(solve(student, step, pasted()))
-    assert [s["code"] for s in signals] == ["paste_then_run"]
+    assert [s["code"] for s in signals] == ["paste_then_run", "fast_solve"]
     assert signals[0]["share"] == 100
 
 
 def test_a_pasted_solution_that_was_reworked_is_a_weaker_signal(student, step):
     signals = signals_for(solve(student, step, pasted(edits=30)))
-    assert [s["code"] for s in signals] == ["large_paste"]
+    assert [s["code"] for s in signals] == ["large_paste", "fast_solve"]
 
 
 def test_a_small_paste_is_normal(student, step):
-    assert signals_for(solve(student, step, pasted(chars=20))) == []
+    assert [s["code"] for s in signals_for(solve(student, step, pasted(chars=20)))] == []
 
 
 def test_superhuman_typing_speed_is_flagged(student, step):
     signals = signals_for(solve(student, step, typed(chars=200, seconds=5)))
-    assert [s["code"] for s in signals] == ["fast_typing"]
+    assert [s["code"] for s in signals] == ["fast_typing", "fast_solve"]
 
 
 def test_a_run_without_editor_data_says_so(student, step):

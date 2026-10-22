@@ -49,13 +49,28 @@ def demo_users():
 
 
 def _typed(length, rng):
+    elapsed = rng.randint(90, 420) * 1000
+    away_count = rng.randint(0, 2)
+    away = away_count * rng.randint(5, 20) * 1000
+    pauses = rng.randint(0, 2)
     return {"typed_chars": length, "pasted_chars": 0, "paste_count": 0, "edit_events": length,
-            "edits_after_paste": 0, "elapsed_ms": rng.randint(90, 420) * 1000}
+            "edits_after_paste": 0, "elapsed_ms": elapsed,
+            "active_ms": max(1000, int((elapsed - away) * rng.uniform(0.8, 0.95))),
+            "away_ms": away, "away_count": away_count, "longest_away_ms": away // max(1, away_count),
+            "pause_count": pauses, "longest_pause_ms": pauses * rng.randint(15, 30) * 1000,
+            "first_key_ms": rng.randint(3, 25) * 1000, "paste_after_away": 0}
 
 
 def _pasted(length, rng):
+    elapsed = rng.randint(4, 14) * 1000
+    away_count = rng.randint(1, 2)
+    away = min(elapsed, away_count * rng.randint(2, 6) * 1000)
     return {"typed_chars": rng.randint(0, 12), "pasted_chars": length, "paste_count": 1, "edit_events": 2,
-            "edits_after_paste": rng.randint(0, 1), "elapsed_ms": rng.randint(4, 14) * 1000}
+            "edits_after_paste": rng.randint(0, 1), "elapsed_ms": elapsed,
+            "active_ms": max(1000, elapsed - away),
+            "away_ms": away, "away_count": away_count, "longest_away_ms": away // away_count,
+            "pause_count": 0, "longest_pause_ms": 0,
+            "first_key_ms": rng.randint(1, 4) * 1000, "paste_after_away": 1}
 
 
 class Command(BaseCommand):

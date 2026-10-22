@@ -52,6 +52,7 @@ MIN_CURVE_PAIRS = 20
 MIN_CURVE_LEARNERS = 10
 
 TOP_ERRORS = 8
+MEDIAN_SOLVE_MIN_RUNS = 3  # fewer solving runs give no median of the time on a step
 # Class activity by day for the dashboard chart.
 DAILY_DAYS = 14
 
@@ -386,9 +387,32 @@ def compute_metrics(
         .order_by("-runs", "error_type")[:TOP_ERRORS]
     )
 
+    # time on step (R6): seconds of the solving run (first passed run per learner), active time when sent
+    solve_seconds = defaultdict(dict)
+    for run in (
+        CodeRun.objects.filter(task_id__in=task_ids, user__in=students, passed=True, after_solved=False)
+        .filter(work)
+        .order_by("created_at")
+        .only("task_id", "user_id", "provenance")
+    ):
+        if run.user_id in solve_seconds[run.task_id]:
+            continue
+        data = run.provenance or {}
+        ms = data.get("active_ms") or data.get("elapsed_ms") or 0
+        solve_seconds[run.task_id][run.user_id] = ms / 1000 if ms else None
+
+    def _median_solve(task_id):
+        values = sorted(v for v in solve_seconds[task_id].values() if v is not None)
+        if len(values) < MEDIAN_SOLVE_MIN_RUNS:
+            return None, len(values)
+        mid = len(values) // 2
+        median = values[mid] if len(values) % 2 else (values[mid - 1] + values[mid]) / 2
+        return int(round(median)), len(values)
+
     task_table = []
     for task in tasks:
         stats = by_task[task.pk]
+        median_s, median_n = _median_solve(task.pk)
         top_error = errors_by_task[task.pk].most_common(1)
         task_table.append(
             {
@@ -409,6 +433,8 @@ def compute_metrics(
                 "dropout_rate": _pct(stats["dropped"], stats["solved"] + stats["dropped"]),
                 "help_rate": _pct(stats["helped"], stats["opened"]),
                 "top_error": top_error[0][0] if top_error else "",
+                "median_solve_s": median_s,
+                "median_solve_n": median_n,
             }
         )
 

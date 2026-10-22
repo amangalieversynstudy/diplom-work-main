@@ -64,6 +64,14 @@ export const en = {
       note: "How the code steps were solved. Help from the platform (hints, skeleton, the Sage) is recorded exactly. The editor signals are only a hint: they come from the learner's browser, can be incomplete and do not prove copying. Talk to the learner about them; do not grade on them.",
       empty: "No solved code steps yet.",
       attempts: "attempts: {n}",
+      timing: {
+        label: "Time",
+        min: "min",
+        sec: "s",
+        active: "of which active {t}",
+        pauses: "pauses: {n}",
+        away: "left the tab: {n} time(s) for {t}",
+      },
       pasteShare: "{n}% of the code pasted",
       explain: {
         title: "Question about their own solution",
@@ -93,6 +101,8 @@ export const en = {
         same_as_others: "Same structure as the solution of {count} other learner(s): {with}. Renaming variables does not change it.",
         explain_missed: "Answered the 'explain your solution' question wrong {wrong} time(s), and there are signals above.",
         no_editor_data: "No editor data for the solving run.",
+        fast_solve: "A solution of {chars} characters in {seconds} s: faster than it can be typed.",
+        away_then_paste: "Left the tab and right after pasted code ({count} time(s)).",
       },
     },
     status: {
@@ -238,6 +248,10 @@ export const en = {
         colMas: "Attempts",
         colDropout: "Drop-out",
         colHelp: "Help",
+        colTime: "Time (median)",
+        minUnit: "min",
+        secUnit: "s",
+        timeTitle: "over {n} solves",
         colError: "Top error",
       },
     },
@@ -697,7 +711,7 @@ export const en = {
         teacherCancel: "I'm a student",
         researchConsent: "I allow my learning activity to be used in research (optional)",
         researchConsentHint:
-          "Code runs, error types, hints used, time spent on steps and the number of typed and pasted characters (numbers only) go into an anonymised dataset. Your name, e-mail and the code itself are never shared. You can withdraw consent in your profile at any time.",
+          "Code runs, error types, hints used, time spent on steps and the number of typed and pasted characters, how long a step took and how many times you left the tab (numbers only) go into an anonymised dataset. Your name, e-mail and the code itself are never shared. You can withdraw consent in your profile at any time.",
       },
       register: {
         title: "Join the Guild",
@@ -828,7 +842,7 @@ export const en = {
       saveBtn: "Save",
       researchConsentLabel: "Use my learning activity in research",
       researchConsentHint:
-        "Code runs, error types, hints used, time spent on steps and the number of typed and pasted characters (numbers only) go into an anonymised dataset. Your name, e-mail and the code itself are never shared. You can withdraw at any time.",
+        "Code runs, error types, hints used, time spent on steps and the number of typed and pasted characters, how long a step took and how many times you left the tab (numbers only) go into an anonymised dataset. Your name, e-mail and the code itself are never shared. You can withdraw at any time.",
       cancelBtn: "Cancel",
       loginField: "Login",
       emailField: "Email",
@@ -1062,7 +1076,7 @@ export const en = {
       activityLegend: "A bar is the code runs of that day. A check above it means at least one step was solved that day.",
       missionsTitle: "Missions",
       privacyNote:
-        "Your teacher sees what you see here, plus how the steps were solved: alone, with a hint or with the Sage, and how much code was typed and how much pasted (numbers only, not the text). It is there to help in time, not to grade you.",
+        "Your teacher sees what you see here, plus how the steps were solved: alone, with a hint or with the Sage, and how much code was typed and how much pasted, how long steps took and how many times you left the tab (numbers only, not the text). It is there to help in time, not to grade you.",
     },
     leaderboard: {
       eyebrow: "Hall of legends",

@@ -120,6 +120,25 @@ function CodeRunnerPanel(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task?.id]);
 
+  // Время на шаге и уходы со вкладки: тоже только числа. «Ушёл» = вкладка скрыта ИЛИ окно без фокуса.
+  useEffect(() => {
+    const tracker = trackerRef.current;
+    const sync = () => {
+      const away = document.visibilityState === "hidden" || !document.hasFocus();
+      if (away) tracker.away();
+      else tracker.back();
+    };
+    sync();
+    document.addEventListener("visibilitychange", sync);
+    window.addEventListener("blur", sync);
+    window.addEventListener("focus", sync);
+    return () => {
+      document.removeEventListener("visibilitychange", sync);
+      window.removeEventListener("blur", sync);
+      window.removeEventListener("focus", sync);
+    };
+  }, []);
+
   const handleResetCode = useCallback(() => {
     trackerRef.current.reset(); // код начат заново, и счёт тоже
     onChange(initialCodeRef.current || "");
@@ -463,6 +482,10 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
 
   return (
     <div
+      onKeyDownCapture={() => trackerRef.current.activity()}
+      onPointerDownCapture={() => trackerRef.current.activity()}
+      onWheelCapture={() => trackerRef.current.activity()}
+      onFocusCapture={() => trackerRef.current.activity()}
       className={`flex flex-col font-mono bg-[#1e1e1e] ${
         fullscreen ? "fixed inset-0 z-[60]" : "h-full"
       }`}

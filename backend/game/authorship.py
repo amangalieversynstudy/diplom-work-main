@@ -29,8 +29,23 @@ PROVENANCE_FIELDS = (
     "edit_events",
     "edits_after_paste",
     "elapsed_ms",
+    # time on the step and pauses (all counts / milliseconds, never what the learner did)
+    "active_ms",
+    "away_ms",
+    "away_count",
+    "longest_away_ms",
+    "pause_count",
+    "longest_pause_ms",
+    "first_key_ms",
+    "paste_after_away",
 )
 _MAX_VALUE = 10_000_000
+
+# Expert thresholds, not calibrated on data; the signals are only hints for a conversation.
+FAST_SOLVE_MIN_CHARS = 80  # the learner added this many characters (typed + pasted; the starter code does not count) ...
+FAST_SOLVE_MAX_MS = 20_000  # ... in under 20 s can hardly be typed and reasoned about
+AWAY_PASTE_MIN_COUNT = 1  # pastes right after returning to the tab
+AWAY_PASTE_MIN_CHARS = 40
 
 # thresholds of the signals (see ``signals_for``)
 LARGE_PASTE_MIN_CHARS = 60
@@ -106,7 +121,33 @@ def signals_for(run, *, not_yet=(), twins=()):
     seconds = max(1, data.get("elapsed_ms", 0) // 1000)
     if typed >= FAST_TYPING_MIN_CHARS and typed / seconds > FAST_TYPING_CHARS_PER_SECOND:
         signals.append({"code": "fast_typing", "chars": typed, "seconds": seconds})
+    elapsed = data.get("elapsed_ms", 0)
+    added = typed + pasted  # only what the learner put in: a starter code they merely edited must not count
+    if added >= FAST_SOLVE_MIN_CHARS and 0 < elapsed < FAST_SOLVE_MAX_MS:
+        signals.append({"code": "fast_solve", "seconds": elapsed // 1000, "chars": added})
+    after_away = data.get("paste_after_away", 0)
+    if after_away >= AWAY_PASTE_MIN_COUNT and pasted >= AWAY_PASTE_MIN_CHARS:
+        signals.append({"code": "away_then_paste", "count": after_away})
     return signals
+
+
+def timing_of(provenance):
+    """Seconds view of the time fields for the teacher; None without editor data, None per missing key."""
+    if not provenance:
+        return None
+
+    def sec(key):
+        return round(provenance[key] / 1000) if key in provenance else None
+
+    return {
+        "elapsed_s": sec("elapsed_ms"),
+        "active_s": sec("active_ms"),
+        "away_s": sec("away_ms"),
+        "away_count": provenance.get("away_count"),
+        "pause_count": provenance.get("pause_count"),
+        "longest_pause_s": sec("longest_pause_ms"),
+        "first_key_s": sec("first_key_ms"),
+    }
 
 
 def _explain_result(progress):
@@ -228,6 +269,7 @@ def authorship_report(student, viewer, *, lang="ru", context=None):
                 },
                 "paste_share": None if share is None else round(share * 100),
                 "explain": explain,
+                "timing": timing_of(run.provenance),
                 "signals": signals,
             }
         )

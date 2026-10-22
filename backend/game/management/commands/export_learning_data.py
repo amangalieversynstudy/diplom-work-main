@@ -78,6 +78,8 @@ class Command(BaseCommand):
                 "attempt_no", "after_solved", "created_at",
                 # how the code got into the editor (counts only), see game/authorship.py
                 "pasted_chars", "typed_chars", "paste_count", "edits_after_paste", "elapsed_ms",
+                "active_ms", "away_ms", "away_count", "longest_away_ms", "pause_count",
+                "longest_pause_ms", "first_key_ms", "paste_after_away",
             ],
             (
                 [
@@ -86,6 +88,8 @@ class Command(BaseCommand):
                     r.stderr_size, r.passed, r.attempt_no, r.after_solved, r.created_at,
                     *(r.provenance.get(k, "") for k in (
                         "pasted_chars", "typed_chars", "paste_count", "edits_after_paste", "elapsed_ms",
+                        "active_ms", "away_ms", "away_count", "longest_away_ms", "pause_count",
+                        "longest_pause_ms", "first_key_ms", "paste_after_away",
                     )),
                 ]
                 for r in CodeRun.objects.filter(user_id__in=ids)

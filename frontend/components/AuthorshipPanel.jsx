@@ -1,5 +1,11 @@
-import { ClipboardPaste, Copy, Eye, GraduationCap, ShieldCheck } from "lucide-react";
+import { ClipboardPaste, Clock, Copy, Eye, GraduationCap, ShieldCheck } from "lucide-react";
 import { useI18n } from "../lib/i18n";
+
+const dur = (sec, t) => {
+  const s = Math.max(0, Math.round(Number(sec) || 0));
+  const m = Math.floor(s / 60);
+  return m > 0 ? `${m} ${t(`${T}.timing.min`)} ${s % 60} ${t(`${T}.timing.sec`)}` : `${s} ${t(`${T}.timing.sec`)}`;
+};
 
 const fmt = (template, values = {}) =>
   Object.entries(values).reduce((text, [key, value]) => text.replace(`{${key}}`, value), template);
@@ -17,9 +23,26 @@ const SIGNAL_ICON = {
   untaught_construct: GraduationCap,
   same_as_others: Copy,
   explain_missed: GraduationCap,
+  fast_solve: Clock,
+  away_then_paste: Clock,
 };
 
 const T = "teacherStudent.authorship";
+
+// 130 -> «2 мин 10 с»
+function Timing({ timing, t }) {
+  if (!timing) return null;
+  const parts = [];
+  if (timing.active_s) parts.push(fmt(t(`${T}.timing.active`), { t: dur(timing.active_s, t) }));
+  const head = timing.elapsed_s ? `${t(`${T}.timing.label`)}: ${dur(timing.elapsed_s, t)}` : "";
+  const line = [
+    head && (parts.length ? `${head}, ${parts.join(", ")}` : head),
+    timing.pause_count ? fmt(t(`${T}.timing.pauses`), { n: timing.pause_count }) : "",
+    timing.away_count ? fmt(t(`${T}.timing.away`), { n: timing.away_count, t: dur(timing.away_s || 0, t) }) : "",
+  ].filter(Boolean);
+  if (line.length === 0) return null;
+  return <p className="mt-2 text-xs text-muted">{line.join(" · ")}</p>;
+}
 
 function Tile({ label, value }) {
   return (
@@ -92,6 +115,7 @@ export default function AuthorshipPanel({ data }) {
                         {fmt(t(`${T}.helpUses`), step.help_uses)}
                       </p>
                     )}
+                    <Timing timing={step.timing} t={t} />
                     {step.explain && (
                       <p className="mt-2 text-xs text-muted">
                         {t(`${T}.explain.title`)}: {fmt(t(`${T}.explain.${step.explain.status}`), step.explain)}

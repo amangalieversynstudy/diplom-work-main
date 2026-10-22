@@ -208,6 +208,12 @@ export default function LearningMetrics() {
   }, [days]);
 
   const none = t("analytics.metrics.noValue");
+  const solveTime = (sec) => {
+    const s = Math.max(0, Math.round(sec));
+    const m = Math.floor(s / 60);
+    const secU = t("analytics.metrics.tasks.secUnit");
+    return m > 0 ? `${m} ${t("analytics.metrics.tasks.minUnit")} ${s % 60} ${secU}` : `${s} ${secU}`;
+  };
   const pct = (value) => (value == null ? none : `${value}%`);
   const num = (value) => (value == null ? none : value);
   // процент по малой выборке не показываем: «мало данных (n=…)» вместо числа
@@ -583,6 +589,7 @@ export default function LearningMetrics() {
                 <th className="py-1 pr-3 font-bold text-right">{t("analytics.metrics.tasks.colSolved")}</th>
                 <th className="py-1 pr-3 font-bold text-right">{t("analytics.metrics.tasks.colMas")}</th>
                 <th className="py-1 pr-3 font-bold text-right">{t("analytics.metrics.tasks.colDropout")}</th>
+                <th className="py-1 pr-3 font-bold text-right">{t("analytics.metrics.tasks.colTime")}</th>
                 <th className="py-1 pr-3 font-bold text-right">{t("analytics.metrics.tasks.colHelp")}</th>
                 <th className="py-1 font-bold">{t("analytics.metrics.tasks.colError")}</th>
               </tr>
@@ -600,6 +607,12 @@ export default function LearningMetrics() {
                   <td className="py-1.5 pr-3 text-right text-text">{pct(row.solve_rate)}</td>
                   <td className="py-1.5 pr-3 text-right text-text">{num(row.mas)}</td>
                   <td className="py-1.5 pr-3 text-right text-text">{pct(row.dropout_rate)}</td>
+                  <td
+                    className="py-1.5 pr-3 text-right text-text"
+                    title={row.median_solve_n ? t("analytics.metrics.tasks.timeTitle").replace("{n}", row.median_solve_n) : undefined}
+                  >
+                    {row.median_solve_s == null ? none : solveTime(row.median_solve_s)}
+                  </td>
                   <td className="py-1.5 pr-3 text-right text-muted">{pct(row.help_rate)}</td>
                   <td className="py-1.5 text-muted">{row.top_error || none}</td>
                 </tr>

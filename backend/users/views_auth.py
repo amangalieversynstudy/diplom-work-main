@@ -7,7 +7,7 @@ import logging
 
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
+from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle, SimpleRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
 # Token views are imported where needed; keep imports local in views that use them
@@ -189,6 +189,20 @@ class LoginView(TokenObtainPairView):
         return response
 
 
+class TeacherCodeRateThrottle(SimpleRateThrottle):
+    """Count invite-code guesses by client IP across registration and profile activation (10/hour)."""
+
+    scope = "teacher_code"
+
+    def get_cache_key(self, request, view):
+        if request.method != "POST" or not isinstance(request.data, dict):
+            return None
+        code = str(request.data.get("teacher_code") or request.data.get("code") or "").strip()
+        if not code:
+            return None
+        return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
+
+
 # sized for a school class behind one address (one NAT): 30 sign-ups a minute
 @method_decorator(ratelimit(key="ip", rate="30/m", method="POST", block=True), name="post")
 class RegisterView(generics.CreateAPIView):
@@ -197,6 +211,7 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (permissions.AllowAny,)
     serializer_class = RegisterSerializer
+    throttle_classes = (AnonRateThrottle, UserRateThrottle, TeacherCodeRateThrottle)
 
     def perform_create(self, serializer):
         """Create the user and attempt to send a verification email."""
@@ -243,12 +258,24 @@ class ActivateTeacherView(APIView):
     teacher role, exactly as signing up with the code would (``invite_code_matches``). A few tries an hour."""
 
     permission_classes = (permissions.IsAuthenticated,)
-    throttle_classes = (UserRateThrottle, ScopedRateThrottle)
+    throttle_classes = (UserRateThrottle, ScopedRateThrottle, TeacherCodeRateThrottle)
     throttle_scope = "teacher_code"
 
     def post(self, request):
         user = request.user
         if not user.can_teach:
+            from game.models import Enrollment, Track
+
+            if Track.objects.filter(owner=user).exists():
+                return Response(
+                    {"code": "Роль преподавателя была снята администратором."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            if Enrollment.objects.filter(user=user).exists():
+                return Response(
+                    {"code": "Сначала выйдите из классов: преподаватели не состоят в классах как ученики."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             code = str(request.data.get("code", "") or "")[:64]
             if not code.strip():
                 return Response({"code": "Введите код преподавателя."}, status=status.HTTP_400_BAD_REQUEST)

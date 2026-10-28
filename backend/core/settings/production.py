@@ -13,6 +13,7 @@ from .base import *  # noqa: F401,F403
 REST_FRAMEWORK["NUM_PROXIES"] = int(os.getenv("NUM_PROXIES", "1"))  # noqa: F405
 
 DEBUG = False
+STORAGES["staticfiles"]["BACKEND"] = "whitenoise.storage.CompressedManifestStaticFilesStorage"  # noqa: F405
 
 # ─── ALLOWED_HOSTS: no wildcard default ────────────────────────────────────
 # The same list is used by Channels' AllowedHostsOriginValidator (core/asgi.py),
@@ -77,7 +78,8 @@ CORS_ALLOW_CREDENTIALS = True
 # learners, no admin, no global rewards from their classes. The pilot default works out of the box, but it is
 # public (it is in the repository): set TEACHER_INVITE_CODE to your own value on the host and rotate it by
 # changing the variable. Vetted teachers (public courses) are still made by hand in the admin.
-if TEACHER_INVITE_CODE == TEACHER_INVITE_CODE_DEFAULT:  # noqa: F405
+_norm_code = lambda s: "".join(c for c in (s or "").upper() if c.isalnum())  # noqa: E731
+if TEACHER_INVITE_CODE and _norm_code(TEACHER_INVITE_CODE) == _norm_code(TEACHER_INVITE_CODE_DEFAULT):  # noqa: F405
     logging.getLogger(__name__).warning(
         "[PRODUCTION] TEACHER_INVITE_CODE is the public pilot default: set your own value on the host."
     )

@@ -77,7 +77,9 @@ def check_settings():
     invite = getattr(settings, "TEACHER_INVITE_CODE", "")
     if not invite:
         yield WARN, "TEACHER_INVITE_CODE выключен: преподавателя придётся создать через админку."
-    elif invite == getattr(settings, "TEACHER_INVITE_CODE_DEFAULT", None):
+    elif "".join(c for c in str(invite).upper() if c.isalnum()) == "".join(
+        c for c in str(getattr(settings, "TEACHER_INVITE_CODE_DEFAULT", "") or "").upper() if c.isalnum()
+    ):
         yield WARN, "TEACHER_INVITE_CODE = публичный код пилота из репозитория: задайте свой на хостинге."
     else:
         yield OK, "TEACHER_INVITE_CODE задан: преподаватель регистрируется сам с этим кодом."

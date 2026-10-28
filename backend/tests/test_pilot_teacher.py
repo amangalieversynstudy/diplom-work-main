@@ -100,6 +100,52 @@ def test_the_code_cannot_be_guessed_by_brute_force(learner):
     assert client.post(ACTIVATE, {"code": CODE}, format="json").status_code == 429
 
 
+@override_settings(TEACHER_INVITE_CODE=CODE)
+def test_register_endpoint_throttles_invite_code_guesses_without_blocking_students():
+    rate = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["teacher_code"]
+    limit = int(rate.split("/")[0])
+    client = _client()
+    for i in range(limit):
+        resp = client.post(
+            "/api/auth/register/",
+            {"username": f"probe{i}", "password": "S3cure-pass-1", "teacher_code": "GUESS"},
+            format="json",
+        )
+        assert resp.status_code == 400
+    assert (
+        client.post(
+            "/api/auth/register/",
+            {"username": "probe_late", "password": "S3cure-pass-1", "teacher_code": CODE},
+            format="json",
+        ).status_code
+        == 429
+    )
+    # A normal student sign-up without a code is unaffected by the teacher_code throttle.
+    assert (
+        client.post(
+            "/api/auth/register/",
+            {"username": "normal_student", "password": "S3cure-pass-1"},
+            format="json",
+        ).status_code
+        == 201
+    )
+
+
+@override_settings(TEACHER_INVITE_CODE=CODE)
+def test_demoted_teacher_or_enrolled_learner_cannot_self_activate(learner, teacher):
+    from django.utils import timezone
+    from game.models import Enrollment
+
+    track = Track.objects.create(slug="cls", title="Cls", owner=teacher, is_active=True, is_public=False)
+    Enrollment.objects.create(user=learner, track=track, consented_at=timezone.now())
+    assert _client(learner).post(ACTIVATE, {"code": CODE}, format="json").status_code == 400
+
+    # Admin removes the teacher role while the user still owns a course.
+    teacher.is_teacher = False
+    teacher.save(update_fields=["is_teacher"])
+    assert _client(teacher).post(ACTIVATE, {"code": CODE}, format="json").status_code == 403
+
+
 # ── «Развернуть демо-пример» ────────────────────────────────────────────────
 
 

@@ -48,7 +48,7 @@ export default function TeacherAccessCard({ t }) {
         <label htmlFor={`${id}-code`} className="mt-4 block text-sm font-medium text-muted">
           {t("pilot.activate.label")}
         </label>
-        <div className="mt-1 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-1 flex flex-col gap-3 lg:flex-row">
           <input
             id={`${id}-code`}
             value={code}

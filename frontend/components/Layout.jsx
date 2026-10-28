@@ -289,7 +289,12 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
     if (toStudent === studentView) return;
     setStudentView(toStudent);
     toast.success(t(toStudent ? "pilot.viewMode.toastStudent" : "pilot.viewMode.toastTeacher"));
-    router.push(toStudent ? "/worlds" : "/teacher");
+    const target = toStudent ? "/worlds" : "/teacher";
+    if (router.pathname === target || router.asPath === target) {
+      router.reload();
+    } else {
+      router.push(target);
+    }
   };
 
   useEffect(() => {
@@ -434,17 +439,17 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
       <StreakReminder />
 
       {/* «Глазами студента»: всегда видно, в каком режиме преподаватель, и путь назад в один клик */}
-      {isAuthenticated && isTeacherAccount && studentView && (
+      {isAuthenticated && isTeacherAccount && studentView && !isMenuOpen && (
         <div
           role="status"
-          className="fixed bottom-4 left-4 right-4 z-[105] flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-primary/30 bg-surface/95 px-4 py-3 shadow-lg backdrop-blur-md sm:right-auto sm:max-w-xl"
+          className="fixed bottom-4 left-4 right-4 z-[80] flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-primary/30 bg-surface/95 px-4 py-3 shadow-lg backdrop-blur-md sm:right-auto sm:max-w-xl"
         >
           <Eye size={18} className="shrink-0 text-primary" aria-hidden="true" />
-          <p className="min-w-0 flex-1 text-xs leading-snug text-text">{t("pilot.viewMode.banner")}</p>
+          <p className="min-w-0 flex-[1_1_12rem] text-xs leading-snug text-text">{t("pilot.viewMode.banner")}</p>
           <button
             type="button"
             onClick={() => switchView(false)}
-            className="min-h-[36px] rounded-full bg-primary px-3 text-xs font-bold text-on-primary transition-colors hover:bg-primary-dk"
+            className="min-h-[36px] w-full rounded-full bg-primary px-3 text-xs font-bold text-on-primary transition-colors hover:bg-primary-dk sm:w-auto"
           >
             {t("pilot.viewMode.back")}
           </button>
@@ -453,6 +458,9 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
 
       <main id="main-content" tabIndex={-1} className={fullBleed ? "relative w-full flex-1" : `w-full flex-1 max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 relative ${noBottomPadding ? "pt-10 pb-0" : "py-10"}`}>
         {children}
+        {isAuthenticated && isTeacherAccount && studentView && (
+          <div aria-hidden="true" className="h-28 shrink-0" />
+        )}
       </main>
 
       {/* ── Sidebar Menu Drawer ── */}

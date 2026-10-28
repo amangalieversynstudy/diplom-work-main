@@ -1,8 +1,13 @@
+# Railway, Hobby plan: this backend service plus the Postgres database. No Redis is needed (one process, see
+# CACHES in backend/core/settings/base.py). Leave the dashboard's "Custom Start Command" EMPTY: it would override
+# the image's CMD, which runs `manage.py release` (migrate, superuser, built-in courses) and then ONE Daphne process.
 [build]
-builder = "dockerfile"
-dockerfile = "Dockerfile.backend"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.backend"
 
 [deploy]
-startCommand = '''sh -c "export DJANGO_SETTINGS_MODULE=core.settings.production && python3 manage.py migrate --noinput && python3 manage.py ensure_superuser && python3 manage.py collectstatic --noinput && python3 manage.py seed_course && python3 manage.py sync_course_protection && exec daphne -b 0.0.0.0 -p ${PORT:-8000} --access-log - core.asgi:application"'''
+healthcheckPath = "/healthz"
+# the first start migrates an empty database before the server listens
+healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3
+restartPolicyMaxRetries = 5

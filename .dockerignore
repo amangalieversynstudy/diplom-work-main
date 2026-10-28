@@ -1,0 +1,18 @@
+# Build context of Dockerfile.backend (the repository root). Only backend/ is copied into the image; the rest
+# would only slow the upload, and secrets must never reach an image.
+.git
+.venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.claude
+CLAUDE-SECURITY-*
+frontend
+docs
+ml/data
+ml/out
+backend/staticfiles
+**/*.sqlite3
+.env
+.env.*
+!.env.example

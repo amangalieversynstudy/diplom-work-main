@@ -1,15 +1,28 @@
+# Backend image (Railway or any Docker host): ONE Daphne process serves HTTP and the code runner's WebSocket.
+# Small on purpose: no compiler (psycopg2-binary ships its own libpq), no test packages, static files baked in,
+# not run as root.
 FROM python:3.11-slim
 
-RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DJANGO_SETTINGS_MODULE=core.settings.production
 
 WORKDIR /app
 
 COPY backend/requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 COPY backend/ /app/
 
+# collectstatic needs importable production settings: placeholders here, the real values come at run time
+RUN DJANGO_SECRET_KEY=collectstatic-only ALLOWED_HOSTS=localhost python manage.py collectstatic --noinput \
+    && useradd --create-home --uid 10001 app \
+    && chown -R app /app
+USER app
+
 EXPOSE 8000
 
-# collectstatic запускается в start command (после того как env vars доступны)
-CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "60"]
+# release = migrate + superuser + built-in courses in one process (game/management/commands/release.py)
+CMD ["sh", "-c", "python manage.py release && exec daphne -b 0.0.0.0 -p ${PORT:-8000} --access-log - core.asgi:application"]

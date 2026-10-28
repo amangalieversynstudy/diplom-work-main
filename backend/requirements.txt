@@ -3,11 +3,10 @@ dj-database-url>=2.0
 djangorestframework
 djangorestframework-simplejwt
 psycopg2-binary
-gunicorn
+# optional: the cache uses Redis only when REDIS_URL is set (core/settings/base.py)
 redis
 python-dotenv
 django-cors-headers
-django-environ
 django-filter
 drf-yasg
 
@@ -17,13 +16,10 @@ django-jazzmin==3.0.1
 # WhiteNoise for static files
 whitenoise
 
-# Real-time / WebSockets
+# Real-time / WebSockets (the server: one Daphne process for HTTP and WebSocket)
 channels[daphne]>=4.0,<5.0
 
-# Testing
-pytest>=9.0.3
-pytest-django
-pytest-asyncio>=1.2,<2.0
+# Test packages are in requirements-dev.txt: the production image does not carry them.
 
 docker==7.1.0
 requests>=2.33,<3

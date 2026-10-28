@@ -2,6 +2,7 @@
 
 import logging
 import os
+from urllib.parse import urlsplit
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -27,6 +28,9 @@ if not ALLOWED_HOSTS or "*" in ALLOWED_HOSTS:
         "Set the ALLOWED_HOSTS variable, e.g. ALLOWED_HOSTS=api.example.com,"
         "myapp.up.railway.app (Railway also provides RAILWAY_PUBLIC_DOMAIN)."
     )
+# Railway's health check calls /healthz with this Host header (a DisallowedHost would fail every deploy)
+if os.getenv("RAILWAY_ENVIRONMENT_NAME") or os.getenv("RAILWAY_PROJECT_ID"):
+    ALLOWED_HOSTS.append("healthcheck.railway.app")
 
 # ─── CRIT: SECRET_KEY must be set explicitly in production ─────────────────
 # base.py falls back to the insecure literal "dev-secret"; refuse to boot prod
@@ -47,6 +51,12 @@ CORS_ALLOWED_ORIGINS = [
 _frontend_origin = os.getenv("FRONTEND_URL", "").strip().rstrip("/")
 if not CORS_ALLOWED_ORIGINS and _frontend_origin:
     CORS_ALLOWED_ORIGINS = [_frontend_origin]
+# The code runner's WebSocket is checked by its Origin against ALLOWED_HOSTS (core/asgi.py): the frontend's own
+# host has to be there, or every run from the site is refused. Taken from the origins above, no second variable.
+for _origin in CORS_ALLOWED_ORIGINS:
+    _origin_host = urlsplit(_origin).hostname
+    if _origin_host and _origin_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_origin_host)
 
 # Vercel rotates the preview subdomain hash on every deploy, so pinning a single
 # origin is brittle. Match this project's Vercel URLs by regex instead — scoped
@@ -62,16 +72,18 @@ CORS_ALLOWED_ORIGIN_REGEXES += [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-# ─── Teacher self-registration (invite code) ──────────────────────────────
-# There is deliberately NO built-in code: base.py reads TEACHER_INVITE_CODE
-# from the environment and an empty value disables teacher self-registration.
-# To let teachers sign up, set TEACHER_INVITE_CODE to a long random secret on
-# the host (and rotate it by changing the variable); or grant is_staff to
-# teachers by hand in the Django admin.
+# ─── Teacher sign-up (invite code) ────────────────────────────────────────
+# The invite code (base.py) gives only the self-service teacher role: own closed courses, only their own classes'
+# learners, no admin, no global rewards from their classes. The pilot default works out of the box, but it is
+# public (it is in the repository): set TEACHER_INVITE_CODE to your own value on the host and rotate it by
+# changing the variable. Vetted teachers (public courses) are still made by hand in the admin.
+if TEACHER_INVITE_CODE == TEACHER_INVITE_CODE_DEFAULT:  # noqa: F405
+    logging.getLogger(__name__).warning(
+        "[PRODUCTION] TEACHER_INVITE_CODE is the public pilot default: set your own value on the host."
+    )
 
-# Open teacher sign-up is OFF in production until it is switched on on purpose: set TEACHER_SELF_REGISTRATION=1
-# only after the open points of the security review are closed (cross-course aggregates, XP farming through an own
-# course, SUS/freshness spoofing). With it off a teacher needs the invite code.
+# Open teacher sign-up (no code at all) is OFF in production until it is switched on on purpose: set
+# TEACHER_SELF_REGISTRATION=1 only together with real e-mail and TEACHER_REQUIRE_EMAIL=1.
 TEACHER_SELF_REGISTRATION = os.getenv("TEACHER_SELF_REGISTRATION", "0").strip().lower() in ("1", "true", "yes", "on")
 
 # ─── code runner on Docker-less hosts (Railway) ───────────────────────────

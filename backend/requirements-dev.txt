@@ -1,0 +1,6 @@
+# Everything to run the test suite: the runtime packages plus the test tools (CI installs this file).
+-r requirements.txt
+
+pytest>=9.0.3
+pytest-django
+pytest-asyncio>=1.2,<2.0

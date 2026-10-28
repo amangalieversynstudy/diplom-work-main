@@ -52,7 +52,7 @@ def only_published(queryset, user, track_lookup):
     ``track_lookup`` is the path from the model to its Track, e.g.
     ``"location__track"`` for missions. Content without a track stays visible.
     """
-    if user is not None and getattr(user, "is_superuser", False):
+    if user is not None and getattr(user, "is_superuser", False) and not _as_learner(user):
         return queryset
     # an empty lookup means the queryset is of tracks themselves
     prefix = f"{track_lookup}__" if track_lookup else ""
@@ -68,10 +68,15 @@ def only_published(queryset, user, track_lookup):
     return queryset.filter(visible)
 
 
+def _as_learner(user):
+    """A teacher in the «Глазами студента» mode (core/authentication.py) sees no drafts, like a learner."""
+    return bool(getattr(user, "view_as_student", False))
+
+
 def sees_drafts(user, track):
     """May *user* see unpublished (``is_active`` off) missions of *track*? Only the course owner and vetted staff
     (superusers included); a learner never gets a draft."""
-    if user is None or not getattr(user, "is_authenticated", False):
+    if user is None or not getattr(user, "is_authenticated", False) or _as_learner(user):
         return False
     if is_vetted_teacher(user):
         return True
@@ -83,11 +88,11 @@ def only_live_missions(queryset, user, mission_lookup=""):
 
     ``mission_lookup`` is the path from the model to its Mission: ``""`` for missions, ``"mission"`` for tasks.
     """
-    if user is not None and is_vetted_teacher(user):
+    if user is not None and is_vetted_teacher(user) and not _as_learner(user):
         return queryset
     prefix = f"{mission_lookup}__" if mission_lookup else ""
     live = Q(**{f"{prefix}is_active": True})
-    if user is not None and getattr(user, "is_authenticated", False):
+    if user is not None and getattr(user, "is_authenticated", False) and not _as_learner(user):
         live |= Q(**{f"{prefix}location__track__owner": user})
     return queryset.filter(live)
 

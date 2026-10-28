@@ -24,7 +24,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 RUNNER_JUDGE0_URL = os.getenv("RUNNER_JUDGE0_URL", "https://ce.judge0.com")
 RUNNER_JUDGE0_KEY = os.getenv("RUNNER_JUDGE0_KEY", "")
 RUNNER_JUDGE0_HOST = os.getenv("RUNNER_JUDGE0_HOST", "judge0-ce.p.rapidapi.com")
-RUNNER_JUDGE0_LANGUAGE_ID = int(os.getenv("RUNNER_JUDGE0_LANGUAGE_ID", "71"))
+# 100 = Python 3.12 on ce.judge0.com (71 is Python 3.8, older than the courses and the local runner)
+RUNNER_JUDGE0_LANGUAGE_ID = int(os.getenv("RUNNER_JUDGE0_LANGUAGE_ID", "100"))
 
 RUNNER_ALLOW_UNSAFE_FALLBACK = os.getenv(
     "RUNNER_ALLOW_UNSAFE_FALLBACK", "False"
@@ -36,11 +37,19 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 # Django admin login without ?next lands on the admin (API auth is JWT, not session).
 LOGIN_REDIRECT_URL = "/admin/"
 
-# Teacher registration: a shared invite code. A user who supplies the correct
-# code at registration is granted is_staff (teacher) access. An EMPTY code
-# (the default) disables teacher self-registration entirely — no one can gain
-# staff via the public endpoint unless this is explicitly configured in env.
-TEACHER_INVITE_CODE = os.getenv("TEACHER_INVITE_CODE", "")
+# Teacher invite code for the pilot: given at sign-up (the «Код преподавателя» field) or later in the profile
+# («Активировать доступ преподавателя»), it grants the self-service teacher role (is_teacher): own courses and
+# classes only, never the admin, never other teachers' learners. Vetting (is_staff) stays a manual act in the admin.
+# Unset = the pilot default below; "off" (or 0/false/no) switches the code off. Set your own value on the host:
+# this default is in a public repository.
+TEACHER_INVITE_CODE_DEFAULT = "PILOT-2026"
+_invite_code = os.getenv("TEACHER_INVITE_CODE")
+if _invite_code is None:
+    TEACHER_INVITE_CODE = TEACHER_INVITE_CODE_DEFAULT
+elif _invite_code.strip().lower() in ("", "off", "0", "false", "no"):
+    TEACHER_INVITE_CODE = ""
+else:
+    TEACHER_INVITE_CODE = _invite_code.strip()
 # Self-service teacher role at sign-up (the "I am a teacher" choice). Switch it off with
 # TEACHER_SELF_REGISTRATION=0 and a teacher can only join with the invite code above.
 TEACHER_SELF_REGISTRATION = os.getenv("TEACHER_SELF_REGISTRATION", "1").strip().lower() in ("1", "true", "yes", "on")
@@ -135,7 +144,13 @@ CHANNEL_LAYERS = {
 _DATABASE_URL = os.getenv("DATABASE_URL")
 if _DATABASE_URL:
     import dj_database_url
-    DATABASES = {"default": dj_database_url.parse(_DATABASE_URL, conn_max_age=600)}
+    # Under ASGI (Daphne) every request runs its sync code in its own thread, so Django's docs advise against
+    # persistent connections there; each idle one also costs Postgres RAM. 0 = a connection per request.
+    DATABASES = {
+        "default": dj_database_url.parse(
+            _DATABASE_URL, conn_max_age=int(os.getenv("DB_CONN_MAX_AGE", "0")), conn_health_checks=True
+        )
+    }
 else:
     DATABASES = {
         "default": {
@@ -181,8 +196,9 @@ REST_FRAMEWORK = {
     # a django-ratelimit limit answers 429 like a DRF throttle, not 403
     "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
     # JWT auth for API
+    # JWT plus the teacher's «Глазами студента» switch (the X-View-As header, see core/authentication.py)
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "core.authentication.ViewAsJWTAuthentication",
     ),
     # Secure by default: an endpoint is closed to anonymous users unless it
     # explicitly declares AllowAny (registration, login, public catalogue...).
@@ -225,6 +241,7 @@ REST_FRAMEWORK = {
         "learning_event": "120/min",   # события UI (открытие шага)
         "code_runner": "20/min",       # Docker sandbox — ресурсоёмко
         "code_runner_burst": "5/10s",  # Защита от спам-кликов Run
+        "teacher_code": "10/hour",     # код преподавателя в профиле: подбирать нельзя
     },
 }
 
@@ -248,15 +265,19 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
+# the frontend on another domain (Vercel) sends the «Глазами студента» header: the preflight must allow it
+from corsheaders.defaults import default_headers  # noqa: E402
 
-# Redis cache — нужен для DRF throttle (счётчики должны шариться между
-# процессами Daphne, локальный LocMemCache теряет их при каждом forке).
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": os.getenv("REDIS_URL", "redis://localhost:6379/0"),
-    }
-}
+CORS_ALLOW_HEADERS = (*default_headers, "x-view-as")
+
+# Cache for the throttles, rate limits and the live panel. With REDIS_URL it is Redis (counters shared by several
+# processes or replicas); without it, the memory of the one Daphne process. That is exact for a single process
+# (the Railway Hobby setup: one service, no Redis to pay for); the counters only reset on a restart.
+_REDIS_URL = os.getenv("REDIS_URL", "").strip()
+if _REDIS_URL:
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": _REDIS_URL}}
+else:
+    CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache", "LOCATION": "rpg-academy"}}
 
 # Email for dev (console) - change in production
 EMAIL_BACKEND = os.getenv(

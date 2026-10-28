@@ -22,12 +22,25 @@ def email_verification_works():
     return not getattr(settings, "DEBUG", False) and "console" not in getattr(settings, "EMAIL_BACKEND", "")
 
 
+def _invite_form(value):
+    """The code as typed by hand: case, spaces and dashes do not matter ("pilot 2026" is "PILOT-2026")."""
+    return "".join(ch for ch in str(value or "").upper() if ch.isalnum())
+
+
+def invite_code_matches(value):
+    """Is *value* the teacher invite code (settings.TEACHER_INVITE_CODE)? Never true when the code is switched off.
+    Compared in constant time as bytes: a non-ASCII str would make ``compare_digest`` raise (a 500)."""
+    expected = _invite_form(getattr(settings, "TEACHER_INVITE_CODE", ""))
+    given = _invite_form(value)
+    return bool(expected and given) and hmac.compare_digest(given.encode(), expected.encode())
+
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
-    # Необязательный код преподавателя. Верный код → аккаунт получает is_staff
-    # (доступ к аналитике и кабинету). Никогда не возвращается в ответе.
+    # Optional teacher invite code (see invite_code_matches): the right one gives the self-service teacher role.
+    # Never returned in a response.
     teacher_code = serializers.CharField(
-        write_only=True, required=False, allow_blank=True
+        write_only=True, required=False, allow_blank=True, max_length=64
     )
 
     # Who is signing up. "teacher" gives the self-service teacher role (cabinet, analytics, Studio for the
@@ -87,20 +100,18 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"username": "Это имя пользователя уже занято."})
         email = validated_data.get("email") or ""
 
-        # Если указан код преподавателя — он должен совпасть с серверным
-        # секретом. Пустой серверный код = регистрация преподавателей выключена,
-        # поэтому любой переданный код отвергаем (нельзя выдать is_staff молча).
-        is_teacher = False
+        # A given code must be the server's one; a switched-off code (empty) rejects every code. The code is the
+        # trust anchor, so a teacher with it needs no open sign-up and no e-mail.
+        has_code = False
         if teacher_code:
-            expected = getattr(settings, "TEACHER_INVITE_CODE", "") or ""
-            if not expected or not hmac.compare_digest(teacher_code, expected):
+            if not invite_code_matches(teacher_code):
                 raise serializers.ValidationError(
-                    {"teacher_code": "Неверный код преподавателя."}
+                    {"teacher_code": "Неверный код преподавателя. Его выдаёт организатор пилота."}
                 )
-            is_teacher = True
+            has_code = True
         elif wants_teacher_role and not getattr(settings, "TEACHER_SELF_REGISTRATION", True):
             raise serializers.ValidationError(
-                {"role": "Регистрация преподавателей сейчас закрыта: нужен код приглашения."}
+                {"teacher_code": "Введите код преподавателя: без него регистрация преподавателей закрыта."}
             )
         elif (
             wants_teacher_role
@@ -122,10 +133,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                 )
         except IntegrityError:  # the same name taken by a parallel sign-up: an answer, not a 500
             raise serializers.ValidationError({"username": "Это имя пользователя уже занято."})
-        if is_teacher:
-            user.is_staff = True
-            user.save(update_fields=["is_staff"])
-        elif wants_teacher_role:
+        if has_code or wants_teacher_role:
             user.is_teacher = True
             user.save(update_fields=["is_teacher"])
         if research_consent:

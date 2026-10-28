@@ -3,15 +3,18 @@
 from django.contrib.auth import get_user_model
 from django.utils.decorators import method_decorator
 from django_ratelimit.decorators import ratelimit
+import logging
+
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
 from rest_framework.views import APIView
 
 # Token views are imported where needed; keep imports local in views that use them
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .serializers_auth import email_verification_works
+from .serializers_auth import email_verification_works, invite_code_matches
 from .serializers_auth import RegisterSerializer, UserDetailSerializer
 from .tokens import email_verification_token
 
@@ -233,6 +236,31 @@ class MeView(generics.RetrieveAPIView):
     def get_object(self):
         """Return the currently authenticated user."""
         return self.request.user
+
+
+class ActivateTeacherView(APIView):
+    """«Активировать доступ преподавателя»: a signed-in learner gives the invite code and gets the self-service
+    teacher role, exactly as signing up with the code would (``invite_code_matches``). A few tries an hour."""
+
+    permission_classes = (permissions.IsAuthenticated,)
+    throttle_classes = (UserRateThrottle, ScopedRateThrottle)
+    throttle_scope = "teacher_code"
+
+    def post(self, request):
+        user = request.user
+        if not user.can_teach:
+            code = str(request.data.get("code", "") or "")[:64]
+            if not code.strip():
+                return Response({"code": "Введите код преподавателя."}, status=status.HTTP_400_BAD_REQUEST)
+            if not invite_code_matches(code):
+                return Response(
+                    {"code": "Неверный код преподавателя. Его выдаёт организатор пилота."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            user.is_teacher = True
+            user.save(update_fields=["is_teacher"])
+            logging.getLogger(__name__).info("[TEACHER] user %s activated the teacher role with the invite code", user.pk)
+        return Response({"is_teacher": bool(user.is_teacher), "is_staff": bool(user.is_staff), "can_teach": True})
 
 
 class LogoutView(APIView):

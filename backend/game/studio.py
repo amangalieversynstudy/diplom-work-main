@@ -15,9 +15,9 @@ import re
 import secrets
 
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.utils.text import slugify
-from rest_framework import permissions, serializers, viewsets
+from rest_framework import permissions, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -164,11 +164,14 @@ class StudioTrackSerializer(serializers.ModelSerializer):
         read_only_fields = ["slug", "is_public", "join_code"]
         extra_kwargs = DESCRIPTION_LIMIT
 
+    # the list annotates both counts in its one query (StudioTrackViewSet.get_queryset); a fresh object counts itself
     def get_locations_count(self, obj):
-        return obj.worlds.count()
+        annotated = getattr(obj, "n_sections", None)
+        return obj.worlds.count() if annotated is None else annotated
 
     def get_missions_count(self, obj):
-        return Mission.objects.filter(location__track=obj).count()
+        annotated = getattr(obj, "n_missions", None)
+        return Mission.objects.filter(location__track=obj).count() if annotated is None else annotated
 
     def validate(self, attrs):
         if self.instance is None and not (
@@ -343,20 +346,40 @@ class StudioTrackViewSet(StudioGuardMixin, viewsets.ModelViewSet):
     queryset = Track.objects.all()
 
     def get_queryset(self):
-        qs = Track.objects.all().order_by("order", "id")
+        qs = Track.objects.annotate(
+            n_sections=Count("worlds", distinct=True), n_missions=Count("worlds__missions", distinct=True)
+        ).order_by("order", "id")
         if self.request.user.is_superuser:
             return qs
         return qs.filter(owner=self.request.user)
 
     data_path = "mission__location__track"
 
-    def perform_create(self, serializer):
-        user = self.request.user
+    @staticmethod
+    def _check_course_quota(user):
         key = "tracks_per_vetted_teacher" if is_vetted_teacher(user) else "tracks_per_teacher"
         _quota(user, Track.objects.filter(owner=user).count(), key, "Не больше {n} курсов у преподавателя.")
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        self._check_course_quota(user)
         # A new course is a closed class with its own join code: learners find it by code, not by browsing.
         # A clash of the code (or of the slug) with a parallel create is retried, not answered with a 500.
         with_fresh_code(lambda code: serializer.save(owner=user, is_public=False, join_code=code))
+
+    @action(detail=False, methods=["post"], url_path="demo")
+    def demo(self, request):
+        """«Развернуть демо-пример»: the showcase course of game/demo_course.py. A second click returns the first
+        demo instead of a copy (``created`` false)."""
+        from .demo_course import create_demo_course, existing_demo
+
+        track = existing_demo(request.user)
+        created = track is None
+        if created:
+            self._check_course_quota(request.user)
+            track = create_demo_course(request.user)
+        body = {**self.get_serializer(track).data, "created": created}
+        return Response(body, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
     @action(detail=True, methods=["post"], url_path="new-code")
     def new_code(self, request, pk=None):

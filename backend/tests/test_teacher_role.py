@@ -76,7 +76,7 @@ def test_an_unknown_role_is_rejected():
 def test_teacher_role_can_be_switched_off():
     resp = _signup("teacher")
     assert resp.status_code == 400
-    assert "role" in resp.json()
+    assert "teacher_code" in resp.json()  # the form shows the error at the code field
     assert not User.objects.filter(username="role_user").exists()
     # students are not affected
     assert _signup("student", name="still_ok").status_code == 201

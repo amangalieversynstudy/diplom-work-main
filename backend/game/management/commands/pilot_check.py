@@ -74,10 +74,13 @@ def check_settings():
     else:
         yield OK, "Почтовый бэкенд настроен."
 
-    if getattr(settings, "TEACHER_INVITE_CODE", ""):
-        yield OK, "TEACHER_INVITE_CODE задан: преподаватель может зарегистрироваться сам."
+    invite = getattr(settings, "TEACHER_INVITE_CODE", "")
+    if not invite:
+        yield WARN, "TEACHER_INVITE_CODE выключен: преподавателя придётся создать через админку."
+    elif invite == getattr(settings, "TEACHER_INVITE_CODE_DEFAULT", None):
+        yield WARN, "TEACHER_INVITE_CODE = публичный код пилота из репозитория: задайте свой на хостинге."
     else:
-        yield WARN, "TEACHER_INVITE_CODE пуст: преподавателя придётся создать через админку."
+        yield OK, "TEACHER_INVITE_CODE задан: преподаватель регистрируется сам с этим кодом."
 
     mail_works = not settings.DEBUG and "console" not in getattr(settings, "EMAIL_BACKEND", "")
     if getattr(settings, "TEACHER_SELF_REGISTRATION", False) and not mail_works:

@@ -1,9 +1,8 @@
 """Tests for teacher self-registration via an invite code.
 
-A correct ``teacher_code`` at registration grants ``is_staff`` (teacher access:
-analytics + the teacher cabinet). The code is a shared server secret
-(``settings.TEACHER_INVITE_CODE``); an empty secret disables teacher
-registration entirely so no one can gain staff through the public endpoint.
+A correct ``teacher_code`` at registration grants the self-service teacher role (``is_teacher``: own courses and
+classes only), never ``is_staff``. The code is ``settings.TEACHER_INVITE_CODE``; a switched-off (empty) code
+rejects every code, so nobody becomes a teacher through the public endpoint by guessing.
 """
 
 import pytest
@@ -34,8 +33,8 @@ def _reset_ratelimit_cache():
 
 @pytest.mark.django_db
 @override_settings(TEACHER_INVITE_CODE=CODE)
-def test_valid_teacher_code_grants_staff():
-    """A correct invite code creates a teacher (is_staff=True)."""
+def test_valid_teacher_code_grants_the_teacher_role_not_staff():
+    """A correct invite code creates a self-service teacher: the cabinet, never the admin."""
     client = APIClient()
     resp = client.post(
         REGISTER_URL,
@@ -48,9 +47,31 @@ def test_valid_teacher_code_grants_staff():
     )
     assert resp.status_code == 201
     user = User.objects.get(username="teacher1")
-    assert user.is_staff is True
+    assert (user.is_teacher, user.is_staff, user.can_teach) == (True, False, True)
     # The code must never leak back in the response.
     assert "teacher_code" not in resp.json()
+
+
+@pytest.mark.django_db
+@override_settings(TEACHER_INVITE_CODE=CODE, TEACHER_SELF_REGISTRATION=False)
+def test_code_typed_by_hand_matches_and_opens_closed_sign_up():
+    """Case, spaces and dashes do not matter; with the code a closed teacher sign-up still works."""
+    resp = APIClient().post(
+        REGISTER_URL,
+        {"username": "teacher2", "password": "TeachPass123!", "role": "teacher", "teacher_code": " secret teach "},
+    )
+    assert resp.status_code == 201
+    assert User.objects.get(username="teacher2").is_teacher is True
+
+
+@pytest.mark.django_db
+@override_settings(TEACHER_INVITE_CODE=CODE)
+def test_a_non_ascii_code_is_a_clean_400_not_a_500():
+    resp = APIClient().post(
+        REGISTER_URL, {"username": "kirill", "password": "TeachPass123!", "teacher_code": "КОД-УЧИТЕЛЯ"}
+    )
+    assert resp.status_code == 400
+    assert "teacher_code" in resp.json()
 
 
 @pytest.mark.django_db
@@ -130,19 +151,25 @@ def test_teacher_registration_disabled_when_secret_unset():
     assert not User.objects.filter(username="ghost").exists()
 
 
-def test_production_settings_ship_no_builtin_invite_code(monkeypatch):
-    """Teacher sign-up must be opt-in via env, never via a code in the repo."""
-    import importlib
+def _invite_code_with(env_value):
+    """TEACHER_INVITE_CODE as the base settings read it, in a fresh interpreter (None = variable unset)."""
+    import os
+    import subprocess
     import sys
+    from pathlib import Path
 
-    from core.settings import base
+    env = {k: v for k, v in os.environ.items() if k != "TEACHER_INVITE_CODE"}
+    if env_value is not None:
+        env["TEACHER_INVITE_CODE"] = env_value
+    code = "import core.settings.base as b; print(repr(b.TEACHER_INVITE_CODE))"
+    backend = Path(__file__).resolve().parent.parent
+    out = subprocess.run([sys.executable, "-c", code], cwd=backend, env=env, capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    return eval(out.stdout.strip())  # noqa: S307 - our own repr of a str
 
-    monkeypatch.setenv("DJANGO_SECRET_KEY", "x" * 50)
-    monkeypatch.setenv("ALLOWED_HOSTS", "testserver")
-    sys.modules.pop("core.settings.production", None)
-    try:
-        prod = importlib.import_module("core.settings.production")
-    finally:
-        sys.modules.pop("core.settings.production", None)
-    assert prod.TEACHER_INVITE_CODE == base.TEACHER_INVITE_CODE
-    assert "RPG-TEACHER" not in str(prod.TEACHER_INVITE_CODE)
+
+def test_invite_code_default_off_switch_and_own_value():
+    """Unset = the pilot default; "off" switches the code off; an own value is used as typed (trimmed)."""
+    assert _invite_code_with(None) == "PILOT-2026"
+    assert _invite_code_with("off") == ""
+    assert _invite_code_with("  MY-OWN-CODE ") == "MY-OWN-CODE"

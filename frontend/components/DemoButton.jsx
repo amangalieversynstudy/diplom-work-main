@@ -26,7 +26,8 @@ export default function DemoButton({ t, variant = "secondary", className = "" })
   };
 
   return (
-    <Button variant={variant} icon={Sparkles} loading={busy} onClick={deploy} className={className}>
+    // длинная подпись: без разрядки букв она помещается в одну строку и на телефоне
+    <Button variant={variant} icon={Sparkles} loading={busy} onClick={deploy} className={`!tracking-normal ${className}`}>
       {busy ? t("pilot.demo.busy") : t("pilot.demo.button")}
     </Button>
   );

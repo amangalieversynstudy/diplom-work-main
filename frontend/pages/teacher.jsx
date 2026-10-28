@@ -410,6 +410,7 @@ export default function TeacherPage() {
   // Сортируем застрявших наверх, чтобы преподаватель видел их первыми;
   // внутри групп сохраняем порядок бэкенда (по XP убыванию).
   const allStudents = data?.students || [];
+  const noLearners = allStudents.length === 0;
   const students = filterAndSortStudents(allStudents, { query, sortKey, direction });
   // Клик по заголовку: сначала по убыванию (имя: по алфавиту), второй клик меняет направление,
   // третий возвращает прежний порядок.
@@ -449,50 +450,54 @@ export default function TeacherPage() {
         </div>
         <p className="text-muted mb-8">{t("teacher.subtitle")}</p>
 
-        {/* ── Сводка ── */}
-        <div className="grid sm:grid-cols-3 gap-4 mb-6">
-          <StatCard
+        {noLearners ? (
+          /* ── Новый преподаватель: сначала что сделать, а не нули и пустые панели ── */
+          <EmptyState
             icon={Users}
-            label={t("teacher.summary.students")}
-            value={summary.total_students ?? 0}
-          />
-          <StatCard
-            icon={AlertTriangle}
-            accent="amber"
-            label={t("teacher.summary.stuck")}
-            value={summary.stuck_count ?? 0}
-          />
-          <StatCard
-            icon={Clock}
-            accent="green"
-            label={t("teacher.summary.activeWeek")}
-            value={summary.active_week ?? 0}
-          />
-        </div>
+            title={t("pilot.empty.teacherTitle")}
+            hint={t("pilot.empty.teacherHint")}
+            className="mb-6"
+          >
+            <Link
+              href="/studio"
+              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 font-medium text-on-primary shadow-glow transition hover:bg-primary-dk"
+            >
+              <Plus size={16} aria-hidden="true" /> {t("pilot.empty.createCourse")}
+            </Link>
+            <DemoButton t={t} />
+          </EmptyState>
+        ) : (
+          /* ── Сводка ── */
+          <div className="grid sm:grid-cols-3 gap-4 mb-6">
+            <StatCard
+              icon={Users}
+              label={t("teacher.summary.students")}
+              value={summary.total_students ?? 0}
+            />
+            <StatCard
+              icon={AlertTriangle}
+              accent="amber"
+              label={t("teacher.summary.stuck")}
+              value={summary.stuck_count ?? 0}
+            />
+            <StatCard
+              icon={Clock}
+              accent="green"
+              label={t("teacher.summary.activeWeek")}
+              value={summary.active_week ?? 0}
+            />
+          </div>
+        )}
 
+        {/* живая панель остаётся и у нового преподавателя: по первой активности учеников кабинет обновится сам */}
         <LivePanel t={t} onActivity={refreshLists} />
+        {noLearners ? null : (
+          <>
         <EarlyWarningPanel warning={warning} t={t} />
         <AuthorshipWatchPanel overview={authorship} t={t} />
 
         {/* ── Таблица учеников ── */}
         <div className="bg-surface border border-border rounded-3xl p-4 sm:p-6 shadow-sm">
-          {allStudents.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title={t("pilot.empty.teacherTitle")}
-              hint={t("pilot.empty.teacherHint")}
-              className="border-0 bg-transparent"
-            >
-              <Link
-                href="/studio"
-                className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-primary px-5 py-2.5 font-medium text-on-primary shadow-glow transition hover:bg-primary-dk"
-              >
-                <Plus size={16} aria-hidden="true" /> {t("pilot.empty.createCourse")}
-              </Link>
-              <DemoButton t={t} />
-            </EmptyState>
-          ) : (
-            <>
               <div className="mb-4 flex flex-wrap items-center gap-3">
                 <input
                   type="search"
@@ -615,9 +620,9 @@ export default function TeacherPage() {
               </div>
               </>
               )}
-            </>
-          )}
         </div>
+          </>
+        )}
 
         {pilotTeacher ? <UsabilityPanel /> : null}
       </div>

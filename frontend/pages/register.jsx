@@ -80,12 +80,14 @@ export default function Register() {
       } else {
         // Email не указан → аккаунт активен сразу: входим за человека и ведём к делу,
         // а не заставляем второй раз вводить только что придуманные логин и пароль.
-        toast.success(copy.success);
         try {
           await loginUser({ email: username, username, password });
+          toast.success(extra.welcome || copy.success);
           const toJoin = role === "student" ? takeJoinCode() : "";
           router.push(pathAfterAuth(role === "teacher" ? homePathFor({ is_teacher: true }) : "/worlds", toJoin));
         } catch {
+          // войти за человека не вышло: аккаунт есть, просим войти самому
+          toast.success(copy.success);
           router.push("/login");
         }
       }

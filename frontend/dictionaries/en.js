@@ -741,6 +741,7 @@ export const en = {
         backToProfile: "Back to your hero",
       },
       registerExtra: {
+        welcome: "Account created. Welcome!",
         successWithEmail: "Account created! Check your email — we sent an activation link.",
         offline: "The server is not reachable right now. Check your connection and try again in a minute.",
         roleLabel: "Who are you?",

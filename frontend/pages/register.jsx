@@ -12,7 +12,7 @@ import { clearPlayerClass } from "../lib/class";
 import { markOnboardingPending } from "../lib/onboarding";
 import { homePathFor } from "../lib/roles";
 import { pathAfterAuth, takeJoinCode } from "../lib/join";
-import { errorBody, fieldErrorsFrom, serverMessage } from "../lib/apiErrors";
+import { fieldErrorsFrom, serverMessage } from "../lib/apiErrors";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -22,8 +22,7 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [role, setRole] = useState("student");
-  // код приглашения нужен, только если владелец выключил свободную регистрацию преподавателей
-  const [needCode, setNeedCode] = useState(false);
+  // код приглашения пилота: поле видно сразу при выборе «Я преподаватель»
   const [teacherCode, setTeacherCode] = useState("");
   const [researchConsent, setResearchConsent] = useState(false);
   const [errors, setErrors] = useState({});
@@ -63,7 +62,7 @@ export default function Register() {
         email: trimmedEmail,
         password,
         role,
-        teacher_code: role === "teacher" && needCode ? teacherCode.trim() : "",
+        teacher_code: role === "teacher" ? teacherCode.trim() : "",
         research_consent: researchConsent,
       });
 
@@ -92,10 +91,7 @@ export default function Register() {
       }
     } catch (err) {
       // Ошибки по полям, если сервер ответил структурой DRF. HTML-страница прокси (502, 500) сюда не попадает.
-      const body = errorBody(err) || {};
       const fieldErrors = fieldErrorsFrom(err, ["username", "email", "password", "teacher_code", "role"]);
-      // Свободная регистрация преподавателей выключена или код неверен: просим код приглашения.
-      if (body.teacher_code || body.role) setNeedCode(true);
       if (Object.keys(fieldErrors).length) setErrors((p) => ({ ...p, ...fieldErrors }));
       toast.error(serverMessage(err, copy.error, extra.offline || copy.error));
     } finally {
@@ -212,19 +208,23 @@ export default function Register() {
               <FieldError k="confirm" />
             </label>
 
-            {role === "teacher" && needCode ? (
+            {role === "teacher" ? (
               <label className="text-sm text-muted">
                 {extra.teacherCodeLabel || "Код преподавателя"}
                 <input
                   className={inputCls("teacher_code")}
-                  placeholder={extra.teacherCodePlaceholder || "Код, выданный администратором"}
+                  placeholder={extra.teacherCodePlaceholder || "Код от организатора пилота"}
                   value={teacherCode}
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
                   onChange={(e) => {
                     setTeacherCode(e.target.value);
                     clearError("teacher_code");
                     clearError("role");
                   }}
                 />
+                <span className="mt-1 block text-xs text-muted">{extra.teacherCodeHint}</span>
                 <FieldError k="teacher_code" />
                 <FieldError k="role" />
               </label>
@@ -245,7 +245,7 @@ export default function Register() {
               </span>
             </label>
 
-            <Button variant="rune" type="submit" disabled={loading}>
+            <Button variant="rune" type="submit" loading={loading}>
               {loading ? copy.submitting : copy.submit}
             </Button>
           </form>

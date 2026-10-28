@@ -2,7 +2,11 @@ import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/router";
 import Layout from "../../components/Layout";
 import Button from "../../components/Button";
+import DemoButton from "../../components/DemoButton";
+import EmptyState from "../../components/EmptyState";
+import TemplatePicker from "../../components/TemplatePicker";
 import { Studio as StudioAPI, Profile as ProfileAPI } from "../../lib/api";
+import { COURSE_TEMPLATES } from "../../lib/studioTemplates";
 import logger from "../../lib/logger";
 import { useI18n } from "../../lib/i18n";
 import { unit } from "../../lib/plural";
@@ -78,7 +82,14 @@ export default function StudioIndexPage() {
   const [creating, setCreating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ title_ru: "", title_en: "", description_ru: "" });
+  const [template, setTemplate] = useState(null);
   const [error, setError] = useState("");
+
+  const pickTemplate = (preset) => {
+    setForm({ ...form, ...preset.form });
+    setTemplate(preset.id);
+    setError("");
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -214,6 +225,13 @@ export default function StudioIndexPage() {
                 <X size={18} />
               </button>
             </div>
+            <TemplatePicker
+              templates={COURSE_TEMPLATES}
+              picked={template}
+              onPick={pickTemplate}
+              t={t}
+              language={language}
+            />
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor={`${uid}-title_ru`} className="block text-xs font-semibold text-muted mb-1.5">
@@ -266,7 +284,7 @@ export default function StudioIndexPage() {
               >
                 {t("studio.form.cancel")}
               </Button>
-              <Button type="submit" disabled={submitting}>
+              <Button type="submit" loading={submitting}>
                 {submitting ? t("studio.form.creating") : t("studio.form.create")}
               </Button>
             </div>
@@ -276,9 +294,12 @@ export default function StudioIndexPage() {
         {error && !creating && <p className="text-sm text-error mb-4">{error}</p>}
 
         {tracks.length === 0 && !creating ? (
-          <div className="bg-surface border border-border rounded-3xl p-10 text-center">
-            <p className="text-muted">{t("studio.emptyCourses")}</p>
-          </div>
+          <EmptyState icon={BookOpen} title={t("pilot.empty.studioTitle")} hint={t("pilot.empty.studioHint")}>
+            <Button icon={Plus} onClick={() => setCreating(true)}>
+              {t("studio.newCourse")}
+            </Button>
+            <DemoButton t={t} />
+          </EmptyState>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {tracks.map((track) => (

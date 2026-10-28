@@ -4,7 +4,9 @@ import Layout from "../../components/Layout";
 import Button from "../../components/Button";
 import ConfirmModal from "../../components/ConfirmModal";
 import StudioTasks, { apiError } from "../../components/StudioTasks";
+import TemplatePicker from "../../components/TemplatePicker";
 import { Studio as StudioAPI, Profile as ProfileAPI } from "../../lib/api";
+import { MISSION_TEMPLATES, SECTION_TEMPLATES } from "../../lib/studioTemplates";
 import logger from "../../lib/logger";
 import { useI18n } from "../../lib/i18n";
 import { unit } from "../../lib/plural";
@@ -153,8 +155,7 @@ function MissionRow({ mission, t, onReload, setConfirm, setError }) {
           >
             {t("studio.editor.cancel")}
           </Button>
-          <Button type="button" onClick={save} disabled={saving}>
-            <Check size={16} />
+          <Button type="button" onClick={save} loading={saving} icon={Check}>
             {saving ? t("studio.editor.saving") : t("studio.editor.save")}
           </Button>
         </div>
@@ -267,6 +268,7 @@ function SectionCard({
     xp_reward: 50,
   });
   const [missionBusy, setMissionBusy] = useState(false);
+  const [missionTemplate, setMissionTemplate] = useState(null);
 
   useEffect(() => {
     setEditForm({
@@ -325,6 +327,7 @@ function SectionCard({
         order: missions.length,
       });
       setMissionForm({ title_ru: "", title_en: "", xp_reward: 50 });
+      setMissionTemplate(null);
       setAddingMission(false);
       await onReloadMissions(section.id);
     } catch (e2) {
@@ -393,8 +396,7 @@ function SectionCard({
               >
                 {t("studio.editor.cancel")}
               </Button>
-              <Button type="button" onClick={saveEdit} disabled={savingEdit}>
-                <Check size={16} />
+              <Button type="button" onClick={saveEdit} loading={savingEdit} icon={Check}>
                 {savingEdit
                   ? t("studio.editor.saving")
                   : t("studio.editor.save")}
@@ -445,6 +447,16 @@ function SectionCard({
               onSubmit={addMission}
               className="rounded-xl border border-dashed border-border bg-panel/60 p-3"
             >
+              <TemplatePicker
+                templates={MISSION_TEMPLATES}
+                picked={missionTemplate}
+                onPick={(preset) => {
+                  setMissionForm({ ...missionForm, ...preset.form });
+                  setMissionTemplate(preset.id);
+                }}
+                t={t}
+                language={language}
+              />
               <div className="grid items-start gap-2 sm:grid-cols-[1fr_1fr_auto]">
                 <input
                   className={inputCls}
@@ -490,11 +502,12 @@ function SectionCard({
                   onClick={() => {
                     setAddingMission(false);
                     setMissionForm({ title_ru: "", title_en: "", xp_reward: 50 });
+                    setMissionTemplate(null);
                   }}
                 >
                   {t("studio.editor.cancel")}
                 </Button>
-                <Button type="submit" disabled={missionBusy}>
+                <Button type="submit" loading={missionBusy}>
                   {missionBusy
                     ? t("studio.editor.adding")
                     : t("studio.editor.add")}
@@ -604,7 +617,7 @@ function ClassBlock({ track, t, onTrack }) {
 
 export default function StudioEditorPage() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const uid = useId();
   const [allowed, setAllowed] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -622,6 +635,7 @@ export default function StudioEditorPage() {
   const [addingSection, setAddingSection] = useState(false);
   const [sectionForm, setSectionForm] = useState({ title_ru: "", title_en: "" });
   const [sectionBusy, setSectionBusy] = useState(false);
+  const [sectionTemplate, setSectionTemplate] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [error, setError] = useState("");
 
@@ -731,6 +745,7 @@ export default function StudioEditorPage() {
         order: sections.length,
       });
       setSectionForm({ title_ru: "", title_en: "" });
+      setSectionTemplate(null);
       setAddingSection(false);
       await reloadSections();
     } catch (e2) {
@@ -904,8 +919,7 @@ export default function StudioEditorPage() {
                 <Check size={16} /> {t("studio.editor.saved")}
               </span>
             )}
-            <Button onClick={saveSettings} disabled={savingSettings}>
-              <Save size={16} />
+            <Button onClick={saveSettings} loading={savingSettings} icon={Save}>
               {savingSettings
                 ? t("studio.editor.saving")
                 : t("studio.editor.saveCourse")}
@@ -936,6 +950,17 @@ export default function StudioEditorPage() {
             onSubmit={addSection}
             className="mb-4 rounded-2xl border border-dashed border-border bg-surface p-4"
           >
+            <TemplatePicker
+              templates={SECTION_TEMPLATES}
+              picked={sectionTemplate}
+              onPick={(preset) => {
+                setSectionForm({ ...sectionForm, ...preset.form });
+                setSectionTemplate(preset.id);
+              }}
+              t={t}
+              language={language}
+              compact
+            />
             <div className="grid gap-3 sm:grid-cols-2">
               <input
                 className={inputCls}
@@ -965,11 +990,12 @@ export default function StudioEditorPage() {
                 onClick={() => {
                   setAddingSection(false);
                   setSectionForm({ title_ru: "", title_en: "" });
+                  setSectionTemplate(null);
                 }}
               >
                 {t("studio.editor.cancel")}
               </Button>
-              <Button type="submit" disabled={sectionBusy}>
+              <Button type="submit" loading={sectionBusy}>
                 {sectionBusy
                   ? t("studio.editor.adding")
                   : t("studio.editor.add")}

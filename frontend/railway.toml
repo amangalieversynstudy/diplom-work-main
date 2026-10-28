@@ -1,7 +1,8 @@
+# Only if the frontend is hosted on Railway as well (it costs RAM on the $5 plan; Vercel hosts it for free).
+# Service root directory: frontend. NEXT_PUBLIC_API_BASE must be a service variable: it is baked in at build time.
 [build]
-builder = "dockerfile"
-dockerfile = "Dockerfile"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "npm run start"
 restartPolicyType = "ON_FAILURE"

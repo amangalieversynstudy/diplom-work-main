@@ -6,7 +6,9 @@ import Button from "../components/Button";
 import Card from "../components/Card";
 import ClassPortrait from "../components/ClassPortrait";
 import AchievementsPanel from "../components/AchievementsPanel";
+import TeacherAccessCard from "../components/TeacherAccessCard";
 import { clearPlayerClass } from "../lib/class";
+import { canTeach } from "../lib/roles";
 import { titleFor } from "../lib/titles";
 import {
   Profile as ProfileAPI,
@@ -26,7 +28,8 @@ export default function ProfilePage() {
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  
+  const [saving, setSaving] = useState(false);
+
   const [formData, setFormData] = useState({
     username: "",
     email: ""
@@ -76,6 +79,7 @@ export default function ProfilePage() {
         streak_active: profileBlock.streak_active ?? false,
         streak_at_risk: profileBlock.streak_at_risk ?? false,
         research_consent: profileBlock.research_consent ?? false,
+        can_teach: canTeach(data),
       };
 
       setProfile(merged);
@@ -122,6 +126,8 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
+    if (saving) return;
+    setSaving(true);
     try {
       const updated = await ProfileAPI.update(formData);
       // Смена email не применяется сразу: бэк шлёт ссылку-подтверждение на новый
@@ -142,6 +148,8 @@ export default function ProfilePage() {
     } catch (error) {
       logger.error(error);
       toast.error(serverMessage(error, t("profile.toasts.saveError")));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -340,8 +348,8 @@ if (loading) {
                     />
                   </div>
                   <div className="flex gap-3 pt-4">
-                    <Button type="submit" className="bg-primary text-on-primary">{t("profile.saveBtn")}</Button>
-                    <Button type="button" variant="ghost" onClick={() => setIsEditing(false)}>{t("profile.cancelBtn")}</Button>
+                    <Button type="submit" loading={saving} className="bg-primary text-on-primary">{t("profile.saveBtn")}</Button>
+                    <Button type="button" variant="ghost" disabled={saving} onClick={() => setIsEditing(false)}>{t("profile.cancelBtn")}</Button>
                   </div>
                 </form>
               ) : (
@@ -382,6 +390,8 @@ if (loading) {
                 </label>
               </div>
             </Card>
+            {/* ученик, который ведёт группу, включает роль преподавателя кодом пилота */}
+            {profile && !profile.can_teach ? <TeacherAccessCard t={t} /> : null}
             {/* достижения стоят в правой колонке под настройками: колонка не «висит в пустоте» рядом с высоким листом героя */}
             <AchievementsPanel items={achievements} />
           </div>

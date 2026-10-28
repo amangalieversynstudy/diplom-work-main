@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { toast } from "sonner";
 import Layout from "../components/Layout";
 import Button from "../components/Button";
+import DemoButton from "../components/DemoButton";
+import EmptyState from "../components/EmptyState";
 import LivePanel from "../components/LivePanel";
 import UsabilityPanel from "../components/UsabilityPanel";
 import {
@@ -22,8 +25,11 @@ import {
   LifeBuoy,
   Lock,
   Moon,
+  Plus,
+  RefreshCw,
   ShieldCheck,
   Users,
+  WifiOff,
 } from "lucide-react";
 import { canTeach, isPilotTeacher } from "../lib/roles";
 
@@ -250,6 +256,9 @@ export default function TeacherPage() {
   const [warning, setWarning] = useState(null);
   const [authorship, setAuthorship] = useState(null);
   const [loading, setLoading] = useState(true);
+  // ошибка загрузки — отдельный экран с повтором, а не «учеников нет»
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const refreshedAt = useRef(0);
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState(null);
@@ -308,6 +317,10 @@ export default function TeacherPage() {
           if (!cancelled) setAllowed(false);
         } else {
           logger.error("Teacher students load failed:", error);
+          if (!cancelled) {
+            setLoadFailed(true);
+            toast.error(t("pilot.empty.loadErrorTitle"));
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -316,7 +329,15 @@ export default function TeacherPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+    // t меняется вместе с языком; повторная загрузка нужна только по кнопке «Повторить»
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attempt]);
+
+  const retry = () => {
+    setLoadFailed(false);
+    setLoading(true);
+    setAttempt((n) => n + 1);
+  };
 
   // Человекочитаемая «последняя активность».
   const lastActiveLabel = (iso) => {
@@ -365,6 +386,21 @@ export default function TeacherPage() {
           <Button onClick={() => router.push("/")} variant="outline">
             {t("teacher.backHome")}
           </Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  // ── Не загрузилось ─────────────────────────────────────────
+  if (loadFailed) {
+    return (
+      <Layout>
+        <div className="max-w-2xl mx-auto pt-32 pb-16 px-4">
+          <EmptyState icon={WifiOff} title={t("pilot.empty.loadErrorTitle")} hint={t("pilot.empty.loadErrorHint")}>
+            <Button icon={RefreshCw} onClick={retry}>
+              {t("pilot.empty.retry")}
+            </Button>
+          </EmptyState>
         </div>
       </Layout>
     );
@@ -441,9 +477,20 @@ export default function TeacherPage() {
         {/* ── Таблица учеников ── */}
         <div className="bg-surface border border-border rounded-3xl p-4 sm:p-6 shadow-sm">
           {allStudents.length === 0 ? (
-            <p className="text-sm text-muted py-10 text-center">
-              {t("teacher.empty")}
-            </p>
+            <EmptyState
+              icon={Users}
+              title={t("pilot.empty.teacherTitle")}
+              hint={t("pilot.empty.teacherHint")}
+              className="border-0 bg-transparent"
+            >
+              <Link
+                href="/studio"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-primary px-5 py-2.5 font-medium text-on-primary shadow-glow transition hover:bg-primary-dk"
+              >
+                <Plus size={16} aria-hidden="true" /> {t("pilot.empty.createCourse")}
+              </Link>
+              <DemoButton t={t} />
+            </EmptyState>
           ) : (
             <>
               <div className="mb-4 flex flex-wrap items-center gap-3">

@@ -12,9 +12,12 @@ import {
   X,
 } from "lucide-react";
 import Button from "./Button";
+import TemplatePicker from "./TemplatePicker";
 import { Studio as StudioAPI } from "../lib/api";
 import logger from "../lib/logger";
 import { serverMessage } from "../lib/apiErrors";
+import { useI18n } from "../lib/i18n";
+import { STEP_TEMPLATES } from "../lib/studioTemplates";
 
 const TYPES = ["story", "quiz", "code"];
 const ICONS = { story: BookOpen, quiz: HelpCircle, code: Code2 };
@@ -376,10 +379,19 @@ function TaskForm({ form, setForm, t }) {
 
 // Шаги одной миссии: список, добавление, правка, порядок, удаление.
 export default function StudioTasks({ missionId, t, setConfirm, onChanged }) {
+  const { language } = useI18n();
   const [tasks, setTasks] = useState(null);
   const [form, setForm] = useState(null);
+  const [template, setTemplate] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  // шаблон заполняет все поля нового шага; номер шага остаётся прежним
+  const pickTemplate = (preset) => {
+    setForm({ ...emptyForm(form.order), ...preset.form, id: null, order: form.order });
+    setTemplate(preset.id);
+    setError("");
+  };
 
   const load = useCallback(async () => {
     try {
@@ -528,13 +540,21 @@ export default function StudioTasks({ missionId, t, setConfirm, onChanged }) {
 
       {form ? (
         <div className="rounded-xl border border-border bg-panel/60 p-3">
+          {form.id === null ? (
+            <TemplatePicker
+              templates={STEP_TEMPLATES}
+              picked={template}
+              onPick={pickTemplate}
+              t={t}
+              language={language}
+            />
+          ) : null}
           <TaskForm form={form} setForm={setForm} t={t} />
           <div className="mt-3 flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setForm(null)}>
+            <Button type="button" variant="ghost" disabled={busy} onClick={() => setForm(null)}>
               {t("studio.editor.cancel")}
             </Button>
-            <Button type="button" onClick={save} disabled={busy}>
-              <Check size={16} />
+            <Button type="button" onClick={save} loading={busy} icon={Check}>
               {busy ? t("studio.editor.saving") : t("studio.editor.saveStep")}
             </Button>
           </div>
@@ -545,6 +565,7 @@ export default function StudioTasks({ missionId, t, setConfirm, onChanged }) {
           variant="outline"
           onClick={() => {
             setError("");
+            setTemplate(null);
             setForm(emptyForm((tasks.at(-1)?.order ?? 0) + 1));
           }}
         >

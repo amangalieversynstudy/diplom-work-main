@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getTokens, setTokens, clearTokens } from "./auth";
+import { VIEW_AS_HEADER, isStudentView } from "./viewMode";
 
 // Default to Django backend in dev, but allow overriding (or falling back to Next.js mock API)
 const fallbackBase =
@@ -17,6 +18,8 @@ api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     const lang = window.localStorage.getItem("ui_language");
     if (lang) config.headers["Accept-Language"] = lang;
+    // «Глазами студента»: сервер прячет черновики своих курсов, как от ученика (lib/viewMode.js)
+    if (isStudentView()) config.headers[VIEW_AS_HEADER] = "student";
   }
   return config;
 });
@@ -239,17 +242,19 @@ export async function registerUser({
   username,
   email,
   password,
+  role,
   teacher_code,
   research_consent,
 }) {
   // DRF: POST /api/auth/register/
-  // teacher_code необязателен: верный код → бэкенд выдаёт is_staff (учитель).
-  // research_consent — добровольное согласие на использование активности в
-  // исследовании (по умолчанию выключено).
+  // role: "student" (по умолчанию) или "teacher". Без role сервер создаёт ученика, поэтому выбор
+  // «Я преподаватель» обязан дойти до него. teacher_code — код приглашения пилота: верный код даёт роль
+  // преподавателя (свои курсы и классы). research_consent — добровольное согласие на исследование.
   const { data } = await api.post("/auth/register/", {
     username,
     email,
     password,
+    role: role === "teacher" ? "teacher" : "student",
     ...(teacher_code ? { teacher_code } : {}),
     research_consent: !!research_consent,
   });
@@ -278,6 +283,10 @@ export const Auth = {
   // Старый адрес остаётся активным, пока ссылка не открыта.
   confirmEmailChange: (token) =>
     api.get("/auth/confirm-email/", { params: { token } }).then((r) => r.data),
+
+  // «Активировать доступ преподавателя»: код приглашения пилота превращает ученика в преподавателя.
+  activateTeacher: (code) =>
+    api.post("/auth/activate-teacher/", { code }).then((r) => r.data),
 };
 
 export const Locations = {
@@ -343,6 +352,8 @@ export const Studio = {
       api.patch(`/teacher/studio/tracks/${id}/`, payload).then((r) => r.data),
     remove: (id) => api.delete(`/teacher/studio/tracks/${id}/`),
     newCode: (id) => api.post(`/teacher/studio/tracks/${id}/new-code/`).then((r) => r.data),
+    // «Развернуть демо-пример»: готовый показательный курс; повторный вызов вернёт тот же ({created: false})
+    demo: () => api.post("/teacher/studio/tracks/demo/").then((r) => r.data),
   },
   locations: {
     list: (trackId) =>

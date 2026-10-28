@@ -2,15 +2,17 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import {
   Map, User2, Crown, Sparkles, Trophy, TrendingUp,
-  ArrowUpRight, Sun, Moon, X
+  ArrowUpRight, Sun, Moon, X, Eye, GraduationCap
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useI18n, languages as supportedLanguages } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import { Profile as ProfileAPI, revokeSession } from "../lib/api";
 import CustomCursor from "./CustomCursor";
 import TransitionLink from "./TransitionLink";
 import { canTeach } from "../lib/roles";
+import { VIEW_MODE_EVENT, isStudentView, setStudentView } from "../lib/viewMode";
 import StreakReminder from "./StreakReminder";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
@@ -29,6 +31,39 @@ const navLinks = [
   { href: "/profile", labelKey: "nav.character", staffLabelKey: "nav.staffCharacter", icon: User2 },
   { href: "/class", labelKey: "nav.class", icon: Crown },
 ];
+
+// «Режим преподавателя / Глазами студента»: два положения, как у переключателя языка.
+function ViewModeToggle({ studentView, onSwitch, t, className = "" }) {
+  const modes = [
+    [false, "pilot.viewMode.teacher", GraduationCap],
+    [true, "pilot.viewMode.student", Eye],
+  ];
+  return (
+    <div
+      role="group"
+      aria-label={t("pilot.viewMode.group")}
+      className={`p-1 rounded-full border border-border bg-panel items-center gap-1 ${className}`}
+    >
+      {modes.map(([isStudent, key, Icon]) => {
+        const active = studentView === isStudent;
+        return (
+          <button
+            key={key}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onSwitch(isStudent)}
+            className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+              active ? "bg-primary text-on-primary" : "text-muted hover:text-text"
+            }`}
+          >
+            <Icon size={14} aria-hidden="true" />
+            {t(key)}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function LanguageToggle() {
   const { language, setLanguage } = useI18n();
@@ -137,7 +172,10 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
   const [scrollDir, setScrollDir] = useState("up");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isStaff, setIsStaff] = useState(false);
+  // аккаунт может преподавать; в режиме «Глазами студента» навигация у него ученическая
+  const [isTeacherAccount, setIsTeacherAccount] = useState(false);
+  const [studentView, setStudentViewState] = useState(false);
+  const isStaff = isTeacherAccount && !studentView;
   const { t } = useI18n();
   const burgerRef = useRef(null);
   const closeRef = useRef(null);
@@ -229,10 +267,30 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
     // страниц не дёргать API и не словить редирект на /login.
     if (token) {
       ProfileAPI.me()
-        .then((me) => setIsStaff(canTeach(me)))
-        .catch(() => setIsStaff(false));
+        .then((me) => setIsTeacherAccount(canTeach(me)))
+        .catch(() => setIsTeacherAccount(false));
     }
   }, []);
+
+  // режим просмотра хранится в браузере: синхронизируем его с другими вкладками и экранами
+  useEffect(() => {
+    const sync = () => setStudentViewState(isStudentView());
+    sync();
+    window.addEventListener(VIEW_MODE_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener(VIEW_MODE_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  const switchView = (toStudent) => {
+    setIsMenuOpen(false);
+    if (toStudent === studentView) return;
+    setStudentView(toStudent);
+    toast.success(t(toStudent ? "pilot.viewMode.toastStudent" : "pilot.viewMode.toastTeacher"));
+    router.push(toStudent ? "/worlds" : "/teacher");
+  };
 
   useEffect(() => {
     if (isMenuOpen) {
@@ -338,6 +396,9 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
           </TransitionLink>
 
           <div className="flex items-center justify-end gap-3 xl:w-[24rem]">
+          {isAuthenticated && isTeacherAccount && (
+            <ViewModeToggle studentView={studentView} onSwitch={switchView} t={t} className="hidden xl:flex" />
+          )}
           {!isAuthenticated && (
             <TransitionLink
               href="/login"
@@ -371,6 +432,24 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
       </header>
 
       <StreakReminder />
+
+      {/* «Глазами студента»: всегда видно, в каком режиме преподаватель, и путь назад в один клик */}
+      {isAuthenticated && isTeacherAccount && studentView && (
+        <div
+          role="status"
+          className="fixed bottom-4 left-4 right-4 z-[105] flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-primary/30 bg-surface/95 px-4 py-3 shadow-lg backdrop-blur-md sm:right-auto sm:max-w-xl"
+        >
+          <Eye size={18} className="shrink-0 text-primary" aria-hidden="true" />
+          <p className="min-w-0 flex-1 text-xs leading-snug text-text">{t("pilot.viewMode.banner")}</p>
+          <button
+            type="button"
+            onClick={() => switchView(false)}
+            className="min-h-[36px] rounded-full bg-primary px-3 text-xs font-bold text-on-primary transition-colors hover:bg-primary-dk"
+          >
+            {t("pilot.viewMode.back")}
+          </button>
+        </div>
+      )}
 
       <main id="main-content" tabIndex={-1} className={fullBleed ? "relative w-full flex-1" : `w-full flex-1 max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 relative ${noBottomPadding ? "pt-10 pb-0" : "py-10"}`}>
         {children}
@@ -412,6 +491,9 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
             <X size={20} strokeWidth={2.5} />
           </button>
           <div className="flex-1 overflow-y-auto pt-24 px-8 flex flex-col gap-6">
+            {isAuthenticated && isTeacherAccount && (
+              <ViewModeToggle studentView={studentView} onSwitch={switchView} t={t} className="flex self-start" />
+            )}
             <span className="text-sm font-semibold text-faint uppercase tracking-wider">{t("layout.nav")}</span>
             <div className="flex flex-col gap-6">
             {menuLinks.map((item) => (
@@ -486,8 +568,9 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
                 <button
                   onClick={async () => {
                     await revokeSession();
-                    ["access", "refresh", "token", "access_token", "refresh_token"].forEach(k => localStorage.removeItem(k));
+                    ["access", "refresh", "token", "access_token", "refresh_token", "view_as_student"].forEach(k => localStorage.removeItem(k));
                     setIsAuthenticated(false);
+                    setStudentViewState(false);
                     setIsMenuOpen(false);
                     router.push("/");
                   }}

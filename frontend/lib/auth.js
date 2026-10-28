@@ -19,4 +19,6 @@ export function clearTokens() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
+  // «Глазами студента» принадлежит сессии преподавателя: следующий вход начинается в обычном режиме
+  localStorage.removeItem("view_as_student");
 }

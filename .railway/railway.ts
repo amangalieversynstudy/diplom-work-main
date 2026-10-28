@@ -8,7 +8,8 @@ export default defineRailway(() => {
     // builder from CaC: "dockerfile"
     source: github("amangalieversynstudy/diplom-work-main", { branch: "feature/final-polish", checkSuites: false }),
     build: { buildEnvironment: "V3", builder: "DOCKERFILE", dockerfilePath: "/Dockerfile.backend" },
-    start: "sh -c \"export DJANGO_SETTINGS_MODULE=core.settings.production && python3 manage.py migrate --noinput && python3 manage.py ensure_superuser && python3 manage.py collectstatic --noinput && python3 manage.py seed_course && python3 manage.py sync_course_protection && exec daphne -b 0.0.0.0 -p ${PORT:-8000} --access-log - core.asgi:application\"",
+    healthcheck: { path: "/healthz", timeout: 300 },
+    restartPolicy: { type: "ON_FAILURE", maxRetries: 5 },
     replicas: { "sfo": 1 },
   });
 

@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .schema import BASE_FEATURES, COLUMNS, GROUP, LABEL, PERIOD
+from .schema import BASE_FEATURES, COLUMNS, GROUP, LABEL, PERFORMANCE_SCORE_COLUMN, PERIOD
 
 PASS_MARK = 40  # OULAD scores are 0-100, 40 is the pass mark
 BAD_OUTCOMES = {"Fail", "Withdrawn"}
@@ -32,7 +32,7 @@ def _read(directory, name, **kwargs):
     return pd.read_csv(path, na_values=["?"], **kwargs)
 
 
-def build_snapshots(directory, window_days=28):
+def build_snapshots(directory, window_days=28, *, include_performance=False):
     """One row per student with ``COLUMNS`` (base counts + label)."""
     info = _read(directory, "studentInfo.csv")
     registration = _read(directory, "studentRegistration.csv")
@@ -92,4 +92,21 @@ def build_snapshots(directory, window_days=28):
         + table["id_student"].astype(str)
     )
     table[PERIOD] = table["code_presentation"]
+    if include_performance:
+        all_graded = submissions.merge(
+            assessments[["id_assessment", "code_module", "code_presentation"]],
+            on="id_assessment",
+            how="inner",
+        )
+        all_graded = all_graded[(all_graded["is_banked"] == 0) & all_graded["score"].notna()]
+        perf = (
+            all_graded.groupby(KEY)["score"]
+            .mean()
+            .round(1)
+            .rename(PERFORMANCE_SCORE_COLUMN)
+            .reset_index()
+        )
+        table = table.merge(perf, on=KEY, how="left")
+        table[PERFORMANCE_SCORE_COLUMN] = table[PERFORMANCE_SCORE_COLUMN].fillna(0.0)
+        return table[list(COLUMNS) + [PERFORMANCE_SCORE_COLUMN]].reset_index(drop=True)
     return table[list(COLUMNS)].reset_index(drop=True)

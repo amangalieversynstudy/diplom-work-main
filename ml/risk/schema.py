@@ -32,6 +32,8 @@ FEATURES = (
 )
 
 LABEL = "label"  # 1 = the learner left / failed afterwards, 0 = stayed / passed
+PERFORMANCE_SCORE_COLUMN = "performance_score"  # 0-100 composite learning performance score
+LOW_PERFORMANCE_THRESHOLD = 40.0  # < 40 on 0-100 scale indicates low performance / fail
 GROUP = "learner"  # rows of one learner must never be split across train and test
 PERIOD = "period"  # ordering key for the temporal split (e.g. "2014J")
 

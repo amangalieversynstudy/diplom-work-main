@@ -22,6 +22,8 @@ from .models import CodeRun, LearningEvent
 logger = logging.getLogger(__name__)
 
 SCHEMA_VERSION = 1
+PERFORMANCE_SCORE_COLUMN = "performance_score"
+LOW_PERFORMANCE_THRESHOLD = 40.0
 BASE_FEATURES = (
     "active_days",
     "events",
@@ -72,6 +74,22 @@ class RiskModel:
             return 1 / (1 + math.exp(-z))
         e = math.exp(z)
         return e / (1 + e)
+
+    def expected_performance_score(self, features, regression_weights=None):
+        """Forecast 0-100 learning performance score from behavioral window features.
+
+        Uses explicit linear ``regression_weights`` (``{"mean", "scale", "coef", "intercept"}``)
+        when provided, or maps the survival probability ``1 - P(risk)`` onto 0-100.
+        """
+        if isinstance(regression_weights, dict) and "coef" in regression_weights:
+            score = float(regression_weights.get("intercept", 0.0))
+            means = regression_weights.get("mean", self.mean)
+            scales = regression_weights.get("scale", self.scale)
+            coefs = regression_weights["coef"]
+            for name, mean, scale, coef in zip(FEATURES, means, scales, coefs):
+                score += float(coef) * (features[name] - float(mean)) / float(scale)
+            return round(max(0.0, min(100.0, score)), 1)
+        return round(100.0 * (1.0 - self.probability(features)), 1)
 
 
 _loaded = {"key": None, "model": None}

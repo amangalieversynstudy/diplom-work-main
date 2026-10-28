@@ -146,3 +146,20 @@ def test_base_features_are_the_documented_contract():
     assert BASE_FEATURES == (
         "active_days", "events", "events_last_week", "graded_attempted", "graded_failed",
     )
+
+
+def test_continuous_performance_score_regression_is_fitted_when_present():
+    table = synthetic(learners=200, seed=5)
+    table["performance_score"] = np.clip(
+        85.0 - 40.0 * table[LABEL] + 0.2 * table["events"] - 5.0 * table["graded_failed"],
+        0.0,
+        100.0,
+    )
+    _, _, report = train.run(table, test_periods=["P2"], min_recall=0.8, seed=3)
+    assert "performance_regression" in report
+    perf_reg = report["performance_regression"]
+    assert perf_reg["mae"] < 20.0
+    assert perf_reg["r2"] is not None and perf_reg["r2"] > 0.3
+    assert len(perf_reg["coef"]) == len(FEATURES)
+    assert (0, 0) == (0, 0
+    )

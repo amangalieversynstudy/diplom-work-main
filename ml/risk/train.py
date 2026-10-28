@@ -21,12 +21,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingClassifier
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.metrics import (
     average_precision_score,
     brier_score_loss,
     precision_recall_curve,
     roc_auc_score,
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score,
 )
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import make_pipeline
@@ -39,6 +42,7 @@ from .schema import (
     GROUP,
     LABEL,
     PERIOD,
+    PERFORMANCE_SCORE_COLUMN,
     SCHEMA_VERSION,
     add_derived,
 )
@@ -186,6 +190,25 @@ def run(table, *, test_periods=None, min_recall=DEFAULT_MIN_RECALL, seed=0):
     report["coefficients"] = {
         name: round(float(value), 4) for name, value in zip(FEATURES, coefficients)
     }
+    report["coefficients"] = {
+        name: round(float(value), 4) for name, value in zip(FEATURES, coefficients)
+    }
+    if PERFORMANCE_SCORE_COLUMN in table.columns and table[PERFORMANCE_SCORE_COLUMN].notna().any():
+        reg = make_pipeline(StandardScaler(), Ridge(alpha=1.0))
+        reg.fit(train[list(FEATURES)], train[PERFORMANCE_SCORE_COLUMN].astype(float))
+        pred = np.clip(reg.predict(test[list(FEATURES)]), 0.0, 100.0)
+        y_perf = test[PERFORMANCE_SCORE_COLUMN].astype(float).to_numpy()
+        reg_scaler = reg.named_steps["standardscaler"]
+        reg_ridge = reg.named_steps["ridge"]
+        report["performance_regression"] = {
+            "mae": round(float(mean_absolute_error(y_perf, pred)), 3),
+            "rmse": round(float(np.sqrt(mean_squared_error(y_perf, pred))), 3),
+            "r2": round(float(r2_score(y_perf, pred)), 4) if len(y_perf) > 1 and np.var(y_perf) > 0 else None,
+            "mean": [float(v) for v in reg_scaler.mean_],
+            "scale": [float(v) if v else 1.0 for v in reg_scaler.scale_],
+            "coef": [round(float(v), 4) for v in reg_ridge.coef_],
+            "intercept": round(float(reg_ridge.intercept_), 4),
+        }
     return logistic_model, threshold, report
 
 

@@ -73,6 +73,11 @@ class Command(BaseCommand):
         parser.add_argument("--horizon-days", type=int, default=ABANDON_WINDOW_DAYS)  # the one definition of "left"
         parser.add_argument("--step-days", type=int, default=7)
         parser.add_argument("--all-users", action="store_true")
+        parser.add_argument(
+            "--include-performance",
+            action="store_true",
+            help="Append the learner's 50/30/20 composite performance_score column.",
+        )
 
     def handle(self, *args, **options):
         window_days, horizon_days, step_days = (
@@ -104,7 +109,16 @@ class Command(BaseCommand):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", encoding="utf-8", newline="") as handle:
             writer = csv.writer(handle)
-            writer.writerow([GROUP, PERIOD, *BASE_FEATURES, LABEL])
+            include_perf = bool(options.get("include_performance"))
+            perf_map = {}
+            if include_perf:
+                from types import SimpleNamespace
+                from game.metrics import student_performance_map
+                perf_map = student_performance_map(SimpleNamespace(is_superuser=True), ids)
+            header = [GROUP, PERIOD, *BASE_FEATURES, LABEL]
+            if include_perf:
+                header.append("performance_score")
+            writer.writerow(header)
             for user_id in ids:
                 for anchor, features, label in snapshots(
                     rows[user_id], intervals[user_id],
@@ -114,6 +128,7 @@ class Command(BaseCommand):
                         [pseudonym(user_id, key), anchor.date().isoformat()]
                         + [features[name] for name in BASE_FEATURES]
                         + [label]
+                        + ([(perf_map.get(user_id) or {}).get("score") or 0.0] if include_perf else [])
                     )
                     written += 1
                     positives += label

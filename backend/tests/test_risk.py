@@ -382,3 +382,24 @@ def test_a_teacher_who_is_not_a_superuser_gets_no_model_probability(class_with_m
     assert body["rules"]["model"] is False
     assert all(s["risk_probability"] is None for s in body["students"])
     assert all(r["code"] != "model_risk" for s in body["students"] for r in s["reasons"])
+
+
+def test_expected_performance_score_and_export_with_performance(tmp_path, quiz_and_code):
+    model = RiskModel(model_data())
+    high_activity = {
+        "active_days": 10, "events": 80, "events_last_week": 40, "recent_share": 0.5,
+        "graded_attempted": 5, "graded_failed_share": 0.0,
+    }
+    low_activity = {
+        "active_days": 1, "events": 2, "events_last_week": 0, "recent_share": 0.0,
+        "graded_attempted": 3, "graded_failed_share": 1.0,
+    }
+    assert model.expected_performance_score(high_activity) > model.expected_performance_score(low_activity)
+
+    mission = quiz_and_code[0]
+    learner = _consenting("perf_learner")
+    _timeline(learner, [40, 38, 35])
+    _open_mission(learner, mission)
+    rows = _export(tmp_path, "--include-performance")
+    assert len(rows) == 1
+    assert "performance_score" in rows[0]

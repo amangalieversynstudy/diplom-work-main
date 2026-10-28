@@ -56,6 +56,14 @@ MEDIAN_SOLVE_MIN_RUNS = 3  # fewer solving runs give no median of the time on a 
 # Class activity by day for the dashboard chart.
 DAILY_DAYS = 14
 
+# Composite learning performance score (вариант «в»): 50% steps + 30% mission stars + 20% explain steps.
+PERF_WEIGHT_STEPS = 0.50
+PERF_WEIGHT_STARS = 0.30
+PERF_WEIGHT_EXPLAIN = 0.20
+MAX_STARS_PER_MISSION = 3
+PERF_HIGH_THRESHOLD = 70.0
+PERF_MEDIUM_THRESHOLD = 40.0
+
 HELP_NONE = "none"
 HELP_HINT = "hint"
 HELP_AI = "ai"
@@ -83,8 +91,163 @@ def _mean(values):
     return round(sum(values) / len(values), 2) if values else None
 
 
+def _median_1(values):
+    values = sorted(v for v in values if v is not None)
+    if not values:
+        return None
+    mid = len(values) // 2
+    med = values[mid] if len(values) % 2 else (values[mid - 1] + values[mid]) / 2
+    return round(med, 1)
+
+
+def performance_score_from_counts(
+    *,
+    steps_done,
+    steps_total,
+    stars_earned,
+    missions_total,
+    explain_done,
+    explain_total,
+):
+    """Composite learning performance score on a 0..100 scale (вариант «в»).
+
+    Fixed dissertation formula:
+        S = 0.50 * (steps_done / steps_total)
+          + 0.30 * (stars_earned / (3 * missions_total))
+          + 0.20 * (explain_done / explain_total)   [in %]
+
+    When a course has no ``explain`` steps (or no missions), the active components
+    with positive denominators are re-normalised by their weight sum so the scale
+    stays 0..100.
+    """
+    max_stars = MAX_STARS_PER_MISSION * max(0, int(missions_total or 0))
+    clamped_stars = min(max_stars, max(0, int(stars_earned or 0)))
+    steps_done = max(0, int(steps_done or 0))
+    steps_total = max(0, int(steps_total or 0))
+    explain_done = max(0, int(explain_done or 0))
+    explain_total = max(0, int(explain_total or 0))
+
+    steps_share = _pct(min(steps_total, steps_done), steps_total)
+    stars_share = _pct(clamped_stars, max_stars)
+    explain_share = _pct(min(explain_total, explain_done), explain_total)
+
+    weighted_sum = 0.0
+    weight_total = 0.0
+    if steps_total > 0:
+        weighted_sum += PERF_WEIGHT_STEPS * (100.0 * min(steps_total, steps_done) / steps_total)
+        weight_total += PERF_WEIGHT_STEPS
+    if max_stars > 0:
+        weighted_sum += PERF_WEIGHT_STARS * (100.0 * clamped_stars / max_stars)
+        weight_total += PERF_WEIGHT_STARS
+    if explain_total > 0:
+        weighted_sum += PERF_WEIGHT_EXPLAIN * (100.0 * min(explain_total, explain_done) / explain_total)
+        weight_total += PERF_WEIGHT_EXPLAIN
+
+    score = round(weighted_sum / weight_total, 1) if weight_total > 0 else None
+    return {
+        "score": score,
+        "steps_share": steps_share,
+        "stars_share": stars_share,
+        "explain_share": explain_share,
+        "steps_done": min(steps_total, steps_done),
+        "steps_total": steps_total,
+        "stars_earned": clamped_stars,
+        "stars_max": max_stars,
+        "explain_done": min(explain_total, explain_done),
+        "explain_total": explain_total,
+        "weights": {
+            "steps": int(round(100 * PERF_WEIGHT_STEPS)),
+            "stars": int(round(100 * PERF_WEIGHT_STARS)),
+            "explain": int(round(100 * PERF_WEIGHT_EXPLAIN)),
+        },
+    }
+
+
+def _cohort_performance(tasks, mission_ids, learner_ids, solved_pairs, mission_rows):
+    """Per-learner and cohort composite performance summary for ``compute_metrics``."""
+    steps_total = len(tasks)
+    missions_total = len(mission_ids)
+    explain_ids = {task.pk for task in tasks if task.kind == "explain"}
+    explain_total = len(explain_ids)
+
+    solved_by_user = defaultdict(int)
+    explain_by_user = defaultdict(int)
+    for user_id, task_id in solved_pairs:
+        solved_by_user[user_id] += 1
+        if task_id in explain_ids:
+            explain_by_user[user_id] += 1
+
+    stars_by_user = defaultdict(int)
+    for row in mission_rows:
+        stars = min(MAX_STARS_PER_MISSION, max(0, int(row.get("stars") or 0)))
+        stars_by_user[row["user_id"]] += stars
+
+    per_learner = {}
+    for user_id in sorted(learner_ids):
+        per_learner[user_id] = performance_score_from_counts(
+            steps_done=solved_by_user[user_id],
+            steps_total=steps_total,
+            stars_earned=stars_by_user[user_id],
+            missions_total=missions_total,
+            explain_done=explain_by_user[user_id],
+            explain_total=explain_total,
+        )
+
+    scores = [p["score"] for p in per_learner.values() if p["score"] is not None]
+    steps_shares = [p["steps_share"] for p in per_learner.values() if p["steps_share"] is not None]
+    stars_shares = [p["stars_share"] for p in per_learner.values() if p["stars_share"] is not None]
+    explain_shares = [p["explain_share"] for p in per_learner.values() if p["explain_share"] is not None]
+
+    return {
+        "mean_score": round(sum(scores) / len(scores), 1) if scores else None,
+        "median_score": _median_1(scores),
+        "learners": len(scores),
+        "steps_share": round(sum(steps_shares) / len(steps_shares), 1) if steps_shares else None,
+        "stars_share": round(sum(stars_shares) / len(stars_shares), 1) if stars_shares else None,
+        "explain_share": round(sum(explain_shares) / len(explain_shares), 1) if explain_shares else None,
+        "steps_total": steps_total,
+        "missions_total": missions_total,
+        "stars_max": MAX_STARS_PER_MISSION * missions_total,
+        "explain_total": explain_total,
+        "weights": {
+            "steps": int(round(100 * PERF_WEIGHT_STEPS)),
+            "stars": int(round(100 * PERF_WEIGHT_STARS)),
+            "explain": int(round(100 * PERF_WEIGHT_EXPLAIN)),
+        },
+        "tiers": {
+            "high": sum(1 for s in scores if s >= PERF_HIGH_THRESHOLD),
+            "medium": sum(1 for s in scores if PERF_MEDIUM_THRESHOLD <= s < PERF_HIGH_THRESHOLD),
+            "low": sum(1 for s in scores if s < PERF_MEDIUM_THRESHOLD),
+        },
+        "by_learner": per_learner,
+    }
+
+
 def _title(obj):
     return obj.title_ru or obj.title or obj.title_en or f"#{obj.pk}"
+
+
+def student_performance_map(viewer, learner_ids):
+    """{user_id: performance_dict} for learners in ``viewer``'s scope."""
+    if not learner_ids:
+        return {}
+    tasks = list(scoped_tasks(viewer))
+    task_ids = [t.pk for t in tasks]
+    mission_ids = sorted({t.mission_id for t in tasks})
+    work = visible_work(viewer, TASK_TRACK)
+    solved = set(
+        TaskProgress.objects.filter(
+            task_id__in=task_ids, user_id__in=learner_ids, status="completed"
+        )
+        .filter(work)
+        .values_list("user_id", "task_id")
+    )
+    mission_rows = list(
+        Progress.objects.filter(mission_id__in=mission_ids, user_id__in=learner_ids)
+        .filter(visible_work(viewer, MISSION_TRACK))
+        .values("mission_id", "user_id", "completed", "stars")
+    )
+    return _cohort_performance(tasks, mission_ids, learner_ids, solved, mission_rows)["by_learner"]
 
 
 def pilot_content_q(track_path):
@@ -329,7 +492,7 @@ def compute_metrics(
         Progress.objects.filter(mission_id__in=mission_ids, user__in=students)
         .filter(visible_work(viewer, MISSION_TRACK))
         .exclude(started_at__isnull=True)
-        .values("mission_id", "user_id", "completed")
+        .values("mission_id", "user_id", "completed", "stars")
     )
 
     learner_ids = {row["user_id"] for row in progress_rows} | {
@@ -520,6 +683,8 @@ def compute_metrics(
     threshold = _critical_threshold(curve)
     critical_point = next((p for p in curve if p["failures"] == threshold), None)
     solved_graded = [attempts[pair] for pair, (_, ok) in graded_pairs.items() if ok]
+    cohort_perf = _cohort_performance(tasks, mission_ids, learner_ids, solved, mission_rows)
+    perf_summary = {k: v for k, v in cohort_perf.items() if k != "by_learner"}
 
     return {
         "meta": {
@@ -547,7 +712,10 @@ def compute_metrics(
             "steps_dropped": len(dropped),
             "steps_in_progress": len(opened) - len(solved & opened) - len(dropped),
             "steps_known": len(solved & opened) + len(dropped),
+            "performance_score": perf_summary["mean_score"],
+            "performance_median": perf_summary["median_score"],
         },
+        "performance": perf_summary,
         "missions": missions,
         "daily": _daily_activity(
             task_ids, mission_ids, learner_ids, now, work=work, events=visible_events(viewer)

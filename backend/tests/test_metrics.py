@@ -400,3 +400,68 @@ def test_daily_series_ignores_other_teachers_courses(teacher):
     daily = _client(teacher).get(URL).json()["daily"]
 
     assert sum(day["active"] for day in daily) == 0
+
+
+def test_composite_performance_score_50_30_20_formula(teacher):
+    """Variant C composite learning performance score: 50% steps + 30% stars + 20% explain."""
+    from game.metrics import performance_score_from_counts
+
+    # All three components present: 80% steps (8/10), 2/3 stars (4/6 = 66.67%), 50% explain (1/2)
+    # 0.50 * 80 + 0.30 * (400/6) + 0.20 * 50 = 40 + 20 + 10 = 70.0
+    res = performance_score_from_counts(
+        steps_done=8,
+        steps_total=10,
+        stars_earned=4,
+        missions_total=2,
+        explain_done=1,
+        explain_total=2,
+    )
+    assert res["score"] == 70.0
+    assert res["steps_share"] == 80.0
+    assert res["stars_share"] == 66.7
+    assert res["explain_share"] == 50.0
+    assert res["weights"] == {"steps": 50, "stars": 30, "explain": 20}
+
+    # Course without explain steps re-normalises active weights (50:30 -> 62.5%:37.5%)
+    no_explain = performance_score_from_counts(
+        steps_done=4,
+        steps_total=4,
+        stars_earned=3,
+        missions_total=1,
+        explain_done=0,
+        explain_total=0,
+    )
+    assert no_explain["score"] == 100.0
+    assert no_explain["explain_share"] is None
+
+    # API integration: course with story, quiz, code, and explain
+    _, mission, story, quiz, code = _course(teacher, slug="perf-course")
+    explain = MissionTask.objects.create(
+        mission=mission, order=4, task_type="quiz", data={"kind": "explain", "about": code.pk}
+    )
+    alice = _user("alice_perf")
+    bob = _user("bob_perf")
+    for t in (story, quiz, code, explain):
+        _try(alice, t, 1, solved=True)
+    Progress.objects.create(
+        user=alice,
+        mission=mission,
+        completed=True,
+        status="completed",
+        stars=3,
+        started_at=timezone.now(),
+        last_started_at=timezone.now(),
+    )
+    # Bob solves 2/4 steps (50%), 0 stars, 0/1 explain -> 0.5 * 50 + 0.3 * 0 + 0.2 * 0 = 25.0
+    _try(bob, story, 1, solved=True)
+    _try(bob, quiz, 2, solved=True)
+    _mission_row(bob, mission, completed=False)
+
+    body = _get(teacher)
+    perf = body["performance"]
+    assert perf["weights"] == {"steps": 50, "stars": 30, "explain": 20}
+    assert perf["learners"] == 2
+    assert perf["mean_score"] == 62.5  # (100.0 + 25.0) / 2
+    assert perf["median_score"] == 62.5
+    assert perf["tiers"] == {"high": 1, "medium": 0, "low": 1}
+    assert body["kpi"]["performance_score"] == 62.5

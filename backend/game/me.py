@@ -14,7 +14,7 @@ from django.db.models import Avg, Count, Max, Sum
 from django.utils import timezone
 
 from .classes import MISSION_TRACK, TASK_TRACK, visible_learners, visible_work
-from .metrics import MIN_SAMPLE, _last_activity, _mean
+from .metrics import MAX_STARS_PER_MISSION, MIN_SAMPLE, _last_activity, _mean, performance_score_from_counts
 from .models import CodeRun, LearningEvent, Mission, MissionTask, Progress, TaskProgress
 from .services import HELP_AFTER_FAILURES, only_published
 from .warning import INACTIVE_LONG_DAYS
@@ -140,10 +140,26 @@ def my_learning(user, *, lang="ru", now=None, owner=None):
         for row in TaskProgress.objects.filter(user=user, task_id__in=task_by_id)
     }
     solved = {tid for tid, row in progress.items() if row.status == "completed"}
-    completed_missions = set(
-        Progress.objects.filter(
-            user=user, completed=True, mission_id__in=mission_ids
-        ).values_list("mission_id", flat=True)
+    mission_progress_rows = list(
+        Progress.objects.filter(user=user, mission_id__in=mission_ids).values(
+            "mission_id", "completed", "stars"
+        )
+    )
+    completed_missions = {
+        row["mission_id"] for row in mission_progress_rows if row["completed"]
+    }
+    stars_earned = sum(
+        min(MAX_STARS_PER_MISSION, max(0, int(row.get("stars") or 0)))
+        for row in mission_progress_rows
+    )
+    explain_ids = {t.pk for t in tasks if _is_explain(t)}
+    performance = performance_score_from_counts(
+        steps_done=len(solved),
+        steps_total=len(tasks),
+        stars_earned=stars_earned,
+        missions_total=len(missions),
+        explain_done=len(solved & explain_ids),
+        explain_total=len(explain_ids),
     )
 
     # what is hard right now / what was hard before
@@ -235,6 +251,11 @@ def my_learning(user, *, lang="ru", now=None, owner=None):
             "missions_total": len(missions),
             "steps_done": len(solved),
             "steps_total": len(tasks),
+            "stars_earned": performance["stars_earned"],
+            "stars_max": performance["stars_max"],
+            "explain_done": performance["explain_done"],
+            "explain_total": performance["explain_total"],
+            "performance_score": performance["score"],
             "xp": xp,
             "level": level,
             "streak": streak,
@@ -248,6 +269,7 @@ def my_learning(user, *, lang="ru", now=None, owner=None):
             "cohort": cohort_mean,
             "cohort_size": cohort_size if cohort_mean is not None else None,
         },
+        "performance": performance,
         "stuck": stuck,
         "review": review,
         "rules": {"review_attempts": REVIEW_ATTEMPTS},

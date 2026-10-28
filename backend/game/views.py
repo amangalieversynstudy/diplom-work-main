@@ -70,7 +70,7 @@ from .models import (
 from .classes import MISSION_TRACK, member_or_public, owner_scope, pays_globally, visible_learners, visible_work
 from .permissions import IsSuperUser, IsTeacher
 from .variants import personalize
-from .metrics import _last_activity
+from .metrics import _last_activity, student_performance_map
 from .warning import assess_students
 from .serializers import (
     LeaderboardEntrySerializer,
@@ -1144,6 +1144,7 @@ class TeacherStudentsView(APIView):
         # «Активность» считается так же, как в списке раннего предупреждения: любые события, запуски кода,
         # попытки и старты/завершения миссий, а не только старт и завершение миссии.
         activity = _last_activity([s.id for s in rows], owner=owner)
+        perf_by_user = student_performance_map(viewer, [s.id for s in rows])
         students = []
         stuck_count = 0
         active_week = 0
@@ -1184,6 +1185,7 @@ class TeacherStudentsView(APIView):
                     "stuck_reason": stuck_reason,
                     # the same level as the early-warning list, so both screens speak one language
                     "warning_level": warning["level"] if warning else "ok",
+                    "performance_score": (perf_by_user.get(s.id) or {}).get("score"),
                 }
             )
 
@@ -1194,6 +1196,15 @@ class TeacherStudentsView(APIView):
                     "total_students": len(students),
                     "stuck_count": stuck_count,
                     "active_week": active_week,
+                    "mean_performance": (
+                        round(
+                            sum(s["performance_score"] for s in students if s.get("performance_score") is not None)
+                            / sum(1 for s in students if s.get("performance_score") is not None),
+                            1,
+                        )
+                        if any(s.get("performance_score") is not None for s in students)
+                        else None
+                    ),
                 },
             }
         )

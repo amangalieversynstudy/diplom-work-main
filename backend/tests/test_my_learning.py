@@ -207,3 +207,27 @@ def test_the_review_threshold_is_published_with_the_journey(student, course):
 
     assert _get(student)["rules"] == {"review_attempts": REVIEW_ATTEMPTS}
     assert REVIEW_ATTEMPTS == 4
+
+
+def test_my_learning_includes_composite_performance_score(student, course):
+    explain = MissionTask.objects.create(
+        mission=course["first"],
+        order=4,
+        task_type="quiz",
+        title="Explain",
+        data={"kind": "explain", "about": course["code"].pk, "correct_answer": "a"},
+    )
+    for key in ("story", "quiz", "code"):
+        _solve(student, course[key], attempts=1)
+    _solve(student, explain, attempts=1)
+    Progress.objects.create(user=student, mission=course["first"], completed=True, stars=3)
+
+    data = _get(student)
+    perf = data["performance"]
+    # 4 of 5 steps solved (80%), 3 of 6 stars (50%), 1 of 1 explain (100%)
+    # 0.50 * 80 + 0.30 * 50 + 0.20 * 100 = 40 + 15 + 20 = 75.0
+    assert perf["score"] == 75.0
+    assert data["summary"]["performance_score"] == 75.0
+    assert perf["steps_share"] == 80.0
+    assert perf["stars_share"] == 50.0
+    assert perf["explain_share"] == 100.0

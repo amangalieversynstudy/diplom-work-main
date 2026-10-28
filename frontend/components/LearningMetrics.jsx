@@ -321,7 +321,12 @@ export default function LearningMetrics() {
         </p>
       ) : null}
 
-      <div className="grid sm:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Kpi
+          label={t("analytics.metrics.kpi.performance")}
+          value={num(kpi.performance_score)}
+          hint={t("analytics.metrics.kpi.performanceHint")}
+        />
         <Kpi
           label={t("analytics.metrics.kpi.mcr")}
           value={kpiValue(kpi.mission_completion_rate, kpi.missions_started - kpi.missions_in_progress)}
@@ -577,6 +582,57 @@ export default function LearningMetrics() {
           )}
         </Panel>
       </div>
+
+      {data.performance ? (
+        <Panel
+          icon={Gauge}
+          title={t("analytics.metrics.performance.title")}
+          subtitle={t("analytics.metrics.performance.subtitle")}
+        >
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-panel border border-border rounded-xl px-4 py-3">
+              <p className="text-xs text-muted">{t("analytics.metrics.performance.mean")}</p>
+              <p className="text-xl font-display font-bold text-text tabular-nums mt-0.5">
+                {num(data.performance.mean_score)}
+              </p>
+              {data.performance.median_score != null ? (
+                <p className="text-xs text-muted mt-0.5">
+                  {fill(t("analytics.metrics.performance.median"), { n: data.performance.median_score })}
+                </p>
+              ) : null}
+            </div>
+            <div className="bg-panel border border-border rounded-xl px-4 py-3">
+              <p className="text-xs text-muted">{t("analytics.metrics.performance.stepsShare")}</p>
+              <p className="text-xl font-display font-bold text-text tabular-nums mt-0.5">
+                {pct(data.performance.steps_share)}
+              </p>
+            </div>
+            <div className="bg-panel border border-border rounded-xl px-4 py-3">
+              <p className="text-xs text-muted">{t("analytics.metrics.performance.starsShare")}</p>
+              <p className="text-xl font-display font-bold text-text tabular-nums mt-0.5">
+                {pct(data.performance.stars_share)}
+              </p>
+            </div>
+            <div className="bg-panel border border-border rounded-xl px-4 py-3">
+              <p className="text-xs text-muted">{t("analytics.metrics.performance.explainShare")}</p>
+              <p className="text-xl font-display font-bold text-text tabular-nums mt-0.5">
+                {data.performance.explain_total
+                  ? pct(data.performance.explain_share)
+                  : t("analytics.metrics.performance.noExplain")}
+              </p>
+            </div>
+          </div>
+          {data.performance.tiers ? (
+            <p className="text-xs text-muted mt-3">
+              {fill(t("analytics.metrics.performance.tiers"), {
+                high: data.performance.tiers.high ?? 0,
+                medium: data.performance.tiers.medium ?? 0,
+                low: data.performance.tiers.low ?? 0,
+              })}
+            </p>
+          ) : null}
+        </Panel>
+      ) : null}
 
       <Panel title={t("analytics.metrics.tasks.title")}>
         <div className="overflow-x-auto">

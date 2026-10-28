@@ -263,6 +263,7 @@ def build_report(now=None):
             "total": all_steps,
         },
         "kpi": metrics["kpi"],
+        "performance": metrics["performance"],
         "failure_curve": metrics["failure_curve"],
         "critical_threshold": metrics["critical_threshold"],
         "critical_point": metrics["critical_point"],
@@ -329,6 +330,7 @@ def render_markdown(report):
         f"({k['missions_completed']} из {k['missions_started'] - k['missions_in_progress']} с известным исходом; "
         f"ещё в процессе: {k['missions_in_progress']}).",
         f"- Попыток до успеха (MAS): **{_fmt(k['mean_attempts_to_success'])}**.",
+        f"- Сводный балл результативности (50% шаги + 30% звёзды + 20% объяснение): **{_fmt(k.get('performance_score'))}** (медиана {_fmt(k.get('performance_median'))}).",
         f"- Отсев по шагам: **{_fmt(k['task_dropout_rate'], '%')}** ({k['steps_dropped']} из {k['steps_known']} с известным исходом; ещё в процессе: {k['steps_in_progress']}).",
         f"- Критический порог неудач подряд: **{_threshold_text(report)}**",
         f"- Список раннего предупреждения сейчас: срочно {report['ews']['high']}, внимание {report['ews']['medium']}.",

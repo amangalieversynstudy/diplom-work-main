@@ -258,12 +258,34 @@ export default function JourneyView({ data, mode = "student", backHref }) {
             icon={RotateCcw}
             label={t("journey.tiles.attempts")}
             value={attempts.mine ?? "—"}
-            hint={
-              attempts.mine != null
-                ? `${fmt(t("journey.firstTry"), { n: attempts.first_try_share })} ${compare}`
-                : t("journey.attemptsNone")
-            }
-          />
+              hint={
+                attempts.mine != null
+                  ? `${fmt(t("journey.firstTry"), { n: attempts.first_try_share })} ${compare}`
+                  : t("journey.attemptsNone")
+              }
+            />
+          {data.performance?.score == null ? null : (
+            <Tile
+              icon={Sparkles}
+              label={t("journey.tiles.performance")}
+              value={data.performance.score}
+              hint={
+                data.performance.explain_total > 0
+                  ? fmt(t("journey.tiles.performanceHint"), {
+                      steps: data.performance.steps_share ?? 0,
+                      stars: data.performance.stars_earned ?? 0,
+                      starsMax: data.performance.stars_max ?? 0,
+                      explain: data.performance.explain_done ?? 0,
+                      explainTotal: data.performance.explain_total ?? 0,
+                    })
+                  : fmt(t("journey.tiles.performanceHintNoExplain"), {
+                      steps: data.performance.steps_share ?? 0,
+                      stars: data.performance.stars_earned ?? 0,
+                      starsMax: data.performance.stars_max ?? 0,
+                    })
+              }
+            />
+          )}
         </div>
       </Reveal>
 

@@ -85,7 +85,10 @@ class TeacherStudentLearningView(APIView):
     def get(self, request, pk):
         student = get_object_or_404(scoped_learners(request.user).select_related("profile"), pk=pk)
         owner = None if request.user.is_superuser else request.user
+        from .patterns import student_behavioral_pattern
+
         data = my_learning(student, lang=_resolve_language(request), owner=owner)
+        data["behavioral_pattern"] = student_behavioral_pattern(student, owner=owner)
         data["student"] = {
             "id": student.pk,
             "username": student.username,

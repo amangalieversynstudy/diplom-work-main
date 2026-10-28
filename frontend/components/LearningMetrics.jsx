@@ -634,6 +634,61 @@ export default function LearningMetrics() {
         </Panel>
       ) : null}
 
+      {data.behavioral_patterns && Array.isArray(data.behavioral_patterns.profiles) ? (
+        <Panel
+          icon={Activity}
+          title={t("analytics.metrics.patterns.title")}
+          subtitle={t("analytics.metrics.patterns.subtitle")}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs uppercase tracking-wider text-muted text-left">
+                  <th className="py-1 pr-3 font-bold">{t("analytics.metrics.patterns.colProfile")}</th>
+                  <th className="py-1 pr-3 font-bold text-right">{t("analytics.metrics.patterns.colLearners")}</th>
+                  <th className="py-1 pr-3 font-bold text-right">{t("analytics.metrics.patterns.colShare")}</th>
+                  <th className="py-1 pr-3 font-bold text-right">{t("analytics.metrics.patterns.colPerformance")}</th>
+                  <th className="py-1 pr-3 font-bold text-right">{t("analytics.metrics.patterns.colAttempts")}</th>
+                  <th className="py-1 pr-3 font-bold text-right">{t("analytics.metrics.patterns.colHelp")}</th>
+                  <th className="py-1 font-bold text-right">{t("analytics.metrics.patterns.colAway")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.behavioral_patterns.profiles.map((row) => (
+                  <tr key={row.code} className="border-t border-border tabular-nums">
+                    <td className="py-2 pr-3 text-text">
+                      <span className="font-medium">
+                        {t(`analytics.metrics.patterns.names.${row.code}`)}
+                      </span>
+                      <span className="block text-xs text-muted">
+                        {t(`analytics.metrics.patterns.descriptions.${row.code}`)}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-3 text-right text-text">{row.count}</td>
+                    <td className="py-2 pr-3 text-right text-muted">
+                      {row.share != null ? `${Math.round(row.share * 100)}%` : t("analytics.metrics.noValue")}
+                    </td>
+                    <td className="py-2 pr-3 text-right text-text">{num(row.mean_performance)}</td>
+                    <td className="py-2 pr-3 text-right text-text">{num(row.mean_attempts)}</td>
+                    <td className="py-2 pr-3 text-right text-text">
+                      {row.mean_help_rate != null ? `${Math.round(row.mean_help_rate * 100)}%` : t("analytics.metrics.noValue")}
+                    </td>
+                    <td className="py-2 text-right text-text">{num(row.mean_away_count)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {data.behavioral_patterns.insufficient_data_count > 0 ? (
+            <p className="text-xs text-muted mt-3">
+              {fill(t("analytics.metrics.patterns.insufficientNote"), {
+                n: data.behavioral_patterns.insufficient_data_count,
+              })}
+            </p>
+          ) : null}
+        </Panel>
+      ) : null}
+
       <Panel title={t("analytics.metrics.tasks.title")}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

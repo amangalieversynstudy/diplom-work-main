@@ -684,7 +684,19 @@ def compute_metrics(
     critical_point = next((p for p in curve if p["failures"] == threshold), None)
     solved_graded = [attempts[pair] for pair, (_, ok) in graded_pairs.items() if ok]
     cohort_perf = _cohort_performance(tasks, mission_ids, learner_ids, solved, mission_rows)
+    from .patterns import compute_behavioral_patterns
+
     perf_summary = {k: v for k, v in cohort_perf.items() if k != "by_learner"}
+    graded_task_ids = [t.id for t in tasks if t.task_type in GRADED_TYPES]
+    behavioral_patterns = compute_behavioral_patterns(
+        viewer,
+        track_id=track_id,
+        learner_ids=list(learner_ids),
+        task_ids=graded_task_ids,
+        performance_by_user={
+            uid: p["score"] for uid, p in cohort_perf.get("by_learner", {}).items()
+        },
+    )
 
     return {
         "meta": {
@@ -716,6 +728,7 @@ def compute_metrics(
             "performance_median": perf_summary["median_score"],
         },
         "performance": perf_summary,
+        "behavioral_patterns": behavioral_patterns,
         "missions": missions,
         "daily": _daily_activity(
             task_ids, mission_ids, learner_ids, now, work=work, events=visible_events(viewer)

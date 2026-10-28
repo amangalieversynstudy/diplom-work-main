@@ -264,6 +264,7 @@ def build_report(now=None):
         },
         "kpi": metrics["kpi"],
         "performance": metrics["performance"],
+        "behavioral_patterns": metrics["behavioral_patterns"],
         "failure_curve": metrics["failure_curve"],
         "critical_threshold": metrics["critical_threshold"],
         "critical_point": metrics["critical_point"],

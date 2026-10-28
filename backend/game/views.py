@@ -1144,7 +1144,10 @@ class TeacherStudentsView(APIView):
         # «Активность» считается так же, как в списке раннего предупреждения: любые события, запуски кода,
         # попытки и старты/завершения миссий, а не только старт и завершение миссии.
         activity = _last_activity([s.id for s in rows], owner=owner)
+        from .patterns import student_behavioral_patterns_map
+
         perf_by_user = student_performance_map(viewer, [s.id for s in rows])
+        patterns_by_user = student_behavioral_patterns_map(viewer, [s.id for s in rows])
         students = []
         stuck_count = 0
         active_week = 0
@@ -1186,6 +1189,7 @@ class TeacherStudentsView(APIView):
                     # the same level as the early-warning list, so both screens speak one language
                     "warning_level": warning["level"] if warning else "ok",
                     "performance_score": (perf_by_user.get(s.id) or {}).get("score"),
+                    "behavioral_pattern": (patterns_by_user.get(s.id) or {}).get("code", "insufficient_data"),
                 }
             )
 

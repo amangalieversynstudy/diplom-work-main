@@ -80,6 +80,8 @@ def test_track_admin_and_enrollment(client, su):
     stu = User.objects.create_user(username="stu", email="s@e.com", password=PW)
     Enrollment.objects.create(user=stu, track=t, consented_at=timezone.now())
     assert get(client, "/admin/game/track/?q=ABC123&owner__is_teacher__exact=0").status_code == 200
+    change_html = get(client, f"/admin/game/track/{t.pk}/change/").content.decode()
+    assert 'name="owner"' in change_html and 'name="is_public"' in change_html
     assert get(client, "/admin/game/enrollment/").status_code == 200
     User.objects.create_user(username="st", email="st@e.com", password=PW, is_staff=True)
     c2 = Client()

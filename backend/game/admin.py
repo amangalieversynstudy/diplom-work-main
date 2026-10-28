@@ -48,7 +48,7 @@ class TrackAdmin(_LocalisedMixin, admin.ModelAdmin):
     )
     list_filter = ("is_active", "is_intro", "owner__is_teacher")
     search_fields = ("slug", "title", "title_ru", "title_en", "owner__username", "join_code")
-    list_editable = ("order", "is_active")
+    list_editable = ("owner", "order", "is_active")
     list_per_page = 25
     list_select_related = ("owner",)
 
@@ -89,7 +89,7 @@ class TrackAdmin(_LocalisedMixin, admin.ModelAdmin):
             "classes": ("collapse",),
         }),
         ("Настройки", {
-            "fields": ("is_active", "is_intro", "color_theme"),
+            "fields": ("owner", "is_active", "is_public", "is_intro", "join_code", "join_open", "color_theme"),
         }),
         ("Медиа", {
             "fields": ("icon_url", "banner_url"),

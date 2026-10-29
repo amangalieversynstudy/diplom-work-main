@@ -166,69 +166,15 @@ export default function ChooseClassPage() {
           </section>
         )}
 
-        {/* Skill Tree Container */}
+        {/* Три специализации героя: все открыты сразу, это значок в профиле, а не дерево с замками */}
         <div className="relative flex flex-col items-center max-w-5xl mx-auto">
-          {/* ── Root Node: Python ── */}
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="relative z-20"
-          >
-            <SkillNode
-              node={root}
-              onSelect={() => choose(root.id)}
-              choosing={choosing}
-              cta={ctaFor(root)}
-              labels={dict.classPage}
-            />
-          </motion.div>
-
-          {/* ── SVG Connector Lines ── */}
-          <div className="relative w-full max-w-3xl h-24 pointer-events-none">
-            <svg
-              className="absolute inset-0 w-full h-full"
-              viewBox="0 0 800 100"
-              preserveAspectRatio="none"
-              aria-hidden="true"
-            >
-              <defs>
-                <linearGradient id="skillLineGrad" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.9" />
-                  <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.15" />
-                </linearGradient>
-              </defs>
-              <motion.path
-                d="M 400 0 Q 400 50 180 100"
-                fill="none"
-                stroke="url(#skillLineGrad)"
-                strokeWidth="2.5"
-                strokeDasharray="6 6"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
-              />
-              <motion.path
-                d="M 400 0 Q 400 50 620 100"
-                fill="none"
-                stroke="url(#skillLineGrad)"
-                strokeWidth="2.5"
-                strokeDasharray="6 6"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.15, ease: "easeOut" }}
-              />
-            </svg>
-          </div>
-
-          {/* ── Branch Nodes: Django + DevOps ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-3xl">
-            {branches.map((node, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+            {[root, ...branches].map((node, i) => (
               <motion.div
                 key={node.id}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 + i * 0.05, ease: "easeOut" }}
+                transition={{ duration: 0.3, delay: i * 0.05, ease: "easeOut" }}
                 className="flex justify-center"
               >
                 <SkillNode

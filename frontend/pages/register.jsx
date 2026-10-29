@@ -232,20 +232,22 @@ export default function Register() {
               </label>
             ) : null}
 
-            <label className="flex items-start gap-3 text-sm text-muted cursor-pointer">
-              <input
-                type="checkbox"
-                className="mt-1 h-4 w-4 shrink-0 accent-[var(--primary)]"
-                checked={researchConsent}
-                onChange={(e) => setResearchConsent(e.target.checked)}
-              />
-              <span>
-                {extra.researchConsent}
-                <span className="block text-xs text-faint mt-1">
-                  {extra.researchConsentHint}
-                </span>
-              </span>
-            </label>
+            {/* согласие: одна строка и подробности по запросу, а не абзац мелкого текста посреди формы */}
+            <div className="text-sm text-muted">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 shrink-0 accent-[var(--primary)]"
+                  checked={researchConsent}
+                  onChange={(e) => setResearchConsent(e.target.checked)}
+                />
+                <span>{extra.researchConsent}</span>
+              </label>
+              <details className="ml-7 mt-1">
+                <summary className="cursor-pointer text-xs text-primary">{extra.researchConsentMore || "Что именно попадёт в данные"}</summary>
+                <p className="mt-1 text-xs text-faint leading-relaxed">{extra.researchConsentHint}</p>
+              </details>
+            </div>
 
             <Button variant="rune" type="submit" loading={loading}>
               {loading ? copy.submitting : copy.submit}

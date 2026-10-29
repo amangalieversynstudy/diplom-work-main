@@ -6,10 +6,10 @@ import { useI18n } from "../lib/i18n";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
 const RPG_THEME = {
-  background: "#1e1e1e",
+  background: "#0b1a17",
   foreground: "#d4d4d4",
   cursor: "#cca700",
-  cursorAccent: "#1e1e1e",
+  cursorAccent: "#0b1a17",
   selectionBackground: "rgba(204, 167, 0, 0.35)",
   black: "#000000",
   red: "#f14c4c",
@@ -126,7 +126,7 @@ const Terminal = forwardRef(function Terminal({ className = "" }, ref) {
   return (
     <div
       ref={containerRef}
-      className={`w-full h-full bg-[#1e1e1e] overflow-auto ${className}`}
+      className={`w-full h-full bg-[#0b1a17] overflow-auto ${className}`}
     />
   );
 });

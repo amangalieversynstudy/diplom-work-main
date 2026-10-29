@@ -486,14 +486,14 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
       onPointerDownCapture={() => trackerRef.current.activity()}
       onWheelCapture={() => trackerRef.current.activity()}
       onFocusCapture={() => trackerRef.current.activity()}
-      className={`flex flex-col font-mono bg-[#1e1e1e] ${
+      className={`flex flex-col font-mono bg-[#0b1a17] ${
         fullscreen ? "fixed inset-0 z-[60]" : "h-full"
       }`}
     >
       {/* Editor Tabs & Toolbar */}
-      <div className="flex flex-wrap items-center gap-y-1 bg-[#252526] min-w-0 select-none border-l border-[#333]">
-        <div className="hidden sm:flex items-center gap-2 bg-[#1e1e1e] px-3 py-2 border-t border-[#3794ff] min-w-0 shrink-0 cursor-pointer">
-          <FileCode2 size={14} className="text-[#519aba]" />
+      <div className="flex flex-wrap items-center gap-y-1 bg-[#0f2421] min-w-0 select-none border-l border-[#333]">
+        <div className="hidden sm:flex items-center gap-2 bg-[#0b1a17] px-3 py-2 border-t border-[#4ade80] min-w-0 shrink-0 cursor-pointer">
+          <FileCode2 size={14} className="text-[#7fc8a9]" />
           <span className="text-xs text-white">main.py</span>
         </div>
 
@@ -502,7 +502,7 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
           <button
             onClick={handleSkeletonScroll}
             disabled={usingItem || !inventoryCounts?.skeleton_scrolls || !skeletonAvailable}
-            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors ${inventoryCounts?.skeleton_scrolls > 0 && skeletonAvailable ? "text-[#e5c07b] hover:bg-[#333] cursor-pointer" : "text-[#8a8a8a] cursor-not-allowed"}`}
+            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors ${inventoryCounts?.skeleton_scrolls > 0 && skeletonAvailable ? "text-[#e5c07b] hover:bg-[#333] cursor-pointer" : "text-[#87a096] cursor-not-allowed"}`}
             title={skeletonAvailable ? t("codeRunner.items.architect") : t("codeRunner.items.noSkeleton")}
             aria-label={`${t("codeRunner.items.architectCount").replace("{n}", inventoryCounts?.skeleton_scrolls || 0)}${skeletonAvailable ? "" : `. ${t("codeRunner.items.noSkeleton")}`}`}
           >
@@ -514,7 +514,7 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
           <button
             onClick={handleHintScroll}
             disabled={usingItem || !inventoryCounts?.hint_scrolls || !hintAvailable}
-            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors ${inventoryCounts?.hint_scrolls > 0 && hintAvailable ? "text-[#98c379] hover:bg-[#333] cursor-pointer" : "text-[#8a8a8a] cursor-not-allowed"} ${pulseHelp && hintAvailable && inventoryCounts?.hint_scrolls > 0 ? pulse : ""}`}
+            className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors ${inventoryCounts?.hint_scrolls > 0 && hintAvailable ? "text-[#98c379] hover:bg-[#333] cursor-pointer" : "text-[#87a096] cursor-not-allowed"} ${pulseHelp && hintAvailable && inventoryCounts?.hint_scrolls > 0 ? pulse : ""}`}
             title={hintAvailable ? t("codeRunner.items.clarity") : t("codeRunner.items.noHint")}
             aria-label={`${t("codeRunner.items.clarityCount").replace("{n}", inventoryCounts?.hint_scrolls || 0)}${hintAvailable ? "" : `. ${t("codeRunner.items.noHint")}`}`}
           >
@@ -536,13 +536,13 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
         </div>
 
         <div className="flex-1 min-w-0" />
-        <div className="pl-1 pr-3 sm:pl-2 sm:pr-4 py-0.5 flex items-center gap-1.5 sm:gap-2 bg-[#252526] shrink-0">
+        <div className="pl-1 pr-3 sm:pl-2 sm:pr-4 py-0.5 flex items-center gap-1.5 sm:gap-2 bg-[#0f2421] shrink-0">
           {/* Развернуть редактор на весь экран / свернуть обратно. */}
           <button
             onClick={() => setFullscreen((v) => !v)}
             title={fullscreen ? t("codeRunner.exitFullscreen") : t("codeRunner.fullscreen")}
             aria-label={fullscreen ? t("codeRunner.exitFullscreen") : t("codeRunner.fullscreen")}
-            className="grid h-7 w-7 place-items-center rounded border border-[#3a3a3a] bg-[#2d2d2d] text-[#cccccc] hover:bg-[#3a3a3a] hover:text-white transition-colors"
+            className="grid h-7 w-7 place-items-center rounded border border-[#1e3a33] bg-[#12291f] text-[#c6d6cf] hover:bg-[#1e3a33] hover:text-white transition-colors"
           >
             {fullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
           </button>
@@ -582,7 +582,7 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
       </div>
 
       {/* Breadcrumbs */}
-      <div className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 text-xs text-[#cccccc] bg-[#1e1e1e] border-b border-[#333] border-l select-none shadow-sm z-10">
+      <div className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 text-xs text-[#c6d6cf] bg-[#0b1a17] border-b border-[#333] border-l select-none shadow-sm z-10">
         <span className="hover:text-white cursor-pointer">{t("codeRunner.crumbRoot")}</span>
         <span className="opacity-50">&gt;</span>
         <span className="hover:text-white cursor-pointer">{t("codeRunner.crumbMission")}</span>
@@ -606,11 +606,11 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
       )}
 
       {/* Editor */}
-      <div className="flex-1 relative bg-[#1e1e1e] flex border-l border-[#333] min-h-[140px]">
+      <div className="flex-1 relative bg-[#0b1a17] flex border-l border-[#333] min-h-[140px]">
         <div
           ref={gutterRef}
           aria-hidden="true"
-          className="w-12 bg-[#1e1e1e] border-r border-[#333] flex flex-col items-end py-4 pr-3 text-[#9da3ab] text-xs select-none overflow-hidden font-mono"
+          className="w-12 bg-[#0b1a17] border-r border-[#333] flex flex-col items-end py-4 pr-3 text-[#9ab4ac] text-xs select-none overflow-hidden font-mono"
         >
           {lineArray.map((n) => (
             <span key={n} className="leading-6">{n}</span>
@@ -636,7 +636,7 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
           autoComplete="off"
           aria-label={t("codeRunner.editorLabel")}
           aria-describedby="editor-keys-hint"
-          className="w-full h-full p-4 bg-transparent text-[13px] font-mono text-[#d4d4d4] resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d9a441] leading-6"
+          className="w-full h-full p-4 bg-transparent text-[13px] font-mono text-[#dfe8e3] resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#d9a441] leading-6"
           placeholder={t("codeRunner.placeholder")}
         />
         <span id="editor-keys-hint" className="sr-only">
@@ -649,7 +649,7 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
         <div
           ref={dragRef}
           onPointerDown={onDragStart}
-          className="h-3 sm:h-2 touch-none bg-[#252526] border-t border-b border-[#333] flex items-center justify-center cursor-row-resize hover:bg-[#2a2d2e] select-none group"
+          className="h-3 sm:h-2 touch-none bg-[#0f2421] border-t border-b border-[#333] flex items-center justify-center cursor-row-resize hover:bg-[#163029] select-none group"
           title={t("codeRunner.resizeTitle")}
         >
           <GripHorizontal size={12} className="text-[#555] group-hover:text-[#888]" />
@@ -659,7 +659,7 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
       {/* Terminal — adaptive height, сворачиваемый (xterm остаётся смонтирован) */}
       <div
         style={termCollapsed ? undefined : { height: termH, maxHeight: "45%" }}
-        className="flex flex-col bg-[#1e1e1e] border-l border-[#333] flex-shrink-0"
+        className="flex flex-col bg-[#0b1a17] border-l border-[#333] flex-shrink-0"
       >
         <div className="flex items-center gap-4 px-4 pt-2 border-b border-[#333] select-none">
           <span className="text-xs uppercase tracking-wider text-white border-b border-white pb-2 font-semibold flex items-center gap-2">

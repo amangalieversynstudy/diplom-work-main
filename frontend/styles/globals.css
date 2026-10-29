@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Melodrama:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Kurale&display=swap&subset=cyrillic');
 @import url('https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600,700&display=swap');
 
@@ -190,7 +189,8 @@ body::before, body::after { display: none !important; }
 
 /* ── Kurale: шрифт крупных заголовков экранов ученика. У гарнитуры одно начертание (400):
       жирный не нужен и не синтезируется. ── */
-.font-title {
+.font-title,
+.font-display {
   font-weight: 400;
   font-synthesis: none;
 }
@@ -203,7 +203,8 @@ body::before, body::after { display: none !important; }
   --muted: var(--ink);
   --card-text-muted: var(--ink);
   --faint: #6b4a2e;
-  --panel: #fbf3dc;
+  /* плашки внутри свитка полупрозрачные в тон бумаги, а не отдельные офисные карточки */
+  --panel: rgba(255, 248, 228, 0.5);
   --border: rgba(92,58,33,0.4);
   --primary: #2a6f68;
   --primary-dk: #1e524d;
@@ -214,15 +215,40 @@ body::before, body::after { display: none !important; }
   box-shadow: inset 0 0 0 4px var(--parchment-light), inset 0 0 0 5px var(--gold-frame), 0 14px 40px rgba(0,0,0,0.45);
   border-radius: 14px;
 }
-/* Тёмная тема: внутри свитка токены светлопергаментные (текст >= 4,5:1, границы и иконки >= 3:1);
-   color-scheme: light возвращает светлый нативный чекбокс/автозаполнение. */
+/* Тёмная тема: свиток тоже тёмный (раньше в тёмной теме светились ярко-бежевые прямоугольники).
+   Тёмно-зелёный лист с приглушённой золотой рамкой и светлым пергаментным текстом; токены пергамента
+   переопределены внутри свитка, поэтому классы text-ink-deep / bg-parchment-* в нём тоже темнеют.
+   Контраст: текст #E8DEC8 на #111C17 ≈ 13:1, приглушённый #C9B994 ≈ 9:1. */
 html.dark .scroll-frame {
-  color-scheme: light;
-  --border: rgba(92,58,33,0.7);
-  --card-border: rgba(92,58,33,0.7);
-  --error: var(--wax);
-  --bg: var(--parchment-light);
+  color-scheme: dark;
+  --text: #E8DEC8;
+  --card-text: #E8DEC8;
+  --muted: #C9B994;
+  --card-text-muted: #C9B994;
+  --faint: #A8966F;
+  --panel: rgba(232,222,200,0.06);
+  --border: rgba(138,112,61,0.55);
+  --card-border: rgba(138,112,61,0.55);
+  --primary: #4ade80;
+  --primary-dk: #34d399;
+  --on-primary: #06100D;
+  --error: #f87171;
+  --bg: #0d1713;
+  --ink: #C9B994;
+  --ink-deep: #E8DEC8;
+  --parchment-light: #111C17;
+  --parchment-pale: #16241e;
+  --parchment-cream: #16241e;
+  --parchment-glow: #1b2b24;
+  --parchment-wash: #1b2b24;
+  --parchment: #2a2617;
+  --gold-frame: #8A703D;
+  background-color: #111C17 !important;
+  border-color: #8A703D !important;
+  box-shadow: inset 0 0 0 4px #111C17, inset 0 0 0 5px #8A703D, 0 14px 40px rgba(0,0,0,0.55);
 }
+/* печать-кнопка в тёмном свитке остаётся красным воском со светлой надписью */
+html.dark .scroll-frame .scroll-btn { color: #f8ecd0; }
 .scroll-frame::before {
   content: "";
   position: absolute;

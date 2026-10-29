@@ -29,7 +29,7 @@ import { useI18n } from "../lib/i18n";
 function SageAvatar({ className = "" }) {
   return (
     <svg viewBox="0 0 40 40" className={className} aria-hidden="true">
-      <rect width="40" height="40" rx="9" fill="#141d33" />
+      <rect width="40" height="40" rx="9" fill="#0f2421" />
       <rect width="40" height="40" rx="9" fill="url(#cm-sage-glow)" opacity=".5" />
       <defs>
         <radialGradient id="cm-sage-glow" cx=".5" cy=".35" r=".6">
@@ -38,15 +38,15 @@ function SageAvatar({ className = "" }) {
         </radialGradient>
       </defs>
       {/* hood */}
-      <path d="M20 7 L32 31 H8 Z" fill="#4a3a86" />
-      <path d="M20 7 L26 19 H14 Z" fill="#6b54b8" />
+      <path d="M20 7 L32 31 H8 Z" fill="#1e5245" />
+      <path d="M20 7 L26 19 H14 Z" fill="#2f7a66" />
       {/* face */}
       <rect x="15" y="18" width="10" height="9" fill="#f0c79a" />
       {/* glowing eyes */}
       <rect x="16.5" y="21" width="2" height="2" fill="#ffe066" />
       <rect x="21.5" y="21" width="2" height="2" fill="#ffe066" />
       {/* beard */}
-      <path d="M15 27 h10 l-2 5 h-6 z" fill="#e7ecf5" />
+      <path d="M15 27 h10 l-2 5 h-6 z" fill="#E8F0EA" />
       {/* sparkle on the hood tip */}
       <circle cx="20" cy="7" r="1.6" fill="#ffe066" />
     </svg>
@@ -149,7 +149,7 @@ export default function AIMentorChat({
 
   return (
     <div
-      className={`fixed inset-y-0 right-0 z-[120] flex w-full max-w-md flex-col border-l border-[#d9a441]/30 bg-gradient-to-b from-[#101a30] to-[#0a1322] shadow-[-16px_0_50px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${
+      className={`fixed inset-y-0 right-0 z-[120] flex w-full max-w-md flex-col border-l border-[#d9a441]/30 bg-gradient-to-b from-[#0f2421] to-[#06100D] shadow-[-16px_0_50px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${
         open ? "translate-x-0" : "pointer-events-none translate-x-full"
       }`}
       role="dialog"
@@ -174,11 +174,11 @@ export default function AIMentorChat({
         <div className="flex-1" />
         {/* Мана (ai_summons) */}
         <div
-          className="flex items-center gap-1.5 rounded-lg border border-[#5cb6ff]/25 bg-[#0e1a30] px-2.5 py-1"
+          className="flex items-center gap-1.5 rounded-lg border border-[#4ade80]/25 bg-[#0b1a17] px-2.5 py-1"
           title={t("codeRunner.mentor.mana")}
         >
-          <Droplet size={13} className="text-[#5cb6ff]" fill="#5cb6ff" />
-          <span className="text-[12px] font-semibold text-[#cfe2ff] tabular-nums">
+          <Droplet size={13} className="text-[#4ade80]" fill="#4ade80" />
+          <span className="text-[12px] font-semibold text-[#d7f5e3] tabular-nums">
             {summons}
           </span>
         </div>
@@ -186,7 +186,7 @@ export default function AIMentorChat({
           onClick={onClose}
           aria-label={t("codeRunner.mentor.close")}
           title={t("codeRunner.mentor.close")}
-          className="ml-1 grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/5 text-[#c9d3e6] transition-colors hover:border-[#d9a441]/50 hover:bg-white/10 hover:text-white"
+          className="ml-1 grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/5 text-[#c6d6cf] transition-colors hover:border-[#d9a441]/50 hover:bg-white/10 hover:text-white"
         >
           <X size={18} />
         </button>
@@ -230,7 +230,7 @@ export default function AIMentorChat({
             rows={2}
             spellCheck="false"
             placeholder={t("codeRunner.mentor.placeholder")}
-            className="min-h-[44px] max-h-32 flex-1 resize-none rounded-xl border border-white/10 bg-[#0c1426] px-3 py-2 text-[13px] leading-relaxed text-[#e6ecf8] placeholder:text-[#5d6b80] focus:border-[#d9a441]/50 focus:outline-none focus:ring-0 disabled:opacity-50"
+            className="min-h-[44px] max-h-32 flex-1 resize-none rounded-xl border border-white/10 bg-[#0b1a17] px-3 py-2 text-[13px] leading-relaxed text-[#E8F0EA] placeholder:text-[#7f978d] focus:border-[#d9a441]/50 focus:outline-none focus:ring-0 disabled:opacity-50"
           />
           <button
             onClick={send}
@@ -239,7 +239,7 @@ export default function AIMentorChat({
             className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl transition-colors ${
               canSend
                 ? "bg-[#d9a441] text-[#1a1206] hover:bg-[#e6b455]"
-                : "cursor-not-allowed bg-[#2a3142] text-[#6b748a]"
+                : "cursor-not-allowed bg-[#1e3a33] text-[#7f978d]"
             }`}
           >
             {loading ? (
@@ -266,7 +266,7 @@ function MageBubble({ text }) {
 // Реплика ученика — тёмный сланцевый пузырь.
 function UserBubble({ text }) {
   return (
-    <div className="ml-auto max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-sm border border-white/5 bg-[#1e2a44] px-3.5 py-2.5 text-[13px] leading-relaxed text-[#dde6f6] shadow">
+    <div className="ml-auto max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-sm border border-white/5 bg-[#16302a] px-3.5 py-2.5 text-[13px] leading-relaxed text-[#E8F0EA] shadow">
       {text}
     </div>
   );

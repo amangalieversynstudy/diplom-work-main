@@ -26,8 +26,9 @@ module.exports = {
         '4xl': '2560px',
       },
       fontFamily: {
-        display: ["'Melodrama'", "Georgia", "serif"],
-        // Kurale — только крупные заголовки экранов ученика (одно начертание, см. .font-title)
+        // Два шрифта на весь сайт: General Sans для текста и один акцентный Kurale (с кириллицей) для
+        // заголовков. Melodrama кириллицы не имеет, русские заголовки рисовались запасным Georgia.
+        display: ["'Kurale'", "Georgia", "serif"],
         title: ["'Kurale'", "Georgia", "serif"],
         body: ["'General Sans'", "sans-serif"],
         mono: ["'JetBrains Mono'", "monospace"],

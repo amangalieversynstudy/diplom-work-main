@@ -119,7 +119,7 @@ export function StepStrip({ tasks = [], activeId, progress: progressMap = {}, on
                 current
                   ? "border-straw bg-ink text-straw"
                   : completed
-                  ? "border-[#6b8e23]/70 bg-wood-deep text-[#a3e635]"
+                  ? "border-[#6b8e23]/70 bg-wood-deep text-[#4ade80]"
                   : "border-bronze/60 bg-wood-deep text-gold",
                 locked && "opacity-40"
               )}
@@ -132,7 +132,7 @@ export function StepStrip({ tasks = [], activeId, progress: progressMap = {}, on
                 <CheckCircle2
                   size={14}
                   aria-hidden="true"
-                  className="absolute -bottom-1 -right-1 rounded-full bg-wood-deep text-[#a3e635]"
+                  className="absolute -bottom-1 -right-1 rounded-full bg-wood-deep text-[#4ade80]"
                 />
               )}
             </button>

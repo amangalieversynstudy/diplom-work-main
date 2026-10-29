@@ -676,15 +676,15 @@ export default function MissionDetail() {
           {t("missionPage.previewBanner")}
         </div>
       )}
-        {/* Квест-шапка в RPG-стиле: deep-wood band + scroll icon + Melodrama.
+        {/* Квест-шапка в RPG-стиле: deep-wood band + scroll icon, низкая, чтобы задача помещалась на экран ноутбука.
             Светлая тема — чистая surface-полоса; тёмная — глубокое дерево. */}
-        <header className="border-b border-border dark:border-ink/40 px-4 sm:px-8 py-3 xl:py-2.5 flex items-center justify-between gap-3 select-none shadow-md bg-surface dark:bg-gradient-to-r dark:from-wood-deep dark:via-wood dark:to-wood-deep">
+        <header className="border-b border-border dark:border-ink/40 px-4 sm:px-8 py-2 flex items-center justify-between gap-3 select-none shadow-md bg-surface dark:bg-gradient-to-r dark:from-wood-deep dark:via-wood dark:to-wood-deep">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-            <div className="shrink-0 p-2.5 bg-primary/10 dark:bg-bronze/25 border border-primary/20 dark:border-gold/60 rounded-xl text-primary dark:text-straw shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-              <ScrollText size={22} />
+            <div className="shrink-0 p-2 bg-primary/10 dark:bg-bronze/25 border border-primary/20 dark:border-gold/60 rounded-xl text-primary dark:text-straw shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <ScrollText size={18} />
             </div>
             <div className="min-w-0">
-              <h1 className="font-display text-xl sm:text-2xl font-bold text-text dark:text-straw tracking-wide leading-tight line-clamp-2 sm:truncate dark:drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
+              <h1 className="font-display text-lg sm:text-xl font-bold text-text dark:text-straw tracking-wide leading-tight line-clamp-2 sm:truncate dark:drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
                 {(language === "en"
                   ? mission.title_en || mission.title_ru
                   : mission.title_ru || mission.title_en) ||
@@ -816,34 +816,19 @@ export default function MissionDetail() {
                 "linear-gradient(180deg, var(--parchment) 0%, var(--parchment-mid) 50%, var(--parchment-shade) 100%)",
             }}
           >
-            {/* Череп-тотем со стола мага — выцветший водяной знак (из мокапа
-                Codemancer). Лежит позади контента, читаемость не трогает. */}
-            <div
-              className="pointer-events-none absolute inset-x-0 bottom-24 z-0 flex justify-center opacity-[0.07]"
-              aria-hidden="true"
-            >
-              <svg viewBox="0 0 200 200" className="w-44 h-44 text-wood-ink">
-                <path d="M100 30c-38 0-66 28-66 64 0 22 12 36 22 46v22c0 6 4 10 10 10h12v-14h14v14h16v-14h14v14h12c6 0 10-4 10-10v-22c10-10 22-24 22-46 0-36-28-64-66-64z" fill="currentColor" />
-                <ellipse cx="74" cy="110" rx="18" ry="22" fill="var(--parchment)" />
-                <ellipse cx="126" cy="110" rx="18" ry="22" fill="var(--parchment)" />
-                <path d="M100 130l-10 18h20z" fill="var(--parchment)" />
-                <path d="M86 160h6v10h-6zM100 160h6v10h-6zM114 160h6v10h-6z" fill="var(--parchment)" />
-              </svg>
-            </div>
-
             {/* Заголовок-баннер */}
             <div className="relative z-10 px-6 py-4 border-b-2 border-ink/40 bg-gradient-to-r from-wood/95 via-ink/90 to-wood/95 flex items-center gap-2">
               <ScrollText size={16} className="text-straw" />
               <p className="font-display text-sm font-bold tracking-widest text-straw uppercase">
                 {t("missionPage.questLog")}
               </p>
-              {/* Свеча на столе мага — мягко мерцающее пламя (чистый SVG + Tailwind) */}
+              {/* Свеча на столе мага: неподвижная, бесконечное мерцание отвлекало от задачи */}
               <svg width="14" height="24" viewBox="0 0 14 24" className="ml-auto shrink-0" aria-hidden="true">
                 <ellipse cx="7" cy="22" rx="4.5" ry="1.4" fill="#1c120a" opacity="0.5" />
                 <rect x="4.5" y="9" width="5" height="13" rx="1.2" fill="var(--parchment-cream)" />
                 <rect x="4.6" y="9" width="1.7" height="13" rx="0.8" fill="#ffffff" opacity="0.35" />
                 <rect x="6.6" y="6" width="0.8" height="3" fill="var(--ink-deep)" />
-                <g className="animate-flicker" style={{ transformOrigin: "7px 7px" }}>
+                <g>
                   <path d="M7 0c1.7 1.8 2.5 3.2 2.5 4.6A2.5 2.5 0 0 1 7 7.1 2.5 2.5 0 0 1 4.5 4.6C4.5 3.2 5.3 1.8 7 0Z" fill="#ffb338" />
                   <path d="M7 2c.9 1 1.3 2 1.3 2.8A1.3 1.3 0 0 1 7 6.1 1.3 1.3 0 0 1 5.7 4.8C5.7 4 6.1 3 7 2Z" fill="#fff3c4" />
                 </g>

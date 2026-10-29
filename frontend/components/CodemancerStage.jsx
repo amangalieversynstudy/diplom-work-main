@@ -118,7 +118,7 @@ export default function CodemancerStage({
   return (
     <div
       ref={rootRef}
-      className={`codemancer-stage relative w-full shrink-0 h-40 md:h-44 xl:h-[clamp(112px,18vh,224px)] overflow-hidden border-b border-border bg-[#0a1322] select-none ${phase !== "idle" ? "cm-" + phase : ""} ${calm ? "cm-calm" : ""}`}
+      className={`codemancer-stage relative w-full shrink-0 h-32 md:h-36 xl:h-[clamp(104px,15vh,180px)] overflow-hidden border-b border-border bg-[#0a1322] select-none ${phase !== "idle" ? "cm-" + phase : ""} ${calm ? "cm-calm" : ""}`}
       role="img"
       aria-label={`${heroName}, level ${level}`}
     >

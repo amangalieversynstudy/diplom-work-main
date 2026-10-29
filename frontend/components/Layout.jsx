@@ -2,27 +2,18 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import {
   Map, User2, Crown, Sparkles, Trophy, TrendingUp,
-  ArrowUpRight, Sun, Moon, X, Eye, GraduationCap
+  ArrowUpRight, Sun, Moon, X, Eye, GraduationCap, LogOut
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useI18n, languages as supportedLanguages } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import { Profile as ProfileAPI, revokeSession } from "../lib/api";
-import CustomCursor from "./CustomCursor";
 import TransitionLink from "./TransitionLink";
 import { canTeach } from "../lib/roles";
 import { VIEW_MODE_EVENT, isStudentView, setStudentView } from "../lib/viewMode";
 import StreakReminder from "./StreakReminder";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import { prefersReducedMotion } from "../lib/motion";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { motion } from "framer-motion";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 const navLinks = [
   { href: "/worlds", labelKey: "nav.worlds", staffLabelKey: "nav.staffWorlds", icon: Map },
@@ -95,6 +86,32 @@ function LanguageToggle() {
         );
       })}
     </div>
+  );
+}
+
+// Компактные переключатели для шапки на компьютере: одна кнопка на язык и одна на тему.
+function CompactSettings() {
+  const { language, setLanguage, t } = useI18n();
+  const { theme, setTheme } = useTheme();
+  const next = supportedLanguages.find((lang) => lang.id !== language) || supportedLanguages[0];
+  const dark = theme === "dark";
+  const cls =
+    "grid h-10 w-10 place-items-center rounded-full border border-border bg-surface text-xs font-bold uppercase text-muted transition-colors hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60";
+  return (
+    <>
+      <button type="button" onClick={() => setLanguage(next.id)} className={cls} aria-label={next.label} title={next.label}>
+        {next.label}
+      </button>
+      <button
+        type="button"
+        onClick={() => setTheme(dark ? "light" : "dark")}
+        className={cls}
+        aria-label={t(dark ? "layout.themeLight" : "layout.themeDark")}
+        title={t(dark ? "layout.themeLight" : "layout.themeDark")}
+      >
+        {dark ? <Sun size={17} aria-hidden="true" /> : <Moon size={17} aria-hidden="true" />}
+      </button>
+    </>
   );
 }
 
@@ -305,28 +322,14 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
     }
   }, [isMenuOpen]);
 
-  useGSAP(() => {
-    // On page load: overlay slides UP to reveal the page.
-    // Works correctly in both cases:
-    // - First visit: overlay was at yPercent:0 (visible) and slides up
-    // - After navigation: TransitionLink left overlay at yPercent:0, now it slides up revealing new page
-    let armed = false;
-    try {
-      armed = window.sessionStorage.getItem("curtain") === "1";
-      window.sessionStorage.removeItem("curtain");
-    } catch {
-      /* хранилище недоступно: просто без шторки */
-    }
-    if (prefersReducedMotion() || !armed) {
-      gsap.set(".page-transition-overlay", { yPercent: -100 });
-      return;
-    }
-    gsap.fromTo(
-      ".page-transition-overlay",
-      { yPercent: 0 },
-      { yPercent: -100, duration: 0.25, ease: "power3.inOut" }
-    );
-  }, []);
+  const logout = async () => {
+    await revokeSession();
+    ["access", "refresh", "token", "access_token", "refresh_token", "view_as_student"].forEach((k) => localStorage.removeItem(k));
+    setIsAuthenticated(false);
+    setStudentViewState(false);
+    setIsMenuOpen(false);
+    router.push("/");
+  };
 
   const isShrunk = scrolled && scrollDir === "down" && !isMenuOpen;
 
@@ -340,16 +343,6 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
         {t("layout.skipToContent")}
       </a>
 
-      {/* ── Page Transition Overlay ── */}
-      {/* ── Page Transition Overlay ──
-           Slides DOWN to cover page (TransitionLink on click)
-           Slides UP to reveal page (Layout on mount)
-           Does NOT trigger on errors/toasts — only during real navigation */}
-      <div className="page-transition-overlay fixed inset-0 z-[999] -translate-y-full bg-[var(--primary)] origin-top flex items-center justify-center pointer-events-none">
-        <Sparkles className="w-12 h-12 text-white animate-spinSlow" />
-      </div>
-
-      <CustomCursor />
 
       <header
         className={`fixed top-0 inset-x-0 z-[110] transition-all duration-500 ${
@@ -358,80 +351,84 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
             : "bg-transparent py-5 " + (isMenuOpen ? "pointer-events-none" : "pointer-events-auto")
         }`}
       >
-        <div className="max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 flex items-center justify-between relative">
-          {/* Навигация видна на широких экранах, не только в выдвижном меню */}
-          <nav aria-label={t("layout.nav")} className="hidden xl:flex w-[24rem] shrink-0 items-center gap-1">
-            {(!isAuthenticated
-              ? [] // гостю ученические пункты не показываем: только вход и регистрация справа
-              : isStaff
-              ? // в верхней полосе четыре ссылки: больше не помещается рядом с логотипом, остальное в меню
-                [...staffLinks, ...translatedNavLinks.filter((item) => item.href === "/worlds")]
-              : translatedNavLinks
-            ).map((item) => (
-              <TransitionLink
-                key={item.href}
-                href={item.href}
-                className="rounded-full px-3 py-2 text-sm font-semibold text-muted transition-colors hover:bg-panel hover:text-text"
-              >
-                {item.label}
-              </TransitionLink>
-            ))}
-          </nav>
-          {/* Пустой блок слева для балансировки на узких экранах */}
-          <div className={`xl:hidden transition-all duration-500 ${isShrunk ? "w-10" : "w-12"}`} />
-
-          {/* Центрированный интерактивный логотип */}
+        <div className="max-w-7xl 2xl:max-w-[87.5rem] 3xl:max-w-[100rem] 4xl:max-w-[120rem] mx-auto px-6 flex items-center justify-between gap-6">
+          {/* спокойный логотип: без прыгающих букв и вращений */}
           <TransitionLink
             href="/"
-            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 group flex items-center px-2 sm:px-4 py-2 transition-all duration-500 ${isMenuOpen ? "pointer-events-none opacity-40 blur-md" : "pointer-events-auto"}`}
+            className={`flex shrink-0 items-center gap-2.5 ${isMenuOpen ? "pointer-events-none opacity-40" : ""}`}
           >
-            <div className={`relative rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-110 group-hover:shadow-[0_0_20px_var(--primary-selection)] mr-2 sm:mr-3 ${isShrunk ? "w-6 h-6 md:w-8 md:h-8" : "w-8 h-8 md:w-10 md:h-10"}`}>
-              <Sparkles size={18} className={`text-primary relative z-10 transition-transform duration-700 group-hover:rotate-180 ${isShrunk ? "scale-75" : "scale-100"}`} />
-            </div>
-            <div className={`font-display font-bold tracking-tighter uppercase flex items-center text-text transition-all duration-500 ${isShrunk ? "text-base sm:text-xl md:text-3xl" : "text-lg sm:text-2xl md:text-4xl"}`}>
-              {"RPG ACADEMY".split("").map((char, index) => (
-                <span
-                  key={index}
-                  className="inline-block transition-all duration-200 ease-out hover:-translate-y-2 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-br hover:from-primary hover:to-accent"
-                >
-                  {char === " " ? "\u00A0" : char}
-                </span>
-              ))}
-            </div>
+            <span className="grid h-9 w-9 place-items-center rounded-xl border border-primary/20 bg-primary/10">
+              <Sparkles size={18} className="text-primary" aria-hidden="true" />
+            </span>
+            <span className="font-display text-xl font-bold uppercase tracking-tight text-text sm:text-2xl">RPG Academy</span>
           </TransitionLink>
 
-          <div className="flex items-center justify-end gap-3 xl:w-[24rem]">
-          {isAuthenticated && isTeacherAccount && (
-            <ViewModeToggle studentView={studentView} onSwitch={switchView} t={t} className="hidden xl:flex" />
-          )}
-          {!isAuthenticated && (
-            <TransitionLink
-              href="/login"
-              className="hidden lg:inline-flex rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-panel"
+          {/* на компьютере все разделы роли в шапке; выдвижное меню только на узких экранах */}
+          <nav aria-label={t("layout.nav")} className="hidden xl:flex min-w-0 flex-1 items-center justify-center gap-0.5">
+            {(!isAuthenticated ? [] : isStaff ? [...staffLinks, ...menuLinks] : menuLinks).map((item) => {
+              const active = router.pathname === item.href || router.pathname.startsWith(`${item.href}/`);
+              return (
+                <TransitionLink
+                  key={item.href}
+                  href={item.href}
+                  className={`rounded-full px-3 py-2 text-sm font-semibold transition-colors ${
+                    active ? "bg-primary/10 text-primary" : "text-muted hover:bg-panel hover:text-text"
+                  }`}
+                >
+                  {item.label}
+                </TransitionLink>
+              );
+            })}
+          </nav>
+
+          <div className="flex shrink-0 items-center justify-end gap-2">
+            {isAuthenticated && isTeacherAccount && (
+              <ViewModeToggle studentView={studentView} onSwitch={switchView} t={t} className="hidden xl:flex" />
+            )}
+            <div className="hidden xl:flex items-center gap-2">
+              <CompactSettings />
+            </div>
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={logout}
+                aria-label={t("layout.logout")}
+                title={t("layout.logout")}
+                className="hidden xl:grid h-10 w-10 place-items-center rounded-full border border-border bg-surface text-muted transition-colors hover:text-error"
+              >
+                <LogOut size={17} aria-hidden="true" />
+              </button>
+            )}
+            {!isAuthenticated && (
+              <TransitionLink
+                href="/login"
+                className="hidden lg:inline-flex rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-text transition-colors hover:bg-panel"
+              >
+                {t("layout.login")}
+              </TransitionLink>
+            )}
+            {!isAuthenticated && (
+              <TransitionLink
+                href="/register"
+                className="hidden lg:inline-flex rounded-full bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-dk"
+              >
+                {t("layout.register")}
+              </TransitionLink>
+            )}
+            <button
+              ref={burgerRef}
+              onClick={() => setIsMenuOpen(true)}
+              aria-expanded={isMenuOpen}
+              aria-controls="site-menu"
+              aria-label={t("layout.nav")}
+              className={`xl:hidden relative z-[110] grid h-10 w-10 place-items-center rounded-full border border-border bg-surface hover:bg-panel ${isMenuOpen ? "opacity-0 pointer-events-none" : "pointer-events-auto"}`}
             >
-              {t("layout.login")}
-            </TransitionLink>
-          )}
-          {!isAuthenticated && (
-            <TransitionLink
-              href="/register"
-              className="hidden lg:inline-flex rounded-full bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-transform hover:scale-[1.03]"
-            >
-              {t("layout.register")}
-            </TransitionLink>
-          )}
-          <button
-            ref={burgerRef}
-            onClick={() => setIsMenuOpen(true)}
-            aria-expanded={isMenuOpen}
-            aria-controls="site-menu"
-            aria-label={t("layout.nav")}
-            className={`relative z-[110] rounded-full bg-surface border border-border shadow-sm flex flex-col justify-center items-center gap-1.5 hover:bg-panel transition-all duration-500 active:scale-95 ${isShrunk ? "w-10 h-10" : "w-12 h-12"} ${isMenuOpen ? "opacity-0 pointer-events-none" : "pointer-events-auto"}`}
-          >
-            <span className="block w-5 h-[2px] bg-text" />
-            <span className="block w-5 h-[2px] bg-text" />
-            <span className="block w-5 h-[2px] bg-text" />
-          </button>
+              <span className="flex flex-col gap-1.5" aria-hidden="true">
+                <span className="block w-5 h-[2px] bg-text" />
+                <span className="block w-5 h-[2px] bg-text" />
+                <span className="block w-5 h-[2px] bg-text" />
+              </span>
+            </button>
           </div>
         </div>
       </header>
@@ -574,14 +571,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
             ) : (
               <div className="flex flex-col gap-3">
                 <button
-                  onClick={async () => {
-                    await revokeSession();
-                    ["access", "refresh", "token", "access_token", "refresh_token", "view_as_student"].forEach(k => localStorage.removeItem(k));
-                    setIsAuthenticated(false);
-                    setStudentViewState(false);
-                    setIsMenuOpen(false);
-                    router.push("/");
-                  }}
+                  onClick={logout}
                   className="w-full py-3 rounded-xl border border-border text-muted font-semibold text-center hover:bg-panel hover:text-error transition-colors"
                 >
                   {t("layout.logout")}

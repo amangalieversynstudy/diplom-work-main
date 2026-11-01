@@ -227,26 +227,33 @@ def _title(obj):
     return obj.title_ru or obj.title or obj.title_en or f"#{obj.pk}"
 
 
-def student_performance_map(viewer, learner_ids):
-    """{user_id: performance_dict} for learners in ``viewer``'s scope."""
+def student_performance_map(viewer, learner_ids, *, until=None):
+    """{user_id: performance_dict} for learners in ``viewer``'s scope.
+
+    With ``until``, only what was done before that moment counts (steps last submitted, missions completed before
+    it): the score at the end of the pilot, even when the export runs later.
+    """
     if not learner_ids:
         return {}
     tasks = list(scoped_tasks(viewer))
     task_ids = [t.pk for t in tasks]
     mission_ids = sorted({t.mission_id for t in tasks})
     work = visible_work(viewer, TASK_TRACK)
-    solved = set(
-        TaskProgress.objects.filter(
-            task_id__in=task_ids, user_id__in=learner_ids, status="completed"
-        )
-        .filter(work)
-        .values_list("user_id", "task_id")
-    )
+    solved_rows = TaskProgress.objects.filter(
+        task_id__in=task_ids, user_id__in=learner_ids, status="completed"
+    ).filter(work)
+    if until is not None:
+        solved_rows = solved_rows.filter(last_submitted_at__lt=until)
+    solved = set(solved_rows.values_list("user_id", "task_id"))
     mission_rows = list(
         Progress.objects.filter(mission_id__in=mission_ids, user_id__in=learner_ids)
         .filter(visible_work(viewer, MISSION_TRACK))
-        .values("mission_id", "user_id", "completed", "stars")
+        .values("mission_id", "user_id", "completed", "stars", "completed_at")
     )
+    if until is not None:
+        for row in mission_rows:
+            if not row["completed_at"] or row["completed_at"] >= until:
+                row["completed"], row["stars"] = False, 0
     return _cohort_performance(tasks, mission_ids, learner_ids, solved, mission_rows)["by_learner"]
 
 
@@ -466,8 +473,11 @@ def compute_metrics(
 ):
     """All dashboard metrics for the tasks the viewer may see.
 
-    ``consented_only`` leaves out learners who did not agree to the research (the pilot report).
+    ``consented_only`` keeps just the research participants (the pilot report): consent, and signed up since
+    ``PILOT_STARTED_AT`` when it is set (``cohort.research_learners``).
     """
+    from .cohort import research_learners
+
     now = now or timezone.now()
     cutoff = now - timedelta(days=inactive_days)
     User = get_user_model()
@@ -479,7 +489,7 @@ def compute_metrics(
     # wandered into a closed course, or who left the class)
     students = visible_learners(viewer)
     if consented_only:
-        students = students.filter(profile__research_consent=True)
+        students = students.filter(pk__in=research_learners().values("pk"))
 
     # rows of a closed course count only while their learner is enrolled; Q() for a superuser
     work = visible_work(viewer, TASK_TRACK)

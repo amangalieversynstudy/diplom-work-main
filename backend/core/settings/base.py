@@ -70,6 +70,11 @@ STUDIO_LIMITS = {
 # Start of the pilot (ISO date-time with a time zone, e.g. 2026-11-02T00:00:00+05:00). The pilot report's teacher
 # measurements (SUS, data freshness) count only what was recorded from then on; empty = everything.
 PILOT_STARTED_AT = os.getenv("PILOT_STARTED_AT", "")
+# Start and end of the pilot's active period, both ISO date-times with a time zone (a bare date is ignored):
+# only learners who signed up since the start count in the research figures (rehearsal accounts drop out), no
+# snapshot is written after the end, and outcome windows that run past the end are censored, not "left"
+# (see game/cohort.py). Empty = no bound.
+PILOT_ENDED_AT = os.getenv("PILOT_ENDED_AT", "")
 
 # Debug flag (enable via env DEBUG=True/False)
 DEBUG = os.getenv("DEBUG", "True").lower() in {"1", "true", "yes", "on"}

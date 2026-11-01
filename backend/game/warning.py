@@ -68,13 +68,15 @@ scoped_learners = _scoped_learners  # public name for the teacher's per-student 
 def assess_students(viewer, *, now=None, consented_only=False):
     """{user_id: assessment} for every learner in the viewer's scope.
 
-    ``consented_only`` keeps just the learners who agreed to the research (the pilot report and the
-    daily snapshots use it; the teacher's own list does not need consent).
+    ``consented_only`` keeps just the research participants (the pilot report and the daily snapshots use it;
+    the teacher's own list does not need consent): see ``cohort.research_learners``.
     """
+    from .cohort import research_learners
+
     now = now or timezone.now()
     scope = _scoped_learners(viewer)
     if consented_only:
-        scope = scope.filter(profile__research_consent=True)
+        scope = scope.filter(pk__in=research_learners().values("pk"))
     students = list(scope.select_related("profile"))
     learner_ids = [student.pk for student in students]
     # three wrong guesses at an "explain" question say little about being stuck: leave them out

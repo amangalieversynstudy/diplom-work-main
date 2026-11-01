@@ -369,6 +369,79 @@ def test_export_rejects_nonsense_windows(tmp_path):
 
     with pytest.raises(CommandError):
         call_command("export_risk_features", "--out", str(tmp_path / "x.csv"), "--step-days", "0")
+    with pytest.raises(CommandError):
+        call_command("export_risk_features", "--out", str(tmp_path / "x.csv"), "--until", "next week")
+
+
+def test_export_cuts_windows_at_the_end_of_the_period(tmp_path, quiz_and_code, settings):
+    """After the course everybody goes quiet: an outcome window past the end is censored, not a drop-out."""
+    mission = quiz_and_code[0]
+    gone = _consenting("gone")
+    _timeline(gone, [40, 38, 35])
+    _open_mission(gone, mission)
+    assert len(_export(tmp_path)) == 1
+    end = (timezone.now() - timedelta(days=20)).date().isoformat()  # anchor 26 days ago + 14 > end
+    assert _export(tmp_path, "--until", end) == []
+    settings.PILOT_ENDED_AT = (timezone.now() - timedelta(days=20)).isoformat()
+    assert _export(tmp_path) == []  # the default end is PILOT_ENDED_AT
+
+
+def test_export_keeps_a_learner_between_two_missions(tmp_path, quiz_and_code):
+    """A finished mission is not a finished course: the learner is still in it."""
+    mission = quiz_and_code[0]
+    second = Mission.objects.create(location=mission.location, title="Second", is_active=True)
+    MissionTask.objects.create(mission=second, order=1, task_type="quiz", data={"correct_answer": "a"})
+    between = _consenting("between")
+    _timeline(between, [40, 38, 35])
+    Progress.objects.create(
+        user=between, mission=mission, status="completed", completed=True,
+        started_at=timezone.now() - timedelta(days=40), completed_at=timezone.now() - timedelta(days=36),
+    )
+    rows = _export(tmp_path)
+    assert len(rows) == 1 and rows[0]["label"] == "1"
+
+
+def test_export_carries_the_rule_level_from_the_snapshot_before_the_anchor(tmp_path, quiz_and_code):
+    from game.models import EarlyWarningSnapshot
+
+    mission = quiz_and_code[0]
+    gone = _consenting("gone")
+    _timeline(gone, [40, 38, 35])
+    _open_mission(gone, mission)
+    anchor_day = (timezone.now() - timedelta(days=26)).date()
+    EarlyWarningSnapshot.objects.create(date=anchor_day - timedelta(days=1), user=gone, level="medium", score=3)
+    EarlyWarningSnapshot.objects.create(date=anchor_day, user=gone, level="high", score=5)  # the anchor's own day
+    row = _export(tmp_path)[0]
+    assert (row["rule_level"], row["rule_score"]) == ("medium", "3")
+
+
+def test_export_rule_columns_are_empty_without_a_recent_snapshot(tmp_path, quiz_and_code):
+    from game.models import EarlyWarningSnapshot
+
+    mission = quiz_and_code[0]
+    gone = _consenting("gone")
+    _timeline(gone, [40, 38, 35])
+    _open_mission(gone, mission)
+    EarlyWarningSnapshot.objects.create(
+        date=(timezone.now() - timedelta(days=31)).date(), user=gone, level="high", score=5
+    )
+    row = _export(tmp_path)[0]
+    assert (row["rule_level"], row["rule_score"]) == ("", "")
+
+
+def test_export_writes_one_performance_row_per_learner(tmp_path, quiz_and_code):
+    mission = quiz_and_code[0]
+    early, late = _consenting("early"), _consenting("late")
+    _timeline(early, [40, 38, 35])
+    _open_mission(early, mission)
+    _timeline(late, [5])  # first window not over yet: no forecast to check
+    out = tmp_path / "performance.csv"
+    call_command("export_risk_features", "--out", str(tmp_path / "f.csv"), "--performance-out", str(out))
+    with out.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert len(rows) == 1
+    assert set(rows[0]) >= {"learner", "first_day", "active_days", "performance_score"}
+    assert rows[0]["events"] == "3"
 
 
 

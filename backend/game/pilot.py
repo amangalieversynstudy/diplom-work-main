@@ -12,13 +12,9 @@ from datetime import timedelta
 from statistics import median
 from types import SimpleNamespace
 
-from django.contrib.auth import get_user_model
-from django.conf import settings
 from django.utils import timezone
-from django.utils.dateparse import parse_datetime
 
-from users.models import Profile
-
+from .cohort import pilot_learners, pilot_period, research_learners
 from .live import freshness_summary
 from .snapshots import h3_summary
 from .stats import effective_n
@@ -201,15 +197,18 @@ def sandbox_health():
     }
 
 
-def build_report(now=None):
-    """Everything the weekly pilot report shows, as plain data."""
+def build_report(now=None, contacts=None):
+    """Everything the weekly pilot report shows, as plain data.
+
+    ``contacts`` (``{user_id: date}``, the teacher's contact log) adds an H3 variant without the days after the
+    teacher first contacted a learner.
+    """
     now = now or timezone.now()
-    learners = get_user_model().objects.filter(is_staff=False, is_teacher=False)
+    # the cohort: learners who signed up since PILOT_STARTED_AT (all learners when it is not set)
+    learners = pilot_learners()
     registered = learners.count()
     # Only learners who agreed are analysed; the rest are counted (n), never looked at.
-    consenting_ids = set(
-        Profile.objects.filter(user__in=learners, research_consent=True).values_list("user_id", flat=True)
-    )
+    consenting_ids = set(research_learners().values_list("pk", flat=True))
     learner_ids = sorted(consenting_ids)
     consenting = len(consenting_ids)
     footprint_of = lambda ids: set(  # noqa: E731
@@ -231,14 +230,7 @@ def build_report(now=None):
         user_id__in=learner_ids, status="completed"
     ).count()
 
-    start = None
-    if getattr(settings, "PILOT_STARTED_AT", ""):
-        try:
-            start = parse_datetime(settings.PILOT_STARTED_AT)
-        except ValueError:
-            start = None
-        if start is not None and start.tzinfo is None:
-            start = None
+    start, end = pilot_period()
     metrics = compute_metrics(_OWNER, now=now, inactive_days=ABANDON_WINDOW_DAYS, consented_only=True)
     warnings = assess_students(_OWNER, now=now, consented_only=True)
     opened = {row["task_id"] for row in metrics["tasks"] if row["opened"]}
@@ -275,6 +267,8 @@ def build_report(now=None):
         },
         "help_experiment": help_experiment(now, learner_ids),
         "h3": h3_summary(now=now),
+        "h3_without_contacts": h3_summary(now=now, contacts=contacts) if contacts else None,
+        "period": {"start": start.isoformat() if start else None, "end": end.isoformat() if end else None},
         "sandbox": sandbox_health(),
         "dashboard": {
             "freshness": freshness_summary(since=start),
@@ -308,6 +302,75 @@ def _threshold_text(report):
     )
 
 
+def _period_text(period):
+    start, end = period.get("start"), period.get("end")
+    if not start and not end:
+        return "границы не заданы (PILOT_STARTED_AT, PILOT_ENDED_AT): в расчёт идут все согласившиеся"
+    return (
+        f"с {start or 'начала записей'} до {end or 'сегодня'}; в исследование входят ученики, "
+        "зарегистрированные с начала периода и давшие согласие"
+    )
+
+
+def _interval(cell):
+    return "—" if cell["ci_low"] is None else f"{cell['ci_low']}–{cell['ci_high']}%"
+
+
+def _h3_lines(h3):
+    """The H3 section: the table by level, the pre-registered difference, recall by learner, the reasons."""
+    if not h3["mature_days"]:
+        return [
+            f"Пока нет снимков, у которых прошло окно наблюдения ({h3['window_days']} дн.) и которые подходят "
+            "для проверки. Снимки пишет `snapshot_early_warning` раз в сутки."
+        ]
+    names = {"high": "срочно", "medium": "внимание", "ok": "остальные"}
+    ex = h3["excluded"]
+    lines = [
+        f"Прогноз делается на начало дня после снимка. Ушёл = ни одного следа на платформе в следующие "
+        f"{h3['window_days']} дней (UTC). Дней со снимками: {h3['mature_days']}.",
+        f"В проверку не вошли строки: курс уже закончен или не начат — {ex['not_in_course']}; ученик к дню снимка "
+        f"уже молчал {h3['window_days']} дней — {ex['already_gone']}; окно исхода выходит за конец пилота — "
+        f"{ex['after_end']}; после контакта преподавателя — {ex['after_contact']}.",
+        "",
+        "| Уровень | Строк (ученик×день) | Учеников | Ушли | Доля | 95% ДИ (по ученикам) |",
+        "|---|---|---|---|---|---|",
+    ]
+    for level in ("high", "medium", "ok"):
+        c = h3["levels"][level]
+        lines.append(
+            f"| {names[level]} | {c['rows']} | {c['learners']} | {c['left']} | {_fmt(c['share'], '%')} | {_interval(c)} |"
+        )
+    main, listed = h3["difference_high_ok"], h3["difference_listed_ok"]
+
+    def diff_text(d):
+        if d["estimate"] is None:
+            return "нет данных в одной из групп"
+        interval = (
+            f"95% ДИ {d['ci_low']}…{d['ci_high']} п. п., бутстреп по ученикам ({d['replicates']} повторов)"
+            if d["ci_low"] is not None else "интервал не считается: слишком мало данных"
+        )
+        return f"**{d['estimate']:+} п. п.** ({interval}; учеников в группах: {d['learners_a']} и {d['learners_b']})"
+
+    recall = h3["recall_learners"]
+    lines += [
+        "",
+        f"- **Главная метрика (зафиксирована до старта): доля ушедших «срочно» минус «остальные»** — {diff_text(main)}. "
+        "H3 подтверждается, если нижняя граница интервала выше нуля.",
+        f"- Список целиком (срочно + внимание) минус «остальные»: {diff_text(listed)}.",
+        f"- Доля ушедших в списке (precision): **{_fmt(h3['listed']['share'], '%')}** ({_interval(h3['listed'])}), "
+        f"среди всех строк: {_fmt(h3['all']['share'], '%')} ({_interval(h3['all'])}).",
+        f"- Recall по ученикам: из {recall['left']} ушедших учеников в списке хотя бы раз до ухода были "
+        f"{recall['flagged_before']} (**{_fmt(recall['share'], '%')}**). По строкам: {_fmt(h3['recall_listed'], '%')}.",
+        f"- По причинам: только «застрял на шаге» — доля ушедших {_fmt(h3['by_reason']['stuck']['share'], '%')} "
+        f"({h3['by_reason']['stuck']['rows']} строк); с причиной «давно не заходил» — "
+        f"{_fmt(h3['by_reason']['inactive']['share'], '%')} ({h3['by_reason']['inactive']['rows']} строк). "
+        "Ранний прогноз — первая строка: вторая в основном говорит, что молчащий продолжит молчать.",
+        "",
+        "Дни одного ученика зависимы, поэтому интервалы считаются по ученикам, а не по строкам.",
+    ]
+    return lines
+
+
 def render_markdown(report):
     p, s, k = report["participants"], report["steps"], report["kpi"]
     lines = [
@@ -315,6 +378,7 @@ def render_markdown(report):
         "",
         "## Участники",
         "",
+        f"- Период пилота: {_period_text(report.get('period') or {})}.",
         f"- Учеников зарегистрировано: **{p['learners']}**, согласились на исследование: **{p['consented']}**. "
         f"**Все цифры ниже посчитаны только по {p['consented']} согласившимся**; "
         f"без согласия: {p['excluded_without_consent']}, в расчёт не вошли.",
@@ -393,33 +457,17 @@ def render_markdown(report):
         else:
             lines.append("\nКонтрольной группы нет: `HELP_OFFER_SHARE` = 100 или в группе никого.")
     lines += ["", "## H3: ушли ли «срочные» чаще остальных", ""]
-    h3 = report["h3"]
-    if not h3["mature_days"]:
-        lines.append(
-            f"Пока нет снимков, у которых прошло окно наблюдения ({h3['window_days']} дн.). "
-            "Снимки пишет `snapshot_early_warning` раз в сутки."
-        )
-    else:
-        names = {"high": "срочно", "medium": "внимание", "ok": "остальные"}
+    lines += _h3_lines(report["h3"])
+    if report.get("h3_without_contacts"):
         lines += [
-            f"Ушёл = нет активности {h3['window_days']} дней после дня снимка; дней со снимками: {h3['mature_days']}.",
             "",
-            "| Уровень | Строк (ученик×день) | Учеников | Ушли | Доля | 95% ДИ (по ученикам) |",
-            "|---|---|---|---|---|---|",
+            "### H3 без дней после контакта преподавателя",
+            "",
+            "Помощь преподавателя меняет исход, с которым сверяется список: строки ученика начиная с дня первого "
+            f"контакта из журнала исключены (учеников в журнале: {report['h3_without_contacts']['contacts']}).",
+            "",
         ]
-        for level in ("high", "medium", "ok"):
-            c = h3["levels"][level]
-            lines.append(
-                f"| {names[level]} | {c['rows']} | {c['learners']} | {c['left']} | {_fmt(c['share'], '%')} | "
-                f"{'—' if c['ci_low'] is None else str(c['ci_low']) + '–' + str(c['ci_high']) + '%'} |"
-            )
-        lines.append(
-            "\n"
-            f"В списке (срочно + внимание) была доля ушедших **{_fmt(h3['listed']['share'], '%')}**, "
-            f"среди всех **{_fmt(h3['all']['share'], '%')}**; доля ушедших, которых список заметил заранее: "
-            f"{_fmt(h3['recall_listed'], '%')}. Дни одного ученика зависимы, поэтому интервал считается "
-            "по числу учеников, а не строк."
-        )
+        lines += _h3_lines(report["h3_without_contacts"])
     sb = report["sandbox"]
     lines += ["", "## Здоровье песочницы (техническая метрика по всем запускам, без привязки к людям)", ""]
     if not sb["runs"]:

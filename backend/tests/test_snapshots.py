@@ -141,49 +141,166 @@ def test_the_scheduler_runs_the_snapshot_and_survives_a_failing_job():
 # ── H3 ──────────────────────────────────────────────────────────────────────
 
 
-def _snapshot_row(user, day, level):
-    return EarlyWarningSnapshot.objects.create(date=day, user=user, level=level, score=4 if level == "high" else 0)
+def _snapshot_row(user, day, level, reasons=None):
+    return EarlyWarningSnapshot.objects.create(
+        date=day, user=user, level=level, score=4 if level == "high" else 0, reasons=reasons or []
+    )
 
 
-def test_h3_compares_leavers_among_urgent_and_the_rest():
-    now = timezone.now()
-    day = (now - timedelta(days=20)).astimezone(dt_timezone.utc).date()
-    after = datetime.combine(day + timedelta(days=2), datetime.min.time(), tzinfo=dt_timezone.utc)
+def _event(user, when):
+    """One sign of life of ``user`` at ``when``."""
+    event = LearningEvent.objects.create(user=user, event_type="login")
+    LearningEvent.objects.filter(pk=event.pk).update(created_at=when)
+
+
+def _midday(day):
+    return datetime.combine(day, datetime.min.time(), tzinfo=dt_timezone.utc) + timedelta(hours=12)
+
+
+def _learning(user, mission, day):
+    """``user`` is inside an unfinished course on ``day`` and was active the day before: a real forecast row."""
+    Progress.objects.create(
+        user=user, mission=mission, status="in_progress", started_at=_midday(day - timedelta(days=5))
+    )
+    _event(user, _midday(day - timedelta(days=1)))
+
+
+@pytest.fixture
+def h3_day():
+    return (timezone.now() - timedelta(days=20)).astimezone(dt_timezone.utc).date()
+
+
+def test_h3_compares_leavers_among_urgent_and_the_rest(course, h3_day):
+    mission, _ = course
+    day = h3_day
     urgent_gone = [_user(f"ug{i}") for i in range(3)]
     urgent_stay = _user("us")
     others_stay = [_user(f"os{i}") for i in range(4)]
+    for user in [*urgent_gone, urgent_stay, *others_stay]:
+        _learning(user, mission, day)
     for user in urgent_gone:
-        _snapshot_row(user, day, "high")
-    _snapshot_row(urgent_stay, day, "high")
+        _snapshot_row(user, day, "high", ["stuck_task"])
+    _snapshot_row(urgent_stay, day, "high", ["stuck_task"])
     for user in others_stay:
         _snapshot_row(user, day, "ok")
     for user in [urgent_stay, *others_stay]:  # came back inside the window
-        LearningEvent.objects.create(user=user, event_type="login")
-        LearningEvent.objects.filter(user=user).update(created_at=after)
+        _event(user, _midday(day + timedelta(days=2)))
 
-    result = snapshots.h3_summary(now=now)
+    result = snapshots.h3_summary(now=timezone.now())
     assert result["mature_days"] == 1
     assert result["levels"]["high"]["rows"] == 4 and result["levels"]["high"]["left"] == 3
     assert result["levels"]["high"]["share"] == 75.0
     assert result["levels"]["ok"]["left"] == 0 and result["levels"]["ok"]["share"] == 0.0
     assert result["levels"]["high"]["ci_low"] < 75.0 < result["levels"]["high"]["ci_high"]
     assert result["recall_listed"] == 100.0  # every leaver had been on the list
+    assert result["recall_learners"] == {"left": 3, "flagged_before": 3, "share": 100.0}
     assert result["levels"]["medium"]["rows"] == 0 and result["levels"]["medium"]["share"] is None
+    assert result["by_reason"]["stuck"]["rows"] == 4 and result["by_reason"]["inactive"]["rows"] == 0
+    main = result["difference_high_ok"]
+    assert main["estimate"] == 75.0 and main["learners_a"] == 4 and main["learners_b"] == 4
+    assert main["replicates"] >= 100 and main["ci_low"] <= 75.0 <= main["ci_high"]
+    assert result["excluded"] == {"after_end": 0, "not_in_course": 0, "already_gone": 0, "after_contact": 0}
 
 
-def test_h3_ignores_snapshots_whose_window_is_not_over_yet():
-    now = timezone.now()
-    young = (now - timedelta(days=10)).astimezone(dt_timezone.utc).date()
-    _snapshot_row(_user("fresh"), young, "high")
-    result = snapshots.h3_summary(now=now)
+def test_h3_ignores_snapshots_whose_window_is_not_over_yet(course):
+    mission, _ = course
+    young = (timezone.now() - timedelta(days=10)).astimezone(dt_timezone.utc).date()
+    fresh = _user("fresh")
+    _learning(fresh, mission, young)
+    _snapshot_row(fresh, young, "high")
+    result = snapshots.h3_summary(now=timezone.now())
     assert result["mature_days"] == 0 and result["all"]["rows"] == 0
 
 
-def test_h3_ignores_learners_who_withdrew_consent():
-    now = timezone.now()
-    day = (now - timedelta(days=20)).astimezone(dt_timezone.utc).date()
+def test_h3_ignores_learners_who_withdrew_consent(course, h3_day):
+    mission, _ = course
     withdrawn = _user("withdrawn")
-    _snapshot_row(withdrawn, day, "high")
+    _learning(withdrawn, mission, h3_day)
+    _snapshot_row(withdrawn, h3_day, "high")
     withdrawn.profile.set_research_consent(False)
     withdrawn.profile.save()
-    assert snapshots.h3_summary(now=now)["all"]["rows"] == 0
+    assert snapshots.h3_summary(now=timezone.now())["all"]["rows"] == 0
+
+
+def test_h3_a_finished_course_is_censored_not_left(course, h3_day):
+    """Silence after finishing the course is not leaving: the row is left out, not counted as a leaver."""
+    mission, _ = course
+    done = _user("done")
+    Progress.objects.create(
+        user=done, mission=mission, status="completed", completed=True,
+        started_at=_midday(h3_day - timedelta(days=6)), completed_at=_midday(h3_day - timedelta(days=1)),
+    )
+    _event(done, _midday(h3_day - timedelta(days=1)))
+    _snapshot_row(done, h3_day, "ok")
+    result = snapshots.h3_summary(now=timezone.now())
+    assert result["all"]["rows"] == 0 and result["excluded"]["not_in_course"] == 1
+
+
+def test_h3_a_learner_already_gone_is_not_a_forecast(course, h3_day):
+    """Silent for the whole window before the snapshot: the list would only "predict" that the silent stay silent."""
+    mission, _ = course
+    ghost = _user("ghost")
+    Progress.objects.create(
+        user=ghost, mission=mission, status="in_progress", started_at=_midday(h3_day - timedelta(days=30))
+    )
+    _event(ghost, _midday(h3_day - timedelta(days=20)))
+    _snapshot_row(ghost, h3_day, "medium", ["inactive"])
+    result = snapshots.h3_summary(now=timezone.now())
+    assert result["all"]["rows"] == 0 and result["excluded"]["already_gone"] == 1
+
+
+def test_h3_windows_past_the_end_of_the_pilot_are_censored(course, h3_day, settings):
+    mission, _ = course
+    quiet = _user("quiet")
+    _learning(quiet, mission, h3_day)
+    _snapshot_row(quiet, h3_day, "high")
+    # the course ended a week after the snapshot: the 14-day window runs past it
+    settings.PILOT_ENDED_AT = (_midday(h3_day + timedelta(days=7))).isoformat()
+    result = snapshots.h3_summary(now=timezone.now())
+    assert result["all"]["rows"] == 0 and result["excluded"]["after_end"] == 1
+    settings.PILOT_ENDED_AT = (_midday(h3_day + timedelta(days=16))).isoformat()
+    assert snapshots.h3_summary(now=timezone.now())["all"]["rows"] == 1
+
+
+def test_h3_takes_only_learners_who_signed_up_since_the_start(course, h3_day, settings):
+    """Rehearsal accounts made before PILOT_STARTED_AT drop out by themselves."""
+    mission, _ = course
+    rehearsal, pilot = _user("rehearsal"), _user("pilot")
+    for user in (rehearsal, pilot):
+        _learning(user, mission, h3_day)
+        _snapshot_row(user, h3_day, "high")
+    start = _midday(h3_day - timedelta(days=10))
+    User.objects.filter(pk=rehearsal.pk).update(date_joined=start - timedelta(days=3))
+    User.objects.filter(pk=pilot.pk).update(date_joined=start + timedelta(hours=1))
+    settings.PILOT_STARTED_AT = start.isoformat()
+    result = snapshots.h3_summary(now=timezone.now())
+    assert result["all"]["rows"] == 1 and result["levels"]["high"]["learners"] == 1
+
+
+def test_h3_days_after_the_teachers_contact_are_left_out(course, h3_day):
+    mission, _ = course
+    helped = _user("helped")
+    _learning(helped, mission, h3_day)
+    _snapshot_row(helped, h3_day, "high")
+    _snapshot_row(helped, h3_day - timedelta(days=1), "high")
+    result = snapshots.h3_summary(now=timezone.now(), contacts={helped.pk: h3_day})
+    assert result["all"]["rows"] == 1 and result["excluded"]["after_contact"] == 1 and result["contacts"] == 1
+
+
+def test_bootstrap_difference_is_deterministic_and_resamples_learners():
+    rows = {(user, day): level for user, level in ((1, "high"), (2, "high"), (3, "ok"), (4, "ok")) for day in (1, 2)}
+    left = {(1, 1), (1, 2), (2, 1)}
+    first = snapshots.bootstrap_difference(rows, left, {"high"}, {"ok"}, seed=3)
+    again = snapshots.bootstrap_difference(rows, left, {"high"}, {"ok"}, seed=3)
+    assert first == again
+    assert first["estimate"] == 75.0 and first["learners_a"] == 2 and first["learners_b"] == 2
+    # with two learners per group a learner-level resample can draw only "ok" learners: those replicates are skipped
+    assert first["replicates"] < 2000 and first["ci_low"] <= 75.0 <= first["ci_high"]
+    assert snapshots.bootstrap_difference({}, set(), {"high"}, {"ok"})["estimate"] is None
+
+
+def test_no_snapshot_after_the_end_of_the_pilot(course, settings):
+    mission, quiz = course
+    _stuck(_user("late"), mission, quiz)
+    settings.PILOT_ENDED_AT = (timezone.now() - timedelta(hours=1)).isoformat()
+    assert snapshots.take_snapshot() == 0 and not EarlyWarningSnapshot.objects.exists()

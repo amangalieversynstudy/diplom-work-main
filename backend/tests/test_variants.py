@@ -1,5 +1,10 @@
 """Personal variants of a step: other numbers and names for every learner, graded on their own."""
 
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
 import pytest
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
@@ -93,23 +98,35 @@ def test_unknown_placeholders_stay_as_written():
 
 @pytest.fixture
 def sandbox(monkeypatch):
-    """A sandbox that always succeeds and remembers the scripts it was asked to run."""
-    scripts = []
+    """Hidden checks run for real in a local Python process; the fixture keeps the programs it ran."""
+    programs = []
 
-    def fake(script, timeout=None):
-        scripts.append(script)
-        token = script.rsplit("print(", 1)[1].split(")")[0].strip("'\"")
-        return {"status": "success", "output": token}
+    def run(program, timeout=5):
+        programs.append(program)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "main.py"
+            path.write_text(program, encoding="utf-8")
+            proc = subprocess.run(
+                [sys.executable, "-I", "-X", "utf8", str(path)],
+                capture_output=True, timeout=timeout, encoding="utf-8",
+            )
+        return {"status": "success" if proc.returncode == 0 else "error", "output": proc.stdout + proc.stderr}
 
-    monkeypatch.setattr("game.services.execute_python_code", fake)
-    return scripts
+    monkeypatch.setattr("game.services.execute_python_code", run)
+    return programs
+
+
+TOTAL = "def total(n):\n    return n * (n + 1) // 2\n"
 
 
 def test_the_hidden_check_runs_with_the_learners_own_numbers(task, sandbox):
     ari = _user_with_variant(task, 0, "chk")
     Progress.objects.create(user=ari, mission=task.mission, status="in_progress")
-    assert grade_code_run(ari, task, "def total(n): return 0", "Ари: 28", 0)["passed"] is True
-    assert "assert total(7) == 7 * (7 + 1) // 2" in sandbox[0]
+    assert grade_code_run(ari, task, "def total(n): return 0", "Ари: 28", 0)["passed"] is False
+    assert grade_code_run(ari, task, TOTAL, "Ари: 28", 0)["passed"] is True
+    # the sandbox calls total() with Ari's own number; the expected 7 * (7 + 1) // 2 stays on the server
+    assert "total(7)" in sandbox[0]
+    assert "7 * (7 + 1) // 2" not in sandbox[0]
 
 
 def test_a_learner_passes_with_the_output_of_their_own_variant_only(task, sandbox):
@@ -118,9 +135,9 @@ def test_a_learner_passes_with_the_output_of_their_own_variant_only(task, sandbo
     for user in (ari, mila):
         Progress.objects.create(user=user, mission=task.mission, status="in_progress")
     # Mila hands in the answer that belongs to Ari's variant
-    assert grade_code_run(mila, task, "print('x')", "Ари: 28", 0)["passed"] is False
-    assert grade_code_run(ari, task, "print('x')", "Ари: 28", 0)["passed"] is True
-    assert grade_code_run(mila, task, "print('x')", "Мила: 45", 0)["passed"] is True
+    assert grade_code_run(mila, task, TOTAL, "Ари: 28", 0)["passed"] is False
+    assert grade_code_run(ari, task, TOTAL, "Ари: 28", 0)["passed"] is True
+    assert grade_code_run(mila, task, TOTAL, "Мила: 45", 0)["passed"] is True
 
 
 # ── what the API shows ────────────────────────────────────────────────────

@@ -618,7 +618,7 @@ export const en = {
       },
       hiddenCheck: "Hidden check (optional)",
       hiddenCheckHint:
-        "Python code that runs after the student's solution and calls their functions with other values, for example assert power(3, 4) == 81. The student never sees it, so the step cannot be passed by just printing the answer.",
+        "Python code that runs after the student's solution and calls their functions with other values, for example assert power(3, 4) == 81. The student never sees it, so the step cannot be passed by just printing the answer. Compare a call with a plain value, like 81 here: the server makes that comparison itself, and the expected value never reaches the student's code.",
       minutes: "Minutes",
       moveUp: "Move up",
       moveDown: "Move down",

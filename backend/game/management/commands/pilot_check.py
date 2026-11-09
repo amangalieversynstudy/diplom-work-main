@@ -189,6 +189,38 @@ def check_period(now=None):
             yield OK, f"Снимок списка за {yesterday} записан."
 
 
+def _check_strength():
+    """Hidden checks that never compare a call with a value, and stored checks that do not compile.
+
+    The server itself compares ``assert power(3, 4) == 81`` (game.hidden_checks); a check made only of
+    yes/no conditions (``assert isinstance(m, Hero)``) relies on what the sandbox reports.
+    """
+    from game.hidden_checks import compile_check
+    from game.services import hidden_check_of
+    from game.variants import personalize
+
+    weak, broken = [], []
+    for task in MissionTask.objects.filter(task_type="code", mission__is_active=True).order_by("pk"):
+        check = hidden_check_of(personalize(task, None))
+        if not check:
+            continue
+        try:
+            if compile_check(check).weak:
+                weak.append(task.pk)
+        except (SyntaxError, ValueError, RecursionError, MemoryError):
+            broken.append(task.pk)
+    if broken:
+        yield WARN, (
+            f"Скрытая проверка не компилируется: {len(broken)} (id: {', '.join(map(str, broken))}). "
+            "Такой шаг не пройти никому: исправьте проверку в Studio."
+        )
+    if weak:
+        yield WARN, (
+            f"Скрытых проверок только из условий «да/нет»: {len(weak)} (id: {', '.join(map(str, weak))}). "
+            "Добавьте сравнение вызова со значением, например assert power(3, 4) == 81: его сервер проверяет сам."
+        )
+
+
 def check_data():
     """Yield ``(level, message)`` for migrations, the course and the teachers."""
     executor = MigrationExecutor(connection)
@@ -222,6 +254,7 @@ def check_data():
         )
     else:
         yield OK, "У всех кодовых шагов с эталонным выводом есть скрытая проверка."
+    yield from _check_strength()
 
     # the built-in steps that came with "not taught yet" lists and personal variants later
     from game.management.commands.sync_course_protection import PROTECTION_KEYS, protected_steps

@@ -7,7 +7,7 @@ say "I solved it".
 """
 
 import hashlib
-import secrets
+import logging
 
 from django.conf import settings
 from django.db import transaction
@@ -17,11 +17,14 @@ from rest_framework import status as http
 from rest_framework.exceptions import APIException
 
 from . import help as help_module
+from . import hidden_checks
 from .achievements import evaluate_achievements
 from .classes import is_vetted_teacher
 from .models import Enrollment, MissionTask, Progress, TaskProgress
 from .variants import personalize
 from .runner import execute_python_code
+
+logger = logging.getLogger(__name__)
 
 # Keys of ``MissionTask.data`` that are safe to show to learners. Anything else
 # (correct_answer, expected_output, sampleOutput, isCorrect ...) stays on the
@@ -235,9 +238,10 @@ def run_hidden_check(task, code):
 
     Matching the printed output is not enough: ``print("Charged")`` matches
     without any function behind it. The check calls the learner's own functions
-    with other values. It runs in a separate, silent run, and passes only if the
-    program reaches its end and prints a one-time token that the learner never
-    sees (an early ``exit()`` or a faked output cannot produce it).
+    with other values, in a separate, silent run. The sandbox never gets the
+    expected values: it reports what the check's calls returned, and the server
+    compares them (see hidden_checks). Leaving early, printing something or
+    returning a look-alike object cannot produce a pass.
 
     Returns True/False, or None when the sandbox itself failed (that must not
     count as a failed attempt).
@@ -245,13 +249,16 @@ def run_hidden_check(task, code):
     check = hidden_check_of(task)
     if not check:
         return True
-    token = secrets.token_hex(16)
-    result = execute_python_code(
-        f"{code}\n\n{check}\nprint({token!r})\n", timeout=HIDDEN_CHECK_TIMEOUT
-    )
+    try:
+        plan = hidden_checks.compile_check(check)
+    except (SyntaxError, ValueError, RecursionError, MemoryError):
+        # Studio refuses such checks; one stored another way cannot be passed by anyone
+        logger.error("The hidden check of task %s does not compile", getattr(task, "pk", None))
+        return False
+    result = execute_python_code(hidden_checks.program(plan, code), timeout=HIDDEN_CHECK_TIMEOUT)
     if result.get("infra"):
         return None
-    return result.get("status") == "success" and token in (result.get("output") or "")
+    return hidden_checks.passed(plan, result)
 
 
 def prepare_code_task(user, task_id):

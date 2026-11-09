@@ -4,8 +4,15 @@ Matching the printed output alone is not proof: ``print("Charged")`` matches
 without any function behind it. A task may carry a ``hidden_check`` that runs
 after the learner's code and calls their functions with other values. Programs
 are run for real (a local subprocess) so the checks are tested end to end.
+
+The learner's code runs in the same sandbox as the check, so the sandbox never
+gets the expected values: it reports what the check's calls returned and the
+server compares (game/hidden_checks.py).
 """
 
+import ast
+import contextlib
+import io
 import json
 import os
 import re
@@ -19,8 +26,10 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
+from game import hidden_checks
 from game.footprint import finish_code_run
 from game.models import CodeRun, Location, Mission, MissionTask, TaskProgress, Track
+from game.runner import MAX_OUTPUT_SIZE
 from game.services import grade_code_run, public_task_data, run_hidden_check
 from game.variants import personalize
 
@@ -122,6 +131,315 @@ def test_a_broken_sandbox_is_reported_as_unknown(monkeypatch):
         lambda code, timeout=5: {"status": "error", "output": "Ошибка песочницы", "infra": True},
     )
     assert run_hidden_check(_plain(), HONEST) is None
+
+
+def test_a_stored_check_that_does_not_compile_fails_without_an_error(monkeypatch):
+    calls = []
+    monkeypatch.setattr("game.services.execute_python_code", lambda code, timeout=5: calls.append(code))
+    assert run_hidden_check(_plain("assert ("), HONEST) is False
+    assert calls == []
+
+
+# ── nothing in the sandbox gives the answer away ────────────────────────────
+
+
+def _program(check, code="pass\n"):
+    return hidden_checks.program(hidden_checks.compile_check(check), code)
+
+
+def test_the_sandbox_gets_the_calls_but_never_the_expected_values():
+    program = _program(
+        'assert spell(30) == "Zephyrion"\n'
+        "assert total(7) == 7 * (7 + 1) // 2\n"
+        "assert pick([3, 1]) in (31, 47)\n"
+        "assert 1913 == year()\n"
+    )
+    for call in ("spell(30)", "total(7)", "pick([3, 1])", "year()"):
+        assert call in program
+    for answer in ("Zephyrion", "7 * (7 + 1) // 2", "28", "31", "47", "1913"):
+        assert answer not in program
+
+
+def test_the_program_runs_on_the_sandboxs_python_38():
+    """Judge0 CE runs Python 3.8 (language 71): the program must not use newer syntax."""
+    check = 'h = Hero("x", 5)\nassert h.hp == 5 and h.alive()\nassert f"{h.hp}" == "5"\n'
+    ast.parse(_program(check, "class Hero: pass\n"), feature_version=(3, 8))
+
+
+# ── the old ways to fake a pass ─────────────────────────────────────────────
+# The check used to run in the learner's process and pass on a token printed at its end.
+
+READ_OWN_PROGRAM = [
+    "open(sys.argv[0], encoding='utf-8').read()",
+    "open(__file__, encoding='utf-8').read()",
+]
+
+
+def _attacked(code, check=CHECK):
+    """Run *code* with the check; the run must end with the attack's own exit(0), or it proves nothing."""
+    plan = hidden_checks.compile_check(check)
+    result = _run_locally(hidden_checks.program(plan, code))
+    assert result["status"] == "success", result["output"]
+    return hidden_checks.passed(plan, result)
+
+
+@pytest.mark.parametrize("read", READ_OWN_PROGRAM)
+def test_reading_the_program_and_printing_its_tokens_does_not_pass(read):
+    """Everything that looks like a token goes to the real stdout, then the run ends at once."""
+    attack = (
+        "import os, re, sys\n"
+        f"source = {read}\n"
+        "found = re.findall(r'[0-9a-f]{32}', source)\n"
+        "os.write(1, ('\\n'.join(found) + '\\n').encode())\n"
+        "print(*found)\n"
+        "os._exit(0)\n"
+    )
+    assert _attacked(HONEST + attack) is False
+
+
+@pytest.mark.parametrize("read", READ_OWN_PROGRAM)
+def test_echoing_the_whole_program_does_not_pass(read):
+    attack = f"import os, sys\nos.write(1, {read}.encode())\nos._exit(0)\n"
+    assert _attacked(HONEST + attack) is False
+
+
+def _forger(*reports):
+    """Learner code that writes report lines of its own and leaves before the check runs."""
+    payload = "".join("\n" + hidden_checks.MARK + json.dumps(r) + "\n" for r in reports).encode()
+    return f"import os\nos.write(1, {payload!r})\nos._exit(0)\n"
+
+
+@pytest.mark.parametrize(
+    "reports",
+    [
+        [{"done": 1}],
+        [{"p": 0, "v": ["b", True]}, {"p": 1, "v": ["b", True]}, {"done": 1}],
+        # the inputs of the calls are in the program; the answers are not
+        [{"p": 0, "v": ["i", "3"]}, {"p": 1, "v": ["i", "0"]}, {"done": 1}],
+    ],
+)
+def test_reports_written_by_the_learner_do_not_pass(reports):
+    assert _attacked(HONEST + _forger(*reports)) is False
+
+
+def test_a_wrong_report_next_to_the_real_one_fails():
+    wrong_first = _forger({"p": 0, "v": ["i", "7"]}).replace("os._exit(0)\n", "")
+    assert run_hidden_check(_plain(), wrong_first + HONEST) is False
+
+
+def test_an_object_that_equals_everything_does_not_pass():
+    look_alike = (
+        "class Anything:\n"
+        "    def __eq__(self, other):\n"
+        "        return True\n"
+        "    __hash__ = object.__hash__\n\n"
+        "def double(x):\n"
+        "    return Anything()\n\n"
+        "print(4)\n"
+    )
+    assert run_hidden_check(_plain(), look_alike) is False
+
+
+def test_leaving_from_inside_the_learners_function_does_not_pass():
+    bail = "import sys\n\ndef double(x):\n    sys.exit(0)\n\nprint(4)\n"
+    assert run_hidden_check(_plain(), bail) is False
+
+
+def test_the_learner_cannot_take_the_name_the_check_calls():
+    hijack = HONEST + f"{hidden_checks.PROBE} = lambda *args: None\n"
+    assert run_hidden_check(_plain(), hijack) is True  # the check's own one replaces it
+
+
+# ── honest solutions grade as before ────────────────────────────────────────
+
+
+def _in_process(code, check):
+    """How the check grades *code* when both simply run in one namespace (trusted test code)."""
+    scope = {"__name__": "__main__"}
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            exec(code, scope)  # noqa: S102 - the solutions below are this file's own
+            exec(check, scope)  # noqa: S102
+    except BaseException:  # noqa: BLE001 - any stop is a failed check
+        return False
+    return True
+
+
+SOLUTIONS_OF_DOUBLE = {
+    "right": "def double(x):\n    return x * 2\n",
+    "float": "def double(x):\n    return x * 2.0\n",
+    "wrong": "def double(x):\n    return x * 3\n",
+    "text": "def double(x):\n    return str(x * 2)\n",
+    "raises": "def double(x):\n    raise ValueError(x)\n",
+    "missing": "print(4)\n",
+}
+
+CHECKS_OF_DOUBLE = [
+    "assert double(3) == 6",
+    "assert 6 == double(3)",
+    "assert double(2) != 5",
+    "assert double(1) < 3 and double(1) <= 2",
+    "assert double(2) > 3 and double(2) >= 4",
+    "assert double(2) in (4, 8)",
+    "assert 3 not in [double(1), double(2)]",
+    "assert double(0) is not None",
+    "assert isinstance(double(1), int)",
+    "assert double(double(1)) == 4 and double(-1) == -2",
+    "x = double(5)\nassert x == 10\nfor n in range(3):\n    assert double(n) == n + n",
+]
+
+
+@pytest.mark.parametrize("check", CHECKS_OF_DOUBLE)
+@pytest.mark.parametrize("name", sorted(SOLUTIONS_OF_DOUBLE))
+def test_the_verdict_is_the_one_python_itself_gives(name, check):
+    code = SOLUTIONS_OF_DOUBLE[name]
+    assert run_hidden_check(_plain(check), code) is _in_process(code, check)
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        "def word_count(text):\n    return {w: text.split().count(w) for w in text.split()}\n",
+        "from collections import Counter\n\ndef word_count(text):\n    return Counter(text.split())\n",
+        "from collections import defaultdict\n\ndef word_count(text):\n"
+        "    counts = defaultdict(int)\n    for w in text.split():\n        counts[w] += 1\n    return counts\n",
+        "from collections import OrderedDict\n\ndef word_count(text):\n"
+        "    return OrderedDict((w, text.split().count(w)) for w in sorted(set(text.split())))\n",
+    ],
+)
+def test_dict_like_results_compare_like_dicts(code):
+    check = 'assert word_count("a b a") == {"a": 2, "b": 1}\nassert word_count("") == {}'
+    assert run_hidden_check(_plain(check), code) is True
+
+
+def test_other_built_in_kinds_of_values_compare_as_in_python():
+    code = (
+        "from collections import namedtuple\nfrom enum import IntEnum\n\n"
+        "Point = namedtuple('Point', 'x y')\n\nclass Level(IntEnum):\n    HIGH = 3\n\n"
+        "def point():\n    return Point(1, 2)\n\ndef level():\n    return Level.HIGH\n\n"
+        "def shape():\n    return {'sides': frozenset({1, 2}), 'name': b'sq', 'z': 1 + 2j, 'n': None}\n"
+    )
+    check = (
+        "assert point() == (1, 2)\nassert level() == 3\nassert level() > 2\n"
+        "assert shape() == {'sides': {1, 2}, 'name': b'sq', 'z': 1 + 2j, 'n': None}\n"
+        "assert sorted(shape()['sides']) == [1, 2]\nassert 2 ** 70 == 2 ** 70 + point()[0] - 1\n"
+    )
+    assert _in_process(code, check) is True
+    assert run_hidden_check(_plain(check), code) is True
+
+
+def test_the_learners_module_behaves_like_a_script():
+    code = (
+        "from dataclasses import dataclass\n\n@dataclass\nclass Hero:\n    name: str\n    hp: int = 10\n\n"
+        "def make(name):\n    return Hero(name)\n\n"
+        "if __name__ == '__main__':\n    import __main__\n    READY = __main__.make('a').hp\n"
+    )
+    check = 'assert READY == 10\nassert make("b") == Hero("b")\nassert make("c").name == "c"'
+    assert run_hidden_check(_plain(check), code) is True
+
+
+def test_a_check_that_wants_an_error_still_gets_it():
+    check = (
+        "assert safe_divide(9, 3) == 3\ntry:\n    safe_divide('a', 2)\nexcept TypeError:\n    pass\n"
+        "else:\n    raise AssertionError('TypeError must not be swallowed')"
+    )
+    careful = "def safe_divide(a, b):\n    try:\n        return a / b\n    except ZeroDivisionError:\n        return None\n"
+    swallowing = careful.replace("except ZeroDivisionError", "except Exception")
+    assert run_hidden_check(_plain(check), careful) is True
+    assert run_hidden_check(_plain(check), swallowing) is False
+
+
+def test_a_long_printout_no_longer_hides_the_result(monkeypatch):
+    """The sandbox keeps only MAX_OUTPUT_SIZE of output; the learner's own printing is not part of it."""
+
+    def capped(code, timeout=5):
+        result = _run_locally(code, timeout)
+        result["output"] = result["output"][:MAX_OUTPUT_SIZE]
+        return result
+
+    monkeypatch.setattr("game.services.execute_python_code", capped)
+    chatty = HONEST + "for i in range(20000):\n    print('the dragon sleeps', i)\n"
+    assert run_hidden_check(_plain(), chatty) is True
+
+
+def test_the_check_text_keeps_its_layout():
+    """Several statements on a line, an assert over several lines, a comment, a decorator, non-ASCII."""
+    check = (
+        'import functools; assert shout("ёж") == "ЁЖ!"  # a comment\n'
+        "assert shout(\n    'a',  # inner comment\n) == 'A!', 'shout must add !'\n"
+        "@functools.lru_cache(None)\ndef twice(s):\n    return shout(s) * 2\n"
+        "assert twice('b') == 'B!B!'\n"
+    )
+    code = "def shout(s):\n    return s.upper() + '!'\n"
+    assert run_hidden_check(_plain(check), code) is True
+    assert run_hidden_check(_plain(check), code.replace("+ '!'", "+ '?'")) is False
+
+
+# ── what the server accepts from a run ──────────────────────────────────────
+
+
+def _report(*reports, status="success"):
+    lines = "".join("\n" + hidden_checks.MARK + json.dumps(r) + "\n" for r in reports)
+    return {"status": status, "output": "noise\n" + lines}
+
+
+TWO = hidden_checks.compile_check("assert double(3) == 6\nassert isinstance(double(1), int)")
+RIGHT = ({"p": 0, "v": ["i", "6"]}, {"p": 1, "v": ["b", True]}, {"done": 1})
+
+
+def test_well_formed_right_reports_pass():
+    assert hidden_checks.passed(TWO, _report(*RIGHT)) is True
+    assert hidden_checks.passed(TWO, _report(RIGHT[0], *RIGHT)) is True  # the same right value twice
+
+
+@pytest.mark.parametrize(
+    "run",
+    [
+        _report(*RIGHT, status="error"),
+        _report(*RIGHT[:2]),  # the check did not reach its end
+        _report(RIGHT[0], RIGHT[2]),  # a probe never reported
+        _report({"p": 0, "v": ["i", "7"]}, *RIGHT),  # one of two reports is wrong
+        _report(*RIGHT, {"p": 2, "v": ["n"]}),  # nobody asked for probe 2
+        _report(*RIGHT, {"p": True, "v": ["n"]}),
+        _report({"p": 0, "v": ["i", "6"]}, {"p": 1, "v": ["i", "1"]}, RIGHT[2]),  # 1 is not True
+        _report({"p": 0, "v": ["o", "Anything"]}, RIGHT[1], RIGHT[2]),
+        _report({"p": 0, "v": ["s", "6"]}, RIGHT[1], RIGHT[2]),
+        _report(*RIGHT, {"error": "SystemExit"}),
+        {"status": "success", "output": hidden_checks.MARK + "{not json\n"},
+        {"status": "success", "output": hidden_checks.MARK + '{"p": 0, "v": ' + "[" * 5000 + "]" * 5000 + "}\n"},
+        {"status": "success", "output": hidden_checks.MARK + '{"p": 0, "v": ["i", "' + "f" * 40000 + '"]}\n'},
+        {"status": "success", "output": hidden_checks.MARK + '{"p": 0, "v": ["e", [["l", []]]]}\n'},
+        {"status": "success", "output": ""},
+    ],
+)
+def test_anything_else_fails_quietly(run):
+    assert hidden_checks.passed(TWO, run) is False
+
+
+def test_a_float_report_compares_like_python():
+    assert hidden_checks.passed(TWO, _report({"p": 0, "v": ["f", (6.0).hex()]}, *RIGHT[1:])) is True
+
+
+# ── how a check is split into probes ────────────────────────────────────────
+
+
+def test_value_and_truth_probes():
+    plan = hidden_checks.compile_check(
+        "h = Hero(5)\n"
+        "assert h.hp == 5 and h.alive()\n"
+        "assert result is None\n"
+        "assert result is 5\n"
+        "assert f(1) == f(1)\n"
+        "assert 0 < g() < 9\n"
+        "assert names() == [n for n in 'ab']\n"
+        "for n in range(2):\n    assert g(n) == 1\n"
+    )
+    assert [p.kind for p in plan.probes] == ["v", "t", "v", "t", "t", "t", "t"]
+    assert plan.probes[0].expected == 5 and plan.probes[2].expected is None
+    assert "for n in range(2):\n    assert g(n) == 1" in plan.source  # nested asserts run as written
+    assert not plan.weak
+    assert hidden_checks.compile_check("assert isinstance(m, Hero)").weak
+    assert hidden_checks.compile_check("h = 1").weak
 
 
 # ── grading ─────────────────────────────────────────────────────────────────
@@ -293,6 +611,8 @@ def test_every_function_step_of_the_course_has_a_working_check(pk):
 
     assert data["hidden_check"], "the step has no hidden check"
     compile(data["hidden_check"], "<check>", "exec")
+    # at least one call is compared with a value on the server, not only reported as yes/no
+    assert not hidden_checks.compile_check(data["hidden_check"]).weak
 
     # the starter is unfinished: it must not pass
     assert run_hidden_check(task, data["starter"]) is False

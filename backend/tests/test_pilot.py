@@ -424,6 +424,27 @@ def test_code_steps_without_a_hidden_check_are_flagged(ready):
     assert "есть скрытая проверка" in _run_check()
 
 
+def test_hidden_checks_without_a_value_comparison_are_flagged(ready):
+    from game.models import Mission, MissionTask
+
+    mission = Mission.objects.filter(is_active=True).first()
+    step = MissionTask.objects.create(
+        mission=mission, order=51, task_type="code",
+        data={"expected_output": "4", "hidden_check": "assert isinstance(double(2), int)"},
+    )
+    text = _run_check()
+    assert f"Скрытых проверок только из условий «да/нет»: 1 (id: {step.pk})" in text
+    assert "Проверка пройдена" in text  # a warning, not a failure
+
+    step.data["hidden_check"] = "assert double(2) == 4 and isinstance(double(2), int)"
+    step.save()
+    assert "только из условий «да/нет»" not in _run_check()
+
+    step.data["hidden_check"] = "assert ("  # stored past Studio, which refuses it
+    step.save()
+    assert f"Скрытая проверка не компилируется: 1 (id: {step.pk})" in _run_check()
+
+
 def test_demo_learners_are_flagged_before_a_pilot(ready):
     demo = _user("demo_01")
     demo.set_unusable_password()  # the way the command makes them

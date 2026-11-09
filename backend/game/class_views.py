@@ -49,7 +49,7 @@ class ClassLookupView(APIView):
     def get(self, request):
         track = _class_or_404(request.query_params.get("code"))
         if track is None:
-            return Response({"detail": "Такого класса нет. Проверьте код."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "Класса с таким кодом нет или он ещё не открыт. Проверьте код у преподавателя."}, status=status.HTTP_404_NOT_FOUND)
         return Response(
             {
                 "track_id": track.pk,
@@ -71,7 +71,7 @@ class ClassJoinView(APIView):
     def post(self, request):
         track = _class_or_404(request.data.get("code"))
         if track is None:
-            return Response({"detail": "Такого класса нет. Проверьте код."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "Класса с таким кодом нет или он ещё не открыт. Проверьте код у преподавателя."}, status=status.HTTP_404_NOT_FOUND)
         if track.owner_id == request.user.pk:
             return Response({"detail": "Это ваш собственный класс."}, status=status.HTTP_400_BAD_REQUEST)
         if request.user.can_teach:

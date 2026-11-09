@@ -282,6 +282,11 @@ def quizzes():
     return {"mission": mission, "tasks": tasks, "excluded": {explain.pk, varied.pk, hidden.pk}}
 
 
+def _finished(quizzes, *users):
+    for user in users:
+        Progress.objects.get_or_create(user=user, mission=quizzes["mission"], defaults={"completed": True})
+
+
 def _answers(duel, right):
     """Right answers for the first *right* questions of the duel, wrong for the rest."""
     keys = {}
@@ -293,7 +298,11 @@ def _answers(duel, right):
 
 def test_duel_questions_are_shared_plain_quizzes_without_keys(ann, bob, quizzes):
     _befriend(ann, bob)
+    # only ann has finished the mission: its quizzes may not appear in a duel with bob yet
     Progress.objects.create(user=ann, mission=quizzes["mission"], completed=True)
+    too_early = _client(ann).post("/api/social/duels/", {"username": "bob"}, format="json")
+    assert too_early.status_code == 409 and too_early.json()["code"] == "no_questions"
+    _finished(quizzes, bob)
     created = _client(ann).post("/api/social/duels/", {"username": "bob"}, format="json")
     assert created.status_code == 201, created.content
     duel = Duel.objects.get()
@@ -314,6 +323,7 @@ def test_duel_questions_are_shared_plain_quizzes_without_keys(ann, bob, quizzes)
 
 def test_duel_is_scored_on_the_server_and_hides_the_rival_until_the_end(ann, bob, quizzes):
     _befriend(ann, bob)
+    _finished(quizzes, ann, bob)
     duel = services.create_duel(ann, bob)
     for user in (ann, bob):
         services.start_duel(user, duel.pk)
@@ -339,6 +349,7 @@ def test_duel_is_scored_on_the_server_and_hides_the_rival_until_the_end(ann, bob
 
 def test_late_answers_count_for_nothing(ann, bob, quizzes):
     _befriend(ann, bob)
+    _finished(quizzes, ann, bob)
     duel = services.create_duel(ann, bob)
     services.start_duel(ann, duel.pk)
     DuelAttempt.objects.filter(duel=duel, user=ann).update(
@@ -351,6 +362,7 @@ def test_late_answers_count_for_nothing(ann, bob, quizzes):
 
 def test_decline_cancel_and_expiry(ann, bob, quizzes):
     _befriend(ann, bob)
+    _finished(quizzes, ann, bob)
     duel = services.create_duel(ann, bob)
     assert _client(ann).post("/api/social/duels/", {"username": "bob"}, format="json").json()["code"] == "already"
     assert _client(ann).post(f"/api/social/duels/{duel.pk}/decline/").status_code == 409  # only the opponent
@@ -380,6 +392,7 @@ def test_duels_need_friends_and_enough_questions(ann, bob):
 def test_status_counts_what_waits_for_an_answer(ann, bob, quizzes):
     services.request_friend(bob, ann)
     services.request_friend(ann, bob)
+    _finished(quizzes, ann, bob)
     services.create_trade(bob, ann, "hint_scrolls", 1)
     services.create_duel(bob, ann)
     assert _client(ann).get("/api/social/status/").json() == {"friends": 0, "trades": 1, "duels": 1}

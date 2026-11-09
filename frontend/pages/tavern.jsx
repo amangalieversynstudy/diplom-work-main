@@ -678,8 +678,8 @@ function ArenaTab({ t, friends, errorText, onChanged, prefill }) {
   const friendList = friends?.friends || [];
   const limits = data.limits || {};
 
-  const sideText = (side) => {
-    if (side.correct != null) return `${side.correct} ${t("tavern.arena.of")} ${limits.questions ?? 5}${side.late ? ` (${t("tavern.arena.late")})` : ""}`;
+  const sideText = (side, total) => {
+    if (side.correct != null) return `${side.correct} ${t("tavern.arena.of")} ${total ?? limits.questions ?? 5}${side.late ? ` (${t("tavern.arena.late")})` : ""}`;
     return side.submitted ? "✓" : "…";
   };
 
@@ -734,7 +734,7 @@ function ArenaTab({ t, friends, errorText, onChanged, prefill }) {
                   )}
                 </p>
                 <p className="text-xs text-muted">
-                  {t(`tavern.arena.statuses.${duel.status}`)} · {t("tavern.arena.you")}: {sideText(duel.me)} · {t("tavern.arena.them")}: {sideText(duel.them)}
+                  {t(`tavern.arena.statuses.${duel.status}`)} · {t("tavern.arena.you")}: {sideText(duel.me, duel.questions)} · {t("tavern.arena.them")}: {sideText(duel.them, duel.questions)}
                   {duel.status === "active" && ` · ${duel.can_start ? t("tavern.arena.waitingYou") : t("tavern.arena.waitingThem")}`}
                 </p>
               </div>

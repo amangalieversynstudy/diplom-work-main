@@ -20,6 +20,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
+from game.cohort import pilot_learners, pilot_period, research_learners
 from game.models import CodeRun, LearningEvent, MissionTask, Progress, TaskProgress
 from users.models import Profile
 
@@ -42,14 +43,29 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        key = getattr(settings, "ANALYTICS_EXPORT_SALT", "") or settings.SECRET_KEY
+        salt = getattr(settings, "ANALYTICS_EXPORT_SALT", "")
+        if not salt:
+            self.stderr.write(
+                "ANALYTICS_EXPORT_SALT is empty: pseudonyms fall back to SECRET_KEY and will not match exports made "
+                "with the salt. Copy the value from the server variables before exporting research data."
+            )
+        key = salt or settings.SECRET_KEY
         out = Path(options["out"])
         out.mkdir(parents=True, exist_ok=True)
 
-        learners = Profile.objects.filter(user__is_staff=False, user__is_teacher=False)
-        if not options["all_users"]:
-            learners = learners.filter(research_consent=True)
+        # the same research cohort as pilot_report and export_risk_features: consent and signed up since
+        # PILOT_STARTED_AT (rehearsal and test accounts drop out); the behaviour log is cut at PILOT_ENDED_AT
+        users = pilot_learners() if options["all_users"] else research_learners()
+        learners = Profile.objects.filter(user__in=users)
         ids = set(learners.values_list("user_id", flat=True))
+        start, end = pilot_period()
+
+        def in_period(queryset):
+            if start:
+                queryset = queryset.filter(created_at__gte=start)
+            if end:
+                queryset = queryset.filter(created_at__lt=end)
+            return queryset
 
         def who(user_id):
             return pseudonym(user_id, key)
@@ -92,7 +108,7 @@ class Command(BaseCommand):
                         "longest_pause_ms", "first_key_ms", "paste_after_away",
                     )),
                 ]
-                for r in CodeRun.objects.filter(user_id__in=ids)
+                for r in in_period(CodeRun.objects.filter(user_id__in=ids))
                 .order_by("created_at")
                 .iterator()
             ),
@@ -105,7 +121,7 @@ class Command(BaseCommand):
                     who(e.user_id), e.event_type, e.task_id, e.mission_id,
                     json.dumps(e.meta, ensure_ascii=False, sort_keys=True), e.created_at,
                 ]
-                for e in LearningEvent.objects.filter(user_id__in=ids)
+                for e in in_period(LearningEvent.objects.filter(user_id__in=ids))
                 .order_by("created_at")
                 .iterator()
             ),

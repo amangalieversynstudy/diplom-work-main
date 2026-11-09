@@ -70,7 +70,15 @@ def test_each_potion_reveals_the_next_level_of_the_hint(api, student, steps):
     assert LearningEvent.objects.filter(user=student, event_type="hint_used", task=steps["helped"]).count() == 3
 
 
+def _open_bare_step(student, steps):
+    """The bare step is second in its mission: items help only with an open step, so solve the first one."""
+    from game.models import TaskProgress
+
+    TaskProgress.objects.create(user=student, task=steps["helped"], status="completed", attempts=1)
+
+
 def test_a_step_without_hints_costs_nothing(api, student, steps):
+    _open_bare_step(student, steps)
     response = _use(api, "hint_scrolls", steps["bare"])
     assert response.status_code == 409
     assert response.json()["code"] == "no_hint"
@@ -94,6 +102,7 @@ def test_the_architect_scroll_gives_the_authors_outline(api, student, steps):
 
 
 def test_a_step_without_an_outline_does_not_spend_the_scroll(api, student, steps):
+    _open_bare_step(student, steps)
     response = _use(api, "skeleton_scrolls", steps["bare"])
     assert response.status_code == 409
     assert response.json()["code"] == "no_skeleton"

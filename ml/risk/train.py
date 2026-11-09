@@ -23,6 +23,7 @@ window, the score at the end of the period), compared with the train mean and a 
 
 import argparse
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -622,4 +623,9 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (ValueError, FileNotFoundError) as error:
+        # too little data, one outcome class only, a missing file: a short message, not a traceback
+        print(f"risk.train: {error}", file=sys.stderr)
+        sys.exit(2)

@@ -270,9 +270,12 @@ def test_resubmitting_a_solved_step_is_flagged(client, course):
 
 
 def test_hints_are_logged_against_the_task(client, student, course):
-    *_, code = course
+    story, quiz, code = course[-3:]
     code.data = {**code.data, "hints": [{"ru": "подсказка"}], "skeleton": {"ru": "# план\npass"}}
     code.save()
+    # items help only with the open step: the story and the quiz before it are solved
+    for earlier in (story, quiz):
+        TaskProgress.objects.create(user=student, task=earlier, status="completed", attempts=1)
     client.post("/api/profile/use-item/", {"item_type": "hint_scrolls", "task_id": code.id}, format="json")
     client.post("/api/profile/use-item/", {"item_type": "skeleton_scrolls", "task_id": code.id}, format="json")
     (hint,) = events("hint_used")

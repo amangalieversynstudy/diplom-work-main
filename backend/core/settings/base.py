@@ -235,7 +235,10 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "30/min",
+        # a school class behind ONE address signs up and logs in at the same minute (about 2-3 anonymous
+        # requests a student): 30/min stopped half of a class. Sign-up and login keep their own per-address
+        # and per-account limits (django-ratelimit in users/views_auth.py).
+        "anon": "300/min",
         "user": "120/min",
         "ai_assist": "10/min",        # Gemini — дорого
         "task_submit": "60/min",       # ответы на квизы/сюжет

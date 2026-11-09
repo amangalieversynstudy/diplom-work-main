@@ -669,6 +669,11 @@ class StudioTaskSerializer(serializers.ModelSerializer):
         check = str(data.get("hidden_check", "")).strip()
         if len(starter) > MAX_CODE or len(expected) > MAX_CODE or len(check) > MAX_CODE:
             raise serializers.ValidationError({"data": f"Код или вывод длиннее {MAX_CODE} символов."})
+        # without either the step would accept any code at all, and "solved" would mean nothing in the data
+        if not expected.strip() and not check and not data.get("variants"):
+            raise serializers.ValidationError(
+                {"data": "Укажите эталонный вывод или скрытую проверку: иначе шаг засчитается за любой код."}
+            )
         if check:
             try:
                 compile(check, "<hidden_check>", "exec")

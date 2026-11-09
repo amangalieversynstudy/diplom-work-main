@@ -1556,7 +1556,7 @@ export const en = {
         emblems: { dragon: "Dragon", owl: "Owl", wolf: "Wolf", phoenix: "Phoenix", tower: "Tower", serpent: "Serpent" },
       },
       arena: {
-        rules: "A duel is {q} questions from the course quizzes and {s} seconds for all of them. The server checks the answers: more right answers wins, and with a tie the faster one wins. Play within {d} days.",
+        rules: "A duel is up to {q} questions from the quizzes of missions you have both finished, and {s} seconds for all of them. The server checks the answers: more right answers wins, and with a tie the faster one wins. Play within {d} days.",
         challenge: "Challenge to a duel",
         choose: "Choose a friend",
         challenged: "Challenge sent!",
@@ -1598,7 +1598,7 @@ export const en = {
         low_level: "This needs a higher level.",
         bad_name: "Name: 3–40 characters — letters, digits, space and - ' . !",
         already: "A duel with this friend is already on.",
-        no_questions: "Not enough questions for a duel yet.",
+        no_questions: "A duel needs at least 3 questions from missions you have both finished.",
         too_many_duels: "Too many duels at once.",
         too_many_trades: "Too many open offers.",
         too_many_requests: "Too many requests are waiting for an answer.",

@@ -261,6 +261,26 @@ class UseItemView(APIView):
             from game.serializers import _resolve_language
 
             task = find_task(request.data.get("task_id"), request.user)
+            if task is not None and not request.user.can_teach:
+                # items help with the step in front of the learner: not with a locked step further on (that would
+                # hand out its outline early) and not with a solved one (that would only skew the help counts)
+                from game.models import TaskProgress
+                from game.services import RuleViolation, check_mission_access, check_task_order
+
+                try:
+                    check_mission_access(request.user, task.mission)
+                    check_task_order(request.user, task)
+                except RuleViolation:
+                    return Response(
+                        {"detail": "Этот шаг ещё закрыт: предмет помогает только с открытым шагом и не потрачен.",
+                         "code": "step_locked"},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+                if TaskProgress.objects.filter(user=request.user, task=task, status="completed").exists():
+                    return Response(
+                        {"detail": "Этот шаг уже решён: предмет не потрачен.", "code": "step_solved"},
+                        status=status.HTTP_409_CONFLICT,
+                    )
             if task is not None:
                 from game.variants import personalize
 

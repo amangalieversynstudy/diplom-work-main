@@ -34,6 +34,7 @@ MAX_TRADES_PER_DAY = 10
 GUILD_MAX_MEMBERS = 20
 GUILD_MIN_LEVEL = 2
 DUEL_QUESTIONS = 5
+DUEL_MIN_QUESTIONS = 3
 DUEL_SECONDS = 120
 DUEL_GRACE_SECONDS = 15
 DUEL_DAYS = 3
@@ -505,23 +506,20 @@ def _completed_missions(user):
 
 
 def pick_questions(a, b, rng=None):
-    """Five questions: first from missions both players finished, then from what either finished, then
-    from the start of the course (questions on untouched topics come from its easiest part)."""
+    """Up to five questions, only from missions BOTH players have finished. A duel never shows a quiz before
+    the course does: first-try quiz answers are research data (stars, the performance score), and a question
+    seen in the tavern first, or explained by a friend, would spoil them."""
     rng = rng or random.SystemRandom()
-    pool = question_pool()
-    if len(pool) < DUEL_QUESTIONS:
-        raise SocialError("Для дуэли пока мало вопросов в курсах.", "no_questions", http.HTTP_409_CONFLICT)
-    done_a, done_b = _completed_missions(a), _completed_missions(b)
-    both = [t for t in pool if t.mission_id in done_a and t.mission_id in done_b]
-    either = [t for t in pool if (t.mission_id in done_a) != (t.mission_id in done_b)]
-    rest = [t for t in pool if t.mission_id not in done_a and t.mission_id not in done_b]
-    picked = []
-    for group in (both, either, rest[: max(15, DUEL_QUESTIONS)], rest[max(15, DUEL_QUESTIONS):]):
-        need = DUEL_QUESTIONS - len(picked)
-        if need <= 0:
-            break
-        picked.extend(rng.sample(group, min(need, len(group))))
-    return [task.pk for task in picked]
+    done = _completed_missions(a) & _completed_missions(b)
+    pool = [task for task in question_pool() if task.mission_id in done]
+    if len(pool) < DUEL_MIN_QUESTIONS:
+        raise SocialError(
+            f"Для дуэли нужно хотя бы {DUEL_MIN_QUESTIONS} вопроса из миссий, которые вы оба уже прошли. "
+            "Пройдите ещё немного курса!",
+            "no_questions",
+            http.HTTP_409_CONFLICT,
+        )
+    return [task.pk for task in rng.sample(pool, min(DUEL_QUESTIONS, len(pool)))]
 
 
 def _open_duels(user):
@@ -754,7 +752,13 @@ def duels_overview(user):
             "draws": record["draws"],
             "losses": record["total"] - record["wins"] - record["draws"],
         },
-        "limits": {"questions": DUEL_QUESTIONS, "seconds": DUEL_SECONDS, "days": DUEL_DAYS, "open": MAX_OPEN_DUELS},
+        "limits": {
+            "questions": DUEL_QUESTIONS,
+            "min_questions": DUEL_MIN_QUESTIONS,
+            "seconds": DUEL_SECONDS,
+            "days": DUEL_DAYS,
+            "open": MAX_OPEN_DUELS,
+        },
     }
 
 

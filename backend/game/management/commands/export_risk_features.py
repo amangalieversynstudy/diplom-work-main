@@ -127,6 +127,11 @@ class Command(BaseCommand):
         window, horizon, step = (
             timedelta(days=window_days), timedelta(days=horizon_days), timedelta(days=step_days),
         )
+        if not getattr(settings, "ANALYTICS_EXPORT_SALT", ""):
+            self.stderr.write(
+                "ANALYTICS_EXPORT_SALT is empty: pseudonyms fall back to SECRET_KEY and will not match exports made "
+                "with the salt. Copy the value from the server variables before exporting research data."
+            )
         key = getattr(settings, "ANALYTICS_EXPORT_SALT", "") or settings.SECRET_KEY
         now = timezone.now()
         until = parse_until(options["until"]) if options.get("until") else pilot_period()[1]

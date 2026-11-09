@@ -69,7 +69,7 @@ python manage.py release  →  exec daphne (один процесс, HTTP + WebS
 
 > `DJANGO_SETTINGS_MODULE=core.settings.production` задан в образе (`Dockerfile.backend`) — отдельно задавать не нужно. Не задавай `REDIS_URL` и `RUNNER_ALLOW_UNSAFE_FALLBACK`.
 
-> **CORS:** прод автоматически разрешает домены вида `diplom-work-main*.vercel.app` (regex в `production.py`). Если имя Vercel-проекта другое — добавь `CORS_ALLOWED_ORIGINS=https://твой-фронт.vercel.app`. Для своего домена задай ещё `CSRF_TRUSTED_ORIGINS=https://твой-домен`.
+> **CORS:** прод разрешает только точные адреса фронтенда: `https://diplom-work-main-frontend.vercel.app`, `FRONTEND_URL` и список `CORS_ALLOWED_ORIGINS` (через запятую). Шаблонов по `*.vercel.app` нет: такой адрес может завести себе кто угодно. Для своего домена задай ещё `CSRF_TRUSTED_ORIGINS=https://api.твой-домен`. Пошагово: [docs/DOMAIN_AND_MAIL.md](docs/DOMAIN_AND_MAIL.md).
 
 ### 1.3.1. Резервные копии Postgres
 Включи бэкапы плагина (Postgres → Backups → ежедневное расписание) либо запускай ежедневный `pg_dump "$DATABASE_URL" -Fc -f backup.dump` (отдельный cron-сервис) с хранением вне Railway. До старта пилота: сделай копию вручную и проверь, что она восстанавливается (`pg_restore` в пустую базу).

@@ -248,8 +248,8 @@ function SkillNode({ node, onSelect, choosing, cta, labels = {} }) {
           isLocked
             ? "border-border bg-panel/60 cursor-not-allowed opacity-60"
             : isCurrent
-            ? "border-accent bg-surface cursor-pointer shadow-[0_0_40px_var(--accent)] hover:border-accent"
-            : "border-primary/60 bg-surface cursor-pointer shadow-[0_0_30px_var(--primary-selection)] hover:border-primary"
+            ? "border-accent bg-surface cursor-pointer shadow-[0_0_40px_var(--accent)] hover:border-accent motion-safe:hover:-translate-y-1"
+            : "border-primary/60 bg-surface cursor-pointer shadow-[0_0_30px_var(--primary-selection)] hover:border-primary hover:shadow-[0_0_56px_var(--primary-selection)] focus-visible:shadow-[0_0_56px_var(--primary-selection)] motion-safe:hover:-translate-y-1.5 motion-safe:focus-visible:-translate-y-1.5"
         }`}
     >
       {isCurrent && (

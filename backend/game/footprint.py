@@ -25,6 +25,7 @@ from .services import (
     NOT_CHECKED,
     grade_code_run,
     help_arm,
+    only_live_missions,
     only_published,
 )
 
@@ -82,6 +83,8 @@ def find_task(task_id, user=None):
     tasks = MissionTask.objects.select_related("mission")
     if user is not None:
         tasks = only_published(tasks, user, "mission__location__track")
+        # a draft mission of a published course is not visible either (its hints, outline and events)
+        tasks = only_live_missions(tasks, user, "mission")
     return tasks.filter(pk=task_id).first()
 
 

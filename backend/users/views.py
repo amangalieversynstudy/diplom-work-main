@@ -161,7 +161,13 @@ class ProfileMeView(APIView):
                     user.email = ""
                     user_dirty.append("email")
         if "display_name" in data:
-            user.display_name = str(data["display_name"] or "")
+            # one line of plain text: newlines and tabs collapse to spaces; longer than the column is refused, not a 500
+            display_name = " ".join(str(data["display_name"] or "").split())
+            if len(display_name) > User._meta.get_field("display_name").max_length:
+                return Response(
+                    {"display_name": "Не длиннее 150 символов."}, status=status.HTTP_400_BAD_REQUEST
+                )
+            user.display_name = display_name
             user_dirty.append("display_name")
         if user_dirty:
             user.save(update_fields=user_dirty)

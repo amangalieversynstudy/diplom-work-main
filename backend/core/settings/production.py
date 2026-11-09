@@ -43,15 +43,21 @@ if os.getenv("DJANGO_SECRET_KEY", "") in ("", "dev-secret"):
     )
 
 # ─── CRIT: CORS — never allow all origins in production ───────────────────
-# Lock the API down to the known frontend origin(s). Falls back to FRONTEND_URL
-# (already configured for email links) so an existing deployment keeps working.
+# Exact frontend origins only. No pattern over *.vercel.app can be safe: anybody can name their own Vercel
+# project "diplom-work-main-<anything>" (or end the name with this team's slug) and get an address that
+# matches. The live site is listed by default; FRONTEND_URL (also used for e-mail links) and
+# CORS_ALLOWED_ORIGINS add more. A preview deployment that has to call the API is added the same way, by
+# its exact address (CORS_ALLOWED_ORIGIN_REGEXES is still read from the environment as a last resort).
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [
-    o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
-]
+DEFAULT_FRONTEND_ORIGINS = ["https://diplom-work-main-frontend.vercel.app"]
 _frontend_origin = os.getenv("FRONTEND_URL", "").strip().rstrip("/")
-if not CORS_ALLOWED_ORIGINS and _frontend_origin:
-    CORS_ALLOWED_ORIGINS = [_frontend_origin]
+CORS_ALLOWED_ORIGINS = list(
+    dict.fromkeys(
+        DEFAULT_FRONTEND_ORIGINS
+        + ([_frontend_origin] if _frontend_origin else [])
+        + [o.strip().rstrip("/") for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()]
+    )
+)
 # The code runner's WebSocket is checked by its Origin against ALLOWED_HOSTS (core/asgi.py): the frontend's own
 # host has to be there, or every run from the site is refused. Taken from the origins above, no second variable.
 for _origin in CORS_ALLOWED_ORIGINS:
@@ -59,29 +65,27 @@ for _origin in CORS_ALLOWED_ORIGINS:
     if _origin_host and _origin_host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(_origin_host)
 
-# Vercel rotates the preview subdomain hash on every deploy, so pinning a single
-# origin is brittle. Match this project's Vercel URLs by regex instead — scoped
-# to the project name so arbitrary *.vercel.app sites are NOT allowed.
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://diplom-work-main-[a-z0-9-]+\.vercel\.app$",
-    r"^https://diplom-work-main\.vercel\.app$",
-]
-CORS_ALLOWED_ORIGIN_REGEXES += [
     r.strip()
     for r in os.getenv("CORS_ALLOWED_ORIGIN_REGEXES", "").split(",")
     if r.strip()
 ]
-CORS_ALLOW_CREDENTIALS = True
+# The site sends its JWT in the Authorization header and uses no cookies across origins, so credentialed CORS
+# stays off: a page on another origin can never ride a logged-in admin's session cookie.
+CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "0").strip().lower() in ("1", "true", "yes", "on")
 
 # ─── Teacher sign-up (invite code) ────────────────────────────────────────
 # The invite code (base.py) gives only the self-service teacher role: own closed courses, only their own classes'
-# learners, no admin, no global rewards from their classes. The pilot default works out of the box, but it is
-# public (it is in the repository): set TEACHER_INVITE_CODE to your own value on the host and rotate it by
-# changing the variable. Vetted teachers (public courses) are still made by hand in the admin.
+# learners, no admin, no global rewards from their classes. The default (PILOT-2026) is public, it is in the
+# repository, so in production it switches the invite OFF instead of letting anybody in: set
+# TEACHER_INVITE_CODE to your own value on the host (rotate it by changing the variable). Vetted teachers
+# (public courses) are still made by hand in the admin.
 _norm_code = lambda s: "".join(c for c in (s or "").upper() if c.isalnum())  # noqa: E731
 if TEACHER_INVITE_CODE and _norm_code(TEACHER_INVITE_CODE) == _norm_code(TEACHER_INVITE_CODE_DEFAULT):  # noqa: F405
+    TEACHER_INVITE_CODE = ""
     logging.getLogger(__name__).warning(
-        "[PRODUCTION] TEACHER_INVITE_CODE is the public pilot default: set your own value on the host."
+        "[PRODUCTION] TEACHER_INVITE_CODE is the public default from the repository, so the teacher invite is OFF:"
+        " set your own value on the host to switch it on."
     )
 
 # Open teacher sign-up (no code at all) is OFF in production until it is switched on on purpose: set

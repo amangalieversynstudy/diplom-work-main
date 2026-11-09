@@ -169,7 +169,10 @@ else:
     }
 
 AUTH_PASSWORD_VALIDATORS = [
+    # a password like the login or the e-mail, or one from the list of 20 000 common ones, is guessed first
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 

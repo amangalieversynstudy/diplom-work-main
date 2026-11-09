@@ -208,6 +208,12 @@ def test_a_hint_written_by_a_teacher_reaches_the_learner(teacher_api, student, a
     teacher, mission = teacher_api
     created = _author(teacher, mission, hints=HINTS).json()
     task = MissionTask.objects.get(pk=created["id"])
+    # while the mission is a draft its hints stay closed and no potion is spent on it
+    draft = _use(api, "hint_scrolls", task)
+    assert draft.status_code == 409
+    student.profile.refresh_from_db()
+    assert student.profile.hint_scrolls == 5
+    Mission.objects.filter(pk=mission.pk).update(is_active=True)
     response = _use(api, "hint_scrolls", task)
     assert response.status_code == 200
     assert response.json()["hint"]["text"] == HINTS[0]["ru"]

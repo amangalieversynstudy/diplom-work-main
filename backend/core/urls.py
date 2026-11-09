@@ -2,6 +2,7 @@
 
 from django.contrib import admin
 from django.urls import include, path
+from django_ratelimit.decorators import ratelimit
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
@@ -18,8 +19,14 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+# The admin's own login form had no limit at all (the API login has one): per address and per account name.
+_admin_login = ratelimit(key="ip", rate="20/m", method="POST", block=True)(
+    ratelimit(key="core.client_ip.login_key", rate="10/m", method="POST", block=True)(admin.site.login)
+)
+
 urlpatterns = [
     path("healthz", healthz),
+    path("admin/login/", _admin_login),
     path("admin/", admin.site.urls),
     # Swagger / OpenAPI
     path("swagger.json", schema_view.without_ui(cache_timeout=0), name="schema-json"),

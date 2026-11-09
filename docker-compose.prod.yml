@@ -122,10 +122,10 @@ services:
       RUNNER_JUDGE0_KEY: ${RUNNER_JUDGE0_KEY:-}
     volumes:
       - static-files:/app/staticfiles
-      # ВНИМАНИЕ: доступ к docker.sock фактически даёт root на хосте любому, кто
-      # найдёт уязвимость в backend. Если задан RUNNER_JUDGE0_URL, удалите эту
-      # строку; иначе выносите песочницу в отдельный сервис или rootless Docker.
-      - /var/run/docker.sock:/var/run/docker.sock
+      # docker.sock не монтируется: доступ к нему фактически даёт root на хосте любому,
+      # кто найдёт уязвимость в backend. Код учеников проверяет внешняя песочница
+      # Judge0 (RUNNER_JUDGE0_URL; без переменной — публичный ce.judge0.com). Если нужна
+      # своя Docker-песочница, выносите её в отдельный сервис или rootless Docker.
     depends_on:
       db:
         condition: service_healthy

@@ -3,6 +3,14 @@ import { getTokens } from "./auth";
 
 const KEY = "player_class";
 
+// Frontend id → backend ClassRole pk (must match fixtures/class_roles.json)
+export const CLASS_ROLE_IDS = { python: 1, django: 2, devops: 3 };
+
+// pk класса по ключу, который помнит браузер; null, если класса нет или ключ незнакомый
+export function classRoleFromKey(key) {
+  return CLASS_ROLE_IDS[key] ?? null;
+}
+
 export function getPlayerClass() {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(KEY);

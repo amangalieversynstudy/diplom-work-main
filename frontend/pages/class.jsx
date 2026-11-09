@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { motion } from "framer-motion";
 import Layout from "../components/Layout";
 import ClassPortrait from "../components/ClassPortrait";
-import { setPlayerClass, getPlayerClass } from "../lib/class";
+import { CLASS_ROLE_IDS, setPlayerClass, getPlayerClass } from "../lib/class";
 import { Profile } from "../lib/api";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -11,9 +11,6 @@ import { Code, ServerCog, Share2, Lock, Check } from "lucide-react";
 import { useDictionary } from "../lib/i18n";
 import logger from "../lib/logger";
 import { pathAfterClassChoice } from "../lib/onboarding";
-
-// Frontend id → backend ClassRole pk (must match fixtures/class_roles.json)
-const CLASS_ROLE_IDS = { python: 1, django: 2, devops: 3 };
 
 const ICONS = { python: Code, django: ServerCog, devops: Share2 };
 
@@ -24,8 +21,9 @@ const CLASS_FRAME = {
   devops: "var(--wax)",
 };
 
-// Древо классов. Класс — звание героя: оно видно в профиле и в рейтинге и ни на что
-// в заданиях не влияет, поэтому все ветви доступны сразу и меняются в любой момент.
+// Древо классов. Класс — звание героя: оно видно в профиле и в рейтинге и открывает свой мир
+// на карте (lib/worldMap.js), но в самих заданиях ни на что не влияет, поэтому все ветви доступны
+// сразу и меняются в любой момент.
 const TREE = [
   { id: "python", tier: 0, locked: false },
   { id: "django", tier: 1, locked: false },

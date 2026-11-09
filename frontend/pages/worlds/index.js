@@ -8,11 +8,13 @@ import { MapBackdrop, MapTrail } from "../../components/WorldMapParts";
 import { toast } from "sonner";
 import { useDictionary } from "../../lib/i18n";
 import { lockReason, missionTitle } from "../../lib/missions";
-import { Lock, CheckCircle, X as XIcon, Compass } from "lucide-react";
+import { Lock, CheckCircle, X as XIcon, Compass, Sword, WandSparkles, TreePine } from "lucide-react";
 import gsap from "gsap";
 import { prefersReducedMotion } from "../../lib/motion";
 import { mapWalk } from "../../lib/stage";
-import { mapCoords, mapPath } from "../../lib/worldMap";
+import { mapCoords, mapLandmarks, mapPath, mapRegions, worldFor } from "../../lib/worldMap";
+import { classRoleFromKey, getPlayerClass } from "../../lib/class";
+import { getTokens } from "../../lib/auth";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Missions, Profile, missionStatus } from "../../lib/api";
@@ -34,6 +36,9 @@ const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : use
 
 // Где в прошлый раз стоял герой на карте: идти он должен только после новой победы.
 const HERO_SEEN_KEY = "rpg-map-hero-node";
+
+// Знак героя на карте его мира (lib/worldMap.js: world.hero)
+const HERO_ICONS = { compass: Compass, sword: Sword, wand: WandSparkles, pine: TreePine };
 
 function readSeenNode() {
   try {
@@ -99,6 +104,29 @@ export default function Worlds() {
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // Класс героя открывает свой мир на карте. Сначала то, что помнит браузер, затем профиль (истина на сервере).
+  const [classRole, setClassRole] = useState(null);
+
+  useEffect(() => {
+    setClassRole(classRoleFromKey(getPlayerClass()));
+    if (!getTokens().access) return undefined;
+    let cancelled = false;
+    Profile.me()
+      .then((me) => {
+        if (cancelled) return;
+        const { isStaff } = readProfileFlags(me);
+        setClassRole(isStaff ? null : me?.profile?.class_role ?? me?.class_role ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const world = worldFor(classRole);
+  const worldCopy = worldsDict.worlds?.[world.id] || null;
+  const className = classRole ? dict.profile?.classes?.[classRole] : null;
+  const HeroIcon = HERO_ICONS[world.hero] || Compass;
 
   const pinContainerRef = useRef(null);
   const mapScrollRef = useRef(null);
@@ -124,9 +152,9 @@ export default function Worlds() {
     // refetch при смене языка или по кнопке «Повторить»
   }, [language, reloadKey]);
 
-  // Координаты узлов и тропа считаются в lib/worldMap.js (их же использует лендинг)
-  const getCoords = mapCoords;
-  const generatePath = (missionsArr) => mapPath(missionsArr ? missionsArr.length : 0);
+  // Координаты узлов и тропа считаются в lib/worldMap.js (их же использует лендинг); форма тропы — мира класса
+  const getCoords = (index, total) => mapCoords(index, total, world);
+  const generatePath = (missionsArr) => mapPath(missionsArr ? missionsArr.length : 0, world);
 
   // Перехват горизонтального жеста трекпада — РАБОТАЕТ ВСЕГДА
   useEffect(() => {
@@ -269,19 +297,29 @@ export default function Worlds() {
         {/* ── Заголовок ── */}
         <div className="mb-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-3">
-            <Compass size={16} />
-            <span>{worldsDict.atlasTitle || "Атлас"}</span>
+            <HeroIcon size={16} aria-hidden="true" />
+            <span>
+              {worldCopy && className
+                ? `${worldsDict.worldOf || "Мир класса"} «${className}»`
+                : worldsDict.atlasTitle || "Атлас"}
+            </span>
           </div>
           <h1 className="font-title text-4xl md:text-5xl text-text mb-4">
-            {worldsDict.mapTitle || "Карта миров"}
+            {worldCopy?.title || worldsDict.mapTitle || "Карта миров"}
           </h1>
           <p className="text-muted text-base md:text-lg max-w-2xl leading-relaxed">
-            {worldsDict.mapSubtitle ||
+            {worldCopy?.subtitle ||
+              worldsDict.mapSubtitle ||
               "Каждый архипелаг таит в себе знания и опасности. Следуй по чернильным тропам, чтобы найти сокровища кода."}
           </p>
-          <Link href="/join" className="mt-3 inline-block text-sm font-semibold text-primary underline-offset-4 hover:underline">
-            {dict.classes?.join?.haveCode || "У меня есть код класса"}
-          </Link>
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
+            <Link href="/join" className="inline-block text-sm font-semibold text-primary underline-offset-4 hover:underline">
+              {dict.classes?.join?.haveCode || "У меня есть код класса"}
+            </Link>
+            <Link href="/class" className="inline-block text-sm font-semibold text-primary underline-offset-4 hover:underline">
+              {worldCopy ? worldsDict.changeClass || "Сменить класс" : worldsDict.pickClass || "Выбрать класс героя"}
+            </Link>
+          </div>
         </div>
 
         <QuestJournal missions={missions} current={current} />
@@ -324,8 +362,44 @@ export default function Worlds() {
         >
           <MapBackdrop />
 
+          {/* Цвет мира класса поверх пергамента */}
+          {world.tint && (
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 pointer-events-none rounded-[inherit] mix-blend-multiply"
+              style={{
+                background: `radial-gradient(ellipse at 30% 40%, rgba(${world.tint}, 0.16), rgba(${world.tint}, 0.42))`,
+              }}
+            />
+          )}
+
+          {/* Области мира — подписи у нижнего края */}
+          {Array.isArray(worldCopy?.regions) &&
+            mapRegions(worldCopy.regions.length).map((spot, index) => (
+              <span
+                key={`region-${index}`}
+                aria-hidden="true"
+                className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-title text-lg italic tracking-wide text-ink/70"
+                style={{ left: `${spot.x}%`, top: `${spot.y}%` }}
+              >
+                {worldCopy.regions[index]}
+              </span>
+            ))}
+
           {!loading && missions.length > 0 && (
             <>
+              {/* Ориентиры мира: под тропой и узлами, только для красоты */}
+              {mapLandmarks(missions.length, world).map((mark, index) => (
+                <span
+                  key={`landmark-${index}`}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 select-none text-4xl opacity-60 drop-shadow-sm"
+                  style={{ left: `${mark.x}%`, top: `${mark.y}%` }}
+                >
+                  {mark.glyph}
+                </span>
+              ))}
+
               {/* SVG Путь */}
               <MapTrail ref={trailRef} d={generatePath(missions)} />
 
@@ -423,7 +497,7 @@ export default function Worlds() {
                   <span ref={swayRef} className="relative grid place-items-center">
                     <span className="absolute -inset-2 rounded-full bg-wax/30 animate-ping motion-reduce:animate-none" />
                     <span className="grid h-8 w-8 place-items-center rounded-full border-2 border-wax bg-parchment-light text-wax shadow-[0_4px_10px_rgba(62,39,35,0.5)]">
-                      <Compass size={17} strokeWidth={2.5} />
+                      <HeroIcon size={17} strokeWidth={2.5} />
                     </span>
                   </span>
                 </div>

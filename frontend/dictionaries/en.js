@@ -1258,6 +1258,26 @@ export const en = {
       atlasTitle: "Atlas",
       mapTitle: "World Map",
       mapSubtitle: "Every archipelago hides knowledge and danger. Follow the ink trails to find the treasures of code.",
+      worldOf: "World of the class",
+      changeClass: "Change class",
+      pickClass: "Choose a hero class and the map becomes its world",
+      worlds: {
+        serpent: {
+          title: "Serpent Ruins",
+          subtitle: "The Python Spellblade's world: an ancient jungle temple where the trail winds like a snake. Every mission is a new spell-blade technique.",
+          regions: ["Temple of Awakening", "Serpent Jungle", "Sanctum of the Blade"],
+        },
+        arcane: {
+          title: "Arcane Spires",
+          subtitle: "The Django Arcanist's world: tier by tier up to the star observatory. Every mission is a new scroll in the tower library.",
+          regions: ["Lower Tier", "Arcane Library", "Star Observatory"],
+        },
+        frontier: {
+          title: "Wild Frontier",
+          subtitle: "The DevOps Ranger's world: from the forest camp over mountain passes to the signal peak. Every mission is a new camp on the way.",
+          regions: ["Forest Camp", "Mountain Pass", "Signal Peak"],
+        },
+      },
       mapLoading: "Unfurling the parchment...",
       mapEmpty: "The map is still blank: no missions are inked on the parchment yet.",
       mapLoadFailed: "Could not load the map. Check your connection and try again.",

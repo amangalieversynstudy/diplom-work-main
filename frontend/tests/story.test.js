@@ -60,6 +60,44 @@ test("plain text is rendered as escaped paragraphs, pre blocks and inline code",
   );
 });
 
+test("a lesson typed as plain text gets headings, lists, notes, bold and links", () => {
+  const text = [
+    "## Что узнаем",
+    "Как программа **выбирает**:",
+    "- условие `if`",
+    "- ветка `else`",
+    "",
+    "1. прочитай пример",
+    "2) запусти его",
+    "",
+    "Важно: после условия ставится двоеточие,",
+    "а блок сдвигается на 4 пробела.",
+    "",
+    "> Код — это заклинание.",
+    "",
+    "Подробнее: [документация](https://docs.python.org/3/) и [не ссылка](javascript:alert(1)).",
+  ].join("\n");
+  assert.equal(
+    storyToHtml(text),
+    "<h3>Что узнаем</h3>" +
+      "<p>Как программа <strong>выбирает</strong>:</p>" +
+      "<ul><li>условие <code>if</code></li><li>ветка <code>else</code></li></ul>" +
+      "<ol><li>прочитай пример</li><li>запусти его</li></ol>" +
+      "<blockquote><strong>Важно:</strong> после условия ставится двоеточие,<br>а блок сдвигается на 4 пробела.</blockquote>" +
+      "<blockquote>Код — это заклинание.</blockquote>" +
+      '<p>Подробнее: <a href="https://docs.python.org/3/">документация</a> и [не ссылка](javascript:alert(1)).</p>'
+  );
+});
+
+test("markup inside code stays code, and a list item may continue on the next line", () => {
+  assert.equal(storyToHtml("`**не жирный**`"), "<p><code>**не жирный**</code></p>");
+  assert.deepEqual(parseStory("- первый пункт\n  продолжение\n- второй"), [
+    { type: "ul", items: ["первый пункт\nпродолжение", "второй"] },
+  ]);
+  // комментарий внутри кода с отступом не становится заголовком
+  assert.deepEqual(parseStory("    # шаг 1\n    x = 1"), [{ type: "code", text: "# шаг 1\nx = 1" }]);
+});
+
 test("ready HTML from the teacher is returned unchanged", () => {
   const html = "<h2>Заголовок</h2><p>Текст</p><pre><code>x = 1</code></pre>";
   assert.equal(isHtmlBody(html), true);

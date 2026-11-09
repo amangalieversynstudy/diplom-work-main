@@ -9,6 +9,7 @@ import { errorBody, serverMessage } from "../lib/apiErrors";
 import { useI18n } from "../lib/i18n";
 import { canTeach } from "../lib/roles";
 import { sanitizeHtml } from "../lib/sanitize";
+import { storyToHtml } from "../lib/story";
 
 // Таверна: друзья, обмен предметами, гильдии и дуэли-квизы. Правила живут на сервере (backend/social):
 // здесь только показ, формы и понятные сообщения об отказах.
@@ -613,7 +614,7 @@ function DuelPlay({ t, duelId, errorText, onDone }) {
             {t("tavern.arena.question")} {index + 1}/{state.questions.length}
             {question.title ? ` · ${question.title}` : ""}
           </p>
-          <div className="prose-sm mb-3 text-text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(question.body || "") }} />
+          <div className="story-body mb-3 text-text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(storyToHtml(question.body || "")) }} />
           <div className="grid gap-2 sm:grid-cols-2">
             {question.options.map((option, optionIndex) => {
               const { value, label } = optionParts(option);

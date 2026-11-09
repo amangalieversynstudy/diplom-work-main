@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Button from "./Button";
 import TemplatePicker from "./TemplatePicker";
+import LessonTextEditor from "./LessonTextEditor";
 import { Studio as StudioAPI } from "../lib/api";
 import logger from "../lib/logger";
 import { serverMessage } from "../lib/apiErrors";
@@ -185,22 +186,22 @@ function TaskForm({ form, setForm, t }) {
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        <Field label={t("studio.tasks.bodyRu")} hint={t("studio.tasks.bodyHint")}>
-          <textarea
-            rows={5}
-            className={inputCls}
-            value={form.body_ru}
-            onChange={(e) => set({ body_ru: e.target.value })}
-          />
-        </Field>
-        <Field label={t("studio.tasks.bodyEn")}>
-          <textarea
-            rows={5}
-            className={inputCls}
-            value={form.body_en}
-            onChange={(e) => set({ body_en: e.target.value })}
-          />
-        </Field>
+        <LessonTextEditor
+          id="studio-body-ru"
+          label={t("studio.tasks.bodyRu")}
+          value={form.body_ru}
+          onChange={(text) => set({ body_ru: text })}
+          lang="ru"
+          t={t}
+        />
+        <LessonTextEditor
+          id="studio-body-en"
+          label={t("studio.tasks.bodyEn")}
+          value={form.body_en}
+          onChange={(text) => set({ body_en: text })}
+          lang="en"
+          t={t}
+        />
       </div>
 
       {form.task_type === "quiz" ? (

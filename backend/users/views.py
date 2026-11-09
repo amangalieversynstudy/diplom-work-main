@@ -1,5 +1,6 @@
 """API viewsets for user management."""
 
+from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.permissions import IsAuthenticated
@@ -80,6 +81,8 @@ class ProfileMeView(APIView):
             # согласие на использование активности в исследовании
             "research_consent": profile.research_consent,
             "research_consent_at": profile.research_consent_at,
+            # the tavern (friends, exchange, guilds, duels) can be switched off on the server
+            "social_enabled": bool(getattr(settings, "SOCIAL_ENABLED", True)),
         }
 
     def get(self, request):

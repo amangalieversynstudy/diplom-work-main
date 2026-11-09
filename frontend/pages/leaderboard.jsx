@@ -4,11 +4,14 @@ import EmptyScroll from "../components/EmptyScroll";
 import { LeaderboardAPI, Profile, Tracks } from "../lib/api";
 import { getTokens } from "../lib/auth";
 import { titleFor } from "../lib/titles";
+import { canTeach } from "../lib/roles";
 import { useDictionary } from "../lib/i18n";
 import { Trophy, Medal, Flame, RefreshCw, User, Crosshair } from "lucide-react";
 import { toast } from "sonner";
 
 const GLOBAL = "global";
+// ты и твои друзья из Таверны (их общий зачёт); места считаются внутри этой компании
+const FRIENDS = "friends";
 
 export default function Leaderboard() {
   const [data, setData] = useState([]);
@@ -38,7 +41,9 @@ export default function Leaderboard() {
     try {
       // Общий зачёт и зачёты курсов лежат в одной таблице: без выбора зачёта один человек
       // попадал бы в список по несколько раз.
-      const res = await LeaderboardAPI.list(scope === GLOBAL ? { scope: GLOBAL } : { track: scope });
+      const res = await LeaderboardAPI.list(
+        scope === GLOBAL || scope === FRIENDS ? { scope } : { track: scope }
+      );
       if (request !== latestRequest.current) return; // пока ждали, выбрали другой зачёт
       setData(res || []);
       setLoadFailed(false);
@@ -117,8 +122,15 @@ export default function Leaderboard() {
   };
 
   // с одним курсом отдельный зачёт курса совпал бы с общим, переключать нечего
-  const scopes = courses.length > 1
-    ? [{ id: GLOBAL, label: copy.filters.all }, ...courses.map((track) => ({ id: track.slug, label: track.title }))]
+  const courseScopes = courses.length > 1 ? courses.map((track) => ({ id: track.slug, label: track.title })) : [];
+  // «Друзья» — у игрока с включённой Таверной; у преподавателя друзей в игре нет
+  const friendsScope = meInfo && !canTeach(meInfo) && meInfo.social_enabled !== false;
+  const scopes = courseScopes.length || friendsScope
+    ? [
+        { id: GLOBAL, label: copy.filters.all },
+        ...courseScopes,
+        ...(friendsScope ? [{ id: FRIENDS, label: copy.filters.friends }] : []),
+      ]
     : [];
 
   return (
@@ -213,7 +225,11 @@ export default function Leaderboard() {
         ) : data.length === 0 ? (
           // Пустое состояние; ошибка загрузки не должна выглядеть как «зал пуст»
           <EmptyScroll icon={Trophy}>
-            {loadFailed ? `${copy.errors?.load}. ${copy.errors?.retryHint}` : copy.empty}
+            {loadFailed
+              ? `${copy.errors?.load}. ${copy.errors?.retryHint}`
+              : scope === FRIENDS
+              ? copy.emptyFriends
+              : copy.empty}
           </EmptyScroll>
         ) : (
           <>

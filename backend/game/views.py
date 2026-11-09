@@ -468,7 +468,15 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
         # Every learner has one "global" row and one "track" row per course. Reading both at
         # once listed the same person several times, so one table is read unless asked otherwise.
         scope = self.request.query_params.get("scope") or ("track" if track_slug else "global")
-        qs = qs.filter(scope=scope)
+        if scope == "friends":
+            # the player and their friends (social/): their global rows, ranked among themselves on the client
+            from social.services import friend_ids
+
+            user = self.request.user
+            ids = friend_ids(user) | {user.pk} if user.is_authenticated else set()
+            qs = qs.filter(scope="global", track__isnull=True, user_id__in=ids)
+        else:
+            qs = qs.filter(scope=scope)
         period = self.request.query_params.get("period")
         if period:
             qs = qs.filter(period_label=period)

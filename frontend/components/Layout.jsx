@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import {
   Map, User2, Crown, Sparkles, Trophy, TrendingUp,
-  ArrowUpRight, Sun, Moon, X, Eye, GraduationCap, LogOut
+  ArrowUpRight, Sun, Moon, X, Eye, GraduationCap, LogOut, Users
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ import { motion } from "framer-motion";
 const navLinks = [
   { href: "/worlds", labelKey: "nav.worlds", staffLabelKey: "nav.staffWorlds", icon: Map },
   { href: "/leaderboard", labelKey: "nav.legends", staffLabelKey: "nav.staffLegends", icon: Trophy },
+  { href: "/tavern", labelKey: "nav.tavern", icon: Users },
   { href: "/journey", labelKey: "nav.journey", icon: TrendingUp },
   { href: "/profile", labelKey: "nav.character", staffLabelKey: "nav.staffCharacter", icon: User2 },
   { href: "/class", labelKey: "nav.class", icon: Crown },
@@ -191,6 +192,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   // аккаунт может преподавать; в режиме «Глазами студента» навигация у него ученическая
   const [isTeacherAccount, setIsTeacherAccount] = useState(false);
+  const [socialEnabled, setSocialEnabled] = useState(true);
   const [studentView, setStudentViewState] = useState(false);
   const isStaff = isTeacherAccount && !studentView;
   const { t } = useI18n();
@@ -250,11 +252,15 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
     [t, isStaff]
   );
 
+  // Таверна — для игроков: у преподавателя (и «глазами студента») её нет, как и при SOCIAL_ENABLED=0
+  const playerLinks = isTeacherAccount || !socialEnabled
+    ? translatedNavLinks.filter((item) => item.href !== "/tavern")
+    : translatedNavLinks;
   const menuLinks = !isAuthenticated
     ? []
     : isStaff
-    ? translatedNavLinks.filter((item) => !["/journey", "/class"].includes(item.href))
-    : translatedNavLinks;
+    ? playerLinks.filter((item) => !["/journey", "/class"].includes(item.href))
+    : playerLinks;
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -284,7 +290,10 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
     // страниц не дёргать API и не словить редирект на /login.
     if (token) {
       ProfileAPI.me()
-        .then((me) => setIsTeacherAccount(canTeach(me)))
+        .then((me) => {
+          setIsTeacherAccount(canTeach(me));
+          setSocialEnabled(me?.social_enabled !== false);
+        })
         .catch(() => setIsTeacherAccount(false));
     }
   }, []);

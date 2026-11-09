@@ -136,6 +136,15 @@ def check_settings():
             "(или снимайте снимок только через Railway Cron)."
         )
 
+    if getattr(settings, "SOCIAL_ENABLED", True):
+        yield WARN, (
+            "Таверна включена (SOCIAL_ENABLED): дуэли показывают вопросы квизов курса, иногда раньше, чем ученик "
+            "до них дойдёт, а обмен меняет запас подсказок. Решите до старта: выключить на время пилота "
+            "(SOCIAL_ENABLED=0) или оставить всем и записать это в протокол."
+        )
+    else:
+        yield OK, "Таверна выключена (SOCIAL_ENABLED=0): дуэли и обмен не влияют на данные пилота."
+
 
 def check_period(now=None):
     """PILOT_STARTED_AT / PILOT_ENDED_AT: the format (a bare date is ignored silently) and yesterday's snapshot."""

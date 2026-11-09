@@ -155,6 +155,29 @@ export const Tracks = {
   list: () => api.get("/tracks/").then((r) => (Array.isArray(r.data) ? r.data : r.data?.results || [])),
 };
 
+// Таверна: друзья, обмен предметами, гильдии и дуэли-квизы (backend/social). Опыта не даёт.
+export const Social = {
+  status: () => api.get("/social/status/").then((r) => r.data),
+  friends: () => api.get("/social/friends/").then((r) => r.data),
+  addFriend: (username) => api.post("/social/friends/", { username }).then((r) => r.data),
+  acceptFriend: (userId) => api.post(`/social/friends/${userId}/accept/`).then((r) => r.data),
+  removeFriend: (userId) => api.delete(`/social/friends/${userId}/`).then((r) => r.data),
+  trades: () => api.get("/social/trades/").then((r) => r.data),
+  offerTrade: (payload) => api.post("/social/trades/", payload).then((r) => r.data),
+  tradeAction: (id, action) => api.post(`/social/trades/${id}/${action}/`).then((r) => r.data),
+  guilds: () => api.get("/social/guilds/").then((r) => r.data),
+  guild: (id) => api.get(`/social/guilds/${id}/`).then((r) => r.data),
+  foundGuild: (payload) => api.post("/social/guilds/", payload).then((r) => r.data),
+  joinGuild: (id) => api.post(`/social/guilds/${id}/join/`).then((r) => r.data),
+  leaveGuild: () => api.post("/social/guilds/leave/").then((r) => r.data),
+  kick: (id, userId) => api.post(`/social/guilds/${id}/kick/`, { user_id: userId }).then((r) => r.data),
+  duels: () => api.get("/social/duels/").then((r) => r.data),
+  challenge: (username) => api.post("/social/duels/", { username }).then((r) => r.data),
+  startDuel: (id) => api.post(`/social/duels/${id}/start/`).then((r) => r.data),
+  submitDuel: (id, answers) => api.post(`/social/duels/${id}/submit/`, { answers }).then((r) => r.data),
+  duelAction: (id, action) => api.post(`/social/duels/${id}/${action}/`).then((r) => r.data),
+};
+
 // Классы: вступление ученика к преподавателю по коду (согласие передаётся явно).
 export const Classes = {
   lookup: (code) => api.get("/classes/lookup/", { params: { code } }).then((r) => r.data),

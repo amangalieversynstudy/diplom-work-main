@@ -99,6 +99,7 @@ INSTALLED_APPS = [
     "anymail",
     "users",
     "game",
+    "social",
 ]
 
 # Use custom user model
@@ -250,8 +251,14 @@ REST_FRAMEWORK = {
         "code_runner": "20/min",       # Docker sandbox — ресурсоёмко
         "code_runner_burst": "5/10s",  # Защита от спам-кликов Run
         "teacher_code": "10/hour",     # код преподавателя в профиле: подбирать нельзя
+        "social_write": "60/min",      # таверна: заявки в друзья, обмены, гильдии, дуэли
     },
 }
+
+# The tavern (social/): friends, item exchange, guilds and quiz duels. It pays no XP and writes no learning
+# events; SOCIAL_ENABLED=0 switches it off (the API answers 404, the menu hides it), e.g. for a pilot
+# where the social layer must not differ between groups or must stay out of the study period.
+SOCIAL_ENABLED = os.getenv("SOCIAL_ENABLED", "1").lower() in {"1", "true", "yes", "on"}
 
 # Learning-analytics footprint: how long code runs / events are kept, and the
 # secret that turns user ids into pseudonyms in exports (falls back to

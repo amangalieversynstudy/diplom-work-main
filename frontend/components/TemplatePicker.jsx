@@ -3,16 +3,17 @@ import { localized } from "../lib/studioTemplates";
 
 /**
  * «Быстрый старт по шаблону»: карточки готовых пресетов над формой Студии. Клик заполняет поля формы
- * (заполнение делает onPick), преподавателю остаётся поправить текст и сохранить.
+ * (заполнение делает onPick), преподавателю остаётся поправить текст и сохранить. hint заменяет общую
+ * подсказку, children — строка под карточками (у курса: что ещё создаст шаблон).
  */
-export default function TemplatePicker({ templates, onPick, picked, t, language, compact = false }) {
+export default function TemplatePicker({ templates, onPick, picked, t, language, compact = false, hint, children }) {
   return (
     <div className="mb-4 rounded-2xl border border-primary/20 bg-primary/5 p-3 sm:p-4">
       <p className="mb-1 flex items-center gap-2 text-sm font-semibold text-text">
         <Wand2 size={16} className="text-primary" aria-hidden="true" />
         {t("pilot.templates.title")}
       </p>
-      <p className="mb-3 text-xs text-muted">{t("pilot.templates.hint")}</p>
+      <p className="mb-3 text-xs text-muted">{hint || t("pilot.templates.hint")}</p>
       <div className={`grid gap-2 ${compact ? "sm:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-4"}`}>
         {templates.map((template) => {
           const active = picked === template.id;
@@ -34,6 +35,7 @@ export default function TemplatePicker({ templates, onPick, picked, t, language,
           );
         })}
       </div>
+      {children}
     </div>
   );
 }

@@ -19,6 +19,7 @@ import logger from "../lib/logger";
 import { serverMessage } from "../lib/apiErrors";
 import { useI18n } from "../lib/i18n";
 import { STEP_TEMPLATES } from "../lib/studioTemplates";
+import { emptyStepForm, stepFromTask, stepPayload } from "../lib/studioSteps";
 
 const TYPES = ["story", "quiz", "code"];
 const ICONS = { story: BookOpen, quiz: HelpCircle, code: Code2 };
@@ -31,114 +32,13 @@ export function apiError(error, fallback) {
   return serverMessage(error, fallback);
 }
 
-const emptyForm = (order) => ({
-  id: null,
-  task_type: "story",
-  title_ru: "",
-  title_en: "",
-  body_ru: "",
-  body_en: "",
-  order,
-  xp_reward: 0,
-  estimated_minutes: 5,
-  options: ["", ""],
-  correct: 0,
-  starter: "",
-  expected_output: "",
-  hidden_check: "",
-  hints_ru: "",
-  hints_en: "",
-  skeleton_ru: "",
-  skeleton_en: "",
-  not_yet: [],
-  variants_json: "",
-});
-
 // Конструкции, которые преподаватель может отметить как «ещё не проходили» (game/codeanalysis.py).
 const CONSTRUCTS = ["def", "lambda", "comprehension", "try", "import", "class", "with"];
 
-// Подсказки разделяются пустой строкой; i-я русская парится с i-й английской.
-const splitHints = (text) =>
-  (text || "")
-    .split(/\n\s*\n/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-const joinHints = (hints, lang) => (hints || []).map((h) => h?.[lang] || "").join("\n\n");
-
-const fromTask = (task) => {
-  const options = (task.data?.options || []).map((o) => o.value);
-  return {
-    id: task.id,
-    task_type: task.task_type,
-    title_ru: task.title_ru || "",
-    title_en: task.title_en || "",
-    body_ru: task.body_ru || "",
-    body_en: task.body_en || "",
-    order: task.order,
-    xp_reward: task.xp_reward ?? 0,
-    estimated_minutes: task.estimated_minutes ?? 5,
-    options: options.length >= 2 ? options : ["", ""],
-    correct: Math.max(0, options.indexOf(task.data?.correct_answer)),
-    starter: task.data?.starter || "",
-    expected_output: task.data?.expected_output || "",
-    hidden_check: task.data?.hidden_check || "",
-    hints_ru: joinHints(task.data?.hints, "ru"),
-    hints_en: joinHints(task.data?.hints, "en"),
-    skeleton_ru: task.data?.skeleton?.ru || "",
-    skeleton_en: task.data?.skeleton?.en || "",
-    not_yet: Array.isArray(task.data?.not_yet) ? task.data.not_yet : [],
-    variants_json: Array.isArray(task.data?.variants) ? JSON.stringify(task.data.variants, null, 2) : "",
-  };
-};
-
-// null, если форма заполнена неверно (сервер проверит ещё раз).
+// null, если форма заполнена неверно (сервер проверит ещё раз); разбор формы — lib/studioSteps.js.
 const toPayload = (form, missionId) => {
-  const payload = {
-    mission: missionId,
-    task_type: form.task_type,
-    title_ru: form.title_ru.trim(),
-    title_en: form.title_en.trim(),
-    body_ru: form.body_ru,
-    body_en: form.body_en,
-    order: Number(form.order) || 1,
-    xp_reward: Number(form.xp_reward) || 0,
-    estimated_minutes: Number(form.estimated_minutes) || 5,
-  };
-  if (form.task_type === "quiz") {
-    const answer = (form.options[form.correct] || "").trim();
-    const options = form.options.map((v) => v.trim()).filter(Boolean);
-    if (!answer || options.length < 2) return null;
-    payload.data = {
-      options: options.map((value) => ({ value, label: value })),
-      correct_answer: answer,
-    };
-  } else if (form.task_type === "code") {
-    const ru = splitHints(form.hints_ru);
-    const en = splitHints(form.hints_en);
-    let variants = [];
-    if (form.variants_json.trim()) {
-      try {
-        variants = JSON.parse(form.variants_json);
-      } catch {
-        return null; // не JSON: форма заполнена неверно
-      }
-    }
-    payload.data = {
-      starter: form.starter,
-      expected_output: form.expected_output,
-      hidden_check: form.hidden_check,
-      hints: Array.from({ length: Math.max(ru.length, en.length) }, (_, i) => ({
-        ru: ru[i] || "",
-        en: en[i] || "",
-      })),
-      skeleton: { ru: form.skeleton_ru, en: form.skeleton_en },
-      not_yet: form.not_yet,
-      variants,
-    };
-  } else {
-    payload.data = {};
-  }
-  return payload;
+  const payload = stepPayload(form);
+  return payload && { ...payload, mission: missionId };
 };
 
 function Field({ label, hint, children }) {
@@ -389,7 +289,7 @@ export default function StudioTasks({ missionId, t, setConfirm, onChanged }) {
 
   // шаблон заполняет все поля нового шага; номер шага остаётся прежним
   const pickTemplate = (preset) => {
-    setForm({ ...emptyForm(form.order), ...preset.form, id: null, order: form.order });
+    setForm({ ...emptyStepForm(form.order), ...preset.form, id: null, order: form.order });
     setTemplate(preset.id);
     setError("");
   };
@@ -520,7 +420,7 @@ export default function StudioTasks({ missionId, t, setConfirm, onChanged }) {
               type="button"
               onClick={() => {
                 setError("");
-                setForm(fromTask(task));
+                setForm(stepFromTask(task));
               }}
               className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-panel hover:text-text"
               aria-label={t("studio.editor.edit")}
@@ -567,7 +467,7 @@ export default function StudioTasks({ missionId, t, setConfirm, onChanged }) {
           onClick={() => {
             setError("");
             setTemplate(null);
-            setForm(emptyForm((tasks.at(-1)?.order ?? 0) + 1));
+            setForm(emptyStepForm((tasks.at(-1)?.order ?? 0) + 1));
           }}
         >
           <Plus size={15} /> {t("studio.tasks.add")}

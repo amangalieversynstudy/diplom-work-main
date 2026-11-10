@@ -377,6 +377,10 @@ export const Studio = {
     newCode: (id) => api.post(`/teacher/studio/tracks/${id}/new-code/`).then((r) => r.data),
     // «Развернуть демо-пример»: готовый показательный курс; повторный вызов вернёт тот же ({created: false})
     demo: () => api.post("/teacher/studio/tracks/demo/").then((r) => r.data),
+    // «Создать по шаблону»: курс с главами, миссиями и шагами-заготовками одним запросом (lib/studioTemplates.js)
+    outline: (payload) => api.post("/teacher/studio/tracks/outline/", payload).then((r) => r.data),
+    // «Копировать курс»: закрытый черновик с новым кодом класса, без учеников и их прогресса
+    copy: (id) => api.post(`/teacher/studio/tracks/${id}/copy/`).then((r) => r.data),
   },
   locations: {
     list: (trackId) =>

@@ -9,6 +9,9 @@ ownership cannot be bypassed.
 Hierarchy: Track (course) → Location (section) → Mission → Task
 (story / quiz / code). A mission with no tasks cannot be published: learners
 could open it but never finish it.
+
+Whole-course operations (a course from a template outline, a copy of a course)
+live in ``game/studio_courses.py``; the demo course in ``game/demo_course.py``.
 """
 
 import re
@@ -380,6 +383,27 @@ class StudioTrackViewSet(StudioGuardMixin, viewsets.ModelViewSet):
             track = create_demo_course(request.user)
         body = {**self.get_serializer(track).data, "created": created}
         return Response(body, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    @action(detail=False, methods=["post"], url_path="outline")
+    def outline(self, request):
+        """«Создать курс по шаблону»: the course with its sections, missions and steps in one request and one
+        transaction (game/studio_courses.py). Everything is a draft: the steps are placeholders."""
+        from .studio_courses import create_from_outline
+
+        self._check_course_quota(request.user)
+        track = create_from_outline(request.user, request.data)
+        return Response(self.get_serializer(track).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["post"], url_path="copy")
+    def copy_course(self, request, pk=None):
+        """«Копировать курс»: the same sections, missions and steps as a closed draft class with a new code; nothing
+        of learners is copied (game/studio_courses.py)."""
+        from .studio_courses import copy_course
+
+        source = self.get_object()
+        self._check_course_quota(request.user)
+        track = copy_course(request.user, source)
+        return Response(self.get_serializer(track).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], url_path="new-code")
     def new_code(self, request, pk=None):

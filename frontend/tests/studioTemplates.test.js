@@ -5,11 +5,16 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const source = fs
-  .readFileSync(path.join(__dirname, "..", "lib", "studioTemplates.js"), "utf8")
-  .replace(/^export /gm, "");
+// studioTemplates.js берёт разбор формы шага из studioSteps.js: склеиваем оба файла без import/export
+const read = (name) =>
+  fs
+    .readFileSync(path.join(__dirname, "..", "lib", name), "utf8")
+    .replace(/^import .*$/gm, "")
+    .replace(/^export /gm, "");
+const source = [read("studioSteps.js"), read("studioTemplates.js")].join("\n");
 const lib = new Function(
-  `${source}; return { localized, COURSE_TEMPLATES, SECTION_TEMPLATES, MISSION_TEMPLATES, STEP_TEMPLATES };`
+  `${source}; return { localized, COURSE_TEMPLATES, SECTION_TEMPLATES, MISSION_TEMPLATES, STEP_TEMPLATES, ` +
+    "outlineCounts, courseOutline };"
 )();
 
 const ALL = ["COURSE_TEMPLATES", "SECTION_TEMPLATES", "MISSION_TEMPLATES", "STEP_TEMPLATES"];
@@ -91,4 +96,85 @@ test("a code preset never shows its own answer in the task text", () => {
       assert.ok(!form.body_ru.includes(form.expected_output), id);
     }
   }
+});
+
+// Пределы сервера по умолчанию (backend/core/settings/base.py, STUDIO_LIMITS) и правила StudioTaskSerializer.
+const LIMITS = { sections: 20, missions: 60, steps: 20 };
+
+test("a course template builds 4 chapters of 2 missions with theory, a quiz and a code task in each", () => {
+  const basics = lib.COURSE_TEMPLATES.find((t) => t.id === "basics");
+  assert.deepEqual(lib.outlineCounts(basics), { sections: 4, missions: 8, steps: 24 });
+  const outline = lib.courseOutline(basics, basics.form);
+  assert.equal(outline.sections.length, 4);
+  for (const section of outline.sections) {
+    assert.equal(section.missions.length, 2, section.title_ru);
+    for (const mission of section.missions) {
+      assert.deepEqual(
+        mission.steps.map((s) => s.task_type),
+        ["story", "quiz", "code"],
+        mission.title_ru
+      );
+    }
+  }
+});
+
+test("every course template has an outline the server accepts", () => {
+  for (const template of lib.COURSE_TEMPLATES) {
+    const outline = lib.courseOutline(template, template.form);
+    const counts = lib.outlineCounts(template);
+    const missions = outline.sections.flatMap((s) => s.missions);
+    const steps = missions.flatMap((m) => m.steps);
+    assert.deepEqual(counts, { sections: outline.sections.length, missions: missions.length, steps: steps.length });
+    assert.ok(counts.sections >= 1 && counts.sections <= LIMITS.sections, template.id);
+    assert.ok(counts.missions >= 1 && counts.missions <= LIMITS.missions, template.id);
+    for (const section of outline.sections) {
+      assert.ok(section.title_ru && section.title_en, `${template.id}: section titles`);
+      assert.ok(!("missions" in section.missions[0]), `${template.id}: no nesting leaks`);
+    }
+    for (const mission of missions) {
+      const where = `${template.id}/${mission.title_ru}`;
+      assert.ok(mission.title_ru && mission.title_en, where);
+      assert.ok(mission.xp_reward > 0 && mission.xp_reward <= 500, where);
+      assert.ok(mission.steps.length >= 2 && mission.steps.length <= LIMITS.steps, where);
+      assert.ok(mission.steps.some((s) => s.task_type === "code"), `${where}: learners write code`);
+      assert.deepEqual(
+        mission.steps.map((s) => s.order),
+        mission.steps.map((_, i) => i + 1),
+        where
+      );
+    }
+    for (const step of steps) {
+      assert.ok(step, `${template.id}: every preset turns into a payload`);
+      assert.ok(step.title_ru && step.title_en, template.id);
+      if (step.task_type === "quiz") {
+        assert.ok(step.data.options.some((o) => o.value === step.data.correct_answer), template.id);
+      }
+      if (step.task_type === "code") {
+        // the Studio refuses a code step that would accept any code
+        assert.ok(step.data.hidden_check.trim() || step.data.expected_output.trim(), template.id);
+      }
+    }
+  }
+});
+
+test("the hint of a course template says what the outline creates", () => {
+  for (const template of lib.COURSE_TEMPLATES) {
+    const { missions } = lib.outlineCounts(template);
+    const sections = template.outline.sections.length;
+    for (const language of ["ru", "en"]) {
+      const hint = template.hint[language];
+      // the number of chapters (or of revision missions) is in the hint, as the outline has it
+      const named = [sections, missions, template.outline.sections[0].missions.length].map(String);
+      assert.ok(named.some((n) => hint.includes(n)), `${template.id}.${language}: ${hint}`);
+    }
+  }
+});
+
+test("the course fields come from the form the teacher edited, trimmed", () => {
+  const template = lib.COURSE_TEMPLATES[0];
+  const outline = lib.courseOutline(template, { title_ru: "  Мой курс ", title_en: "", description_ru: " Для 1 курса\n" });
+  assert.equal(outline.title_ru, "Мой курс");
+  assert.equal(outline.title_en, "");
+  assert.equal(outline.description_ru, "Для 1 курса");
+  assert.equal(outline.sections.length, template.outline.sections.length);
 });

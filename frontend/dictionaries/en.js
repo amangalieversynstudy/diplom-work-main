@@ -530,6 +530,13 @@ export const en = {
       cancel: "Cancel",
       titleRequired: "Enter a course title",
     },
+    outline: {
+      pickerHint:
+        "A template fills the title and description, and the course starts with sections, missions and sample steps you can edit.",
+      creates: "The course comes with {summary}: drafts with sample steps to replace with your own material.",
+      skip: "Title and description only",
+      created: "Course created from the template: {summary}. They are drafts: replace the samples with your material and publish the missions.",
+    },
     editor: {
       back: "Back to courses",
       notFound: "Course not found or you don't have access.",
@@ -566,6 +573,12 @@ export const en = {
       confirmDeleteCourseTitle: "Delete course?",
       confirmDeleteCourseMsg:
         "The course and all its sections and missions will be permanently deleted.",
+      copy: "Copy course",
+      copying: "Copying…",
+      confirmCopyTitle: "Copy this course?",
+      confirmCopyMsg:
+        "Sections, missions and steps are copied as they are saved. Learners, their progress and the class code are not: the copy is a new closed draft with its own code.",
+      copied: "The copy is ready: a draft with a new class code. Check it and publish when you are ready.",
       confirmDeleteSectionTitle: "Delete section?",
       confirmDeleteMissionTitle: "Delete mission?",
       confirmDeleteMsg: "This action cannot be undone.",

@@ -4,28 +4,76 @@
 // Каждая задача с кодом проверена эталонным решением: оно печатает ровно expected_output и проходит
 // скрытую проверку (tests/studioTemplates.test.js сверяет структуру, решения записаны в reference).
 
+import { emptyStepForm, stepPayload } from "./studioSteps";
+
 export const localized = (value, language) =>
   value && typeof value === "object" ? value[language] || value.ru || value.en || "" : value || "";
 
+// Шаблон курса создаёт и заготовку: outline — главы и миссии, steps — какие шаблоны шагов (STEP_TEMPLATES ниже)
+// получает каждая миссия (у миссии может быть свой список). Всё уходит на сервер одним запросом
+// (courseOutline → POST /teacher/studio/tracks/outline/), курс и миссии остаются черновиками до публикации.
 export const COURSE_TEMPLATES = [
   {
     id: "basics",
     label: { ru: "Python с нуля", en: "Python from scratch" },
-    hint: { ru: "Название и описание вводного курса; главы и миссии — ниже, по своим шаблонам", en: "Title and description of an intro course; add chapters and missions below" },
+    hint: {
+      ru: "4 главы по 2 миссии; в каждой — теория, квиз и задача с кодом",
+      en: "4 chapters of 2 missions; theory, a quiz and a code task in each",
+    },
     form: {
       title_ru: "Python с нуля: первые программы",
       title_en: "Python from scratch: first programs",
       description_ru:
         "Для кого: ученики, которые ещё не программировали.\n" +
         "Что освоят: переменные, ввод и вывод, условия, циклы.\n" +
-        "Как устроен курс: 4 главы по 2–3 миссии; в каждой миссии теория, квиз и задача с кодом.\n" +
+        "Как устроен курс: 4 главы по 2 миссии; в каждой миссии теория, квиз и задача с кодом.\n" +
         "Итог: своя программа «Калькулятор героя».",
+    },
+    outline: {
+      steps: ["theory", "quiz", "code"],
+      sections: [
+        {
+          title_ru: "Глава 1. Переменные и вывод",
+          title_en: "Chapter 1. Variables and output",
+          missions: [
+            { title_ru: "Миссия 1. Первая программа", title_en: "Mission 1. The first program", xp_reward: 30 },
+            { title_ru: "Миссия 2. Переменные", title_en: "Mission 2. Variables", xp_reward: 30 },
+          ],
+        },
+        {
+          title_ru: "Глава 2. Условия",
+          title_en: "Chapter 2. Conditions",
+          missions: [
+            { title_ru: "Миссия 3. Если… иначе", title_en: "Mission 3. If… else", xp_reward: 50 },
+            { title_ru: "Миссия 4. Несколько условий", title_en: "Mission 4. Several conditions", xp_reward: 50 },
+          ],
+        },
+        {
+          title_ru: "Глава 3. Циклы",
+          title_en: "Chapter 3. Loops",
+          missions: [
+            { title_ru: "Миссия 5. Цикл for", title_en: "Mission 5. The for loop", xp_reward: 60 },
+            { title_ru: "Миссия 6. Цикл while", title_en: "Mission 6. The while loop", xp_reward: 60 },
+          ],
+        },
+        {
+          title_ru: "Глава 4. Калькулятор героя",
+          title_en: "Chapter 4. The hero calculator",
+          missions: [
+            { title_ru: "Миссия 7. План программы", title_en: "Mission 7. Plan the program", xp_reward: 100 },
+            { title_ru: "Миссия 8. Сборка и проверка", title_en: "Mission 8. Build and test it", xp_reward: 100 },
+          ],
+        },
+      ],
     },
   },
   {
     id: "practice",
     label: { ru: "Практикум", en: "Practice set" },
-    hint: { ru: "Название и описание практикума; задачи — шаблоны шагов «Код» и «Личные варианты»", en: "Title and description of a practice set; tasks come from the code step templates" },
+    hint: {
+      ru: "2 главы по 2 миссии; в каждой — теория, задача с кодом и задача с личными вариантами",
+      en: "2 chapters of 2 missions; theory, a code task and a task with personal variants in each",
+    },
     form: {
       title_ru: "Практикум: условия и циклы",
       title_en: "Practice: conditions and loops",
@@ -34,11 +82,35 @@ export const COURSE_TEMPLATES = [
         "Что даёт: задачи с автопроверкой и личными вариантами — ответ соседа не подойдёт.\n" +
         "Формат: короткая теория → задача → подсказки по шагам, если ученик застрял.",
     },
+    outline: {
+      steps: ["theory", "code", "variants"],
+      sections: [
+        {
+          title_ru: "Глава 1. Условия",
+          title_en: "Chapter 1. Conditions",
+          missions: [
+            { title_ru: "Задачи на if", title_en: "Tasks on if", xp_reward: 50 },
+            { title_ru: "Задачи на if… elif… else", title_en: "Tasks on if… elif… else", xp_reward: 50 },
+          ],
+        },
+        {
+          title_ru: "Глава 2. Циклы",
+          title_en: "Chapter 2. Loops",
+          missions: [
+            { title_ru: "Задачи на for", title_en: "Tasks on for", xp_reward: 60 },
+            { title_ru: "Задачи на while", title_en: "Tasks on while", xp_reward: 60 },
+          ],
+        },
+      ],
+    },
   },
   {
     id: "exam",
     label: { ru: "Подготовка к контрольной", en: "Test preparation" },
-    hint: { ru: "Название и описание; квизы и задачи — по шаблонам шагов", en: "Title and description; quizzes and tasks come from the step templates" },
+    hint: {
+      ru: "Повторение: 3 миссии с квизом и задачей; пробная контрольная — квиз и 2 задачи",
+      en: "Revision: 3 missions with a quiz and a task; a mock test with a quiz and 2 tasks",
+    },
     form: {
       title_ru: "Подготовка к контрольной",
       title_en: "Test preparation",
@@ -46,17 +118,67 @@ export const COURSE_TEMPLATES = [
         "Повторение перед контрольной: квизы на понимание кода и короткие задачи.\n" +
         "Кабинет покажет, кто и на каком шаге застрял, — их стоит разобрать на занятии.",
     },
+    outline: {
+      steps: ["quiz", "code"],
+      sections: [
+        {
+          title_ru: "Глава 1. Повторение",
+          title_en: "Chapter 1. Revision",
+          missions: [
+            { title_ru: "Переменные и вывод", title_en: "Variables and output", xp_reward: 30 },
+            { title_ru: "Условия", title_en: "Conditions", xp_reward: 50 },
+            { title_ru: "Циклы", title_en: "Loops", xp_reward: 60 },
+          ],
+        },
+        {
+          title_ru: "Глава 2. Пробная контрольная",
+          title_en: "Chapter 2. Mock test",
+          missions: [
+            {
+              title_ru: "Пробная контрольная",
+              title_en: "Mock test",
+              xp_reward: 100,
+              steps: ["quiz", "code", "variants"],
+            },
+          ],
+        },
+      ],
+    },
   },
   {
     id: "project",
     label: { ru: "Мини-проект", en: "Mini project" },
-    hint: { ru: "Название и описание проекта; миссии с механиками добавьте ниже", en: "Title and description of the project; add a mission per game mechanic below" },
+    hint: {
+      ru: "2 главы по 2 миссии, по механике игры в каждой: теория и задача с кодом",
+      en: "2 chapters of 2 missions, one game mechanic each: theory and a code task",
+    },
     form: {
       title_ru: "Мини-проект: текстовая игра",
       title_en: "Mini project: a text game",
       description_ru:
         "Проектный курс: ученики шаг за шагом собирают текстовую RPG — герой, инвентарь, бой.\n" +
         "Каждая миссия добавляет в игру одну механику, к концу курса у каждого своя игра.",
+    },
+    outline: {
+      steps: ["theory", "code"],
+      sections: [
+        {
+          title_ru: "Глава 1. Герой и его вещи",
+          title_en: "Chapter 1. The hero and their things",
+          missions: [
+            { title_ru: "Механика 1. Герой", title_en: "Mechanic 1. The hero", xp_reward: 50 },
+            { title_ru: "Механика 2. Инвентарь", title_en: "Mechanic 2. The inventory", xp_reward: 50 },
+          ],
+        },
+        {
+          title_ru: "Глава 2. Приключение",
+          title_en: "Chapter 2. The adventure",
+          missions: [
+            { title_ru: "Механика 3. Бой", title_en: "Mechanic 3. The battle", xp_reward: 60 },
+            { title_ru: "Финал: своя игра", title_en: "Finale: your own game", xp_reward: 100 },
+          ],
+        },
+      ],
     },
   },
 ];
@@ -218,3 +340,35 @@ export const STEP_TEMPLATES = [
     reference: "name = \"{{name}}\"\nn = {{n}}\npower = {{power}}\ntotal = n * power\nprint(name + \":\", total)\n",
   },
 ];
+
+const stepsOf = (template, mission) => mission.steps || template.outline.steps;
+
+// Сколько создаст шаблон курса: для строки «Вместе с курсом появятся…» и тестов.
+export function outlineCounts(template) {
+  const missions = (template?.outline?.sections || []).flatMap((section) => section.missions);
+  return {
+    sections: template?.outline?.sections?.length || 0,
+    missions: missions.length,
+    steps: missions.reduce((sum, mission) => sum + stepsOf(template, mission).length, 0),
+  };
+}
+
+// Тело запроса POST /teacher/studio/tracks/outline/: поля курса из формы и заготовка шаблона. Шаги собираются
+// так же, как форма шага сохраняет пресет (stepPayload), поэтому заготовка проходит те же проверки сервера.
+export function courseOutline(template, form) {
+  const presets = Object.fromEntries(STEP_TEMPLATES.map((preset) => [preset.id, preset]));
+  return {
+    title_ru: (form.title_ru || "").trim(),
+    title_en: (form.title_en || "").trim(),
+    description_ru: (form.description_ru || "").trim(),
+    sections: (template.outline?.sections || []).map(({ missions, ...section }) => ({
+      ...section,
+      missions: missions.map(({ steps, ...mission }) => ({
+        ...mission,
+        steps: (steps || template.outline.steps).map((id, index) =>
+          stepPayload({ ...emptyStepForm(index + 1), ...presets[id].form })
+        ),
+      })),
+    })),
+  };
+}

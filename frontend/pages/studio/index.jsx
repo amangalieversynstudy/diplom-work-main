@@ -1,12 +1,14 @@
 import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/router";
+import { toast } from "sonner";
 import Layout from "../../components/Layout";
 import Button from "../../components/Button";
 import DemoButton from "../../components/DemoButton";
 import EmptyState from "../../components/EmptyState";
 import TemplatePicker from "../../components/TemplatePicker";
 import { Studio as StudioAPI, Profile as ProfileAPI } from "../../lib/api";
-import { COURSE_TEMPLATES } from "../../lib/studioTemplates";
+import { serverMessage } from "../../lib/apiErrors";
+import { COURSE_TEMPLATES, courseOutline, outlineCounts } from "../../lib/studioTemplates";
 import logger from "../../lib/logger";
 import { useI18n } from "../../lib/i18n";
 import { unit } from "../../lib/plural";
@@ -14,6 +16,7 @@ import {
   BookOpen,
   GraduationCap,
   Layers,
+  ListTree,
   Lock,
   Plus,
   Swords,
@@ -90,6 +93,14 @@ export default function StudioIndexPage() {
     setTemplate(preset.id);
     setError("");
   };
+  // выбранный шаблон создаёт и заготовку курса: разделы, миссии и шаги (lib/studioTemplates.js)
+  const preset = COURSE_TEMPLATES.find((item) => item.id === template) || null;
+  const describe = (counts) =>
+    [
+      `${counts.sections} ${unit(t, language, "section", counts.sections)}`,
+      `${counts.missions} ${unit(t, language, "mission", counts.missions)}`,
+      `${counts.steps} ${unit(t, language, "step", counts.steps)}`,
+    ].join(", ");
 
   useEffect(() => {
     let cancelled = false;
@@ -131,15 +142,22 @@ export default function StudioIndexPage() {
     }
     setSubmitting(true);
     try {
-      const created = await StudioAPI.tracks.create({
-        title_ru: form.title_ru.trim(),
-        title_en: form.title_en.trim(),
-        description_ru: form.description_ru.trim(),
-      });
+      let created;
+      if (preset) {
+        // один запрос и одна транзакция на сервере: курс появится целиком или не появится вовсе
+        created = await StudioAPI.tracks.outline(courseOutline(preset, form));
+        toast.success(t("studio.outline.created").replace("{summary}", describe(outlineCounts(preset))));
+      } else {
+        created = await StudioAPI.tracks.create({
+          title_ru: form.title_ru.trim(),
+          title_en: form.title_en.trim(),
+          description_ru: form.description_ru.trim(),
+        });
+      }
       router.push(`/studio/${created.id}`);
     } catch (e2) {
       logger.error("Course create failed:", e2);
-      setError(t("studio.saveError"));
+      setError(serverMessage(e2, t("studio.saveError")));
       setSubmitting(false);
     }
   };
@@ -231,7 +249,24 @@ export default function StudioIndexPage() {
               onPick={pickTemplate}
               t={t}
               language={language}
-            />
+              hint={t("studio.outline.pickerHint")}
+            >
+              {preset && (
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/20 bg-surface px-3 py-2">
+                  <p className="flex items-start gap-2 text-sm text-text" aria-live="polite">
+                    <ListTree size={16} className="mt-0.5 shrink-0 text-primary" aria-hidden="true" />
+                    <span>{t("studio.outline.creates").replace("{summary}", describe(outlineCounts(preset)))}</span>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setTemplate(null)}
+                    className="min-h-[36px] rounded-lg px-2 text-xs font-semibold text-muted underline-offset-2 hover:text-text hover:underline"
+                  >
+                    {t("studio.outline.skip")}
+                  </button>
+                </div>
+              )}
+            </TemplatePicker>
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor={`${uid}-title_ru`} className="block text-xs font-semibold text-muted mb-1.5">

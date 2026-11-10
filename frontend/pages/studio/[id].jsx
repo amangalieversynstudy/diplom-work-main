@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/router";
+import { toast } from "sonner";
 import Layout from "../../components/Layout";
 import Button from "../../components/Button";
 import ConfirmModal from "../../components/ConfirmModal";
@@ -15,6 +16,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Copy,
   Layers,
   ListChecks,
   Lock,
@@ -638,11 +640,16 @@ export default function StudioEditorPage() {
   const [sectionTemplate, setSectionTemplate] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [error, setError] = useState("");
+  const [copying, setCopying] = useState(false);
 
   useEffect(() => {
     if (!router.isReady) return;
     const id = router.query.id;
     let cancelled = false;
+    // переход из курса в его копию не перемонтирует страницу: пока грузится другой курс, показываем заглушку,
+    // а не прежний курс под новым адресом
+    setLoading(true);
+    setNotFound(false);
     (async () => {
       try {
         const me = await ProfileAPI.me();
@@ -773,6 +780,30 @@ export default function StudioEditorPage() {
       },
     });
 
+  // «Копировать курс»: сервер повторяет разделы, миссии и шаги в новом закрытом черновике с новым кодом класса;
+  // учеников и их прогресс не копирует. Несохранённые правки настроек в копию не попадут — об этом говорит диалог.
+  const copyCourse = () =>
+    setConfirm({
+      title: t("studio.editor.confirmCopyTitle"),
+      message: t("studio.editor.confirmCopyMsg"),
+      confirmLabel: t("studio.editor.copy"),
+      icon: Copy,
+      onConfirm: async () => {
+        setCopying(true);
+        setError("");
+        try {
+          const copy = await StudioAPI.tracks.copy(track.id);
+          toast.success(t("studio.editor.copied"));
+          router.push(`/studio/${copy.id}`);
+        } catch (e) {
+          logger.error("Course copy failed:", e);
+          setError(apiError(e, t("studio.saveError")));
+        } finally {
+          setCopying(false);
+        }
+      },
+    });
+
   // Публикация в двух местах (курс и каждая миссия): предупреждаем, если они не совпадают.
   const allMissions = sections.flatMap((s) => s.missions || []);
   const publishedMissions = allMissions.filter((m) => m.is_active).length;
@@ -839,12 +870,22 @@ export default function StudioEditorPage() {
           <h1 className="text-3xl md:text-4xl font-display font-bold text-text">
             {track?.title_ru || track?.title_en || "—"}
           </h1>
-          <button
-            onClick={deleteCourse}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm text-muted hover:border-error/40 hover:text-error"
-          >
-            <Trash2 size={15} /> {t("studio.editor.delete")}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={copyCourse}
+              disabled={copying}
+              aria-busy={copying}
+              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm text-muted hover:border-primary/40 hover:text-text disabled:opacity-60"
+            >
+              <Copy size={15} aria-hidden="true" /> {copying ? t("studio.editor.copying") : t("studio.editor.copy")}
+            </button>
+            <button
+              onClick={deleteCourse}
+              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm text-muted hover:border-error/40 hover:text-error"
+            >
+              <Trash2 size={15} aria-hidden="true" /> {t("studio.editor.delete")}
+            </button>
+          </div>
         </div>
 
         {/* Настройки курса */}

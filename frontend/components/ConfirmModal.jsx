@@ -9,6 +9,8 @@
  *     message: "Прогресс будет потерян.",
  *     onConfirm: () => doStuff(),
  *   });
+ *   Необязательно: danger (красная кнопка), confirmLabel / cancelLabel, icon — значок lucide вместо
+ *   треугольника-предупреждения, когда действие безопасное (например, «Копировать курс»).
  *   <ConfirmModal data={confirm} onClose={() => setConfirm(null)} />
  */
 
@@ -22,6 +24,7 @@ import { useDialog } from "../lib/useDialog";
 export default function ConfirmModal({ data, onClose }) {
   const { t } = useI18n();
   const open = Boolean(data);
+  const Icon = data?.icon || AlertTriangle;
   const dialogRef = useRef(null);
   const titleId = useId();
   useDialog(open, dialogRef, onClose);
@@ -69,7 +72,7 @@ export default function ConfirmModal({ data, onClose }) {
 
             <div className="flex items-start gap-4 mb-6">
               <div className="shrink-0 w-12 h-12 rounded-2xl bg-accent/15 border border-accent/40 flex items-center justify-center text-accent">
-                <AlertTriangle size={22} />
+                <Icon size={22} aria-hidden="true" />
               </div>
               <div>
                 <h2 id={titleId} className="text-xl font-display font-bold text-modal-text mb-2">

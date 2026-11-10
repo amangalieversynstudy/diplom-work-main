@@ -75,9 +75,9 @@ def _save(serializer_class, payload, where, **extra):
 
 def outline_size(outline):
     """(sections, missions, steps of each mission) of an outline, checking its shape on the way."""
-    sections = _items(outline.get("sections"), "sections")
-    missions = [_items(section.get("missions"), "missions") for section in sections]
-    steps = [len(_items(mission.get("steps"), "steps")) for group in missions for mission in group]
+    sections = _items(outline.get("sections"), "разделы")
+    missions = [_items(section.get("missions"), "миссии") for section in sections]
+    steps = [len(_items(mission.get("steps"), "шаги")) for group in missions for mission in group]
     return len(sections), len(steps), steps
 
 
@@ -186,8 +186,18 @@ def copy_course(user, source):
             needed = [new_missions.get(pre.pk, pre) for pre in mission.prerequisites.all()]
             if needed:
                 new_missions[mission.pk].prerequisites.set(needed)
-        MissionTask.objects.bulk_create(
-            MissionTask(**_fields(step, skip={"mission_id"}), mission=new_missions[step.mission_id])
+        new_steps = {
+            step.pk: MissionTask.objects.create(**_fields(step, skip={"mission_id"}), mission=new_missions[step.mission_id])
             for step in steps
-        )
+        }
+        # The question about a learner's own code names its code step in data.about. In the copy it must name the
+        # COPIED step: otherwise it takes the variant of the source course and marks right answers as wrong.
+        relinked = []
+        for step in new_steps.values():
+            about = step.data.get("about") if isinstance(step.data, dict) else None
+            if isinstance(about, int) and not isinstance(about, bool) and about in new_steps:
+                step.data = {**step.data, "about": new_steps[about].pk}
+                relinked.append(step)
+        if relinked:
+            MissionTask.objects.bulk_update(relinked, ["data"])
     return track

@@ -245,10 +245,11 @@ REST_FRAMEWORK = {
         "usability_submit": "5/day",   # анкета SUS
         "class_join": "20/hour",       # вход в класс по коду: нельзя подбирать коды
         "class_join_ip": "150/hour",   # то же с одного адреса (класс за одним NAT укладывается)
-        "teacher_analytics": "30/min", # тяжёлые отчёты преподавателя (кабинет, метрики, CSV)
+        "teacher_analytics": "30/min",  # тяжёлые отчёты преподавателя (кабинет, метрики, CSV)
         "teacher_live": "20/min",      # живая панель опрашивает раз в 10 с
         "studio_write": "60/min",      # правки Студии
         "studio_write_day": "1000/day",
+        "studio_bulk": "6/min",        # курс из шаблона или копия курса: сотни строк за один запрос
         "mission_complete": "20/min",  # завершение миссии
         "learning_event": "120/min",   # события UI (открытие шага)
         "code_runner": "20/min",       # Docker sandbox — ресурсоёмко

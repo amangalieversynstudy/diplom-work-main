@@ -135,6 +135,7 @@ export default function StudioIndexPage() {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (submitting) return; // Enter pressed twice before the button greys out must not build two courses
     setError("");
     if (!form.title_ru.trim() && !form.title_en.trim()) {
       setError(t("studio.form.titleRequired"));

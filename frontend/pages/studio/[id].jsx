@@ -650,6 +650,10 @@ export default function StudioEditorPage() {
     // а не прежний курс под новым адресом
     setLoading(true);
     setNotFound(false);
+    // another course must not show the previous one's error, open forms or sections while it loads
+    setError("");
+    setSectionTemplate(null);
+    setSections([]);
     (async () => {
       try {
         const me = await ProfileAPI.me();

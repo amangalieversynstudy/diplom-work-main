@@ -95,6 +95,12 @@ class StudioDailyWriteThrottle(UserRateThrottle):
     scope = "studio_write_day"
 
 
+class StudioBulkThrottle(UserRateThrottle):
+    """A whole course in one request (from a template or a copy): up to a thousand rows each, so a handful a minute."""
+
+    scope = "studio_bulk"
+
+
 class MissionCompleteThrottle(UserRateThrottle):
     """Completing a mission: a learner finishes a few a minute at most."""
 

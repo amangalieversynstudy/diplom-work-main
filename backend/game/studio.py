@@ -30,7 +30,7 @@ from rest_framework.exceptions import PermissionDenied
 
 from .codeanalysis import CONSTRUCTS
 from .models import DEFAULT_MISSION_XP, CodeRun, Enrollment, Location, Mission, MissionTask, Progress, TaskProgress, Track
-from .throttles import StudioDailyWriteThrottle, StudioWriteThrottle
+from .throttles import StudioBulkThrottle, StudioDailyWriteThrottle, StudioWriteThrottle
 from .variants import MAX_VARIANTS, MIN_VARIANTS
 
 # Rewards are authored by teachers, so they are capped: an absurd value would
@@ -99,7 +99,8 @@ class StudioGuardMixin:
         throttles = super().get_throttles()
         if self.request.method in permissions.SAFE_METHODS or self.request.user.is_superuser:
             return throttles
-        return [*throttles, StudioWriteThrottle(), StudioDailyWriteThrottle()]
+        extra = [StudioBulkThrottle()] if getattr(self, "action", None) in ("outline", "copy_course") else []
+        return [*throttles, StudioWriteThrottle(), StudioDailyWriteThrottle(), *extra]
 
     def _guard_parent(self, serializer):
         if self.parent_field is None or self.request.user.is_superuser:

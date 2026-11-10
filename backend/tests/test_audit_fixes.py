@@ -63,6 +63,20 @@ def test_a_studio_code_step_needs_an_expected_output_or_a_hidden_check():
     assert checked.status_code == 201, checked.content
 
 
+def test_personal_variants_alone_do_not_make_a_code_step_checkable():
+    teacher = User.objects.create_user("teachv", "tv@example.com", "S3cure-pass-1", is_teacher=True)
+    track = Track.objects.create(slug="ownv", title="Own", owner=teacher, is_public=False)
+    mission = Mission.objects.create(location=Location.objects.create(track=track, title="L"), title="M")
+    api = _client(teacher)
+    payload = {"mission": mission.pk, "task_type": "code", "title_ru": "Шаг", "order": 1}
+    variants = [{"vars": {"n": 1}}, {"vars": {"n": 2}}]
+    bare = api.post("/api/teacher/studio/tasks/", {**payload, "data": {"starter": "", "variants": variants}}, format="json")
+    assert bare.status_code == 400  # no expected output anywhere: any code would pass
+    each = [{"vars": {"n": 1}, "expected_output": "1"}, {"vars": {"n": 2}, "expected_output": "2"}]
+    ok = api.post("/api/teacher/studio/tasks/", {**payload, "data": {"starter": "", "variants": each}}, format="json")
+    assert ok.status_code == 201, ok.content
+
+
 def test_the_learning_export_takes_the_research_cohort_and_the_period(tmp_path):
     start = timezone.now() - timedelta(days=10)
     end = timezone.now() - timedelta(days=1)

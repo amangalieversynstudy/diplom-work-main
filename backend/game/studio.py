@@ -18,6 +18,7 @@ import re
 import secrets
 
 from django.conf import settings
+from django.db import connection, transaction
 from django.db.models import Count, Q
 from django.utils.text import slugify
 from rest_framework import permissions, serializers, status, viewsets
@@ -361,9 +362,14 @@ class StudioTrackViewSet(StudioGuardMixin, viewsets.ModelViewSet):
 
     @staticmethod
     def _check_course_quota(user):
+        # lock the teacher's row (callers run inside a transaction): parallel requests then count the courses
+        # one after another, so a burst cannot get past the quota together
+        if connection.in_atomic_block:
+            type(user).objects.select_for_update().filter(pk=user.pk).first()
         key = "tracks_per_vetted_teacher" if is_vetted_teacher(user) else "tracks_per_teacher"
         _quota(user, Track.objects.filter(owner=user).count(), key, "Не больше {n} курсов у преподавателя.")
 
+    @transaction.atomic
     def perform_create(self, serializer):
         user = self.request.user
         self._check_course_quota(user)
@@ -372,6 +378,7 @@ class StudioTrackViewSet(StudioGuardMixin, viewsets.ModelViewSet):
         with_fresh_code(lambda code: serializer.save(owner=user, is_public=False, join_code=code))
 
     @action(detail=False, methods=["post"], url_path="demo")
+    @transaction.atomic
     def demo(self, request):
         """«Развернуть демо-пример»: the showcase course of game/demo_course.py. A second click returns the first
         demo instead of a copy (``created`` false)."""
@@ -386,6 +393,7 @@ class StudioTrackViewSet(StudioGuardMixin, viewsets.ModelViewSet):
         return Response(body, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
     @action(detail=False, methods=["post"], url_path="outline")
+    @transaction.atomic
     def outline(self, request):
         """«Создать курс по шаблону»: the course with its sections, missions and steps in one request and one
         transaction (game/studio_courses.py). Everything is a draft: the steps are placeholders."""
@@ -396,6 +404,7 @@ class StudioTrackViewSet(StudioGuardMixin, viewsets.ModelViewSet):
         return Response(self.get_serializer(track).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], url_path="copy")
+    @transaction.atomic
     def copy_course(self, request, pk=None):
         """«Копировать курс»: the same sections, missions and steps as a closed draft class with a new code; nothing
         of learners is copied (game/studio_courses.py)."""
@@ -695,10 +704,18 @@ class StudioTaskSerializer(serializers.ModelSerializer):
         if len(starter) > MAX_CODE or len(expected) > MAX_CODE or len(check) > MAX_CODE:
             raise serializers.ValidationError({"data": f"Код или вывод длиннее {MAX_CODE} символов."})
         # without either the step would accept any code at all, and "solved" would mean nothing in the data
-        if not expected.strip() and not check and not data.get("variants"):
-            raise serializers.ValidationError(
-                {"data": "Укажите эталонный вывод или скрытую проверку: иначе шаг засчитается за любой код."}
+        if not expected.strip() and not check:
+            # personal variants may carry the expected output each, but then every one of them must
+            variants = data.get("variants")
+            each_has_output = (
+                isinstance(variants, list)
+                and bool(variants)
+                and all(isinstance(item, dict) and str(item.get("expected_output") or "").strip() for item in variants)
             )
+            if not each_has_output:
+                raise serializers.ValidationError(
+                    {"data": "Укажите эталонный вывод или скрытую проверку: иначе шаг засчитается за любой код."}
+                )
         if check:
             try:
                 compile(check, "<hidden_check>", "exec")

@@ -484,7 +484,7 @@ def render_markdown(report):
     fresh, use = report["dashboard"]["freshness"], report["dashboard"]["usability"]
     since = report["dashboard"].get("since")
     lines.append(
-        "Учтены только преподаватели пилота (staff по коду приглашения, без самостоятельной регистрации)"
+        "Учтены только проверенные преподаватели пилота (staff без флага «преподаватель», их назначает админ)"
         + (f", с начала пилота {since}." if since else ".")
     )
     if not fresh["samples"]:

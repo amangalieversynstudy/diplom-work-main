@@ -134,7 +134,9 @@ def _judge0_settings():
 # A class pressing "Run" at the same moment must not hit the public instance all at once (it answers 429):
 # at most _JUDGE0_SLOTS requests of this process are in flight, the others wait their turn, and a busy
 # answer (429 / 502 / 503 / 504) or a dropped connection is retried with a growing pause.
-_JUDGE0_SLOTS = threading.BoundedSemaphore(4)
+# RUNNER_JUDGE0_CONCURRENCY: how many requests may be in flight at once. 4 suits the free public instance;
+# with an API key or an own Judge0 a class can raise it (the limit is per gunicorn/daphne process).
+_JUDGE0_SLOTS = threading.BoundedSemaphore(max(1, int(os.environ.get("RUNNER_JUDGE0_CONCURRENCY", "4") or 4)))
 _JUDGE0_WAIT_FOR_SLOT = 25     # seconds a run may wait for its turn before giving up
 _JUDGE0_TRIES = 3
 _JUDGE0_PAUSE = 1.5            # seconds; multiplied by the number of the try

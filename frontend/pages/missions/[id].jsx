@@ -649,9 +649,10 @@ export default function MissionDetail() {
     }, 60);
   };
   const canHint = (inventory.hint_scrolls || 0) > 0 && Boolean(activeTask?.data?.has_hint);
-  const canMentor = isCodeTask && (inventory.ai_summons || 0) > 0; // Мудрец живёт в панели кода
-  // нет ни зелий, ни вызовов: единственная бесплатная подсказка к шагу (один раз, сервер это проверяет)
-  const canRescue = !canHint && !canMentor && (inventory.hint_scrolls || 0) <= 0 && (inventory.ai_summons || 0) <= 0;
+  // Мудрец живёт в панели кода и требует ключа ИИ: вызовы, которые здесь нельзя потратить, не считаются
+  const canMentor = mentorAvailable && isCodeTask && (inventory.ai_summons || 0) > 0;
+  // нет зелий и нет вызовов, которые можно потратить: единственная бесплатная подсказка к шагу (один раз, сервер это проверяет)
+  const canRescue = !canHint && !canMentor && (inventory.hint_scrolls || 0) <= 0;
   const rescueTaken = Boolean(rescueTried[activeTaskId]);
   const helpButton =
     "inline-flex min-h-[44px] items-center gap-2 rounded-lg border-2 border-ink/70 bg-ink px-3 py-2 text-sm font-semibold text-straw transition-colors hover:bg-wood disabled:cursor-not-allowed disabled:opacity-50";

@@ -265,3 +265,37 @@ def test_rescue_hint_needs_the_offer_and_an_empty_inventory(api, student, steps)
     student.profile.hint_scrolls = 1
     student.profile.save()
     assert _use(api, "rescue_hint", steps["helped"]).status_code == 409  # has a scroll: use it
+
+
+def test_summons_that_cannot_be_spent_do_not_block_the_rescue(api, student, steps, settings, monkeypatch):
+    # no AI key: the Sage is hidden, so three unspendable summons must not leave the learner with nothing
+    settings.GEMINI_API_KEY = ""
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    student.profile.hint_scrolls = 0
+    student.profile.ai_summons = 3
+    student.profile.save()
+    _stuck(student, steps["helped"])
+    assert _use(api, "rescue_hint", steps["helped"]).status_code == 200
+
+
+def test_spendable_summons_still_come_before_the_rescue(api, student, steps, settings):
+    settings.GEMINI_API_KEY = "test-key"
+    student.profile.hint_scrolls = 0
+    student.profile.ai_summons = 3
+    student.profile.save()
+    _stuck(student, steps["helped"])
+    assert _use(api, "rescue_hint", steps["helped"]).status_code == 409  # code step, key set: call the Sage
+
+
+def test_a_quiz_step_gets_the_rescue_even_with_summons(api, student, steps, settings):
+    # the Sage's chat lives in the code panel: on a quiz the summons cannot be spent, key or no key
+    settings.GEMINI_API_KEY = "test-key"
+    quiz = MissionTask.objects.create(
+        mission=steps["mission"], order=3, task_type="quiz",
+        data={"question": "q", "options": ["a", "b"], "correct": 0, "hints": HINTS},
+    )
+    student.profile.hint_scrolls = 0
+    student.profile.ai_summons = 3
+    student.profile.save()
+    _stuck(student, quiz)
+    assert _use(api, "rescue_hint", quiz).status_code == 200

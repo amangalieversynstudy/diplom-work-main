@@ -44,9 +44,9 @@ def _parse_bool(value):
 
 def _mentor_available():
     """True when the AI mentor has a key (settings or env); the same check the mentor views make."""
-    import os
+    from game.help import mentor_available
 
-    return bool(getattr(settings, "GEMINI_API_KEY", None) or os.environ.get("GEMINI_API_KEY"))
+    return mentor_available()
 
 
 class ProfileMeView(APIView):

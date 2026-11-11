@@ -368,6 +368,7 @@ export const en = {
   teacher: {
     guideLink: "Teacher's guide",
     firstSteps: {
+      title: "First steps",
       1: "Open the Studio and create a course (from a template or from scratch).",
       2: "Open the course, check the steps and switch on “Published (visible to learners)”; publish the missions you need the same way.",
       3: "Switch on “As a student” in the menu to go through the course as a learner.",
@@ -944,7 +945,7 @@ export const en = {
       toastChanged: "Class changed: the map is now the world of this class",
       toastError: "Failed to save class. Try again.",
       changePath: "Current class",
-      changeClass: "Change class",
+      changeClass: "Change hero class",
       tree: "Hero class",
       treeChange: "Pick your hero title again. Tasks and progress do not change.",
       treeFresh: "A class is a hero title: it shows on your hero sheet and in the Hall of Fame and changes the look of the map. It does not affect tasks or rewards, so pick what you like and change it any time.",
@@ -997,6 +998,7 @@ export const en = {
       retry: "Retry",
       inventoryTitle: "Hero's pack",
       bagSource: "Where items come from: Clarity Potions and Sage calls are granted for each new level (+1 per level, the stock is capped). The Architect Blueprint is not refilled.",
+      bagSourceNoMentor: "Where items come from: Clarity Potions are granted for each new level (+1 per level, the stock is capped). The Architect Blueprint is not refilled.",
       bagEmpty: "The pack is empty: items return when you reach a new level. You can solve steps without them.",
       summons: "Sage calls",
       unknownPlayer: "Unknown",
@@ -1007,7 +1009,7 @@ export const en = {
         best: "best",
         start: "Solve a step to start a streak",
       },
-      changeClass: "Change class",
+      changeClass: "Change hero class",
       chooseClass: "Choose a class",
       logout: "Log out",
       accountSettings: "Account settings",
@@ -1354,7 +1356,7 @@ export const en = {
       mapTitle: "World Map",
       mapSubtitle: "Every archipelago hides knowledge and danger. Follow the ink trails to find the treasures of code.",
       worldOf: "World of the class",
-      changeClass: "Change class",
+      changeClass: "Change hero class",
       pickClass: "Choose a hero class and the map becomes its world",
       worlds: {
         serpent: {

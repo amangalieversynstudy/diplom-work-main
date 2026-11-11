@@ -459,6 +459,7 @@ export default function TeacherPage() {
 
         {noLearners ? (
           /* ── Новый преподаватель: сначала что сделать, а не нули и пустые панели ── */
+          <>
           <EmptyState
             icon={Users}
             title={t("pilot.empty.teacherTitle")}
@@ -472,12 +473,16 @@ export default function TeacherPage() {
               <Plus size={16} aria-hidden="true" /> {t("pilot.empty.createCourse")}
             </Link>
             <DemoButton t={t} />
-            <ol className="mt-4 w-full max-w-xl list-decimal space-y-1 pl-5 text-left text-sm text-muted" data-testid="first-steps">
+          </EmptyState>
+          <section className="mb-6 rounded-2xl border border-border bg-panel p-5" data-testid="first-steps">
+            <h2 className="mb-2 font-display text-lg font-bold text-text">{t("teacher.firstSteps.title")}</h2>
+            <ol className="list-decimal space-y-1 pl-5 text-sm text-muted">
               {[1, 2, 3, 4, 5].map((n) => (
                 <li key={n}>{t(`teacher.firstSteps.${n}`)}</li>
               ))}
             </ol>
-          </EmptyState>
+          </section>
+          </>
         ) : (
           /* ── Сводка ── */
           <div className="grid sm:grid-cols-3 gap-4 mb-6">

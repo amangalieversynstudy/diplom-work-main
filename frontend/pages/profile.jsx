@@ -320,7 +320,7 @@ if (loading) {
                 {!(profile?.hint_scrolls || profile?.skeleton_scrolls || (profile?.mentor_available !== false && profile?.ai_summons)) && (
                   <p className="mt-2 text-xs leading-snug text-muted" data-testid="bag-empty">{t("profile.bagEmpty")}</p>
                 )}
-                <p className="mt-2 text-xs leading-snug text-faint" data-testid="bag-source">{t("profile.bagSource")}</p>
+                <p className="mt-2 text-xs leading-snug text-faint" data-testid="bag-source">{t(profile?.mentor_available !== false ? "profile.bagSource" : "profile.bagSourceNoMentor")}</p>
               </div>
 
               <div className="mt-6 pt-6 border-t border-border space-y-3">

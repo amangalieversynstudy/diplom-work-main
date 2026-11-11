@@ -234,7 +234,7 @@ export default function Register() {
             ) : null}
 
             {role === "student" ? (
-              <p className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs leading-relaxed text-muted" data-testid="privacy-line">
+              <p className="rounded-lg border border-border bg-panel p-3 text-xs leading-relaxed text-muted" data-testid="privacy-line">
                 {extra.privacyLine}
               </p>
             ) : null}

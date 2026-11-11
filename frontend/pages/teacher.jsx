@@ -410,6 +410,8 @@ export default function TeacherPage() {
   // Сортируем застрявших наверх, чтобы преподаватель видел их первыми;
   // внутри групп сохраняем порядок бэкенда (по XP убыванию).
   const allStudents = data?.students || [];
+  // уровень видит только суперпользователь: у остальных колонка была бы пустой
+  const showLevel = allStudents.some((s) => s.level != null);
   const noLearners = allStudents.length === 0;
   const students = filterAndSortStudents(allStudents, { query, sortKey, direction });
   // Клик по заголовку: сначала по убыванию (имя: по алфавиту), второй клик меняет направление,
@@ -448,7 +450,12 @@ export default function TeacherPage() {
             {t("teacher.title")}
           </h1>
         </div>
-        <p className="text-muted mb-8">{t("teacher.subtitle")}</p>
+        <p className="text-muted mb-2">{t("teacher.subtitle")}</p>
+        <p className="mb-8 text-sm">
+          <a href="/teacher-guide.html" target="_blank" rel="noopener" className="font-semibold text-primary underline-offset-4 hover:underline" data-testid="teacher-guide-link">
+            {t("teacher.guideLink")}
+          </a>
+        </p>
 
         {noLearners ? (
           /* ── Новый преподаватель: сначала что сделать, а не нули и пустые панели ── */
@@ -465,6 +472,11 @@ export default function TeacherPage() {
               <Plus size={16} aria-hidden="true" /> {t("pilot.empty.createCourse")}
             </Link>
             <DemoButton t={t} />
+            <ol className="mt-4 w-full max-w-xl list-decimal space-y-1 pl-5 text-left text-sm text-muted" data-testid="first-steps">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <li key={n}>{t(`teacher.firstSteps.${n}`)}</li>
+              ))}
+            </ol>
           </EmptyState>
         ) : (
           /* ── Сводка ── */
@@ -531,9 +543,9 @@ export default function TeacherPage() {
               ) : (
               <>
               {/* Заголовок таблицы — только на md+ */}
-              <div className="hidden md:grid items-center grid-cols-[1.6fr_0.5fr_0.7fr_0.9fr_0.9fr_1fr_8.5rem] gap-3 px-3 pb-3 text-xs uppercase tracking-wider text-muted font-bold border-b border-border">
+              <div className={`hidden md:grid items-center ${showLevel ? "grid-cols-[1.6fr_0.5fr_0.7fr_0.9fr_0.9fr_1fr_8.5rem]" : "grid-cols-[1.6fr_0.7fr_0.9fr_0.9fr_1fr_8.5rem]"} gap-3 px-3 pb-3 text-xs uppercase tracking-wider text-muted font-bold border-b border-border`}>
                 <span aria-sort={ariaSort("name")}>{sortHead("name", t("teacher.table.student"))}</span>
-                <span className="text-right">{t("teacher.table.level")}</span>
+                {showLevel && <span className="text-right">{t("teacher.table.level")}</span>}
                 <span className="text-right" aria-sort={ariaSort("xp")}>{sortHead("xp", t("teacher.table.xp"))}</span>
                 <span className="text-right" aria-sort={ariaSort("completed")}>{sortHead("completed", t("teacher.table.completed"))}</span>
                 <span className="text-right">{t("teacher.table.inProgress")}</span>
@@ -547,7 +559,7 @@ export default function TeacherPage() {
                 {students.map((s) => (
                   <div
                     key={s.id}
-                    className="relative md:grid md:grid-cols-[1.6fr_0.5fr_0.7fr_0.9fr_0.9fr_1fr_8.5rem] md:items-center gap-3 px-1 md:px-3 py-3 md:hover:bg-panel/60 focus-within:bg-panel/60 focus-within:ring-2 focus-within:ring-primary/30 rounded-xl transition-colors"
+                    className={`relative md:grid ${showLevel ? "md:grid-cols-[1.6fr_0.5fr_0.7fr_0.9fr_0.9fr_1fr_8.5rem]" : "md:grid-cols-[1.6fr_0.7fr_0.9fr_0.9fr_1fr_8.5rem]"} md:items-center gap-3 px-1 md:px-3 py-3 md:hover:bg-panel/60 focus-within:bg-panel/60 focus-within:ring-2 focus-within:ring-primary/30 rounded-xl transition-colors`}
                   >
                     {/* Имя + статус (статус виден на мобиле рядом с именем) */}
                     <div className="flex items-center justify-between gap-2 min-w-0 mb-2 md:mb-0">
@@ -570,6 +582,7 @@ export default function TeacherPage() {
                     </div>
 
                     {/* Метрики: на мобиле — подписи слева, число справа */}
+                    {showLevel && (
                     <div className="flex justify-between md:block md:text-right text-sm">
                       <span className="md:hidden text-muted">
                         {t("teacher.table.level")}
@@ -578,6 +591,7 @@ export default function TeacherPage() {
                         {s.level ?? "—"}
                       </span>
                     </div>
+                    )}
                     <div className="flex justify-between md:block md:text-right text-sm">
                       <span className="md:hidden text-muted">
                         {t("teacher.table.xp")}

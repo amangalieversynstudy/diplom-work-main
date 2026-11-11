@@ -96,6 +96,7 @@ export default function ProfilePage() {
         level: profileBlock.level ?? 1,
         class_role: profileBlock.class_role ?? data.class_role ?? null,
         ai_summons: profileBlock.ai_summons ?? 0,
+        mentor_available: (profileBlock.mentor_available ?? data.mentor_available) !== false,
         hint_scrolls: profileBlock.hint_scrolls ?? 0,
         skeleton_scrolls: profileBlock.skeleton_scrolls ?? 0,
         rank: profileBlock.rank ?? null,
@@ -303,7 +304,7 @@ if (loading) {
                     { key: "ai_summons", Icon: Sparkles, label: t("profile.summons") },
                     { key: "hint_scrolls", Icon: FlaskConical, label: t("codeRunner.items.clarity") },
                     { key: "skeleton_scrolls", Icon: ScrollText, label: t("codeRunner.items.architect") },
-                  ].map(({ key, Icon, label }) => (
+                  ].filter(({ key }) => key !== "ai_summons" || profile?.mentor_available !== false).map(({ key, Icon, label }) => (
                     <li
                       key={key}
                       className="flex flex-col items-center rounded-xl border border-border bg-panel px-1 py-2 text-center"
@@ -316,6 +317,10 @@ if (loading) {
                     </li>
                   ))}
                 </ul>
+                {!(profile?.hint_scrolls || profile?.skeleton_scrolls || (profile?.mentor_available !== false && profile?.ai_summons)) && (
+                  <p className="mt-2 text-xs leading-snug text-muted" data-testid="bag-empty">{t("profile.bagEmpty")}</p>
+                )}
+                <p className="mt-2 text-xs leading-snug text-faint" data-testid="bag-source">{t("profile.bagSource")}</p>
               </div>
 
               <div className="mt-6 pt-6 border-t border-border space-y-3">

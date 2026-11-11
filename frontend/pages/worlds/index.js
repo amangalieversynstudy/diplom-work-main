@@ -8,7 +8,7 @@ import { MapBackdrop, MapTrail } from "../../components/WorldMapParts";
 import { toast } from "sonner";
 import { useDictionary } from "../../lib/i18n";
 import { lockReason, missionTitle } from "../../lib/missions";
-import { Lock, CheckCircle, X as XIcon, Compass, Sword, WandSparkles, TreePine } from "lucide-react";
+import { Lock, CheckCircle, Compass, Sword, WandSparkles, TreePine } from "lucide-react";
 import gsap from "gsap";
 import { prefersReducedMotion } from "../../lib/motion";
 import { mapWalk } from "../../lib/stage";
@@ -320,6 +320,11 @@ export default function Worlds() {
               {worldCopy ? worldsDict.changeClass || "Сменить класс" : worldsDict.pickClass || "Выбрать класс героя"}
             </Link>
           </div>
+          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted" aria-label={worldsDict.legendTitle || "Обозначения на карте"} data-testid="map-legend">
+            <li className="inline-flex items-center gap-1.5"><Sword size={14} className="text-primary" aria-hidden="true" />{worldsDict.statusAvailable || "Доступно"}</li>
+            <li className="inline-flex items-center gap-1.5"><CheckCircle size={14} className="text-primary" aria-hidden="true" />{worldsDict.statusCompleted || "Пройдено"}</li>
+            <li className="inline-flex items-center gap-1.5"><Lock size={14} aria-hidden="true" />{worldsDict.statusLocked || "Закрыто"}</li>
+          </ul>
         </div>
 
         <QuestJournal missions={missions} current={current} />
@@ -428,7 +433,7 @@ export default function Worlds() {
                 const isLocked = statusVal === "locked";
                 const isActive = statusVal === "available";
                 const isCurrent = mission.id === current?.id;
-                const Icon = isCompleted ? CheckCircle : (isLocked ? Lock : XIcon);
+                const Icon = isCompleted ? CheckCircle : (isLocked ? Lock : Sword);
                 const title = missionTitle(mission, language, worldsDict.missionFallback || "Миссия");
                 const statusLabel = isCompleted
                   ? worldsDict.statusCompleted || "Пройдено"

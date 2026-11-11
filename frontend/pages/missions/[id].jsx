@@ -74,6 +74,9 @@ export default function MissionDetail() {
     skeleton_scrolls: 0,
   });
 
+  // Ключ ИИ задан? Нет — Мудреца не предлагаем (до ответа профиля считаем, что есть)
+  const [mentorAvailable, setMentorAvailable] = useState(true);
+
   // Уровень игрока для HUD игровой сцены (Codemancer)
   const [playerLevel, setPlayerLevel] = useState(1);
   // режим просмотра: преподаватель видит миссию глазами ученика, ничего не зарабатывая
@@ -218,6 +221,7 @@ export default function MissionDetail() {
           skeleton_scrolls: p.skeleton_scrolls ?? 0,
         });
         setPlayerLevel(p.level ?? 1);
+        setMentorAvailable(p.mentor_available !== false);
         setPreview(canTeach(userDoc));
       })
       .catch((err) => {
@@ -389,6 +393,7 @@ export default function MissionDetail() {
             preview: isPreview,
             // впервые: всё, что миссия принесла (шаги и бонус); повтор: только бонус за повтор
             xp: result?.first_completion ? result?.xp_earned || 0 : result?.xp_added || 0,
+            classOnly: result?.counts_globally === false,
             stars: result?.stars ?? 0,
             suggestClass,
             leveledUp: Boolean(result?.leveled_up),
@@ -413,7 +418,9 @@ export default function MissionDetail() {
     // ровно столько XP сервер выдал за этот шаг (повторное решение не платит)
     const paid = progress?.preview ? 0 : progress?.xp_added || 0;
     toast.success(
-      paid > 0 ? t("missionPage.toasts.stepDoneXp").replace("{xp}", paid) : t("missionPage.toasts.stepSaved")
+      paid > 0
+        ? t(progress?.counts_globally === false ? "missionPage.toasts.stepDoneClassXp" : "missionPage.toasts.stepDoneXp").replace("{xp}", paid)
+        : t("missionPage.toasts.stepSaved")
     );
     if (paid > 0) setXpPop({ amount: paid, id: Date.now() });
     if (!progress?.preview) announceAchievements(progress?.new_achievements, 900);
@@ -662,9 +669,11 @@ export default function MissionDetail() {
           <button type="button" className={helpButton} disabled={!canHint} onClick={() => askForHelp("hint")}>
             {t("missionPage.helpOffer.hint")} · {inventory.hint_scrolls || 0}
           </button>
-          <button type="button" className={helpButton} disabled={!canMentor} onClick={() => askForHelp("mentor")}>
-            {t("missionPage.helpOffer.mentor")} · {inventory.ai_summons || 0}
-          </button>
+          {mentorAvailable && (
+            <button type="button" className={helpButton} disabled={!canMentor} onClick={() => askForHelp("mentor")}>
+              {t("missionPage.helpOffer.mentor")} · {inventory.ai_summons || 0}
+            </button>
+          )}
         </div>
         {canRescue && (
           <div className="mt-2">
@@ -727,6 +736,7 @@ export default function MissionDetail() {
                   </>
                 )}
               </p>
+              <p className="mt-0.5 text-[11px] text-muted dark:text-straw/70" data-testid="mission-flow">{t("missionPage.flow")}</p>
             </div>
           </div>
           <button
@@ -1063,10 +1073,19 @@ export default function MissionDetail() {
                   />
                 </details>
                 {helpBanner("xl:hidden mx-3 my-2 shrink-0")}
+                {mission?.order === 0 && (
+                  <p
+                    className="mx-3 my-2 shrink-0 rounded-lg border border-border bg-panel px-3 py-2 text-xs leading-snug text-muted"
+                    data-testid="first-code-note"
+                  >
+                    {t("missionPage.firstCodeNote")}
+                  </p>
+                )}
                 <div className="min-h-0 flex-1">
                   <CodeRunnerPanel
                     ref={panelRef}
                     pulseHelp={Boolean(helpOffer)}
+                    mentorAvailable={mentorAvailable}
                     task={activeTask}
                     code={codeValue}
                     onChange={(val) => setCodeDrafts((prev) => ({ ...prev, [activeTask.id]: val }))}

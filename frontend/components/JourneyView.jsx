@@ -269,7 +269,7 @@ export default function JourneyView({ data, mode = "student", backHref }) {
               icon={Sparkles}
               label={t("journey.tiles.performance")}
               value={data.performance.score}
-              hint={
+              hint={`${t("journey.tiles.performanceScale")} · ${
                 data.performance.explain_total > 0
                   ? fmt(t("journey.tiles.performanceHint"), {
                       steps: data.performance.steps_share ?? 0,
@@ -283,7 +283,7 @@ export default function JourneyView({ data, mode = "student", backHref }) {
                       stars: data.performance.stars_earned ?? 0,
                       starsMax: data.performance.stars_max ?? 0,
                     })
-              }
+              }`}
             />
           )}
         </div>

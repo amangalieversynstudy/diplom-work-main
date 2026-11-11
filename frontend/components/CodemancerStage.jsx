@@ -476,6 +476,7 @@ export default function CodemancerStage({
             <rect x="10" y="42" width="40" height="4" fill="#dfe4f0" />
           </svg>
         </div>
+        <div className="flex flex-col gap-1">
         <div className="flex flex-row sm:flex-col gap-3 sm:gap-1.5">
           <div className="flex items-center gap-1.5" title={t("stage.hp")}>
             <Heart size={12} className="text-[#ff5c5c] shrink-0" fill="#ff5c5c" />
@@ -495,6 +496,8 @@ export default function CodemancerStage({
               />
             </div>
           </div>
+        </div>
+        <p className="max-w-[9rem] text-[10px] leading-tight text-[#9fb0d0]">{t("stage.decorNote")}</p>
         </div>
       </div>
 

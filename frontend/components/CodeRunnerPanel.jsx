@@ -75,6 +75,7 @@ function CodeRunnerPanel(
     inventoryCounts = { ai_summons: 0, hint_scrolls: 0, skeleton_scrolls: 0 },
     onInventoryUpdate,
     pulseHelp = false, // после нескольких неудач подсвечиваем зелье и Мудреца
+    mentorAvailable = true, // нет ключа ИИ: Мудреца не предлагаем, чтобы не вести ученика в тупик
   },
   ref
 ) {
@@ -508,21 +509,22 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
           >
             <Scroll size={14} aria-hidden="true" />
             <span aria-hidden="true">{inventoryCounts?.skeleton_scrolls || 0}</span>
-            <span className="hidden 2xl:inline" aria-hidden="true">{t("codeRunner.items.architectShort")}</span>
+            <span className="text-[11px]" aria-hidden="true">{t("codeRunner.items.architectShort")}</span>
           </button>
 
           <button
             onClick={handleHintScroll}
             disabled={usingItem || !inventoryCounts?.hint_scrolls || !hintAvailable}
             className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors ${inventoryCounts?.hint_scrolls > 0 && hintAvailable ? "text-[#98c379] hover:bg-[#333] cursor-pointer" : "text-[#87a096] cursor-not-allowed"} ${pulseHelp && hintAvailable && inventoryCounts?.hint_scrolls > 0 ? pulse : ""}`}
-            title={hintAvailable ? t("codeRunner.items.clarity") : t("codeRunner.items.noHint")}
-            aria-label={`${t("codeRunner.items.clarityCount").replace("{n}", inventoryCounts?.hint_scrolls || 0)}${hintAvailable ? "" : `. ${t("codeRunner.items.noHint")}`}`}
+            title={hintAvailable ? t("codeRunner.items.clarity") : t(mentorAvailable ? "codeRunner.items.noHint" : "codeRunner.items.noHintAsk")}
+            aria-label={`${t("codeRunner.items.clarityCount").replace("{n}", inventoryCounts?.hint_scrolls || 0)}${hintAvailable ? "" : `. ${t(mentorAvailable ? "codeRunner.items.noHint" : "codeRunner.items.noHintAsk")}`}`}
           >
             <Lightbulb size={14} aria-hidden="true" />
             <span aria-hidden="true">{inventoryCounts?.hint_scrolls || 0}</span>
-            <span className="hidden 2xl:inline" aria-hidden="true">{t("codeRunner.items.clarityShort")}</span>
+            <span className="text-[11px]" aria-hidden="true">{t("codeRunner.items.clarityShort")}</span>
           </button>
 
+          {mentorAvailable && (
           <button
             onClick={() => setMentorOpen(true)}
             className={`flex items-center gap-1.5 px-2 py-2 sm:py-1 text-xs rounded transition-colors text-[#c678dd] hover:bg-[#333] cursor-pointer ${pulseHelp && inventoryCounts?.ai_summons > 0 ? pulse : ""}`}
@@ -531,8 +533,9 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
           >
             <Bot size={14} aria-hidden="true" />
             <span aria-hidden="true">{inventoryCounts?.ai_summons || 0}</span>
-            <span className="hidden 2xl:inline" aria-hidden="true">{t("codeRunner.items.mentorShort")}</span>
+            <span className="text-[11px]" aria-hidden="true">{t("codeRunner.items.mentorShort")}</span>
           </button>
+          )}
         </div>
 
         <div className="flex-1 min-w-0" />
@@ -583,11 +586,11 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
 
       {/* Breadcrumbs */}
       <div className="hidden sm:flex items-center gap-1.5 px-4 py-1.5 text-xs text-[#c6d6cf] bg-[#0b1a17] border-b border-[#333] border-l select-none shadow-sm z-10">
-        <span className="hover:text-white cursor-pointer">{t("codeRunner.crumbRoot")}</span>
+        <span>{t("codeRunner.crumbRoot")}</span>
         <span className="opacity-50">&gt;</span>
-        <span className="hover:text-white cursor-pointer">{t("codeRunner.crumbMission")}</span>
+        <span>{t("codeRunner.crumbMission")}</span>
         <span className="opacity-50">&gt;</span>
-        <span className="hover:text-white cursor-pointer">{t("codeRunner.crumbFile")}</span>
+        <span>{t("codeRunner.crumbFile")}</span>
       </div>
 
       {openedHints.length > 0 && (
@@ -692,14 +695,16 @@ ${ANSI_YELLOW}${header}${level}${ANSI_RESET}`);
       </div>
 
       {/* AI-наставник (Sage) — контекстный чат, выезжает справа */}
-      <AIMentorChat
-        open={mentorOpen}
-        onClose={() => setMentorOpen(false)}
-        task={task}
-        code={code}
-        summons={inventoryCounts?.ai_summons || 0}
-        onInventoryUpdate={onInventoryUpdate}
-      />
+      {mentorAvailable && (
+        <AIMentorChat
+          open={mentorOpen}
+          onClose={() => setMentorOpen(false)}
+          task={task}
+          code={code}
+          summons={inventoryCounts?.ai_summons || 0}
+          onInventoryUpdate={onInventoryUpdate}
+        />
+      )}
     </div>
   );
 }

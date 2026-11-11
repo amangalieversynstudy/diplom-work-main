@@ -239,7 +239,12 @@ class RegisterView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         """Return JSON with created user payload and 201 status."""
         response = super().create(request, *args, **kwargs)
-        return Response(response.data, status=status.HTTP_201_CREATED)
+        data = dict(response.data)
+        # tells the client whether a letter really went out (otherwise the account is already active)
+        data["verification_email_sent"] = bool(
+            email_verification_works() and (data.get("email") or request.data.get("email"))
+        )
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class MeView(generics.RetrieveAPIView):

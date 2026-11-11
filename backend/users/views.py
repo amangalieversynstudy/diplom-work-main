@@ -42,6 +42,13 @@ def _parse_bool(value):
 # user management goes through the Django admin.
 
 
+def _mentor_available():
+    """True when the AI mentor has a key (settings or env); the same check the mentor views make."""
+    import os
+
+    return bool(getattr(settings, "GEMINI_API_KEY", None) or os.environ.get("GEMINI_API_KEY"))
+
+
 class ProfileMeView(APIView):
     """Retrieve or update the authenticated user's profile.
 
@@ -69,6 +76,8 @@ class ProfileMeView(APIView):
             "bio": profile.bio,
             "class_role": profile.class_role_id,
             "ai_summons": profile.ai_summons,
+            # is the AI mentor configured at all? Without a key the Sage cannot answer, so the client hides the buttons
+            "mentor_available": _mentor_available(),
             "hint_scrolls": profile.hint_scrolls,
             "skeleton_scrolls": profile.skeleton_scrolls,
             # ранг пользователя для отображения в профиле

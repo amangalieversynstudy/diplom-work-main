@@ -57,7 +57,7 @@ export default function Register() {
     setLoading(true);
     const trimmedEmail = email.trim();
     try {
-      await registerUser({
+      const created = await registerUser({
         username,
         email: trimmedEmail,
         password,
@@ -69,7 +69,8 @@ export default function Register() {
       clearPlayerClass();
       if (role === "student") markOnboardingPending();
 
-      if (trimmedEmail) {
+      // Письмо реально ушло только если сервер так сказал; иначе аккаунт уже активен и обещать письмо нельзя.
+      if (trimmedEmail && created?.verification_email_sent !== false) {
         // Email указан → аккаунт is_active=False до подтверждения по ссылке.
         // Авто-логин делать НЕЛЬЗЯ — он вернёт 401 "No active account".
         toast.success(
@@ -230,6 +231,12 @@ export default function Register() {
                 <FieldError k="teacher_code" />
                 <FieldError k="role" />
               </label>
+            ) : null}
+
+            {role === "student" ? (
+              <p className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs leading-relaxed text-muted" data-testid="privacy-line">
+                {extra.privacyLine}
+              </p>
             ) : null}
 
             {/* согласие: одна строка и подробности по запросу, а не абзац мелкого текста посреди формы */}

@@ -108,7 +108,7 @@ export default function Leaderboard() {
   ];
 
   const meInList = meId != null && data.some((entry) => entry.user === meId);
-  const meOutside = meId != null && !loading && data.length > 0 && !meInList && scope === GLOBAL;
+  const meOutside = meId != null && !(meInfo && canTeach(meInfo)) && !loading && data.length > 0 && !meInList && scope === GLOBAL;
 
   // «Показать меня»: прокрутка к своей строке и короткая подсветка. Данные уже загружены,
   // новых запросов нет; если ученика нет в списке, прокручиваем к отдельной строке внизу.

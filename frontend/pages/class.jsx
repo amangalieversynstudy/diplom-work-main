@@ -132,7 +132,7 @@ export default function ChooseClassPage() {
         {/* Header */}
         <header className="mb-12 text-center max-w-3xl mx-auto border-b border-border pb-10">
           <p className="text-xs uppercase tracking-widest text-primary mb-4 font-bold">
-            {hasClass ? (dict.classPage?.changePath || "Смена пути") : (dict.classPage?.alignment || "Выравнивание")}
+            {dict.classPage?.alignment || "Класс героя"}
           </p>
           <h1 className="text-4xl md:text-6xl font-title text-text mb-6">
             {hasClass ? (dict.classPage?.changeClass || "Сменить класс") : (dict.classPage?.tree || "Древо Классов")}
@@ -141,6 +141,12 @@ export default function ChooseClassPage() {
             {hasClass
               ? (dict.classPage?.treeChange || "Перевыбери свой путь. Все ветви открыты — выбирай, во что хочешь развиваться дальше.")
               : (dict.classPage?.treeFresh || "Начни с базовой магии Python. Ветви Django и DevOps откроются после освоения корня.")}
+          </p>
+          <p className="mt-4 text-sm text-muted">
+            {dict.classPage?.teacherCodeHint || "Ищете класс преподавателя?"}{" "}
+            <Link href="/join" className="font-semibold text-primary underline-offset-4 hover:underline">
+              {dict.classPage?.teacherCodeLink || "Введите код здесь"}
+            </Link>
           </p>
         </header>
 

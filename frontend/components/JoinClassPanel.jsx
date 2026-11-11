@@ -64,7 +64,10 @@ export default function JoinClassPanel({ initialCode = "" }) {
     setBusy(true);
     try {
       await Classes.join(info.code);
-      toast.success(fill(copy.joined || "Вы в классе «{title}»", { title: info.title }));
+      toast.success(fill(copy.joined || "Вы в классе «{title}»", { title: info.title }), {
+        description: fill(copy.joinedWhere || "Курс «{title}» появился на карте: его миссии стоят среди остальных.", { title: info.title }),
+        duration: 10000,
+      });
       router.push("/worlds");
     } catch (error) {
       const detail = error?.response?.data?.detail;
@@ -126,14 +129,26 @@ export default function JoinClassPanel({ initialCode = "" }) {
           </Button>
         </form>
       ) : info.own ? (
-        <p className="text-sm text-text">{copy.own || "Это ваш собственный класс."}</p>
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-text">{copy.own || "Это ваш собственный класс."}</p>
+          <div className="flex gap-3">
+            <Button variant="rune" onClick={() => router.push("/worlds")}>{copy.toMap || "На карту"}</Button>
+            <Button variant="outline" onClick={() => { setInfo(null); setProblem(""); }}>{copy.otherCode || "Ввести другой код"}</Button>
+          </div>
+        </div>
       ) : info.joined ? (
         <div className="flex flex-col gap-3">
           <p className="text-sm text-text">{fill(copy.already || "Вы уже в классе «{title}».", { title: info.title })}</p>
           <Button variant="rune" onClick={() => router.push("/worlds")}>{copy.toMap || "На карту"}</Button>
         </div>
       ) : !info.open ? (
-        <p className="text-sm text-text">{copy.closed || "Набор в этот класс закрыт. Спросите преподавателя."}</p>
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-text">{copy.closed || "Набор в этот класс закрыт. Спросите преподавателя."}</p>
+          <div className="flex gap-3">
+            <Button variant="rune" onClick={() => router.push("/worlds")}>{copy.toMap || "На карту"}</Button>
+            <Button variant="outline" onClick={() => { setInfo(null); setProblem(""); }}>{copy.otherCode || "Ввести другой код"}</Button>
+          </div>
+        </div>
       ) : (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-text">

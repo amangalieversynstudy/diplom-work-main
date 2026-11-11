@@ -13,6 +13,8 @@ import TransitionLink from "./TransitionLink";
 import { canTeach } from "../lib/roles";
 import { VIEW_MODE_EVENT, isStudentView, setStudentView } from "../lib/viewMode";
 import StreakReminder from "./StreakReminder";
+import FirstVisitTips from "./FirstVisitTips";
+import HelpGlossary from "./HelpGlossary";
 import { motion } from "framer-motion";
 
 const navLinks = [
@@ -424,6 +426,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
                 {t("layout.register")}
               </TransitionLink>
             )}
+            <HelpGlossary />
             <button
               ref={burgerRef}
               onClick={() => setIsMenuOpen(true)}
@@ -443,6 +446,7 @@ export default function Layout({ children, hideFooter, noBottomPadding, fullBlee
       </header>
 
       <StreakReminder />
+      <FirstVisitTips enabled={Boolean(isAuthenticated && !isTeacherAccount)} />
 
       {/* «Глазами студента»: всегда видно, в каком режиме преподаватель, и путь назад в один клик */}
       {isAuthenticated && isTeacherAccount && studentView && !isMenuOpen && (

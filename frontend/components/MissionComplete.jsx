@@ -146,6 +146,9 @@ export default function MissionComplete({ data, onClose, onMap }) {
           <LootRow icon={Sparkles} strong>
             {data.xp > 0 ? t("missionPage.complete.xp").replace("{xp}", xpShown) : t("missionPage.complete.noXp")}
           </LootRow>
+          {data.classOnly ? (
+            <LootRow icon={Sparkles}>{t("missionPage.complete.classOnly")}</LootRow>
+          ) : null}
           {data.leveledUp && data.newLevel ? (
             <LootRow icon={TrendingUp}>
               {t("missionPage.complete.levelUp").replace("{level}", data.newLevel)}

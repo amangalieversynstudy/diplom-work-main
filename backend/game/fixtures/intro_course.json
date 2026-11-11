@@ -150,6 +150,16 @@
       "body_en": "<p>Which Python type stores the value <code>\"Hello\"</code>?</p>",
       "body_ru": "<p>Какой тип Python хранит значение <code>\"Привет\"</code>?</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Посмотри, что именно записано в кавычках: число, обычный текст или значение «да/нет»?",
+            "en": "Look at what is written inside the quotes: a number, ordinary text, or a yes/no value?"
+          },
+          {
+            "ru": "Целые числа и дроби пишут без кавычек, а значения «да/нет» — это True и False. Какой тип остаётся для обычных слов?",
+            "en": "Whole numbers and decimals are written without quotes, and yes/no values are True and False. Which type is left for ordinary words?"
+          }
+        ],
         "correct_answer": "str",
         "options": [
           {"value": "str",   "label": "str"},
@@ -218,6 +228,16 @@
       "body_en": "<p>Which keyword checks one more condition if the previous one turned out false?</p>",
       "body_ru": "<p>Какое ключевое слово проверяет ещё одно условие, если предыдущее оказалось ложным?</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Представь цепочку проверок: нужна вторая, третья проверка, которая выполняется, только если предыдущие не сработали.",
+            "en": "Picture a chain of checks: you need a second or third check that runs only if the earlier ones did not fire."
+          },
+          {
+            "ru": "Слово склеено из двух: «иначе» и «если». В Python его пишут одним коротким словом, без пробела.",
+            "en": "The word is two words glued together: 'else' and 'if'. Python writes it as one short word, with no space."
+          }
+        ],
         "correct_answer": "elif",
         "options": [
           {"value": "elif",   "label": "elif"},
@@ -318,6 +338,16 @@
       "body_en": "<p>What will your function return for <code>mana_status({{probe}})</code>?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>Что вернёт твоя функция при вызове <code>mana_status({{probe}})</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 22,
         "correct_answer": "{{right}}",
@@ -434,6 +464,16 @@
       "body_en": "<p>Which keyword exits a loop, leaving the rest of the program running?</p>",
       "body_ru": "<p>Какое ключевое слово выходит из цикла, оставляя остальной код программы работать дальше?</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Нужно прекратить цикл целиком, а не пропустить один шаг. Чем «выйти из цикла» отличается от «перейти к следующему кругу»?",
+            "en": "You need to stop the whole loop, not just skip one lap. How is leaving a loop different from moving on to the next lap?"
+          },
+          {
+            "ru": "Одно из слов только пропускает текущий круг, другое завершает программу, третье возвращает значение из функции. Нужно то, что останавливает именно цикл, а код после него продолжает работать.",
+            "en": "One of the words only skips the current lap, another ends the whole program, a third hands a value back from a function. You need the one that stops just the loop while the code after it keeps running."
+          }
+        ],
         "correct_answer": "break",
         "options": [
           {"value": "break",    "label": "break"},
@@ -534,6 +574,16 @@
       "body_en": "<p>How many times does the body of <code>for i in range(1, {{n}} + 1)</code> run?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>Сколько раз выполнится тело цикла <code>for i in range(1, {{n}} + 1)</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 32,
         "correct_answer": "{{right}}",
@@ -650,6 +700,16 @@
       "body_en": "<p>Which keyword is used to define a function in Python?</p>",
       "body_ru": "<p>Какое ключевое слово используется для определения функции в Python?</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Вспомни, как начиналась строка с названием функции и скобками в уроке про функции.",
+            "en": "Remember how the line with a function's name and parentheses began in the lesson about functions."
+          },
+          {
+            "ru": "Нужное слово состоит всего из трёх букв. Остальные варианты похожи на слова из других языков программирования.",
+            "en": "The word you need has only three letters. The other options look like words from other programming languages."
+          }
+        ],
         "correct_answer": "def",
         "options": [
           {"value": "def",      "label": "def"},
@@ -756,6 +816,16 @@
       "body_en": "<p>What is <code>result</code> in your function after two turns of the loop for <code>power({{base}}, 5)</code>?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>Чему равно <code>result</code> в твоей функции после двух оборотов цикла при вызове <code>power({{base}}, 5)</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 42,
         "correct_answer": "{{right}}",
@@ -894,6 +964,16 @@
       "body_en": "<p>Which method turns <code>\"fire\"</code> into <code>\"FIRE\"</code>?</p>",
       "body_ru": "<p>Какой метод превратит <code>\"fire\"</code> в <code>\"FIRE\"</code>?</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Сравни «fire» и «FIRE»: что изменилось с каждой буквой?",
+            "en": "Compare \"fire\" and \"FIRE\": what happened to each letter?"
+          },
+          {
+            "ru": "Нужен метод, который делает все буквы заглавными. В его названии есть английское слово, означающее «верхний».",
+            "en": "You need the method that turns every letter into a capital. Its name contains the English word that means 'top'."
+          }
+        ],
         "correct_answer": "upper",
         "options": [
           {"value": "upper", "label": ".upper()"},
@@ -994,6 +1074,16 @@
       "body_en": "<p>How many characters are in the string <code>battle_cry(\"{{name}}\")</code> returns?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>Сколько символов в строке, которую вернёт <code>battle_cry(\"{{name}}\")</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 52,
         "correct_answer": "{{right}}",
@@ -1132,6 +1222,16 @@
       "body_en": "<p>Which method adds an item to the end of a list?</p>",
       "body_ru": "<p>Какой метод добавляет элемент в конец списка?</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Список похож на очередь: новый элемент нужно положить в самый конец, а не в середину или в начало.",
+            "en": "A list is like a queue: the new item goes to the very end, not into the middle or the beginning."
+          },
+          {
+            "ru": "Ищи метод, название которого означает «присоединить сзади». Метод, который вставляет на выбранное место, не подходит, а часть имён в списке взята из других типов данных.",
+            "en": "Look for a method whose name means 'attach at the back'. A method that inserts at a chosen position does not fit, and some names in the list belong to other data types."
+          }
+        ],
         "correct_answer": "append",
         "options": [
           {"value": "append", "label": ".append()"},
@@ -1232,6 +1332,16 @@
       "body_en": "<p>What would <code>count_big({{numbers}})</code> return if the condition became <code>n &gt; {{t}}</code>?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>Что вернёт <code>count_big({{numbers}})</code>, если заменить условие на <code>n &gt; {{t}}</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 62,
         "correct_answer": "{{right}}",
@@ -1376,6 +1486,16 @@
       "body_en": "<p>How do you read the value for key <code>\"hp\"</code> from a dict named <code>hero</code>?</p>",
       "body_ru": "<p>Как получить значение по ключу <code>\"hp\"</code> из словаря <code>hero</code>?</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Словарь хранит пары «ключ → значение». Как ты обращаешься к элементу списка по номеру?",
+            "en": "A dictionary stores \"key -> value\" pairs. How do you reach a list item by its number?"
+          },
+          {
+            "ru": "К значению словаря обращаются похоже на элемент списка, только вместо номера в квадратных скобках пишут сам ключ. Точки и круглых скобок здесь нет.",
+            "en": "A dictionary value is reached much like a list item, but you put the key in square brackets instead of a number. There is no dot and no round bracket."
+          }
+        ],
         "correct_answer": "hero[hp]",
         "options": [
           {"value": "hero[hp]", "label": "hero[\"hp\"]"},
@@ -1476,6 +1596,16 @@
       "body_en": "<p>How many values does <code>for gold in heroes.values()</code> go through if <code>heroes = {{heroes}}</code>?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>Сколько значений обойдёт цикл <code>for gold in heroes.values()</code>, если <code>heroes = {{heroes}}</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 72,
         "correct_answer": "{{right}}",
@@ -1689,6 +1819,16 @@
       "body_en": "<p>What does <code>champion({{party}})</code> return?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>Что вернёт <code>champion({{party}})</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 81,
         "correct_answer": "{{right}}",

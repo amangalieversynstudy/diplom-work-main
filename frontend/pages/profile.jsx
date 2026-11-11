@@ -7,12 +7,14 @@ import Card from "../components/Card";
 import ClassPortrait from "../components/ClassPortrait";
 import AchievementsPanel from "../components/AchievementsPanel";
 import TeacherAccessCard from "../components/TeacherAccessCard";
+import ConfirmModal from "../components/ConfirmModal";
 import { clearPlayerClass } from "../lib/class";
 import { canTeach } from "../lib/roles";
 import { titleFor } from "../lib/titles";
 import {
   Profile as ProfileAPI,
   Achievements as AchievementsAPI,
+  Classes as ClassesAPI,
   revokeSession,
 } from "../lib/api";
 import logger from "../lib/logger";
@@ -29,6 +31,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [classes, setClasses] = useState([]);
+  const [confirm, setConfirm] = useState(null);
 
   const [formData, setFormData] = useState({
     username: "",
@@ -38,6 +42,7 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchProfile();
     fetchAchievements();
+    fetchClasses();
     // загрузка один раз при открытии страницы
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -50,6 +55,26 @@ export default function ProfilePage() {
       // Достижения — украшение профиля, а не критичный путь: при ошибке просто
       // не показываем секцию, не роняя страницу.
       logger.error("Achievements load failed:", error);
+    }
+  };
+
+  // Классы, в которые ученик вступил по коду: отсюда из них можно выйти (согласие на исследование обещает это).
+  const fetchClasses = async () => {
+    try {
+      const data = await ClassesAPI.mine();
+      setClasses(Array.isArray(data) ? data : []);
+    } catch (error) {
+      logger.error("Classes load failed:", error);
+    }
+  };
+
+  const handleLeaveClass = async (row) => {
+    try {
+      await ClassesAPI.leave(row.track_id);
+      toast.success(t("profile.myClasses.left"));
+      await fetchClasses();
+    } catch (error) {
+      toast.error(serverMessage(error, t("profile.myClasses.leaveFail")));
     }
   };
 
@@ -390,6 +415,45 @@ if (loading) {
                 </label>
               </div>
             </Card>
+            {profile && !profile.can_teach && classes.length > 0 ? (
+              <Card variant="scroll">
+                <h2 className="font-title text-xl text-text flex items-center">
+                  <ScrollText size={20} className="mr-2 text-primary" /> {t("profile.myClasses.title")}
+                </h2>
+                <ul className="mt-4 space-y-3">
+                  {classes.map((row) => (
+                    <li
+                      key={row.track_id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-panel p-4"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium text-text break-words">{row.title}</p>
+                        {row.teacher ? (
+                          <p className="text-xs text-muted mt-1">
+                            {t("profile.myClasses.teacher").replace("{name}", row.teacher)}
+                          </p>
+                        ) : null}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setConfirm({
+                            title: t("profile.myClasses.confirmTitle").replace("{title}", row.title),
+                            message: t("profile.myClasses.confirmBody"),
+                            confirmLabel: t("profile.myClasses.leave"),
+                            danger: true,
+                            onConfirm: () => handleLeaveClass(row),
+                          })
+                        }
+                      >
+                        {t("profile.myClasses.leave")}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            ) : null}
             {/* ученик, который ведёт группу, включает роль преподавателя кодом пилота */}
             {profile && !profile.can_teach ? <TeacherAccessCard t={t} /> : null}
             {/* достижения стоят в правой колонке под настройками: колонка не «висит в пустоте» рядом с высоким листом героя */}
@@ -397,6 +461,7 @@ if (loading) {
           </div>
         </div>
       </div>
+      <ConfirmModal data={confirm} onClose={() => setConfirm(null)} />
     </Layout>
   );
 }

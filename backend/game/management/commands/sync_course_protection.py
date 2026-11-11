@@ -17,6 +17,9 @@ placeholders in the text, the starter and the hidden check. Order, rewards and p
 Explain questions that are missing are created, with the ids the fixtures give them (only when their
 mission exists); one whose data differs from the fixture is brought in line, because its variants have to
 match the code step's variants (the question must use the learner's own numbers). Only steps of the built-in fixtures are considered.
+
+Hints (``data.hints``, what the Clarity potion shows) are added to every built-in step that has none yet,
+quiz steps included; only the ``hints`` key is written, so a step's other data and the learners' progress stay as they are.
 """
 
 import json
@@ -55,6 +58,19 @@ def explain_steps():
             if fields.get("data", {}).get("kind") == "explain":
                 steps[row["pk"]] = fields
     return steps
+
+
+def fixture_hints():
+    """{pk: hints} of every fixture step that carries ``data.hints`` (code steps, quiz and explain steps)."""
+    found = {}
+    for name in FIXTURES:
+        for row in json.loads((FIXTURE_DIR / name).read_text(encoding="utf-8")):
+            if row["model"] != "game.missiontask":
+                continue
+            hints = row["fields"].get("data", {}).get("hints")
+            if hints:
+                found[row["pk"]] = hints
+    return found
 
 
 class Command(BaseCommand):
@@ -116,5 +132,20 @@ class Command(BaseCommand):
                     task.save()
             else:
                 self.stdout.write(f"explain step {pk}: present")
+        # Hints (the potion's text) are copied into the data of steps that have none yet; nothing else
+        # in the step and none of the learners' progress is touched. A step whose author already wrote
+        # hints keeps them unless --force is given.
+        for pk, hints in sorted(fixture_hints().items()):
+            task = MissionTask.objects.filter(pk=pk).first()
+            if task is None:
+                continue
+            current = task.data if isinstance(task.data, dict) else {}
+            if current.get("hints") == hints or (current.get("hints") and not force):
+                continue
+            self.stdout.write(f"step {pk}: hints {'would be added' if dry else 'added'}")
+            changed += 1
+            if not dry:
+                task.data = {**current, "hints": hints}
+                task.save(update_fields=["data"])
         verb = "would change" if dry else "changed"
         self.stdout.write(self.style.SUCCESS(f"{verb} {changed} step(s)"))

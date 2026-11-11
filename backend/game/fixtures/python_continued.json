@@ -88,6 +88,16 @@
       "xp_reward": 10,
       "is_required": true,
       "data": {
+        "hints": [
+          {
+            "ru": "Считай позиции букв с нуля: самая первая буква имеет номер 0, следующая — 1, и так далее.",
+            "en": "Count the positions of the letters from zero: the very first letter is number 0, the next is 1, and so on."
+          },
+          {
+            "ru": "Срез [1:4] берёт символы с позиции 1 до позиции 3 включительно: позиция 4 уже не входит. Выпиши эти три буквы подряд.",
+            "en": "The slice [1:4] takes the characters from position 1 up to position 3 inclusive: position 4 is not included. Write those three letters one after another."
+          }
+        ],
         "correct_answer": "yth",
         "options": [
           {
@@ -197,6 +207,16 @@
       "body_en": "<p>How many dots are in the string <code>initials(\"{{name}}\")</code> returns?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>Сколько точек будет в строке, которую вернёт <code>initials(\"{{name}}\")</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 92,
         "correct_answer": "{{right}}",
@@ -339,6 +359,16 @@
       "xp_reward": 10,
       "is_required": true,
       "data": {
+        "hints": [
+          {
+            "ru": "Вспомни, что делает set с повторяющимися элементами.",
+            "en": "Remember what set does with repeated elements."
+          },
+          {
+            "ru": "Множество хранит только уникальные значения: повторы схлопываются в одно. Выпиши, какие значения останутся, и посчитай их.",
+            "en": "A set keeps only unique values: repeats collapse into one. Write down which values remain and count them."
+          }
+        ],
         "correct_answer": "2",
         "options": [
           {
@@ -448,6 +478,16 @@
       "body_en": "<p>What does <code>unique_count({{items}} + {{items}})</code> return: the list joined to itself?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>Что вернёт <code>unique_count({{items}} + {{items}})</code>: список приписан сам к себе?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 102,
         "correct_answer": "{{right}}",
@@ -590,6 +630,16 @@
       "xp_reward": 10,
       "is_required": true,
       "data": {
+        "hints": [
+          {
+            "ru": "Нужен блок, который выполнится и когда ошибка была, и когда её не было. Например, чтобы закрыть файл в любом случае.",
+            "en": "You need the block that runs both when an error happened and when it did not, for example to close a file in every case."
+          },
+          {
+            "ru": "Три из четырёх блоков зависят от того, была ли ошибка. Нужен тот, что стоит в самом конце конструкции и не зависит от результата.",
+            "en": "Three of the four blocks depend on whether an error happened. You need the one that sits at the very end of the construction and does not care about the result."
+          }
+        ],
         "correct_answer": "finally",
         "options": [
           {
@@ -711,6 +761,16 @@
       "body_en": "<p>What will your function return for <code>safe_divide({{a}}, {{b}})</code>?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>Что вернёт твоя функция при вызове <code>safe_divide({{a}}, {{b}})</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 112,
         "correct_answer": "{{right}}",
@@ -859,6 +919,16 @@
       "xp_reward": 10,
       "is_required": true,
       "data": {
+        "hints": [
+          {
+            "ru": "Сначала выпиши, какие числа перебирает range(3) и с какого он начинает.",
+            "en": "First write down which numbers range(3) goes through and where it starts."
+          },
+          {
+            "ru": "Для каждого такого числа посчитай x * 2 и собери результаты в список по порядку. Помни: range(3) начинается с нуля и до трёх не доходит.",
+            "en": "For each of those numbers compute x * 2 and collect the results in a list, in order. Remember: range(3) starts at zero and stops before three."
+          }
+        ],
         "correct_answer": "[0, 2, 4]",
         "options": [
           {
@@ -968,6 +1038,16 @@
       "body_en": "<p>How many elements are in the list <code>squares_of_evens({{numbers}})</code> returns?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>Сколько элементов будет в списке, который вернёт <code>squares_of_evens({{numbers}})</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 122,
         "correct_answer": "{{right}}",
@@ -1110,6 +1190,16 @@
       "xp_reward": 10,
       "is_required": true,
       "data": {
+        "hints": [
+          {
+            "ru": "Подумай, что тебе нужно: не весь модуль, а одна конкретная функция, которую можно звать по короткому имени.",
+            "en": "Think about what you need: not the whole module, but one particular function you can call by its short name."
+          },
+          {
+            "ru": "Порядок слов важен: сначала говорят, откуда берём (модуль), потом — что именно берём. Читай строку как обычное английское предложение.",
+            "en": "Word order matters: first say where you take it from (the module), then what exactly you take. Read the line as an ordinary English sentence."
+          }
+        ],
         "correct_answer": "from math import sqrt",
         "options": [
           {
@@ -1219,6 +1309,16 @@
       "body_en": "<p>How many keys are in the dict <code>word_count(\"{{text}}\")</code> returns?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>Сколько ключей будет в словаре, который вернёт <code>word_count(\"{{text}}\")</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 132,
         "correct_answer": "{{right}}",
@@ -1361,6 +1461,16 @@
       "xp_reward": 10,
       "is_required": true,
       "data": {
+        "hints": [
+          {
+            "ru": "Метод с двойными подчёркиваниями по краям Python вызывает сам, в тот момент, когда ты пишешь Hero(...).",
+            "en": "A method with double underscores on both sides is called by Python itself, the moment you write Hero(...)."
+          },
+          {
+            "ru": "Вспомни, какой метод ты писал внутри каждого класса, чтобы сразу задать герою имя и здоровье. Остальные имена в списке выдуманы.",
+            "en": "Remember which method you wrote inside every class to give the hero a name and health right away. The other names in the list are made up."
+          }
+        ],
         "correct_answer": "__init__",
         "options": [
           {
@@ -1487,6 +1597,16 @@
       "body_en": "<p>A hero has <code>hp = {{hp}}</code>. Each hit takes {{d}}, hits in a row: {{times}}. What is <code>hero.hp</code> in your implementation?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>У героя <code>hp = {{hp}}</code>. Каждый удар отнимает {{d}}, ударов подряд: {{times}}. Чему будет равно <code>hero.hp</code> в твоей реализации?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 142,
         "correct_answer": "{{right}}",
@@ -1641,6 +1761,16 @@
       "xp_reward": 10,
       "is_required": true,
       "data": {
+        "hints": [
+          {
+            "ru": "У родителя тоже есть свои данные и своя первоначальная настройка. Кто должен её выполнить, когда создаётся наследник?",
+            "en": "The parent has its own data and its own initial setup too. Who has to run it when a child object is created?"
+          },
+          {
+            "ru": "Этот вызов ничего не удаляет и ничего не копирует, а программа спокойно запустится и без него. Подумай, у кого ещё есть свои поля, которые кто-то должен задать.",
+            "en": "This call does not delete or copy anything, and the program would start without it too. Think about who else has fields of its own that someone has to set."
+          }
+        ],
         "correct_answer": "Чтобы родитель настроил свои данные",
         "options": [
           {
@@ -1761,6 +1891,16 @@
       "body_en": "<p>What string does <code>describe()</code> return for the mage <code>Mage(\"{{name}}\", {{hp}}, {{mana}})</code>?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>Какую строку вернёт <code>describe()</code> у мага <code>Mage(\"{{name}}\", {{hp}}, {{mana}})</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 152,
         "correct_answer": "{{right}}",
@@ -1915,6 +2055,16 @@
       "xp_reward": 10,
       "is_required": true,
       "data": {
+        "hints": [
+          {
+            "ru": "Посмотри на пару «класс героя → суммарное здоровье»: что здесь служит ключом, а что значением?",
+            "en": "Look at the pair \"hero class -> total health\": what is the key here and what is the value?"
+          },
+          {
+            "ru": "Нужен тип, который хранит пары и находит значение по ключу. Остальные варианты хранят одно значение или упорядоченный набор без ключей.",
+            "en": "You need a type that stores pairs and finds the value by its key. The other options hold a single value or an ordered set without keys."
+          }
+        ],
         "correct_answer": "dict",
         "options": [
           {
@@ -2029,6 +2179,16 @@
       "body_en": "<p>How many keys are in the dict your function returns if the heroes' classes are <code>{{classes}}</code>?</p><p>This is a question about your solution: answer it without running the code.</p>",
       "body_ru": "<p>Сколько ключей будет в словаре, который вернёт твоя функция, если у героев такие классы: <code>{{classes}}</code>?</p><p>Это вопрос о твоём решении: ответь на него, не запуская код.</p>",
       "data": {
+        "hints": [
+          {
+            "ru": "Перечитай свой код из прошлого шага: найди строку, о которой спрашивают.",
+            "en": "Reread your code from the previous step and find the line the question is about."
+          },
+          {
+            "ru": "Мысленно выполни программу по шагам со значениями из вопроса и следи, как меняется значение. Не запускай код: проверь себя в уме.",
+            "en": "Run the program in your head step by step with the values from the question and watch how the value changes. Do not run the code: check yourself mentally."
+          }
+        ],
         "kind": "explain",
         "about": 162,
         "correct_answer": "{{right}}",

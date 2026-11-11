@@ -56,6 +56,8 @@ export default function MissionDetail() {
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [taskProgress, setTaskProgress] = useState({});
   const [rescueTried, setRescueTried] = useState({});
+  const [quizHints, setQuizHints] = useState({}); // открытые подсказки к тестовым шагам: { taskId: [{text, level, levels}] }
+  const [quizItemBusy, setQuizItemBusy] = useState(false);
   const [codeDrafts, setCodeDrafts] = useState({});
   const [quizAnswers, setQuizAnswers] = useState({});
   const [savingTaskId, setSavingTaskId] = useState(null);
@@ -602,7 +604,33 @@ export default function MissionDetail() {
   const helpOffer = taskProgress[activeTaskId]?.help_offer;
   // Кнопки баннера делают то же, что значки над редактором. На телефоне сначала
   // открываем вкладку с кодом: подсказка печатается в терминал, и её надо увидеть.
+  // У теста нет редактора и терминала (панель кода не смонтирована): подсказку просим у сервера
+  // тем же запросом и показываем прямо в карточке вопроса.
+  const spendQuizHint = async (itemType) => {
+    if (quizItemBusy || !activeTaskId) return;
+    setQuizItemBusy(true);
+    try {
+      const res = await Profile.consumeItem(itemType, activeTaskId);
+      if (itemType === "hint_scrolls" && typeof res?.remaining === "number") {
+        handleInventoryUpdate("hint_scrolls", res.remaining);
+      }
+      if (res?.hint?.text) {
+        setQuizHints((prev) => ({ ...prev, [activeTaskId]: [...(prev[activeTaskId] || []), res.hint] }));
+        if (itemType === "rescue_hint") setRescueTried((prev) => ({ ...prev, [activeTaskId]: true }));
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || t("codeRunner.itemFail"));
+    } finally {
+      setQuizItemBusy(false);
+    }
+  };
+
   const askForHelp = (kind) => {
+    if (activeTask?.task_type !== "code") {
+      if (kind === "hint") spendQuizHint("hint_scrolls");
+      else if (kind === "rescue") spendQuizHint("rescue_hint");
+      return;
+    }
     openMobileTab("code");
     setTimeout(() => {
       if (kind === "hint") panelRef.current?.spendHint?.();
@@ -614,7 +642,7 @@ export default function MissionDetail() {
     }, 60);
   };
   const canHint = (inventory.hint_scrolls || 0) > 0 && Boolean(activeTask?.data?.has_hint);
-  const canMentor = (inventory.ai_summons || 0) > 0;
+  const canMentor = isCodeTask && (inventory.ai_summons || 0) > 0; // Мудрец живёт в панели кода
   // нет ни зелий, ни вызовов: единственная бесплатная подсказка к шагу (один раз, сервер это проверяет)
   const canRescue = !canHint && !canMentor && (inventory.hint_scrolls || 0) <= 0 && (inventory.ai_summons || 0) <= 0;
   const rescueTaken = Boolean(rescueTried[activeTaskId]);
@@ -966,6 +994,28 @@ export default function MissionDetail() {
                     ))}
                   </div>
                   </fieldset>
+                  {/* Подсказка к тесту: то же Зелье Ясности, что и в баннере помощи (на шагах «объясни своё решение» баннера нет) */}
+                  {activeTask.data?.has_hint && taskProgress[activeTask.id]?.status !== "completed" && (
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        className={helpButton}
+                        disabled={quizItemBusy || (inventory.hint_scrolls || 0) <= 0}
+                        onClick={() => spendQuizHint("hint_scrolls")}
+                      >
+                        {t("missionPage.helpOffer.hint")} · {inventory.hint_scrolls || 0}
+                      </button>
+                      {(quizHints[activeTask.id] || []).map((hint, i) => (
+                        <p key={i} role="status" className="rounded-lg border-2 border-ink/40 bg-parchment-cream/80 px-3 py-2 text-sm leading-snug text-ink-deep">
+                          <span className="font-bold">
+                            {t("codeRunner.items.clarity")}
+                            {hint.levels > 1 ? ` ${hint.level}/${hint.levels}` : ""}:
+                          </span>{" "}
+                          {hint.text}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                   {/* wax, not error: the card is parchment in both themes, and the dark theme's light red is unreadable on it */}
                   {wrongAnswers[activeTask.id] !== undefined && wrongAnswers[activeTask.id] === quizAnswers[activeTask.id] && (
                     <p role="alert" className="text-sm font-semibold text-wax">
